@@ -24,5 +24,15 @@ All my sourcemod plugins... shitty probably
       * `sm_specialmenu` - Show the spawn menu for director spawning
       * `sm_directormenu` (Same as sm_specialmenu for now)
 * `l4d2-info-cmd` - Technically 'l4d2 game info', havent changed name. Just prints general information, used for a project
-  * **Commands**
+  * **Commands:**
     * `sm_gameinfo`
+  * Example Response:
+    ```
+    >map,diff
+    c8m2_subway,Normal
+    >id,name,bot,health,status,afk,throwSlot,kitSlot,pillSlot,modelName
+    1,Jackz,0,80,alive,0,,first_aid_kit,,Bill
+    3,Zoey,1,75,alive,0,,first_aid_kit,,Zoey
+    4,Francis,1,76,alive,0,,,,Francis
+    5,Louis,1,90,alive,0,,first_aid_kit,,Louis
+    ```
