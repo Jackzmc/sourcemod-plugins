@@ -36,3 +36,4 @@ All my sourcemod plugins... shitty probably
     4,Francis,1,76,alive,0,,,,Francis
     5,Louis,1,90,alive,0,,first_aid_kit,,Louis
     ```
+* `AutoWarpBot` - simple l4d2 plugin that will auto teleport everyone to checkpoint once all real players have reached the saferoom
