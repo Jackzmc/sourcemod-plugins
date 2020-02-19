@@ -75,7 +75,11 @@ public Action Command_SpawnSpecial(int client, int args) {
 			} else if (StrEqual(arg1, "tank", false) && !g_cMdEnableTank.BoolValue) {
 				ReplyToCommand(client, "[SM] Spawning tanks has been disabled.");
 			} else {
-				CheatCommand(executioner, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1, "auto");
+				if(StrEqual(arg1,"panic",false)) {
+					CheatCommand(executioner, "director_force_panic_event", "", "");
+				}else{
+					CheatCommand(executioner, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1, "auto");
+				}
 				if (g_cMdNotify.BoolValue) {
 					ReplyToCommand(client, "[SM] Director will now attempt to spawn a %s.", arg1);
 				}
@@ -92,12 +96,16 @@ public Action Command_SpawnSpecialForceLocal(int client, int args) {
     if (args < 1) {
 		ReplyToCommand(client, "[SM] Usage: sm_forcecursor <hunter|smoker|boomer|spitter|charger|jockey|mob> - Requests a special to spawn at cursor", arg1);
 	} else {
-        int bot = CreateFakeClient("ManualDirectorBot");
-        if (bot != 0) {
-            ChangeClientTeam(bot, 3);
-            CreateTimer(0.1, kickbot, bot);
-        }
-        CheatCommand(client, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1,"");
+		if(StrEqual(arg1,"panic",false)) {
+				CheatCommand(client, "director_force_panic_event", "", "");
+		}else{
+	        int bot = CreateFakeClient("ManualDirectorBot");
+	        if (bot != 0) {
+	            ChangeClientTeam(bot, 3);
+	            CreateTimer(0.1, kickbot, bot);
+	        }
+	        CheatCommand(client, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1,"");
+       	}
         if (g_cMdNotify.BoolValue) {
             ReplyToCommand(client, "[SM] Spawned a %s.", arg1);
         }
@@ -117,12 +125,16 @@ public Action Command_SpawnSpecialForce(int client, int args) {
 		if (executioner <= 0) {
 			ReplyToCommand(client, "[SM] Cannot spawn a %s as there are no players online.", arg1);
 		} else {
-			int bot = CreateFakeClient("ManualDirectorBot");
-			if (bot != 0) {
-				ChangeClientTeam(bot, 3);
-				CreateTimer(0.1, kickbot, bot);
+			if(StrEqual(arg1,"panic",false)) {
+				CheatCommand(executioner, "director_force_panic_event", "", "");
+			}else{
+				int bot = CreateFakeClient("ManualDirectorBot");
+				if (bot != 0) {
+					ChangeClientTeam(bot, 3);
+					CreateTimer(0.1, kickbot, bot);
+				}
+				CheatCommand(executioner, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1, "auto");
 			}
-			CheatCommand(executioner, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1, "auto");
 			if (g_cMdNotify.BoolValue) {
 				ReplyToCommand(client, "[SM] Spawned a %s.", arg1);
 			}
