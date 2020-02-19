@@ -11,7 +11,6 @@
 #include <sdktools>
 //#include <sdkhooks>
 
-bool g_icAFK[MAXPLAYERS + 1];
 char g_icDifficulty[16] = "Normal";
 
 public Plugin myinfo = 
@@ -32,11 +31,19 @@ public OnPluginStart()
 	}
 	RegConsoleCmd("sm_gameinfo", PrintGameInfo, "Show the director main menu");
 	HookEvent("difficulty_changed", Event_DifficultyChanged);
-	HookEvent("player_afk", Event_PlayerAfk);
-	HookEvent("player_bot_replace", Event_PlayerBotReplace);
 	FindConVar("z_difficulty").GetString(g_icDifficulty, sizeof(g_icDifficulty));
+	CreateTimer(300.0, Timer_PrintInfoMessage, _, TIMER_REPEAT);
+}
+public OnClientPutInServer(client)
+{
+	PrintToChat(client, "Welcome to the Manual Director server! For information or access the panel go to l4d2.jackz.me");
 }
 // print info
+public Action Timer_PrintInfoMessage(Handle timer)
+{
+	PrintToChatAll("This is the Manual Director server. Access the panel, and info about the server at l4d2.jackz.me");
+	return Plugin_Continue;
+}
 public Action PrintGameInfo(int client, int args) {
 	//print server info
 	ReplyToCommand(client, ">map,diff");
@@ -46,13 +53,12 @@ public Action PrintGameInfo(int client, int args) {
 	
 	ReplyToCommand(client, "%s,%s",map,g_icDifficulty);
 	//print client info
-	ReplyToCommand(client,">id,name,bot,health,status,afk,throwSlot,kitSlot,pillSlot,modelName");
+	ReplyToCommand(client,">id,name,bot,health,status,throwSlot,kitSlot,pillSlot,modelName");
 	for (int i = 1; i < MaxClients;i++) {
-		if (!IsClientConnected(i)) continue;
+		if (!IsClientInGame(i)) continue;
 		if (GetClientTeam(i) != 2) continue;
 		int hp = GetClientRealHealth(i);
-		int bot = GetSteamAccountID(i, false) == 0;
-		int afk = g_icAFK[i];
+		int bot = IsFakeClient(i);
 		bool incap = IsPlayerIncapped(i);
 		bool blackandwhite = IsPlayerNearDead(i);
 		
@@ -85,7 +91,7 @@ public Action PrintGameInfo(int client, int args) {
 		GetClientName(i, name, sizeof(name));
 		GetModelName(i, survType, sizeof(survType));
 		
-		ReplyToCommand(client,"%d,%s,%d,%d,%s,%d,%s,%s,%s,%s", i, name, bot, hp, status, afk, throwType, kitType, pillType, survType);
+		ReplyToCommand(client,"%d,%s,%d,%d,%s,%s,%s,%s,%s", i, name, bot, hp, status, throwType, kitType, pillType, survType);
 	}
 	
 }
@@ -93,13 +99,6 @@ public Action PrintGameInfo(int client, int args) {
 public void Event_DifficultyChanged(Event event, const char[] name, bool dontBroadcast) {
 	event.GetString("newDifficulty",g_icDifficulty,sizeof(g_icDifficulty));
 }
-public void Event_PlayerAfk(Event event, const char[] name, bool dontBroadcast) {
-	g_icAFK[GetClientOfUserId(event.GetInt("player"))] = true;
-}
-public void Event_PlayerBotReplace(Event event, const char[] name, bool dontBroadcast) {
-	g_icAFK[GetClientOfUserId(event.GetInt("player"))] = false;
-}
-
 // METHODS //
 bool IsPlayerIncapped(int client)
 {
