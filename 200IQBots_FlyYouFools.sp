@@ -3,6 +3,8 @@
 #include <sdktools>
 #define PLUGIN_VERSION "1.4" 
 
+//#define DEBUG
+
 static bool bEscapeReady = false;
 static int TankClient; 
 //static ConVar hTankDangerDistance;
@@ -27,20 +29,22 @@ public OnPluginStart()
 	CreateConVar("FlyYouFools_Version", PLUGIN_VERSION, "FlyYouFools Version", FCVAR_NOTIFY|FCVAR_REPLICATED|FCVAR_DONTRECORD);
 	//hTankDangerDistance = CreateConVar("200IQBots_TankDangerRange", "800.0", "The range by which survivors bots will detect the presence of tank and retreat. ", FCVAR_NOTIFY|FCVAR_REPLICATED);
 	
-	HookEvent("map_transition", Event_RoundStart, EventHookMode_Pre);	
+	HookEvent("map_transition", Event_RoundStart, EventHookMode_PostNoCopy);	
 	HookEvent("round_start", Event_RoundStart, EventHookMode_PostNoCopy);
 	HookEvent("tank_spawn", Event_TankSpawn);
-	HookEvent("tank_killed", Event_RoundStart);	
-	HookEvent("finale_vehicle_incoming", Event_FinaleArriving);
+	HookEvent("tank_killed", Event_RoundStart, EventHookMode_PostNoCopy);	
+	HookEvent("finale_vehicle_incoming", Event_FinaleArriving, EventHookMode_PostNoCopy);
 	
 	AutoExecConfig(true, "200IQBots_FlyYouFools");
 	
-	FindExistingTank();
+	
 }
 
 public OnMapStart() {
 	TankClient = -1;
 	bEscapeReady  = false;
+	
+	FindExistingTank();
 }	
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
@@ -59,18 +63,24 @@ public Action BotControlTimer(Handle timer)
 {
 	//remove timer once tank no longer exists, is dead, or finale escape vehicle arrived
 	if(bEscapeReady || TankClient == -1 || !IsClientInGame(TankClient) || !IsPlayerAlive(TankClient)) {
+#if debug 
+		PrintToServer("Tank processing now ended. Escape ready or tank has been killed.");
+#endif
 		return Plugin_Stop;
 	}
 	//Once an AI tank is awakened, m_lookatPlayer is set to a player ID
-	//Possible props: m_lookatPlayer, m_zombieState, m_hasVisibleThreats
+	//Possible props: m_lookatPlayer, m_zombieState (if 1), m_hasVisibleThreats
 	int tank_target = GetEntPropEnt(TankClient, Prop_Send, "m_lookatPlayer", 0);
-	//bool hasVisibleThreats = GetEntProp(TankClient, Prop_Send, "m_hasVisibleThreats", 1) == 1;
-	//char targetted_name[64];
+#if debug
+	bool hasVisibleThreats = GetEntProp(TankClient, Prop_Send, "m_hasVisibleThreats", 1) == 1;
+	char targetted_name[64];
+#endif
 	if(tank_target > -1) {
-		//debug shit:
-		//GetClientName(tank_target, targetted_name, sizeof(targetted_name));
-		//ShowHintToAll("tank_target: %d (%s) | visible threats: %b", tank_target, targetted_name, hasVisibleThreats);
-		for (new i = 1; i <= MaxClients; i++)
+		#if debug
+		GetClientName(tank_target, targetted_name, sizeof(targetted_name));
+		ShowHintToAll("tank_target: %d (%s) | visible threats: %b", tank_target, targetted_name, hasVisibleThreats);
+		#endif
+		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && IsFakeClient(i))
 			{	
@@ -101,20 +111,19 @@ public Action BotControlTimer(Handle timer)
 }
 
 
-
 public void FindExistingTank() {
 	for (int i = 1; i < MaxClients+1 ;i++) {
-		if (!IsClientInGame(i)) continue;
-		if (!IsFakeClient(i)) continue;
-		char name[16];
-		GetClientName(i, name, sizeof(name));
-		
-		if(StrContains(name,"Tank",true) > -1) {
-			PrintToServer("Found existing tank with id %d", i);
-			TankClient = i;
-			CreateTimer(0.1, BotControlTimer, _, TIMER_REPEAT);
-			break;
+		if(IsClientInGame(i) && IsFakeClient(i) && IsPlayerAlive(i) && GetClientTeam(i) == 3) {
+			char name[16];
+			GetClientName(i, name, sizeof(name));
+			if(StrContains(name,"Tank",true) > -1) {
+				PrintToServer("Found existing tank with id %d", i);
+				TankClient = i;
+				CreateTimer(0.1, BotControlTimer, _, TIMER_REPEAT);
+				break;
+			}
 		}
+		
 	}
 }
 
