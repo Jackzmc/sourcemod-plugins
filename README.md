@@ -7,6 +7,7 @@ All my sourcemod plugins... shitty probably
 * [l4d2-info-cmd](#l4d2-info-cmd)
 * [AutoWarpBot](#AutoWarpBot)
 * [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
+* [BetterWitchAvoidance](#BetterWitchAvoidance)
 
 ## Descriptions
 ### csgo-knifehp
