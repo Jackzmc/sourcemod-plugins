@@ -2,6 +2,7 @@
 #include <sourcemod>
 #include <sdktools>
 #define PLUGIN_VERSION "1.4" 
+#pragma newdecls required
 
 //#define DEBUG
 
@@ -18,7 +19,7 @@ public Plugin myinfo =
     url = "N/A"
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	EngineVersion g_Game = GetEngineVersion();
 	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2)
@@ -40,7 +41,7 @@ public OnPluginStart()
 	
 }
 
-public OnMapStart() {
+public void OnMapStart() {
 	TankClient = -1;
 	bEscapeReady  = false;
 	
@@ -66,6 +67,8 @@ public Action BotControlTimer(Handle timer)
 #if debug 
 		PrintToServer("Tank processing now ended. Escape ready or tank has been killed.");
 #endif
+		//incase any other tanks are available
+		FindExistingTank();
 		return Plugin_Stop;
 	}
 	//Once an AI tank is awakened, m_lookatPlayer is set to a player ID
@@ -80,19 +83,21 @@ public Action BotControlTimer(Handle timer)
 		GetClientName(tank_target, targetted_name, sizeof(targetted_name));
 		ShowHintToAll("tank_target: %d (%s) | visible threats: %b", tank_target, targetted_name, hasVisibleThreats);
 		#endif
+		//grab tank position outside loop, only calculate bot 
+		float TankPosition[3];
+		GetClientAbsOrigin(TankClient, TankPosition);
 		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && IsFakeClient(i))
 			{	
 				//If distance between bot and tank is less than 200IQBots_TankDangerRange's float value
-				//if not tank target, and tank != visible threats, then attack
-				if(tank_target == i) {
+				//if not tank target, and tank != visible threats, then attack. OR if health low, flee
+				int health = GetClientHealth(i);
+				if(tank_target == i || health <= 40) {
 					L4D2_RunScript("CommandABot({cmd=2,bot=GetPlayerFromUserID(%i),target=GetPlayerFromUserID(%i)})", GetClientUserId(i), GetClientUserId(TankClient));
 				}else {
-					float TankPosition[3];
-					float BotPosition[3];
 					
-					GetClientAbsOrigin(TankClient, TankPosition);
+					float BotPosition[3];
 					GetClientAbsOrigin(i, BotPosition);
 					
 					float distance = GetVectorDistance(BotPosition, TankPosition);
@@ -136,10 +141,10 @@ public void FindExistingTank() {
 * @noreturn
 */
 stock void L4D2_RunScript(const char[] sCode, any ...) {
-	static iScriptLogic = INVALID_ENT_REFERENCE;
+	static int iScriptLogic = INVALID_ENT_REFERENCE;
 	if(iScriptLogic == INVALID_ENT_REFERENCE || !IsValidEntity(iScriptLogic)) {
 		iScriptLogic = EntIndexToEntRef(CreateEntityByName("logic_script"));
-		if(iScriptLogic == INVALID_ENT_REFERENCE || !IsValidEntity(iScriptLogic))
+		if(iScriptLogic == INVALID_ENT_REFERENCE|| !IsValidEntity(iScriptLogic))
 			SetFailState("Could not create 'logic_script'");
 		
 		DispatchSpawn(iScriptLogic);

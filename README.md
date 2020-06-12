@@ -61,3 +61,6 @@ A group of misc tools for l4d2. Including: Notify on lasers use, and a finale ti
 Updated version of ConnerRia's plugin. Improves bots avoidance of tanks. Change from original is updated source syntax, some optimizations/cleanup, and fixes such as bots avoiding tank that has not been activated, or not escaping in vehicle due to presence of tank.
 * **Convars:**
    * `FlyYouFools_Version` - Prints the version of plugin
+
+### BetterWitchAvoidance
+Inspired by the 200IQBots_FlyYouFools. Bots avoid witch if its over 40% anger when close, or a little bigger range at 60% or more.
