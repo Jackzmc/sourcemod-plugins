@@ -8,6 +8,8 @@ All my sourcemod plugins... shitty probably
 * [AutoWarpBot](#AutoWarpBot)
 * [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
 * [BetterWitchAvoidance](#BetterWitchAvoidance)
+* [L4D2FFKickProtection](#L4D2FFKickProtection)
+* [l4d2_ff_test](#l4d2_ff_test)
 
 ## Descriptions
 ### csgo-knifehp
