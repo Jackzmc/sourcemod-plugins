@@ -65,3 +65,13 @@ Updated version of ConnerRia's plugin. Improves bots avoidance of tanks. Change 
 
 ### BetterWitchAvoidance
 Inspired by the 200IQBots_FlyYouFools. Bots avoid witch if its over 40% anger when close, or a little bigger range at 60% or more.
+
+### L4D2FFKickProtection
+Simple plugin that prevents a player that is being vote-kicked from doing any ff damage to teammates. 
+* **Convars:**
+  * `sm_votekick_force_threshold` - The threshold of damage where the offending player is just immediately kicked. 0 -> Any attempted damage, -1 -> No auto kick.
+
+### l4d2_ff_test
+More of a joke plugin, it will prevent a player from picking up a m60 if their friendly fire count or damage is over a certain threshold (Hardcoded as 5 and 35 respectively)
+* **Commands:**
+  * `sm_view_ff` - View the ff damage and count of all players
