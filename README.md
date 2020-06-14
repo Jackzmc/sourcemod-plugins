@@ -10,6 +10,7 @@ All my sourcemod plugins... shitty probably
 * [BetterWitchAvoidance](#BetterWitchAvoidance)
 * [L4D2FFKickProtection](#L4D2FFKickProtection)
 * [l4d2_ff_test](#l4d2_ff_test)
+* [CSGOTroll](#CSGOTroll)
 
 ## Descriptions
 ### csgo-knifehp
@@ -71,9 +72,17 @@ Inspired by the 200IQBots_FlyYouFools. Bots avoid witch if its over 40% anger wh
 ### L4D2FFKickProtection
 Simple plugin that prevents a player that is being vote-kicked from doing any ff damage to teammates. 
 * **Convars:**
-  * `sm_votekick_force_threshold` - The threshold of damage where the offending player is just immediately kicked. 0 -> Any attempted damage, -1 -> No auto kick.
+  * `sm_votekick_force_threshold <#>` - The threshold of damage where the offending player is just immediately kicked. 0 -> Any attempted damage, -1 -> No auto kick.
 
 ### l4d2_ff_test
 More of a joke plugin, it will prevent a player from picking up a m60 if their friendly fire count or damage is over a certain threshold (Hardcoded as 5 and 35 respectively)
 * **Commands:**
   * `sm_view_ff` - View the ff damage and count of all players
+
+### CSGOTroll
+Another joke plugin, with it configured, a victim will have a % chance their shots just fail. This can be for the AWP or all weapons at least for now.
+* **Convars:**
+  * `troll_enable <0/1>` - Enable troll. 0 -> OFF, 1 -> Shots
+  * `troll_shot_fail_percentage <0.0-1.1>` - percentage float (0.0 to 1.0) chance that victims' shots fail
+  * `troll_targets <ids>` - comma seperated list of steamid64 targets (ex: STEAM_0:0:75141700)
+  * `troll_shot_mode <0/1>` - 0 -> ALL Weapons, 1 -> AWP
