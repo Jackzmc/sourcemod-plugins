@@ -83,6 +83,6 @@ More of a joke plugin, it will prevent a player from picking up a m60 if their f
 Another joke plugin, with it configured, a victim will have a % chance their shots just fail. This can be for the AWP or all weapons at least for now.
 * **Convars:**
   * `troll_enable <0/1>` - Enable troll. 0 -> OFF, 1 -> Shots
-  * `troll_shot_fail_percentage <0.0-1.1>` - percentage float (0.0 to 1.0) chance that victims' shots fail
-  * `troll_targets <ids>` - comma seperated list of steamid64 targets (ex: STEAM_0:0:75141700)
+  * `troll_shot_fail_percentage <0.0-1.0>` - percentage float (0.0 to 1.0) chance that victims' shots fail
+  * `troll_targets <ids>` - comma separate list of steamid64 targets (ex: STEAM_0:0:75141700)
   * `troll_shot_mode <0/1>` - 0 -> ALL Weapons, 1 -> AWP
