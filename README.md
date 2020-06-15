@@ -76,6 +76,9 @@ Simple plugin that prevents a player that is being vote-kicked from doing any ff
 
 ### l4d2_ff_test
 More of a joke plugin, it will prevent a player from picking up a m60 if their friendly fire count or damage is over a certain threshold (Hardcoded as 5 and 35 respectively)
+* **Convars:**
+  * `sm_redirect_ff_scale <#.#>` - The redirected damage back to attacker. 0.0 -> OFF | 1 -> All damage. Minimum 0.0
+  * `sm_victim_ff_scale <0.0-1.0>` - This is mulitplied by the damage the victim will receive. 0 -> No damage, 1 -> All damage
 * **Commands:**
   * `sm_view_ff` - View the ff damage and count of all players
 
