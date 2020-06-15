@@ -38,7 +38,6 @@ public void OnPluginStart()
 	
 	AutoExecConfig(true, "200IQBots_FlyYouFools");
 	
-	
 }
 
 public void OnMapStart() {
@@ -50,7 +49,7 @@ public void OnMapStart() {
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
 	TankClient = -1;
-	bEscapeReady  = false;
+	bEscapeReady = false;
 }
 
 public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
@@ -58,15 +57,12 @@ public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) 
 	CreateTimer(0.1, BotControlTimer, _, TIMER_REPEAT);
 }
 public void Event_FinaleArriving(Event event, const char[] name, bool dontBroadcast) {
-	bEscapeReady  = true;
+	bEscapeReady = true;
 }
 public Action BotControlTimer(Handle timer)
 {
 	//remove timer once tank no longer exists, is dead, or finale escape vehicle arrived
 	if(bEscapeReady || TankClient == -1 || !IsClientInGame(TankClient) || !IsPlayerAlive(TankClient)) {
-#if debug 
-		PrintToServer("Tank processing now ended. Escape ready or tank has been killed.");
-#endif
 		//incase any other tanks are available
 		FindExistingTank();
 		return Plugin_Stop;
@@ -74,15 +70,7 @@ public Action BotControlTimer(Handle timer)
 	//Once an AI tank is awakened, m_lookatPlayer is set to a player ID
 	//Possible props: m_lookatPlayer, m_zombieState (if 1), m_hasVisibleThreats
 	int tank_target = GetEntPropEnt(TankClient, Prop_Send, "m_lookatPlayer", 0);
-#if debug
-	bool hasVisibleThreats = GetEntProp(TankClient, Prop_Send, "m_hasVisibleThreats", 1) == 1;
-	char targetted_name[64];
-#endif
 	if(tank_target > -1) {
-		#if debug
-		GetClientName(tank_target, targetted_name, sizeof(targetted_name));
-		ShowHintToAll("tank_target: %d (%s) | visible threats: %b", tank_target, targetted_name, hasVisibleThreats);
-		#endif
 		//grab tank position outside loop, only calculate bot 
 		float TankPosition[3];
 		GetClientAbsOrigin(TankClient, TankPosition);
@@ -122,7 +110,6 @@ public void FindExistingTank() {
 			char name[16];
 			GetClientName(i, name, sizeof(name));
 			if(StrContains(name,"Tank",true) > -1) {
-				PrintToServer("Found existing tank with id %d", i);
 				TankClient = i;
 				CreateTimer(0.1, BotControlTimer, _, TIMER_REPEAT);
 				break;
@@ -175,7 +162,7 @@ stock void ShowHintToAll(const char[] format, any ...) {
 * @param bufferSize 	The size of the buffer
 * @return				True if item, false if no item
 */
-stock bool GetItemClassSlot(int client, int slot, char[] buffer, int bufferSize) {
+stock bool GetItemSlotClassName(int client, int slot, char[] buffer, int bufferSize) {
 	int item = GetPlayerWeaponSlot(client, slot);
 	if(item > -1) {
 		GetEdictClassname(item, buffer, bufferSize);

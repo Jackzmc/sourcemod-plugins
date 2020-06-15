@@ -3,7 +3,7 @@
 
 #define DEBUG
 
-#define PLUGIN_NAME "Misc Tools"
+#define PLUGIN_NAME "L4D2 Misc Tools"
 #define PLUGIN_DESCRIPTION "Includes: Notice on laser use, Timer for gauntlet runs"
 #define PLUGIN_AUTHOR "jackzmc"
 #define PLUGIN_VERSION "1.0"
@@ -13,14 +13,12 @@
 #include <sdktools>
 //#include <sdkhooks>
 
-#pragma newdecls required
 
 bool bLasersUsed[2048];
 ConVar hLaserNotice, hFinaleTimer;
 int iFinaleStartTime;
 
-public Plugin myinfo = 
-{
+public Plugin myinfo = {
 	name = PLUGIN_NAME, 
 	author = PLUGIN_AUTHOR, 
 	description = PLUGIN_DESCRIPTION, 
@@ -28,8 +26,7 @@ public Plugin myinfo =
 	url = PLUGIN_URL
 };
 
-public void OnPluginStart()
-{
+public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
 	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2)
 	{
@@ -43,9 +40,10 @@ public void OnPluginStart()
 	HookEvent("gauntlet_finale_start", Event_GauntletStart);
 	HookEvent("finale_start", Event_FinaleStart);
 	HookEvent("finale_vehicle_leaving", Event_FinaleEnd);
+	
+	//RegAdminCmd("sm_respawn", Command_SpawnSpecial, ADMFLAG_CHEATS, "Respawn a dead survivor right where they died.");
 }
 
-#if 1 
 //laserNotice
 public void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast) {
 	if(hLaserNotice.BoolValue) {
@@ -70,34 +68,35 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 		bLasersUsed[i] = false;
 	}
 }
-#endif
 
 
-#if 1 
 //finaletimer
 public void Event_GauntletStart(Event event, const char[] name, bool dontBroadcast) {
 	if(hFinaleTimer.IntValue > 0) {
 		iFinaleStartTime = GetTime();
-		PrintToChatAll("The finale timer has been started");
+		PrintHintTextToAll("The finale timer has been started");
 	}
 }
 public void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
 	if(hFinaleTimer.IntValue == 2) {
 		iFinaleStartTime = GetTime();
-		PrintToChatAll("The finale timer has been started");
+		PrintHintTextToAll("The finale timer has been started");
 	}
 }
 public void Event_FinaleEnd(Event event, const char[] name, bool dontBroadcast) {
 	if(hFinaleTimer.IntValue != 0) {
 		int difference = GetTime() - iFinaleStartTime;
-		iFinaleStartTime = 0;
 		
 		char time[32];
-		FormatMs(difference, time, sizeof(time));
+		FormatSeconds(difference, time, sizeof(time));
 		PrintToChatAll("Finale took %s to complete", time);
+		iFinaleStartTime = 0;
+
 	}
 }
-#endif
+
+
+
 /**
  * Prints human readable duration from milliseconds
  *
@@ -105,22 +104,20 @@ public void Event_FinaleEnd(Event event, const char[] name, bool dontBroadcast) 
  * @param str		The char array to use for text
  * @param strSize   The size of the string
  */
-stock void FormatMs(int ms, char[] str, int strSize) {
-	int sec = ms / 1000;
-	int h = sec / 3600; 
-	int m = (sec -(3600*h))/60;
-	int s = (sec -(3600*h)-(m*60));
-	if(h >= 1) {
-		Format(str, strSize, "%d hour, %d.%d minutes", h, m, s);
-	}else if(m >= 1) {
-		Format(str, strSize, "%d minutes and %d seconds", m, s);
+stock void FormatSeconds(int raw_sec, char[] str, int strSize) {
+	int hours = raw_sec / 3600; 
+	int minutes = (raw_sec -(3600*hours))/60;
+	int seconds = (raw_sec -(3600*hours)-(minutes*60));
+	if(hours >= 1) {
+		Format(str, strSize, "%d hours, %d.%d minutes", hours, minutes, seconds);
+	}else if(minutes >= 1) {
+		Format(str, strSize, "%d minutes and %d seconds", minutes, seconds);
 	}else {
-		float raw_seconds = float(ms) / 1000;
-		Format(str, strSize, "%0.1f seconds", raw_seconds);
+		Format(str, strSize, "%d seconds", seconds);
 	}
 	
 }
-stock void ShowHintToAll(const char[] format, any ...) {
+stock void ShowDelayedHintToAll(const char[] format, any ...) {
 	char buffer[254];
 	VFormat(buffer, sizeof(buffer), format, 2);
 	static int hintInt = 0;
@@ -130,7 +127,7 @@ stock void ShowHintToAll(const char[] format, any ...) {
 	}
 	hintInt++;
 }
-stock void ShowHint(int client, const char[] format, any ...) {
+stock void ShowDelayedHint(int client, const char[] format, any ...) {
 	char buffer[254];
 	VFormat(buffer, sizeof(buffer), format, 2);
 	static int hintInt = 0;
@@ -139,4 +136,23 @@ stock void ShowHint(int client, const char[] format, any ...) {
 		hintInt = 0;
 	}
 	hintInt++;
+}
+stock void CheatCommand(int client, const char[] command, const char[] argument1, const char[] argument2) {
+	int userFlags = GetUserFlagBits(client);
+	SetUserFlagBits(client, ADMFLAG_ROOT);
+	int flags = GetCommandFlags(command);
+	SetCommandFlags(command, flags & ~FCVAR_CHEAT);
+	FakeClientCommand(client, "%s %s %s", command, argument1, argument2);
+	SetCommandFlags(command, flags);
+	SetUserFlagBits(client, userFlags);
+} 
+stock int GetAnyValidClient() {
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i) && !IsFakeClient(i))
+		{
+			return i;
+		}
+	}
+	return -1;
 }

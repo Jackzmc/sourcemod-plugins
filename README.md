@@ -84,5 +84,5 @@ Another joke plugin, with it configured, a victim will have a % chance their sho
 * **Convars:**
   * `troll_enable <0/1>` - Enable troll. 0 -> OFF, 1 -> Shots
   * `troll_shot_fail_percentage <0.0-1.0>` - percentage float (0.0 to 1.0) chance that victims' shots fail
-  * `troll_targets <ids>` - comma separate list of steamid64 targets (ex: STEAM_0:0:75141700)
+  * `troll_targets <ids>` - comma separated list of steamid64 targets (ex: STEAM_0:0:75141700)
   * `troll_shot_mode <0/1>` - 0 -> ALL Weapons, 1 -> AWP

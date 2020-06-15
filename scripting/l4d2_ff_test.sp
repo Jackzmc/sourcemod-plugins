@@ -16,6 +16,7 @@
 static bool bLateLoaded;
 static float ffDamage[MAXPLAYERS+1];
 static int ffCount[MAXPLAYERS+1];
+ConVar hRedirectFFScale, hVictimFFReductionScale;
 
 public Plugin myinfo = 
 {
@@ -49,6 +50,9 @@ public void OnPluginStart()
 			}
 		}
 	}
+	hRedirectFFScale = CreateConVar("sm_redirect_ff_scale","1.0","The redirected damage back to attacker. 0-> OFF | 1 -> All damage",FCVAR_NONE,true,0.0);
+	hVictimFFReductionScale = CreateConVar("sm_victim_ff_scale",".5","This is mulitplied by the damage the victim will receive. 0 -> No damage, 1 -> All damage", FCVAR_NONE, true, 0.0, true, 1.0);
+	
 	HookEvent("round_start", Event_RoundStart);
 	RegConsoleCmd("sm_view_ff", Command_ViewFF, "View all player's friendly fire counts");
 }
@@ -91,8 +95,14 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 //damage counting
 public Action OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
-	ffDamage[attacker] += damage;
-	ffCount[attacker]++;
+	if(attacker > 0 && attacker <= MaxClients) {
+		ffDamage[attacker] += damage;
+		ffCount[attacker]++;
+		//apply the reduction scale to damage
+		float reflection_damage = damage * hRedirectFFScale.FloatValue;
+		damage = damage * hVictimFFReductionScale.FloatValue;
+		SDKHooks_TakeDamage(attacker, 0, 0, reflection_damage);
+	}
 	return Plugin_Continue;
 }
 
