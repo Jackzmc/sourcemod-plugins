@@ -1,5 +1,6 @@
 **/
 !plugins
 !scripting
+!scripting/include
 template.config.js
 .*
