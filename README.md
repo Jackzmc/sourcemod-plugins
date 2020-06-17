@@ -11,6 +11,8 @@ All my sourcemod plugins... shitty probably
 * [L4D2FFKickProtection](#L4D2FFKickProtection)
 * [l4d2_ff_test](#l4d2_ff_test)
 * [CSGOTroll](#CSGOTroll)
+* [l4d2_avoid_minigun](#l4d2_avoid_minigun)
+* [l4d2_ai_minigun](#l4d2_ai_minigun)
 
 ## Descriptions
 ### csgo-knifehp
@@ -89,3 +91,14 @@ Another joke plugin, with it configured, a victim will have a % chance their sho
   * `troll_shot_fail_percentage <0.0-1.0>` - percentage float (0.0 to 1.0) chance that victims' shots fail
   * `troll_targets <ids>` - comma separated list of steamid64 targets (ex: STEAM_0:0:75141700)
   * `troll_shot_mode <0/1>` - 0 -> ALL Weapons, 1 -> AWP
+
+### l4d2_avoid_minigun
+Makes the bots avoid standing infront/on top of the player that is using a minigun. It checks every 2.0 seconds if they are infront, then tells them to move to behind you.  There is no configuration, all automatic.
+
+### l4d2_ai_minigun
+Allows you to spawn a holdout type bot. This bot will spawn with a minigun, like louis in the passing. Supports all 8 characters. 
+Technically it is louis using minigun with a model change, but it works fine.
+
+Note: Sometimes bill model fails to spawn in, and is just invisible.
+* **Commands:**
+  * `sm_spawn_minigun_bot <model name>` - Spawns the ai bot infront of wherever you are looking. Can also use numbers (0-7).
