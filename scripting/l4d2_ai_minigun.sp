@@ -63,7 +63,11 @@ public Action Command_SpawnAIBot(int client, int args) {
 	if(args > 0) {
 		GetCmdArg(1, arg1, sizeof(arg1));
 		char model[64];
-		FindModelFromString(arg1, model, sizeof(model));
+		if(!FindSurvivorModel(arg1, model, sizeof(model))) {
+			LogError("Could not find a survivor model.");
+			ReplyToCommand(client, "Could not find that survivor.");
+			return Plugin_Handled;
+		}
 
 		//get ground:
 		float vPos[3], vAng[3];
@@ -128,7 +132,7 @@ bool SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] model,
 	return true;
 }
 
-stock bool FindModelFromString(const char str[16], char[] model, int modelStrSize) {
+stock bool FindSurvivorModel(const char str[16], char[] model, int modelStrSize) {
 	int possibleNumber = StringToInt(str, 10);
 	if(modelStrSize == 1 && possibleNumber <= 7 && possibleNumber >= 0) {
 		switch(possibleNumber) {
