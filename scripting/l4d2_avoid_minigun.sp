@@ -8,14 +8,13 @@
 #define PLUGIN_AUTHOR "jackzmc"
 #define PLUGIN_VERSION "1.0"
 #define PLUGIN_URL ""
-#define PI 3.14159265358
 #define UNITS_SPAWN -120.0
 
 #include <sourcemod>
 #include <sdktools>
+#include "jutils.inc"
 //#include <sdkhooks>
 
-#define MODEL_MINIGUN		"models/w_models/weapons/w_minigun.mdl"
 
 public Plugin myinfo = 
 {
@@ -36,8 +35,12 @@ public void OnPluginStart()
 	CreateTimer(2.0, CheckTimer, _, TIMER_REPEAT);
 }
 
+//possible optimization: Only update player's position every X times, always check for bots
 public Action CheckTimer(Handle timer) {
-    for(int i = 1; i < MaxClients; i++) {
+	//Don't do any processing if no one is connected.
+	if(GetClientCount(true) == 0) return Plugin_Continue;
+	for(int i = 1; i < MaxClients; i++) {
+		//possibly can optimize? check array if int is in it.
 		if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && GetClientTeam(i) == 2) {
 			bool usingMinigun = GetEntProp(i, Prop_Send, "m_usingMountedGun", 1) == 1;
 			bool usingMountedWeapon = GetEntProp(i, Prop_Send, "m_usingMountedWeapon", 1) == 1;
@@ -68,49 +71,5 @@ public Action CheckTimer(Handle timer) {
 			}
 		}
 	}
-}
-
-
-stock void GetHorizontalPositionFromOrigin(const float pos[3], const float ang[3], float units, float finalPosition[3]) {
-	float theta = DegToRad(ang[1]);
-	finalPosition[0] = units * Cosine(theta) + pos[0];
-	finalPosition[1] = units * Sine(theta) + pos[1];
-	finalPosition[2] = pos[2];
-}
-stock void GetHorizontalPositionFromClient(int client, float units, float finalPosition[3]) {
-	float pos[3], ang[3];
-	GetClientEyeAngles(client, ang);
-	GetClientAbsOrigin(client, pos);
-
-	float theta = DegToRad(ang[1]);
-	pos[0] += -150 * Cosine(theta); 
-	pos[1] += -150 * Sine(theta); 
-	finalPosition = pos;
-}
-
-stock void L4D2_RunScript(const char[] sCode, any ...) {
-	static int iScriptLogic = INVALID_ENT_REFERENCE;
-	if(iScriptLogic == INVALID_ENT_REFERENCE || !IsValidEntity(iScriptLogic)) {
-		iScriptLogic = EntIndexToEntRef(CreateEntityByName("logic_script"));
-		if(iScriptLogic == INVALID_ENT_REFERENCE|| !IsValidEntity(iScriptLogic))
-			SetFailState("Could not create 'logic_script'");
-		
-		DispatchSpawn(iScriptLogic);
-	}
-	
-	static char sBuffer[512];
-	VFormat(sBuffer, sizeof(sBuffer), sCode, 2);
-	
-	SetVariantString(sBuffer);
-	AcceptEntityInput(iScriptLogic, "RunScriptCode");
-}
-stock void ShowDelayedHintToAll(const char[] format, any ...) {
-	char buffer[254];
-	VFormat(buffer, sizeof(buffer), format, 2);
-	static int hintInt = 0;
-	if(hintInt >= 7) {
-		PrintHintTextToAll("%s",buffer);
-		hintInt = 0;
-	}
-	hintInt++;
+	return Plugin_Continue;
 }

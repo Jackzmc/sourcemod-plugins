@@ -55,6 +55,7 @@ public void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast) 
 		GetClientName(player_id, player_name, sizeof(player_name));
 		GetEntityClassname(target_id, entity_name, sizeof(entity_name));
 		
+		
 		if(StrEqual(entity_name,"upgrade_laser_sight")) {
 			if(!bLasersUsed[target_id]) {
 				bLasersUsed[target_id] = true;
@@ -94,9 +95,6 @@ public void Event_FinaleEnd(Event event, const char[] name, bool dontBroadcast) 
 
 	}
 }
-
-
-
 /**
  * Prints human readable duration from milliseconds
  *
