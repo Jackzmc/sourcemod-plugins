@@ -11,17 +11,9 @@
 
 #include <sourcemod>
 #include <sdktools>
+#include "jutils.inc"
 //#include <sdkhooks>
 
-#define MODEL_MINIGUN		"models/w_models/weapons/w_minigun.mdl"
-#define MODEL_FRANCIS		"models/survivors/survivor_biker.mdl"
-#define MODEL_LOUIS			"models/survivors/survivor_manager.mdl"
-#define MODEL_ZOEY			"models/survivors/survivor_teenangst.mdl"
-#define MODEL_BILL			"models/survivors/survivor_namvet.mdl"
-#define MODEL_NICK			"models/survivors/survivor_gambler.mdl"
-#define MODEL_COACH			"models/survivors/survivor_coach.mdl"
-#define MODEL_ELLIS			"models/survivors/survivor_mechanic.mdl"
-#define MODEL_ROCHELLE		"models/survivors/survivor_producer.mdl"
 
 public Plugin myinfo = 
 {
@@ -32,7 +24,7 @@ public Plugin myinfo =
 	url = PLUGIN_URL
 };
 
-int g_iSurvivors[MAXPLAYERS+1], g_iLastSpawnClient;
+int g_iSurvivors[MAXPLAYERS+1], g_iLastSpawnClient, g_iAvoidChar[MAXPLAYERS+1] = {-1,...};
 
 public void OnPluginStart()
 {
@@ -44,6 +36,7 @@ public void OnPluginStart()
 
 	RegAdminCmd("sm_spawn_minigun_bot", Command_SpawnAIBot, ADMFLAG_ROOT);
 }
+
 public void OnMapStart() {
 	PrecacheModel(MODEL_MINIGUN);
 	PrecacheModel(MODEL_LOUIS);
@@ -51,6 +44,7 @@ public void OnMapStart() {
 	PrecacheModel(MODEL_BILL);
 	PrecacheModel(MODEL_FRANCIS);
 }
+
 public void OnClientPutInServer(int client) {
 	if( g_iLastSpawnClient == -1)
 	{
@@ -58,6 +52,7 @@ public void OnClientPutInServer(int client) {
 		g_iLastSpawnClient = GetClientUserId(client);
 	}
 }
+
 public Action Command_SpawnAIBot(int client, int args) {
 	char arg1[16];
 	if(args > 0) {
@@ -88,7 +83,10 @@ public Action Command_SpawnAIBot(int client, int args) {
 	return Plugin_Handled;
 }
 
-bool SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] model, bool spawn_minigun) {
+
+
+
+stock bool SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] model, bool spawn_minigun) {
 	int entity = CreateEntityByName("info_l4d1_survivor_spawn");
 	if( entity == -1 ) {
 		LogError("Failed to create \"info_l4d1_survivor_spawn\"");
@@ -121,7 +119,7 @@ bool SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] model,
 	SetClientName(bot_client_id, "MinigunBot");
 	TeleportEntity(bot_client_id, vPos, NULL_VECTOR, NULL_VECTOR);
 
-	if(spawn_minigun && !SpawnMinigun(vAng, vPos)) {
+	if(spawn_minigun && !SpawnMinigun(vPos, vAng)) {
 		LogError("Failed to spawn minigun for client #%d", bot_client_id);
 		KickClient(bot_client_id, "AIMinigun:MinigunSpawnFailure");
 		return false;
@@ -131,117 +129,11 @@ bool SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] model,
 	CreateTimer(1.5, TimerMove, bot_user_id);
 	return true;
 }
-
-stock bool FindSurvivorModel(const char str[16], char[] model, int modelStrSize) {
-	int possibleNumber = StringToInt(str, 10);
-	if(modelStrSize == 1 && possibleNumber <= 7 && possibleNumber >= 0) {
-		switch(possibleNumber) {
-			case 0: {
-				strcopy(model, modelStrSize, MODEL_NICK);
-			} case 1: {
-				strcopy(model, modelStrSize, MODEL_ELLIS);
-			} case 2: {
-				strcopy(model, modelStrSize, MODEL_COACH);
-			} case 3: {
-				strcopy(model, modelStrSize, MODEL_ROCHELLE);
-			} case 4: {
-				strcopy(model, modelStrSize, MODEL_BILL);
-			} case 5: {
-				strcopy(model, modelStrSize, MODEL_ZOEY);
-			} case 6: {
-				strcopy(model, modelStrSize, MODEL_FRANCIS);
-			} case 7: {
-				strcopy(model, modelStrSize, MODEL_LOUIS);
-			}
-			default:
-				return false;
-		}
-		return true;
-	}else{
-		if(possibleNumber == 0) {
-			//try to parse str
-			if(StrEqual(str, "bill", false)) {
-				strcopy(model, modelStrSize, MODEL_BILL);
-			}else if(StrEqual(str, "zoey", false)) {
-				strcopy(model, modelStrSize, MODEL_ZOEY);
-			}else if(StrEqual(str, "francis", false)) {
-				strcopy(model, modelStrSize, MODEL_FRANCIS);
-			}else if(StrEqual(str, "louis", false)) {
-				strcopy(model, modelStrSize, MODEL_LOUIS);
-			}else if(StrEqual(str, "nick", false)) {
-				strcopy(model, modelStrSize, MODEL_NICK);
-			}else if(StrEqual(str, "ellis", false)) {
-				strcopy(model, modelStrSize, MODEL_ELLIS);
-			}else if(StrEqual(str, "rochelle", false)) {
-				strcopy(model, modelStrSize, MODEL_ROCHELLE);
-			}else if(StrEqual(str, "coach", false)) {
-				strcopy(model, modelStrSize, MODEL_COACH);
-			}else{
-				return false;
-			}
-			return true;
-		}
-	}
-	return false;
-}
-
-bool SpawnMinigun(const float vAng[3], const float vPos[3]) {
-	float vDir[3], newPos[3];
-	GetAngleVectors(vAng, vDir, NULL_VECTOR, NULL_VECTOR);
-	vDir[0] = vPos[0] + (vDir[0] * 50);
-	vDir[1] = vPos[1] + (vDir[1] * 50);
-	vDir[2] = vPos[2] + 20.0;
-	newPos = vDir;
-	newPos[2] -= 40.0;
-
-	Handle trace = TR_TraceRayFilterEx(vDir, newPos, MASK_SHOT, RayType_EndPoint, TraceFilter);
-	if(TR_DidHit(trace)) {
-		TR_GetEndPosition(vDir, trace);
-
-		int minigun = CreateEntityByName("prop_mounted_machine_gun");
-		minigun = EntIndexToEntRef(minigun);
-		SetEntityModel(minigun, MODEL_MINIGUN);
-		DispatchKeyValue(minigun, "targetname", "louis_holdout");
-		DispatchKeyValueFloat(minigun, "MaxPitch", 360.00);
-		DispatchKeyValueFloat(minigun, "MinPitch", -360.00);
-		DispatchKeyValueFloat(minigun, "MaxYaw", 90.00);
-		newPos[2] += 0.1;
-		TeleportEntity(minigun, vDir, vAng, NULL_VECTOR);
-		DispatchSpawn(minigun);
-		delete trace;
-		return true;
-	}else{
-		LogError("Spawn minigun trace failure");
-		delete trace;
-		return false;
-	}
-}
-
 stock bool TraceFilter(int entity, int contentsMask) {
 	if( entity <= MaxClients )
 		return false;
 	return true;
 }
-stock bool GetGround(int client, float[3] vPos, float[3] vAng) {
-	GetClientAbsOrigin(client, vPos);
-	vAng = vPos;
-	vAng[2] += 5.0;
-	vPos[2] -= 500.0;
-
-	Handle trace = TR_TraceRayFilterEx(vAng, vPos, MASK_SHOT, RayType_EndPoint, TraceFilter);
-	if(!TR_DidHit(trace))
-	{
-		delete trace;
-		return false;
-	}
-	TR_GetEndPosition(vPos, trace);
-	delete trace;
-
-	GetClientAbsAngles(client, vAng);
-	return true;
-}
-
-g_iAvoidChar[MAXPLAYERS+1] = {-1,...};
 void AvoidCharacter(int type, bool avoid)
 {
 	for( int i = 1; i <= MaxClients; i++ )
