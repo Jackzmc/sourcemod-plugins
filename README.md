@@ -101,4 +101,4 @@ Technically it is louis using minigun with a model change, but it works fine.
 
 Note: Sometimes bill model fails to spawn in, and is just invisible.
 * **Commands:**
-  * `sm_spawn_minigun_bot <model name>` - Spawns the ai bot infront of wherever you are looking. Can also use numbers (0-7).
+  * `sm_spawn_minigun_bot <survivor name>` - Spawns the ai bot infront of wherever you are looking. Can also use numbers (0-7).

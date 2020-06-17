@@ -64,6 +64,8 @@ public Action CheckTimer(Handle timer) {
 							//todo: only teleport once?
 							//TeleportEntity(bot, finalPos, NULL_VECTOR, NULL_VECTOR);
 							L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(bot), finalPos[0], finalPos[1], finalPos[2]);
+						}else{
+							L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)})", GetClientUserId(bot));
 						}
 					}
 				}

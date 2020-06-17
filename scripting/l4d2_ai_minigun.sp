@@ -26,15 +26,14 @@ public Plugin myinfo =
 
 int g_iSurvivors[MAXPLAYERS+1], g_iLastSpawnClient, g_iAvoidChar[MAXPLAYERS+1] = {-1,...};
 
-public void OnPluginStart()
-{
+public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
-	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2)
-	{
-		SetFailState("This plugin is for L4D/L4D2 only.");	
+	if(g_Game != Engine_Left4Dead2) {
+		SetFailState("This plugin is for L4D2 only.");	
 	}
 
-	RegAdminCmd("sm_spawn_minigun_bot", Command_SpawnAIBot, ADMFLAG_ROOT);
+	RegAdminCmd("sm_spawn_holdout_bot", Command_SpawnHoldoutBot, ADMFLAG_ROOT);
+	RegAdminCmd("sm_spawn_minigun_bot", Command_SpawnMinigunBot, ADMFLAG_ROOT);
 }
 
 public void OnMapStart() {
@@ -53,7 +52,7 @@ public void OnClientPutInServer(int client) {
 	}
 }
 
-public Action Command_SpawnAIBot(int client, int args) {
+public Action Command_SpawnMinigunBot(int client, int args) {
 	char arg1[16];
 	if(args > 0) {
 		GetCmdArg(1, arg1, sizeof(arg1));
@@ -74,7 +73,44 @@ public Action Command_SpawnAIBot(int client, int args) {
 		//make sure spawns a little above
 		vPos[2] += 1.0;
 
-		if(!SpawnSurvivor(vPos, vAng, model, true)) {
+		int survivor = SpawnSurvivor(vPos, vAng, model, true);
+		if(survivor > -1) {
+			GiveClientWeapon(survivor, "rifle_ak47", true);
+		}else{
+			ReplyToCommand(client, "Failed to spawn survivor.");
+		}
+	}else{
+		ReplyToCommand(client, "Usage: sm_spawn_minigun_bot <4=Bill, 5=Zoey, 6=Francis, 7=Louis>");
+	}
+	return Plugin_Handled;
+}
+
+public Action Command_SpawnHoldoutBot(int client, int args) {
+	char arg1[16];
+	if(args > 0) {
+		GetCmdArg(1, arg1, sizeof(arg1));
+		char model[64];
+		if(!FindSurvivorModel(arg1, model, sizeof(model))) {
+			LogError("Could not find a survivor model.");
+			ReplyToCommand(client, "Could not find that survivor.");
+			return Plugin_Handled;
+		}
+
+		//get ground:
+		float vPos[3], vAng[3];
+		if(!GetGround(client, vPos, vAng)) {
+			LogError("Failed to find ground for survivor");
+			ReplyToCommand(client, "Could not find a suitable ground location to spawn survivor.");
+			return Plugin_Handled;
+		}
+		//make sure spawns a little above
+		vPos[2] += 1.0;
+
+		int survivor = SpawnSurvivor(vPos, vAng, model, false);
+		if(survivor > -1) {
+			GiveClientWeapon(survivor, "rifle_ak47", true);
+			SetEntProp(survivor, Prop_Send, "m_survivorCharacter", GetSurvivorType(model));
+		}else{
 			ReplyToCommand(client, "Failed to spawn survivor.");
 		}
 	}else{
@@ -86,11 +122,11 @@ public Action Command_SpawnAIBot(int client, int args) {
 
 
 
-stock bool SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] model, bool spawn_minigun) {
+stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] model, bool spawn_minigun) {
 	int entity = CreateEntityByName("info_l4d1_survivor_spawn");
 	if( entity == -1 ) {
 		LogError("Failed to create \"info_l4d1_survivor_spawn\"");
-		return false;
+		return -1;
 	}
 	//set character type (7 = Louis)
 	DispatchKeyValue(entity, "character", "7");
@@ -114,7 +150,7 @@ stock bool SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] 
 	if( bot_user_id <= 0 || (bot_client_id = GetClientOfUserId(bot_user_id)) <= 0 )
 	{
 		LogError("Failed to match survivor, did they not spawn? [%d/%d]", bot_user_id, bot_client_id);
-		return false;
+		return -1;
 	}
 	SetClientName(bot_client_id, "MinigunBot");
 	TeleportEntity(bot_client_id, vPos, NULL_VECTOR, NULL_VECTOR);
@@ -122,12 +158,13 @@ stock bool SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] 
 	if(spawn_minigun && !SpawnMinigun(vPos, vAng)) {
 		LogError("Failed to spawn minigun for client #%d", bot_client_id);
 		KickClient(bot_client_id, "AIMinigun:MinigunSpawnFailure");
-		return false;
+		return -1;
 	}
 	TeleportEntity(bot_client_id, vPos, NULL_VECTOR, NULL_VECTOR);
 	SetEntityModel(bot_client_id, model);
 	CreateTimer(1.5, TimerMove, bot_user_id);
-	return true;
+	//probably return user_id?
+	return bot_client_id;
 }
 stock bool TraceFilter(int entity, int contentsMask) {
 	if( entity <= MaxClients )
@@ -151,6 +188,7 @@ void AvoidCharacter(int type, bool avoid)
 					case 5: set = 2;	// Zoey
 					case 7: set = 1;	// Francis
 					case 6: set = 0;	// Louis
+					default: return;
 				}
 				SetEntProp(i, Prop_Send, "m_survivorCharacter", set);
 			} else {

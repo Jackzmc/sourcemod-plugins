@@ -62,11 +62,11 @@ stock bool FindSurvivorModel(const char str[16], char[] model, int modelStrSize)
 		switch(possibleNumber) {
 			case 0: {
 				strcopy(model, modelStrSize, MODEL_NICK);
-			} case 1: {
+			} case 3: {
 				strcopy(model, modelStrSize, MODEL_ELLIS);
 			} case 2: {
 				strcopy(model, modelStrSize, MODEL_COACH);
-			} case 3: {
+			} case 1: {
 				strcopy(model, modelStrSize, MODEL_ROCHELLE);
 			} case 4: {
 				strcopy(model, modelStrSize, MODEL_BILL);
@@ -154,6 +154,74 @@ stock bool SpawnMinigun(const float vPos[3], const float vAng[3]) {
 	}else{
 		LogError("Spawn minigun trace failure");
 		delete trace;
+		return false;
+	}
+}
+//returns true if model found
+stock bool GetSurvivorName(int client, char[] buffer, int length) {
+
+	char modelName[38];
+	GetClientModel(client, modelName, sizeof(modelName));
+	if(StrContains(modelName,"biker",false) > -1) {
+		strcopy(buffer, length, "Francis"); 
+	}else if(StrContains(modelName,"teenangst",false) > -1) {
+		strcopy(buffer, length, "Zoey"); 
+	}else if(StrContains(modelName,"namvet",false) > -1) {
+		strcopy(buffer, length, "Bill"); 
+	}else if(StrContains(modelName,"manager",false) > -1) {
+		strcopy(buffer, length, "Louis"); 
+	}else if(StrContains(modelName,"coach",false) > -1) {
+		strcopy(buffer, length, "Coach"); 
+	}else if(StrContains(modelName,"producer",false) > -1) {
+		strcopy(buffer, length, "Rochelle"); 
+	}else if(StrContains(modelName,"gambler",false) > -1) {
+		strcopy(buffer, length, "Nick"); 
+	}else if(StrContains(modelName,"mechanic",false) > -1) {
+		strcopy(buffer, length, "Ellis"); 
+	}else{
+		return false;
+	}
+	return true;
+}
+
+stock int GetSurvivorType(const char[] modelName) {
+	if(StrContains(modelName,"biker",false) > -1) {
+		return 6;
+	}else if(StrContains(modelName,"teenangst",false) > -1) {
+		return 5;
+	}else if(StrContains(modelName,"namvet",false) > -1) {
+		return 4;
+	}else if(StrContains(modelName,"manager",false) > -1) {
+		return 7;
+	}else if(StrContains(modelName,"coach",false) > -1) {
+		return 2;
+	}else if(StrContains(modelName,"producer",false) > -1) {
+		return 1;
+	}else if(StrContains(modelName,"gambler",false) > -1) {
+		return 0;
+	}else if(StrContains(modelName,"mechanic",false) > -1) {
+		return 3;
+	}else{
+		return false;
+	}
+}
+
+stock bool GiveClientWeapon(int client, const char[] wpnName, bool lasers) {
+	char sTemp[64];
+	float pos[3];
+	GetClientAbsOrigin(client, pos);
+	Format(sTemp, sizeof(sTemp), "weapon_%s", wpnName);
+
+	int entity = CreateEntityByName(sTemp);
+	if( entity != -1 ) {
+		DispatchSpawn(entity);
+		TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
+
+		if(lasers) SetEntProp(entity, Prop_Send, "m_upgradeBitVec", 4);
+
+		EquipPlayerWeapon(client, entity);
+		return true;
+	}else{
 		return false;
 	}
 }
