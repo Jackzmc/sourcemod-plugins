@@ -8,13 +8,13 @@
 #define PLUGIN_AUTHOR "jackzmc"
 #define PLUGIN_VERSION "1.0"
 #define PLUGIN_URL ""
-#define UNITS_SPAWN -120.0
 
 #include <sourcemod>
 #include <sdktools>
 #include "jutils.inc"
 //#include <sdkhooks>
 
+static bool bIsSurvivorClient[MAXPLAYERS+1];
 
 public Plugin myinfo = 
 {
@@ -33,36 +33,47 @@ public void OnPluginStart()
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 	CreateTimer(2.0, CheckTimer, _, TIMER_REPEAT);
+	HookEvent("player_team", Event_PlayerTeamSwitch);
 }
 
-//possible optimization: Only update player's position every X times, always check for bots
+public void Event_PlayerTeamSwitch(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	int team = event.GetInt("team");
+	if(team == 2) {
+		bIsSurvivorClient[client] = true;
+	}else if(bIsSurvivorClient[client]) {
+		bIsSurvivorClient[client] = false;
+	}
+}
+
 public Action CheckTimer(Handle timer) {
 	//Don't do any processing if no one is connected.
+	//optimization: Only update player-based positions ever 5 loops (2 * 5 = 10 seconds)
+	static int timer_update_pos;
 	if(GetClientCount(true) == 0) return Plugin_Continue;
 	for(int i = 1; i < MaxClients; i++) {
-		//possibly can optimize? check array if int is in it.
-		if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && GetClientTeam(i) == 2) {
+		if(IsClientConnected(i) && !IsFakeClient(i) && bIsSurvivorClient[i]) {
 			bool usingMinigun = GetEntProp(i, Prop_Send, "m_usingMountedGun", 1) == 1;
 			bool usingMountedWeapon = GetEntProp(i, Prop_Send, "m_usingMountedWeapon", 1) == 1;
 
 			if(usingMinigun || usingMountedWeapon) {
-				float pos[3], ang[3], finalPos[3], checkPos[3];
-				GetClientAbsOrigin(i, pos);
-				GetClientEyeAngles(i, ang);
-				GetHorizontalPositionFromOrigin(pos, ang, 40.0, checkPos);
-				GetHorizontalPositionFromOrigin(pos, ang, UNITS_SPAWN, finalPos);
+				static float finalPos[3], checkPos[3];
+				if(timer_update_pos == 0) {
+					float pos[3], ang[3];
+					GetClientAbsOrigin(i, pos);
+					GetClientEyeAngles(i, ang);
+					GetHorizontalPositionFromOrigin(pos, ang, 40.0, checkPos); //get center point of check radius
+					GetHorizontalPositionFromOrigin(pos, ang, -120.0, finalPos); //get center point of the bot destination
+				}
 
 				for(int bot = 1; bot < MaxClients; bot++) {
-					if(IsClientConnected(bot) && IsFakeClient(bot) && GetClientTeam(bot) == 2) {
+					if(IsClientConnected(bot) && IsFakeClient(bot) && bIsSurvivorClient[bot]) {
 						float botPos[3];
 						GetClientAbsOrigin(bot, botPos);
 						
 						float center_distance = GetVectorDistance(checkPos, botPos);
 						
 						if(center_distance <= 70) {
-							//PrintHintTextToAll("Bot: %N | d=%f | d2=%f | Vector(%.2f,%.2f,%.2f)", bot, distance, center_distance, finalPos[0], finalPos[1], finalPos[2]);
-							//todo: only teleport once?
-							//TeleportEntity(bot, finalPos, NULL_VECTOR, NULL_VECTOR);
 							L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(bot), finalPos[0], finalPos[1], finalPos[2]);
 						}else{
 							L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)})", GetClientUserId(bot));
@@ -73,5 +84,7 @@ public Action CheckTimer(Handle timer) {
 			}
 		}
 	}
+	timer_update_pos++;
+	if(timer_update_pos >= 5) timer_update_pos = 0;
 	return Plugin_Continue;
 }

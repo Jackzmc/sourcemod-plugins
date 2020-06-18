@@ -119,7 +119,11 @@ public Action Command_SpawnHoldoutBot(int client, int args) {
 	return Plugin_Handled;
 }
 
-
+///////////////////////////////////////////
+//
+//STOCKS
+//
+///////////////////////////////////////////
 
 
 stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] model, bool spawn_minigun) {
@@ -152,7 +156,9 @@ stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] m
 		LogError("Failed to match survivor, did they not spawn? [%d/%d]", bot_user_id, bot_client_id);
 		return -1;
 	}
-	SetClientName(bot_client_id, "MinigunBot");
+	if(spawn_minigun) SetClientName(bot_client_id, "MinigunBot");
+	else SetClientName(bot_client_id, "HoldoutBot");
+	
 	TeleportEntity(bot_client_id, vPos, NULL_VECTOR, NULL_VECTOR);
 
 	if(spawn_minigun && !SpawnMinigun(vPos, vAng)) {
@@ -171,8 +177,7 @@ stock bool TraceFilter(int entity, int contentsMask) {
 		return false;
 	return true;
 }
-void AvoidCharacter(int type, bool avoid)
-{
+void AvoidCharacter(int type, bool avoid) {
 	for( int i = 1; i <= MaxClients; i++ )
 	{
 		if( IsClientInGame(i) && (GetClientTeam(i) == 2 || GetClientTeam(i) == 4) )
@@ -202,8 +207,7 @@ void AvoidCharacter(int type, bool avoid)
 		}
 	}
 
-	if( !avoid )
-	{
+	if(!avoid) {
 		for( int i = 1; i <= MAXPLAYERS; i++ )
 			g_iAvoidChar[i] = -1;
 	}
