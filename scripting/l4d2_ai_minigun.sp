@@ -32,8 +32,8 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
 
-	RegAdminCmd("sm_spawn_holdout_bot", Command_SpawnHoldoutBot, ADMFLAG_ROOT);
-	RegAdminCmd("sm_spawn_minigun_bot", Command_SpawnMinigunBot, ADMFLAG_ROOT);
+	RegAdminCmd("sm_ai_holdout", Command_SpawnHoldoutBot, ADMFLAG_ROOT);
+	RegAdminCmd("sm_ai_minigun", Command_SpawnMinigunBot, ADMFLAG_ROOT);
 }
 
 public void OnMapStart() {

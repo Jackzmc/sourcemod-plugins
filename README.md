@@ -99,6 +99,8 @@ Makes the bots avoid standing infront/on top of the player that is using a minig
 Allows you to spawn a holdout type bot. This bot will spawn with a minigun, like louis in the passing. Supports all 8 characters. 
 Technically it is louis using minigun with a model change, but it works fine.
 
-Note: Sometimes bill model fails to spawn in, and is just invisible.
+**Notes:** Sometimes bill model fails to spawn in, and is just invisible. Also, the minigun holdout bot has to internally be Louis, so it will be louis making sounds, but whatever model specified shown. This doesn't apply for normal holdout bot.
+
 * **Commands:**
-  * `sm_spawn_minigun_bot <survivor name>` - Spawns the ai bot infront of wherever you are looking. Can also use numbers (0-7).
+  * `sm_ai_minigun <survivor name>` - Spawns an ai bot with minigun infront of wherever you are looking. Can also use numbers (0-7).
+  * `sm_ai_holdout <survivor name>` - Spawns a normal ai holdout bot (no minigun), with ak47 w/ laser sight. 
