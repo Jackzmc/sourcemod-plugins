@@ -107,17 +107,16 @@ public void OnPluginEnd() {
 /////////////////////////////////
 public Action Timer_FlushStats(Handle timer) {
 	//Periodically flush the statistics
-	int updated = 0;
-	for(int i=1; i<=MaxClients;i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && steamidcache[i][0]) {
-			//Don't update player's stats if they have not done anything.
-			if(damageSurvivorGiven[i] > 0 || damageSurvivorRec[i] > 0 || damageInfectedGiven[i] > 0 || damageInfectedRec[i] > 0) {
-				FlushQueuedStats(i);
-				updated++;
+	if(GetClientCount(true) > 0) {
+		for(int i=1; i<=MaxClients;i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && steamidcache[i][0]) {
+				//Don't update player's stats if they have not done anything.
+				if(damageSurvivorGiven[i] > 0 || damageSurvivorRec[i] > 0 || damageInfectedGiven[i] > 0 || damageInfectedRec[i] > 0) {
+					FlushQueuedStats(i);
+				}
 			}
 		}
 	}
-	if(updated > 0) PrintToServer("Flush stats for %d clients", updated);
 }
 /////////////////////////////////
 // CONVAR CHANGES
