@@ -13,6 +13,9 @@
 #define MODEL_ROCHELLE		"models/survivors/survivor_producer.mdl"
 #define MODEL_MINIGUN		"models/w_models/weapons/w_minigun.mdl"
 
+/** Gets a location horizontally X units away from the origin point. Ignores Z-axis. 
+  * @noreturn
+  */
 stock void GetHorizontalPositionFromOrigin(const float pos[3], const float ang[3], float units, float finalPosition[3]) {
 	float theta = DegToRad(ang[1]);
 	finalPosition[0] = units * Cosine(theta) + pos[0];
@@ -58,51 +61,40 @@ stock void ShowDelayedHintToAll(const char[] format, any ...) {
 }
 stock bool FindSurvivorModel(const char str[16], char[] model, int modelStrSize) {
 	int possibleNumber = StringToInt(str, 10);
-	if(modelStrSize == 1 && possibleNumber <= 7 && possibleNumber >= 0) {
+	if(sizeof(str) == 1 && possibleNumber <= 7 && possibleNumber >= 0) {
 		switch(possibleNumber) {
-			case 0: {
-				strcopy(model, modelStrSize, MODEL_NICK);
-			} case 3: {
-				strcopy(model, modelStrSize, MODEL_ELLIS);
-			} case 2: {
-				strcopy(model, modelStrSize, MODEL_COACH);
-			} case 1: {
-				strcopy(model, modelStrSize, MODEL_ROCHELLE);
-			} case 4: {
-				strcopy(model, modelStrSize, MODEL_BILL);
-			} case 5: {
-				strcopy(model, modelStrSize, MODEL_ZOEY);
-			} case 6: {
-				strcopy(model, modelStrSize, MODEL_FRANCIS);
-			} case 7: {
-				strcopy(model, modelStrSize, MODEL_LOUIS);
-			}
-			default:
-				return false;
+			case 0: strcopy(model, modelStrSize, MODEL_NICK);
+			case 3: strcopy(model, modelStrSize, MODEL_ELLIS);
+			case 2: strcopy(model, modelStrSize, MODEL_COACH);
+			case 1: strcopy(model, modelStrSize, MODEL_ROCHELLE);
+			case 4: strcopy(model, modelStrSize, MODEL_BILL);
+			case 5: strcopy(model, modelStrSize, MODEL_ZOEY);
+			case 6: strcopy(model, modelStrSize, MODEL_FRANCIS);
+			case 7: strcopy(model, modelStrSize, MODEL_LOUIS);
+			default: return false;
 		}
 		return true;
 	}else{
 		if(possibleNumber == 0) {
 			//try to parse str
-			if(StrEqual(str, "bill", false)) {
+			if(StrEqual(str, "bill", false)) 
 				strcopy(model, modelStrSize, MODEL_BILL);
-			}else if(StrEqual(str, "zoey", false)) {
+			else if(StrEqual(str, "zoey", false)) 
 				strcopy(model, modelStrSize, MODEL_ZOEY);
-			}else if(StrEqual(str, "francis", false)) {
+			else if(StrEqual(str, "francis", false)) 
 				strcopy(model, modelStrSize, MODEL_FRANCIS);
-			}else if(StrEqual(str, "louis", false)) {
+			else if(StrEqual(str, "louis", false)) 
 				strcopy(model, modelStrSize, MODEL_LOUIS);
-			}else if(StrEqual(str, "nick", false)) {
+			else if(StrEqual(str, "nick", false)) 
 				strcopy(model, modelStrSize, MODEL_NICK);
-			}else if(StrEqual(str, "ellis", false)) {
+			else if(StrEqual(str, "ellis", false)) 
 				strcopy(model, modelStrSize, MODEL_ELLIS);
-			}else if(StrEqual(str, "rochelle", false)) {
+			else if(StrEqual(str, "rochelle", false)) 
 				strcopy(model, modelStrSize, MODEL_ROCHELLE);
-			}else if(StrEqual(str, "coach", false)) {
+			else if(StrEqual(str, "coach", false)) 
 				strcopy(model, modelStrSize, MODEL_COACH);
-			}else{
+			else
 				return false;
-			}
 			return true;
 		}
 	}
@@ -115,8 +107,7 @@ stock bool GetGround(int client, float[3] vPos, float[3] vAng) {
 	vPos[2] -= 500.0;
 
 	Handle trace = TR_TraceRayFilterEx(vAng, vPos, MASK_SHOT, RayType_EndPoint, TraceFilter);
-	if(!TR_DidHit(trace))
-	{
+	if(!TR_DidHit(trace)) {
 		delete trace;
 		return false;
 	}
@@ -126,6 +117,7 @@ stock bool GetGround(int client, float[3] vPos, float[3] vAng) {
 	GetClientAbsAngles(client, vAng);
 	return true;
 }
+
 stock bool SpawnMinigun(const float vPos[3], const float vAng[3]) {
 	float vDir[3], newPos[3];
 	GetAngleVectors(vAng, vDir, NULL_VECTOR, NULL_VECTOR);
