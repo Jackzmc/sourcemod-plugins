@@ -80,16 +80,29 @@ public void OnPluginStart()
 	HookEvent("infected_death", Event_InfectedDeath);
 
 	RegConsoleCmd("sm_debug_stats", Command_DebugStats, "Debug stats");
+
+	CreateTimer(60.0, Timer_FlushStats, _, TIMER_REPEAT);
 }
 public void OnPluginEnd() {
 	for(int i=1; i<=MaxClients;i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && steamidcache[i][0]) {
-			PushQueuedStats(i);
+			FlushQueuedStats(i);
+		}
+	}
+}
+//////////////////////////////////
+// TIMER
+/////////////////////////////////
+public Action Timer_FlushStats(Handle timer) {
+	//Periodically flush the statistics
+	for(int i=1; i<=MaxClients;i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && steamidcache[i][0]) {
+			FlushQueuedStats(i);
 		}
 	}
 }
 /////////////////////////////////
-//PLAYER AUTH
+// PLAYER AUTH
 /////////////////////////////////
 
 public void OnClientPutInServer(int client) {
@@ -107,7 +120,7 @@ public void OnClientPutInServer(int client) {
 public void OnClientDisconnect(int client) {
 	//Check if any pending stats to send.
 	if(!IsFakeClient(client)) {
-		PushQueuedStats(client);
+		FlushQueuedStats(client);
 	}
 }
 
@@ -147,10 +160,12 @@ void IncrementStat(int client, const char[] name, int amount = 1, bool lowPriori
 		PrintToServer("[Debug] Updated Stat %s (+%d) for %s", name, amount, steamidcache[client]);
 		g_db.Query(DBC_Generic, query, _, lowPriority ? DBPrio_Low : DBPrio_Normal);
 	}else{
+		#if defined debug
 		LogError("Incrementing stat (%s) for client %d failure: No steamid", name, client);
+		#endif
 	}
 }
-public void PushQueuedStats(int client) {
+public void FlushQueuedStats(int client) {
 	if(meleeKills[client] > 0) {
 		IncrementStat(client, "melee_kills", meleeKills[client]);
 		meleeKills[client] = 0;
@@ -249,7 +264,7 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 public void Event_InfectedHurt(Event event, const char[] name, bool dontBroadcast) {
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 	int dmg = event.GetInt("amount");
-	if(!IsFakeClient(attacker)) {
+	if(attacker > 0 && !IsFakeClient(attacker)) {
 		damageSurvivorGiven[attacker] += dmg;
 	}
 }
