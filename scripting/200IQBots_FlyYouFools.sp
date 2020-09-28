@@ -7,7 +7,7 @@
 //#define DEBUG
 
 static bool bEscapeReady = false;
-static int TankClient, iAliveTanks; 
+static int iAliveTanks; 
 static bool bIsTank[MAXPLAYERS+1];
 
 public Plugin myinfo =
@@ -52,11 +52,10 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 }
 
 public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
-	iAliveTanks++;
 	int userID = GetClientOfUserId(GetEventInt(event, "userid"));
+	iAliveTanks++;
 	bIsTank[userID] = true;
 	if(iAliveTanks < 1) {
-		TankClient = GetClientOfUserId(GetEventInt(event, "userid"));
 		CreateTimer(0.1, BotControlTimerV2, _, TIMER_REPEAT);
 	}
 }
@@ -69,81 +68,28 @@ public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 	char attackerName[16];
 	GetClientName(attacker, attackerName, sizeof(attackerName));
 	if(StrContains(attackerName, "Tank", true) > -1) {
+		bIsTank[targetPlayer] = false;
+		iAliveTanks = 0;
 		PrintToChatAll("%N (%d) was hit by tank %s (%d)", targetPlayer, targetPlayer, attackerName, attacker);
 	}
 }
 /*
-Logic overview:
-1. Check If there is a tank (will be last spawned tank)
-2. Check that the tank has a target (not waiting)
-3. Loop all valid players (bots, alive, survivors)
-4. If they are being targetted by tank OR health < 40:
-	always run away
-5. Else if less than 200 units away: 
-	run away
-   else:
-	attack tank
-*/
-public Action BotControlTimer(Handle timer)
-{
-	//remove timer once tank no longer exists, is dead, or finale escape vehicle arrived
-	//temp improvement: disable if more than one tank.
-	
-	if(bEscapeReady || iAliveTanks == 0) {
-		//Check if there is any existing bots, if escape NOT ready
-		if(!bEscapeReady) FindExistingTank();
-		return Plugin_Stop;
-	}
-	//Once an AI tank is awakened, m_lookatPlayer is set to a player ID
-	//Possible props: m_lookatPlayer, m_zombieState (if 1), m_hasVisibleThreats
-	int tank_target = GetEntPropEnt(TankClient, Prop_Send, "m_lookatPlayer", 0);
-	if(tank_target > -1) {
-		ShowHintToAll("TankClient#: %d | AliveTanks: %d | TankTarget: %N", TankClient, iAliveTanks, tank_target);
-	}else{
-		ShowHintToAll("TankClient#: %d | AliveTanks: %d | TankTarget: n/a", TankClient, iAliveTanks);
-	}
-	if(tank_target > -1) {
-		//grab tank position outside loop, only calculate bot 
-		float TankPosition[3];
-		GetClientAbsOrigin(TankClient, TankPosition);
-		for (int i = 1; i <= MaxClients; i++)
-		{
-			if (IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && IsFakeClient(i))
-			{	
-				//If distance between bot and tank is less than 200IQBots_TankDangerRange's float value
-				//if not tank target, and tank != visible threats, then attack. OR if health low, flee
-				int health = GetClientHealth(i);
-				if(tank_target == i || health <= 40) {
-					L4D2_RunScript("CommandABot({cmd=2,bot=GetPlayerFromUserID(%i),target=GetPlayerFromUserID(%i)})", GetClientUserId(i), GetClientUserId(TankClient));
-				}else {
-					
-					float BotPosition[3];
-					GetClientAbsOrigin(i, BotPosition);
-					//Compare the distance between tank and the survivor bot, attack if far, run if too close.
-					float distance = GetVectorDistance(BotPosition, TankPosition);
-					if(distance < 200) {
-						L4D2_RunScript("CommandABot({cmd=2,bot=GetPlayerFromUserID(%i),target=GetPlayerFromUserID(%i)})", GetClientUserId(i), GetClientUserId(TankClient));
-						//do not attack if super close.
-					} else {
-						L4D2_RunScript("CommandABot({cmd=0,bot=GetPlayerFromUserID(%i),target=GetPlayerFromUserID(%i)})", GetClientUserId(i), GetClientUserId(TankClient));
-					}
-				}
-				
-			}
-		}	 
-	}	
-	return Plugin_Continue;
-}
-/*
 New logic overview:
-Either: Loop all tanks, check for any survivors.
-Or: Loop any survivors, check for a nearby tank?
+1. Loop all valid survivors
+2. Loop all tanks per survivor
+3. Find the closest tank
+4. Retreat if in close range (~300 units)
 
+CommandABot:
+0 -> ATTACK
+1 -> MOVETO
+2 -> RUN AWAY
+3 -> RESET
 */
 public Action BotControlTimerV2(Handle timer)
 {
 	//remove timer once tank no longer exists, is dead, or finale escape vehicle arrived
-	if(bEscapeReady || TankClient == -1 || !IsClientInGame(TankClient) || !IsPlayerAlive(TankClient)) {
+	if(bEscapeReady || iAliveTanks == 0) {
 		//Check if there is any existing bots, if escape NOT ready
 		if(!bEscapeReady) FindExistingTank();
 		return Plugin_Stop;
@@ -171,7 +117,6 @@ public Action BotControlTimerV2(Handle timer)
 						GetClientAbsOrigin(tankID, TankPosition);
 						//Get distance to survivor, and compare to get closest tank
 						float distanceFromSurvivor = GetVectorDistance(BotPosition, TankPosition);
-						PrintHintTextToAll("[Survivor: %N (%d)] | Tank: %d | Distance: %f", i, i, tankID, distanceFromSurvivor);
 						if(distanceFromSurvivor <= 1000 && smallestDistance > distanceFromSurvivor || smallestDistance == 0.0) {
 							smallestDistance = distanceFromSurvivor;
 							closestTank = tankID;
@@ -180,10 +125,9 @@ public Action BotControlTimerV2(Handle timer)
 				}
 			}
 			//If the closest tank exists (-1 means no tank.) and is close, avoid.
-			if(closestTank > -1 && smallestDistance <= 1000) {
-				if(smallestDistance <= 300) {
-					L4D2_RunScript("CommandABot({cmd=2,bot=GetPlayerFromUserID(%i),target=GetPlayerFromUserID(%i)})", GetClientUserId(i), GetClientUserId(closestTank));
-				}
+			//TODO: Possibly only run if they have an item in the pill shot, or have medkit.
+			if(closestTank > -1 && smallestDistance <= 300 && botHealth >= 40) {
+				L4D2_RunScript("CommandABot({cmd=2,bot=GetPlayerFromUserID(%i),target=GetPlayerFromUserID(%i)})", GetClientUserId(i), GetClientUserId(closestTank));
 			}else{
 				L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)", GetClientUserId(i));
 			}
@@ -192,7 +136,6 @@ public Action BotControlTimerV2(Handle timer)
 	return Plugin_Continue;
 }
 void resetPlugin() {
-	TankClient = -1;
 	bEscapeReady = false;
 	iAliveTanks = 0;
 	for(int i = 0; i < sizeof(bIsTank); i++) {
@@ -212,7 +155,6 @@ public void FindExistingTank() {
 				bIsTank[i] = true;
 				PrintToChatAll("Found existing tank: %N (%i)", i, i);
 				if(iAliveTanks == 0) {
-					TankClient = i;
 					CreateTimer(0.1, BotControlTimerV2, _, TIMER_REPEAT);
 				}
 				iAliveTanks++;
