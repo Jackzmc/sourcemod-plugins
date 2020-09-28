@@ -86,14 +86,19 @@ public void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast
 }
 public void Event_FinaleEnd(Event event, const char[] name, bool dontBroadcast) {
 	if(hFinaleTimer.IntValue != 0) {
-		int difference = GetTime() - iFinaleStartTime;
-		
-		char time[32];
-		FormatSeconds(difference, time, sizeof(time));
-		PrintToChatAll("Finale took %s to complete", time);
-		iFinaleStartTime = 0;
-
+		if(iFinaleStartTime != 0) {
+			int difference = GetTime() - iFinaleStartTime;
+			
+			char time[32];
+			FormatSeconds(difference, time, sizeof(time));
+			PrintToChatAll("Finale took %s to complete", time);
+			iFinaleStartTime = 0;
+		}
 	}
+}
+public void Event_CarAlarmTriggered(Event event, const char[] name, bool dontBroadcast) {
+	int userID = GetClientOfUserId(event.GetInt("userid"));
+	PrintToChatAll("%N activated a car alarm!", userID);
 }
 /**
  * Prints human readable duration from milliseconds
