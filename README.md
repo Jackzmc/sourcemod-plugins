@@ -79,9 +79,11 @@ Simple plugin that prevents a player that is being vote-kicked from doing any ff
 
 ### l4d2_ff_test
 More of a joke plugin, it will prevent a player from picking up a m60 if their friendly fire count or damage is over a certain threshold (Hardcoded as 5 and 35 respectively)
+
+It also can modify the FF damage done to the victim, and redirect on a scale back to the attacker
 * **Convars:**
   * `sm_redirect_ff_scale <#.#>` - The redirected damage back to attacker. 0.0 -> OFF | 1 -> All damage. Minimum 0.0
-  * `sm_victim_ff_scale <0.0-1.0>` - This is mulitplied by the damage the victim will receive. 0 -> No damage, 1 -> All damage
+  * `sm_victim_ff_scale <0.0-1.0>` - This is multiplied by the damage the victim will receive. 0 -> No damage, 1 -> All damage
 * **Commands:**
   * `sm_view_ff` - View the ff damage and count of all players
 
@@ -94,13 +96,15 @@ Another joke plugin, with it configured, a victim will have a % chance their sho
   * `troll_shot_mode <0/1>` - 0 -> ALL Weapons, 1 -> AWP
 
 ### l4d2_avoid_minigun
-Makes the bots avoid standing infront/on top of the player that is using a minigun. It checks every 2.0 seconds if they are infront, then tells them to move to behind you.  There is no configuration, all automatic.
+Makes the bots avoid standing in front of or on top of the player that is using a minigun. It checks every 2.0 seconds if they are in the way, then forces them to move to behind you.  There is no configuration, all automatic.
 
 ### l4d2_ai_minigun
 Allows you to spawn a holdout type bot. This bot will spawn with a minigun, like louis in the passing. Supports all 8 characters. 
 Technically it is louis using minigun with a model change, but it works fine.
 
 **Notes:** Sometimes bill model fails to spawn in, and is just invisible. Also, the minigun holdout bot has to internally be Louis, so it will be louis making sounds, but whatever model specified shown. This doesn't apply for normal holdout bot.
+
+Currently not working with the Last Stand update
 
 * **Commands:**
   * `sm_ai_minigun <survivor name>` - Spawns an ai bot with minigun infront of wherever you are looking. Can also use numbers (0-7).
