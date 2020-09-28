@@ -58,13 +58,14 @@ Technically 'l4d2 game info', havent changed name. Just prints general informati
 Simple l4d2 plugin that will auto teleport everyone to checkpoint once all real players have reached the saferoom
 
 ### L4D2Tools
-A group of misc tools for l4d2. Including: Notify on lasers use, and a finale timer (gauntlets or all finales)
+A group of misc tools for l4d2. Including: Notify on lasers use, and a finale timer (gauntlets or all finales), and who trigger a car alarm in the chat.
 * **Convars:**
    * `sm_laser_use_notice <1/0>` - Enable notification of a laser box being used
    * `sm_time_finale <0/1/2>` - Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales
    
 ### 200IQBots_FlyYouFools
 Updated version of ConnerRia's plugin. Improves bots avoidance of tanks. Change from original is updated source syntax, some optimizations/cleanup, and fixes such as bots avoiding tank that has not been activated, or not escaping in vehicle due to presence of tank.
+Latest version now has support for multiple tanks, the bots might not avoid them as effectively as they would with one tank but they still try their best.
 * **Convars:**
    * `FlyYouFools_Version` - Prints the version of plugin
 
