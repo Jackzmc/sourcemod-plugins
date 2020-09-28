@@ -1,23 +1,24 @@
 #pragma semicolon 1
 #include <sourcemod>
 #include <sdktools>
-#define PLUGIN_VERSION "1.4" 
+#define PLUGIN_VERSION "1.5" 
 #pragma newdecls required
 
 //#define DEBUG
 
 static bool bEscapeReady = false;
-static int TankClient; 
-//static ConVar hTankDangerDistance;
+static int TankClient, iAliveTanks; 
+static bool bIsTank[MAXPLAYERS+1];
 
 public Plugin myinfo =
 {
     name = "Fly You Fools",
     author = "ConnerRia & Jackzmc",
-    description = "Survivor bots will retreat from tank. ",
+    description = "Survivor bots will retreat from tank. Improved version.",
     version = PLUGIN_VERSION,
     url = "N/A"
 }
+
 
 public void OnPluginStart()
 {
@@ -28,48 +29,79 @@ public void OnPluginStart()
 	}
 	
 	CreateConVar("FlyYouFools_Version", PLUGIN_VERSION, "FlyYouFools Version", FCVAR_NOTIFY|FCVAR_REPLICATED|FCVAR_DONTRECORD);
-	//hTankDangerDistance = CreateConVar("200IQBots_TankDangerRange", "800.0", "The range by which survivors bots will detect the presence of tank and retreat. ", FCVAR_NOTIFY|FCVAR_REPLICATED);
 	
 	HookEvent("map_transition", Event_RoundStart, EventHookMode_PostNoCopy);	
 	HookEvent("round_start", Event_RoundStart, EventHookMode_PostNoCopy);
 	HookEvent("tank_spawn", Event_TankSpawn);
 	HookEvent("tank_killed", Event_RoundStart, EventHookMode_PostNoCopy);	
 	HookEvent("finale_vehicle_incoming", Event_FinaleArriving, EventHookMode_PostNoCopy);
+
+	//debug
+	HookEvent("player_hurt", Event_PlayerHurt);
 	
-	AutoExecConfig(true, "200IQBots_FlyYouFools");
 	
 }
 
 public void OnMapStart() {
-	TankClient = -1;
-	bEscapeReady  = false;
-	
+	resetPlugin();
 	FindExistingTank();
 }	
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
-	TankClient = -1;
-	bEscapeReady = false;
+	resetPlugin();
 }
 
 public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
-	TankClient = GetClientOfUserId(GetEventInt(event, "userid"));
-	CreateTimer(0.1, BotControlTimer, _, TIMER_REPEAT);
+	iAliveTanks++;
+	int userID = GetClientOfUserId(GetEventInt(event, "userid"));
+	bIsTank[userID] = true;
+	if(iAliveTanks < 1) {
+		TankClient = GetClientOfUserId(GetEventInt(event, "userid"));
+		CreateTimer(0.1, BotControlTimerV2, _, TIMER_REPEAT);
+	}
 }
 public void Event_FinaleArriving(Event event, const char[] name, bool dontBroadcast) {
 	bEscapeReady = true;
 }
+public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) {
+	int targetPlayer = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	char attackerName[16];
+	GetClientName(attacker, attackerName, sizeof(attackerName));
+	if(StrContains(attackerName, "Tank", true) > -1) {
+		PrintToChatAll("%N (%d) was hit by tank %s (%d)", targetPlayer, targetPlayer, attackerName, attacker);
+	}
+}
+/*
+Logic overview:
+1. Check If there is a tank (will be last spawned tank)
+2. Check that the tank has a target (not waiting)
+3. Loop all valid players (bots, alive, survivors)
+4. If they are being targetted by tank OR health < 40:
+	always run away
+5. Else if less than 200 units away: 
+	run away
+   else:
+	attack tank
+*/
 public Action BotControlTimer(Handle timer)
 {
 	//remove timer once tank no longer exists, is dead, or finale escape vehicle arrived
-	if(bEscapeReady || TankClient == -1 || !IsClientInGame(TankClient) || !IsPlayerAlive(TankClient)) {
-		//incase any other tanks are available
-		FindExistingTank();
+	//temp improvement: disable if more than one tank.
+	
+	if(bEscapeReady || iAliveTanks == 0) {
+		//Check if there is any existing bots, if escape NOT ready
+		if(!bEscapeReady) FindExistingTank();
 		return Plugin_Stop;
 	}
 	//Once an AI tank is awakened, m_lookatPlayer is set to a player ID
 	//Possible props: m_lookatPlayer, m_zombieState (if 1), m_hasVisibleThreats
 	int tank_target = GetEntPropEnt(TankClient, Prop_Send, "m_lookatPlayer", 0);
+	if(tank_target > -1) {
+		ShowHintToAll("TankClient#: %d | AliveTanks: %d | TankTarget: %N", TankClient, iAliveTanks, tank_target);
+	}else{
+		ShowHintToAll("TankClient#: %d | AliveTanks: %d | TankTarget: n/a", TankClient, iAliveTanks);
+	}
 	if(tank_target > -1) {
 		//grab tank position outside loop, only calculate bot 
 		float TankPosition[3];
@@ -87,7 +119,7 @@ public Action BotControlTimer(Handle timer)
 					
 					float BotPosition[3];
 					GetClientAbsOrigin(i, BotPosition);
-					
+					//Compare the distance between tank and the survivor bot, attack if far, run if too close.
 					float distance = GetVectorDistance(BotPosition, TankPosition);
 					if(distance < 200) {
 						L4D2_RunScript("CommandABot({cmd=2,bot=GetPlayerFromUserID(%i),target=GetPlayerFromUserID(%i)})", GetClientUserId(i), GetClientUserId(TankClient));
@@ -102,17 +134,88 @@ public Action BotControlTimer(Handle timer)
 	}	
 	return Plugin_Continue;
 }
+/*
+New logic overview:
+Either: Loop all tanks, check for any survivors.
+Or: Loop any survivors, check for a nearby tank?
+
+*/
+public Action BotControlTimerV2(Handle timer)
+{
+	//remove timer once tank no longer exists, is dead, or finale escape vehicle arrived
+	if(bEscapeReady || TankClient == -1 || !IsClientInGame(TankClient) || !IsPlayerAlive(TankClient)) {
+		//Check if there is any existing bots, if escape NOT ready
+		if(!bEscapeReady) FindExistingTank();
+		return Plugin_Stop;
+	}
+	if(iAliveTanks == 0) return Plugin_Continue;
+	//Loop all players, finding survivors. (survivor team, bots, not tank.)
+	for (int i = 1; i <= MaxClients; i++) {
+		if (IsClientInGame(i) && IsPlayerAlive(i) && IsFakeClient(i) && !bIsTank[i] && GetClientTeam(i) == 2) {	
+			//Grab health of bot and current position
+			int botHealth = GetClientHealth(i);
+			float BotPosition[3];
+			GetClientAbsOrigin(i, BotPosition);
+
+			float smallestDistance = 0.0;
+			int closestTank = -1;
+			//Loop all players, finding tanks (alive, bot, tank)
+			for(int tankID = 1; tankID <= MaxClients; tankID++) {
+				if (IsClientInGame(tankID) && IsPlayerAlive(tankID) && IsFakeClient(tankID) && bIsTank[tankID]) {	
+					//Check if tank has a target. tank_target will be -1 if not activated
+					int tank_target = GetEntPropEnt(tankID, Prop_Send, "m_lookatPlayer", 0);
+					if(tank_target > -1) {
+						
+						//Fetch the tank's position
+						float TankPosition[3];
+						GetClientAbsOrigin(tankID, TankPosition);
+						//Get distance to survivor, and compare to get closest tank
+						float distanceFromSurvivor = GetVectorDistance(BotPosition, TankPosition);
+						PrintHintTextToAll("[Survivor: %N (%d)] | Tank: %d | Distance: %f", i, i, tankID, distanceFromSurvivor);
+						if(distanceFromSurvivor <= 1000 && smallestDistance > distanceFromSurvivor || smallestDistance == 0.0) {
+							smallestDistance = distanceFromSurvivor;
+							closestTank = tankID;
+						}
+					}
+				}
+			}
+			//If the closest tank exists (-1 means no tank.) and is close, avoid.
+			if(closestTank > -1 && smallestDistance <= 1000) {
+				if(smallestDistance <= 300) {
+					L4D2_RunScript("CommandABot({cmd=2,bot=GetPlayerFromUserID(%i),target=GetPlayerFromUserID(%i)})", GetClientUserId(i), GetClientUserId(closestTank));
+				}
+			}else{
+				L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)", GetClientUserId(i));
+			}
+		}
+	}
+	return Plugin_Continue;
+}
+void resetPlugin() {
+	TankClient = -1;
+	bEscapeReady = false;
+	iAliveTanks = 0;
+	for(int i = 0; i < sizeof(bIsTank); i++) {
+		bIsTank[i] = false;
+	}	
+}
 
 
 public void FindExistingTank() {
+	//Loop all valid clients, check if they a BOT and an infected. Check for a name that contains "Tank"
+	iAliveTanks = 0;
 	for (int i = 1; i < MaxClients+1 ;i++) {
 		if(IsClientInGame(i) && IsFakeClient(i) && IsPlayerAlive(i) && GetClientTeam(i) == 3) {
 			char name[16];
 			GetClientName(i, name, sizeof(name));
-			if(StrContains(name,"Tank",true) > -1) {
-				TankClient = i;
-				CreateTimer(0.1, BotControlTimer, _, TIMER_REPEAT);
-				break;
+			if(StrContains(name, "Tank", true) > -1) {
+				bIsTank[i] = true;
+				PrintToChatAll("Found existing tank: %N (%i)", i, i);
+				if(iAliveTanks == 0) {
+					TankClient = i;
+					CreateTimer(0.1, BotControlTimerV2, _, TIMER_REPEAT);
+				}
+				iAliveTanks++;
 			}
 		}
 		
