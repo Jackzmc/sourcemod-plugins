@@ -70,25 +70,25 @@ public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 	if(StrContains(attackerName, "Tank", true) > -1) {
 		bIsTank[targetPlayer] = false;
 		iAliveTanks = 0;
-		PrintToChatAll("%N (%d) was hit by tank %s (%d)", targetPlayer, targetPlayer, attackerName, attacker);
+		//PrintToChatAll("%N (%d) was hit by tank %s (%d)", targetPlayer, targetPlayer, attackerName, attacker);
 	}
 }
 /*
-New logic overview:
-1. Loop all valid survivors
-2. Loop all tanks per survivor
-3. Find the closest tank
-4. Retreat if in close range (~300 units)
-
 CommandABot:
 0 -> ATTACK
 1 -> MOVETO
 2 -> RUN AWAY
 3 -> RESET
+
+New logic overview:
+1. Loop all valid survivors
+2. Loop all tanks per survivor
+3. Find the closest tank
+4. Retreat if in close range (~300 units)
 */
 public Action BotControlTimerV2(Handle timer)
 {
-	//remove timer once tank no longer exists, is dead, or finale escape vehicle arrived
+	//remove timer once tanks no longer exists/are all dead or finale escape vehicle arrived
 	if(bEscapeReady || iAliveTanks == 0) {
 		//Check if there is any existing bots, if escape NOT ready
 		if(!bEscapeReady) FindExistingTank();
