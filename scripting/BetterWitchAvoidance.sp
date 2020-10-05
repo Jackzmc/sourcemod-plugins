@@ -1,8 +1,6 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define DEBUG
-
 #define PLUGIN_NAME "Better Witch Avoidance"
 #define PLUGIN_DESCRIPTION "Makes bots avoid witches better"
 #define PLUGIN_AUTHOR "jackzmc"
@@ -13,7 +11,6 @@
 #include <sdktools>
 //#include <sdkhooks>
 
-#pragma newdecls required
 
 public Plugin myinfo = 
 {
@@ -56,25 +53,41 @@ public Action BotControlTimer(Handle timer)
 		//FindExistingWitch();
 		return Plugin_Stop;
 	}
-	float witch_anger = GetEntPropFloat(iWitchEntity, Prop_Send, "m_rage", 0);
-	ShowHintToAll("Witch (%d) Rage=%f", iWitchEntity, witch_anger);
-	if(FloatCompare(witch_anger,0.4) == 1) {
-		float WitchPosition[3];
-		GetEntPropVector(iWitchEntity, Prop_Send, "m_vecOrigin", WitchPosition);
-		for (int i = 1; i < MaxClients; i++) {
-			if (IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && IsFakeClient(i)) {
-				float BotPosition[3];
-				GetClientAbsOrigin(i, BotPosition);
-				
-				float distance = GetVectorDistance(BotPosition, WitchPosition);
-				if(distance <= 120 || (FloatCompare(witch_anger,0.6) == 1 && distance <= 220)) {
-					L4D2_RunScript("CommandABot({cmd=2,bot=GetPlayerFromUserID(%i),target=EntIndexToHScript(%d)})", GetClientUserId(i), iWitchEntity);
+	if(HasEntProp(iWitchEntity,Prop_Send,"m_rage")) {
+		float witch_anger = GetEntPropFloat(iWitchEntity, Prop_Send, "m_rage", 0);
+		if(FloatCompare(witch_anger,0.4) == 1) {
+			float WitchPosition[3];
+			GetEntPropVector(iWitchEntity, Prop_Send, "m_vecOrigin", WitchPosition);
+			for (int i = 1; i < MaxClients; i++) {
+				if (IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && IsFakeClient(i)) {
+					float BotPosition[3];
+					GetClientAbsOrigin(i, BotPosition);
+					
+					float distance = GetVectorDistance(BotPosition, WitchPosition);
+					if(distance <= 120 || (FloatCompare(witch_anger,0.6) == 1 && distance <= 220)) {
+						L4D2_RunScript("CommandABot({cmd=2,bot=GetPlayerFromUserID(%i),target=EntIndexToHScript(%d)})", GetClientUserId(i), iWitchEntity);
+					}
 				}
 			}
 		}
 	}
 	
 	return Plugin_Handled;
+}
+public void FindExistingWitch() {
+	for (int i = MaxClients + 1; i < GetMaxEntities(); i++) {
+		if(IsValidEntity(i)) {
+			char name[16];
+			GetEntityClassname(i, name, sizeof(name));
+			if(StrContains(name,"Witch",true) > -1) {
+				PrintToServer("Found existing witch with id %d", i);
+				iWitchEntity = i;
+				CreateTimer(0.1, BotControlTimer, _, TIMER_REPEAT);
+				break;
+			}
+		}
+		
+	}
 }
 
 //Credits to Timocop for the stock :D
