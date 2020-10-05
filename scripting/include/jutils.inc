@@ -32,7 +32,14 @@ stock void GetHorizontalPositionFromClient(int client, float units, float finalP
 	pos[1] += -150 * Sine(theta); 
 	finalPosition = pos;
 }
-
+//Credits to Timocop for the stock :D
+/**
+* Runs a single line of vscript code.
+* NOTE: Dont use the "script" console command, it starts a new instance and leaks memory. Use this instead!
+*
+* @param sCode		The code to run.
+* @noreturn
+*/
 stock void L4D2_RunScript(const char[] sCode, any ...) {
 	static int iScriptLogic = INVALID_ENT_REFERENCE;
 	if(iScriptLogic == INVALID_ENT_REFERENCE || !IsValidEntity(iScriptLogic)) {
@@ -217,3 +224,50 @@ stock bool GiveClientWeapon(int client, const char[] wpnName, bool lasers) {
 		return false;
 	}
 }
+stock int GetNearestEntity(int client, char[] classname)
+{
+    int nearestEntity = -1;
+    float clientVecOrigin[3], entityVecOrigin[3];
+    
+    //Get the distance between the first entity and client
+    float distance, nearestDistance = -1.0;
+    
+    //Find all the entity and compare the distances
+    int entity = -1;
+    while ((entity = FindEntityByClassname(entity, classname)) != -1)
+    {
+        GetEntPropVector(entity, Prop_Data, "m_vecOrigin", entityVecOrigin);
+        distance = GetVectorDistance(clientVecOrigin, entityVecOrigin);
+        
+        if (distance < nearestDistance || nearestDistance == -1.0)
+        {
+            nearestEntity = entity;
+            nearestDistance = distance;
+        }
+    }
+    return nearestEntity;
+}  
+
+stock bool IsValidPlayer(int i) {
+	return IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i);
+}
+stock bool IsValidTeamPlayer(int i, int team) {
+	return IsValidPlayer(i) && GetClientTeam(i) == team;
+}
+stock int GetPrimaryAmmo(int client) {
+	int weapon = GetPlayerWeaponSlot(client, 0);
+	if(weapon > -1) 
+		return GetEntProp(weapon, Prop_Send, "m_iClip1");
+	else
+		return -1;
+}
+stock void CheatCommand(int client, const char[] command, const char[] argument1, const char[] argument2)
+{
+	int userFlags = GetUserFlagBits(client);
+	SetUserFlagBits(client, ADMFLAG_ROOT);
+	int flags = GetCommandFlags(command);
+	SetCommandFlags(command, flags & ~FCVAR_CHEAT);
+	FakeClientCommand(client, "%s %s %s", command, argument1, argument2);
+	SetCommandFlags(command, flags);
+	SetUserFlagBits(client, userFlags);
+} 
