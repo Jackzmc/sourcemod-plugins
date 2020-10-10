@@ -63,7 +63,7 @@ public Action Command_SpawnSpecial(int client, int args) {
 	GetCmdArg(1, arg1, sizeof(arg1));
 	int executioner = GetAnyValidClient();
 	if (args < 1) {
-		ReplyToCommand(client, "[SM] Usage: sm_spawnspecial <hunter|smoker|boomer|spitter|charger|jockey|mob> - Requests a special to spawn via director", arg1);
+		ReplyToCommand(client, "[SM] Usage: sm_spawnspecial <hunter|smoker|boomer|spitter|charger|jockey|mob|tank|witch> - Requests a special to spawn via director", arg1);
 	} else {
 		if (executioner <= 0) {
 			ReplyToCommand(client, "[SM] Cannot spawn a %s as there are no players online.", arg1);
@@ -94,7 +94,7 @@ public Action Command_SpawnSpecialForceLocal(int client, int args) {
     char arg1[32];
     GetCmdArg(1, arg1, sizeof(arg1));
     if (args < 1) {
-		ReplyToCommand(client, "[SM] Usage: sm_forcecursor <hunter|smoker|boomer|spitter|charger|jockey|mob> - Requests a special to spawn at cursor", arg1);
+		ReplyToCommand(client, "[SM] Usage: sm_forcecursor <hunter|smoker|boomer|spitter|charger|jockey|mob|tank|witch> - Requests a special to spawn at cursor", arg1);
 	} else {
 		if(StrEqual(arg1,"panic",false)) {
 				CheatCommand(client, "director_force_panic_event", "", "");
@@ -112,7 +112,7 @@ public Action Command_SpawnSpecialForceLocal(int client, int args) {
         AnnounceSpawn(arg1);
         LogAction(client, -1, "\"%L\" spawned a \"%s\"", client, arg1);
 	}
-	return Plugin_Handled;
+	return Plugin_Continue;
 }
 
 public Action Command_SpawnSpecialForce(int client, int args) {
@@ -120,7 +120,7 @@ public Action Command_SpawnSpecialForce(int client, int args) {
 	GetCmdArg(1, arg1, sizeof(arg1));
 	int executioner = GetAnyValidClient();
 	if (args < 1) {
-		ReplyToCommand(client, "[SM] Usage: sm_forcespecial <hunter|smoker|boomer|spitter|charger|jockey|mob> - Requests a special to spawn via director", arg1);
+		ReplyToCommand(client, "[SM] Usage: sm_forcespecial <hunter|smoker|boomer|spitter|charger|jockey|mob|tank|witch> - Requests a special to spawn via director", arg1);
 	} else {
 		if (executioner <= 0) {
 			ReplyToCommand(client, "[SM] Cannot spawn a %s as there are no players online.", arg1);
@@ -243,7 +243,7 @@ stock int GetAnyValidClient()
 	return -1;
 }
 
-stock void CheatCommand(int client, char[] command, char[] argument1, char[] argument2)
+stock void CheatCommand(int client, const char[] command, const char[] argument1, const char[] argument2)
 {
 	int userFlags = GetUserFlagBits(client);
 	SetUserFlagBits(client, ADMFLAG_ROOT);
@@ -254,7 +254,7 @@ stock void CheatCommand(int client, char[] command, char[] argument1, char[] arg
 	SetUserFlagBits(client, userFlags);
 } 
 
-void AnnounceSpawn(char[] type) {
+void AnnounceSpawn(const char[] type) {
 	switch(g_cMdAnnounceLevel.IntValue) {
 		case 1:
 			if(StrEqual(type,"tank") || StrEqual(type,"witch")) {

@@ -52,7 +52,7 @@ public Action CheckTimer(Handle timer) {
 	static int timer_update_pos;
 	if(GetClientCount(true) == 0) return Plugin_Continue;
 	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && !IsFakeClient(i) && bIsSurvivorClient[i]) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i) && bIsSurvivorClient[i]) {
 			bool usingMinigun = GetEntProp(i, Prop_Send, "m_usingMountedGun", 1) == 1;
 			bool usingMountedWeapon = GetEntProp(i, Prop_Send, "m_usingMountedWeapon", 1) == 1;
 
@@ -67,7 +67,7 @@ public Action CheckTimer(Handle timer) {
 				}
 
 				for(int bot = 1; bot < MaxClients; bot++) {
-					if(IsClientConnected(bot) && IsFakeClient(bot) && bIsSurvivorClient[bot]) {
+					if(IsClientConnected(bot) && IsClientInGame(i) && IsFakeClient(bot) && bIsSurvivorClient[bot]) {
 						float botPos[3];
 						GetClientAbsOrigin(bot, botPos);
 						
