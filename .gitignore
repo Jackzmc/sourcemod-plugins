@@ -4,3 +4,9 @@
 !scripting/include
 template.config.js
 .*
+scripting/sm_give.sp
+scripting/include/steamtools.inc
+scripting/L4D2Testing.sp
+plugins/L4D2Testing.smx
+scripting/cancer.sp
+plugins/sm_give.smx
