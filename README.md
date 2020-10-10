@@ -13,6 +13,7 @@ All my sourcemod plugins... shitty probably
 * [CSGOTroll](#CSGOTroll)
 * [l4d2_avoid_minigun](#l4d2_avoid_minigun)
 * [l4d2_ai_minigun](#l4d2_ai_minigun)
+* [L4D2Tools](#L4D2Tools)
 
 ## Descriptions
 ### csgo-knifehp
@@ -109,3 +110,10 @@ Code modified from https://forums.alliedmods.net/showthread.php?p=1741099
 * **Commands:**
   * `sm_ai_minigun <survivor name>` - Spawns an ai bot with minigun infront of wherever you are looking. Can also use numbers (0-7).
   * `sm_ai_holdout <survivor name>` - Spawns a normal ai holdout bot (no minigun), with ak47 w/ laser sight. 
+
+### L4D2Tools
+A collection of small tools: Notification of when someone picks up laser sights (only the first user, includes bots), and records time it takes for a finale or gauntlet run.
+
+* **Convars:**
+   * `sm_laser_use_notice <0/1>` - Enable notification of when a laser box was used first
+   * `sm_time_finale <0/1/2>` - Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales
