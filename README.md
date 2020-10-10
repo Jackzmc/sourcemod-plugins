@@ -41,7 +41,7 @@ Probably going to be posted publicly sometime. allows you to spawn specials on c
    * `sm_directormenu` (Same as sm_specialmenu for now)
    
 ### l4d2-info-cmd
-Technically 'l4d2 game info', havent changed name. Just prints general information, used for a project
+Technically 'l4d2 game info', haven't changed name. Just prints general information, used for a project
 * **Commands:**
    * `sm_gameinfo`
 * Example Response:
@@ -59,7 +59,7 @@ Technically 'l4d2 game info', havent changed name. Just prints general informati
 Simple l4d2 plugin that will auto teleport everyone to checkpoint once all real players have reached the saferoom
 
 ### L4D2Tools
-A group of misc tools for l4d2. Including: Notify on lasers use, and a finale timer (gauntlets or all finales), and who trigger a car alarm in the chat.
+A group of misc. tools for l4d2. Including: Notify on lasers use, and a finale timer (gauntlets or all finales), and who trigger a car alarm in the chat.
 * **Convars:**
    * `sm_laser_use_notice <1/0>` - Enable notification of a laser box being used
    * `sm_time_finale <0/1/2>` - Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales
@@ -108,7 +108,7 @@ Technically it is louis using minigun with a model change, but it works fine.
 Code modified from https://forums.alliedmods.net/showthread.php?p=1741099
 
 * **Commands:**
-  * `sm_ai_minigun <survivor name>` - Spawns an ai bot with minigun infront of wherever you are looking. Can also use numbers (0-7).
+  * `sm_ai_minigun <survivor name>` - Spawns an ai bot with minigun in front of wherever you are looking. Can also use numbers (0-7).
   * `sm_ai_holdout <survivor name>` - Spawns a normal ai holdout bot (no minigun), with ak47 w/ laser sight. 
 
 ### L4D2Tools
