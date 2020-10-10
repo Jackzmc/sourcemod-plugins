@@ -104,7 +104,7 @@ Technically it is louis using minigun with a model change, but it works fine.
 
 **Notes:** Sometimes bill model fails to spawn in, and is just invisible. Also, the minigun holdout bot has to internally be Louis, so it will be louis making sounds, but whatever model specified shown. This doesn't apply for normal holdout bot.
 
-Currently not working with the Last Stand update
+Code modified from https://forums.alliedmods.net/showthread.php?p=1741099
 
 * **Commands:**
   * `sm_ai_minigun <survivor name>` - Spawns an ai bot with minigun infront of wherever you are looking. Can also use numbers (0-7).
