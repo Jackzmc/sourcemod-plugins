@@ -120,20 +120,21 @@ public Action BotControlTimerV2(Handle timer)
 							smallestDistance = distanceFromSurvivor;
 							closestTank = tankID;
 						}
+						
 					}
 				}
 			}
 			//If the closest tank exists (-1 means no tank.) and is close, avoid.
 			//TODO: Possibly only run if they have an item in the pill shot, or have medkit.
 			if(closestTank > -1 && smallestDistance <= 300 && botHealth >= 40) {
+				//L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)})", GetClientUserId(i));
 				L4D2_RunScript("CommandABot({cmd=2,bot=GetPlayerFromUserID(%i),target=GetPlayerFromUserID(%i)})", GetClientUserId(i), GetClientUserId(closestTank));
-			}else{
-				L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)", GetClientUserId(i));
 			}
 		}
 	}
 	return Plugin_Continue;
 }
+
 void resetPlugin() {
 	bEscapeReady = false;
 	iAliveTanks = 0;
@@ -186,16 +187,6 @@ stock void L4D2_RunScript(const char[] sCode, any ...) {
 	
 	SetVariantString(sBuffer);
 	AcceptEntityInput(iScriptLogic, "RunScriptCode");
-}
-stock void ShowHintToAll(const char[] format, any ...) {
-	char buffer[254];
-	VFormat(buffer, sizeof(buffer), format, 2);
-	static int hintInt = 0;
-	if(hintInt >= 9) {
-		PrintHintTextToAll("%s",buffer);
-		hintInt = 0;
-	}
-	hintInt++;
 }
 /**
 * Get the classname of an item in a slot
