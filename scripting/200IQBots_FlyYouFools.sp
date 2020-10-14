@@ -44,7 +44,6 @@ public void OnPluginStart()
 
 public void OnMapStart() {
 	resetPlugin();
-	FindExistingTank();
 }	
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
@@ -138,9 +137,7 @@ public Action BotControlTimerV2(Handle timer)
 void resetPlugin() {
 	bEscapeReady = false;
 	iAliveTanks = 0;
-	for(int i = 0; i < sizeof(bIsTank); i++) {
-		bIsTank[i] = false;
-	}	
+	FindExistingTank();
 }
 
 
@@ -153,8 +150,7 @@ public void FindExistingTank() {
 			GetClientName(i, name, sizeof(name));
 			if(StrContains(name, "Tank", true) > -1) {
 				bIsTank[i] = true;
-				PrintToChatAll("Found existing tank: %N (%i)", i, i);
-				
+				PrintToServer("Found existing tank: %N (%i)", i, i);
 				iAliveTanks++;
 				continue;
 			}
