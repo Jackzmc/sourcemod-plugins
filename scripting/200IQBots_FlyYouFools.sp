@@ -154,13 +154,16 @@ public void FindExistingTank() {
 			if(StrContains(name, "Tank", true) > -1) {
 				bIsTank[i] = true;
 				PrintToChatAll("Found existing tank: %N (%i)", i, i);
-				if(iAliveTanks == 0) {
-					CreateTimer(0.1, BotControlTimerV2, _, TIMER_REPEAT);
-				}
+				
 				iAliveTanks++;
+				continue;
 			}
 		}
+		bIsTank[i] = false;
 		
+	}
+	if(iAliveTanks > 0) {
+		CreateTimer(0.1, BotControlTimerV2, _, TIMER_REPEAT);
 	}
 }
 
