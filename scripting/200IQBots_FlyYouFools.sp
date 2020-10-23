@@ -85,6 +85,7 @@ New logic overview:
 3. Find the closest tank
 4. Retreat if in close range (~300 units)
 */
+//TODO: possibly check if multiple loops being created
 public Action BotControlTimerV2(Handle timer)
 {
 	//remove timer once tanks no longer exists/are all dead or finale escape vehicle arrived
@@ -150,7 +151,7 @@ public void FindExistingTank() {
 			GetClientName(i, name, sizeof(name));
 			if(StrContains(name, "Tank", true) > -1) {
 				bIsTank[i] = true;
-				PrintToServer("Found existing tank: %N (%i)", i, i);
+				//PrintToServer("Found existing tank: %N (%i)", i, i);
 				iAliveTanks++;
 				continue;
 			}
