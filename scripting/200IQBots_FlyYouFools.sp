@@ -1,7 +1,6 @@
 #pragma semicolon 1
 #include <sourcemod>
 #include <sdktools>
-#include <profiler>
 #define PLUGIN_VERSION "1.5" 
 #pragma newdecls required
 

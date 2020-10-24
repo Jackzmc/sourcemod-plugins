@@ -271,3 +271,21 @@ stock void CheatCommand(int client, const char[] command, const char[] argument1
 	SetCommandFlags(command, flags);
 	SetUserFlagBits(client, userFlags);
 } 
+//entity abs origin code from here
+//http://forums.alliedmods.net/showpost.php?s=e5dce96f11b8e938274902a8ad8e75e9&p=885168&postcount=3
+stock void GetEntityAbsOrigin(int entity, float origin[3]) {
+	if (entity && IsValidEntity(entity)
+	&& (GetEntSendPropOffs(entity, "m_vecOrigin") != -1)
+	&& (GetEntSendPropOffs(entity, "m_vecMins") != -1)
+	&& (GetEntSendPropOffs(entity, "m_vecMaxs") != -1))
+	{
+		float mins[3], maxs[3];
+		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", origin);
+		GetEntPropVector(entity, Prop_Send, "m_vecMins", mins);
+		GetEntPropVector(entity, Prop_Send, "m_vecMaxs", maxs);
+		
+		origin[0] += (mins[0] + maxs[0]) * 0.5;
+		origin[1] += (mins[1] + maxs[1]) * 0.5;
+		origin[2] += (mins[2] + maxs[2]) * 0.5;
+	}
+}
