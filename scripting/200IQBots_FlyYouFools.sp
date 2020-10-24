@@ -1,6 +1,7 @@
 #pragma semicolon 1
 #include <sourcemod>
 #include <sdktools>
+#include <profiler>
 #define PLUGIN_VERSION "1.5" 
 #pragma newdecls required
 
@@ -33,14 +34,11 @@ public void OnPluginStart()
 	HookEvent("map_transition", Event_RoundStart, EventHookMode_PostNoCopy);	
 	HookEvent("round_start", Event_RoundStart, EventHookMode_PostNoCopy);
 	HookEvent("tank_spawn", Event_TankSpawn);
+	HookEvent("tank_killed", Event_TankDeath);
 	HookEvent("tank_killed", Event_RoundStart, EventHookMode_PostNoCopy);	
 	HookEvent("finale_vehicle_incoming", Event_FinaleArriving, EventHookMode_PostNoCopy);
-
-	//debug
-	HookEvent("player_hurt", Event_PlayerHurt);
-	
-	
 }
+
 
 public void OnMapStart() {
 	resetPlugin();
@@ -52,25 +50,19 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int userID = GetClientOfUserId(GetEventInt(event, "userid"));
-	iAliveTanks++;
 	bIsTank[userID] = true;
-	if(iAliveTanks < 1) {
+	if(iAliveTanks == 0 && !bEscapeReady) {
 		CreateTimer(0.1, BotControlTimerV2, _, TIMER_REPEAT);
 	}
+	iAliveTanks++;
+}
+public void Event_TankDeath(Event event, const char[] name, bool dontBroadcast) {
+	int userID = GetClientOfUserId(GetEventInt(event, "userid"));
+	bIsTank[userID] = false;
+	iAliveTanks--;
 }
 public void Event_FinaleArriving(Event event, const char[] name, bool dontBroadcast) {
 	bEscapeReady = true;
-}
-public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) {
-	int targetPlayer = GetClientOfUserId(event.GetInt("userid"));
-	int attacker = GetClientOfUserId(event.GetInt("attacker"));
-	char attackerName[16];
-	GetClientName(attacker, attackerName, sizeof(attackerName));
-	if(StrContains(attackerName, "Tank", true) > -1) {
-		bIsTank[targetPlayer] = false;
-		iAliveTanks = 0;
-		//PrintToChatAll("%N (%d) was hit by tank %s (%d)", targetPlayer, targetPlayer, attackerName, attacker);
-	}
 }
 /*
 CommandABot:
