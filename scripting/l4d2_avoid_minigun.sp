@@ -12,6 +12,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include "jutils.inc"
+
 //#include <sdkhooks>
 
 static bool bIsSurvivorClient[MAXPLAYERS+1];
@@ -25,6 +26,7 @@ public Plugin myinfo =
 	url = PLUGIN_URL
 };
 
+
 public void OnPluginStart()
 {
 	EngineVersion g_Game = GetEngineVersion();
@@ -34,6 +36,24 @@ public void OnPluginStart()
 	}
 	CreateTimer(2.0, CheckTimer, _, TIMER_REPEAT);
 	HookEvent("player_team", Event_PlayerTeamSwitch);
+}
+
+public void OnMapStart() {
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+			bIsSurvivorClient[i] = true;
+ 		}
+	}
+}
+
+public void OnClientConnected(int client) {
+	if(GetClientTeam(client) == 2) {
+		bIsSurvivorClient[client] = true;
+	}
+}
+
+public void OnClientDisconnect(int client) {
+	bIsSurvivorClient[client] = false;
 }
 
 public void Event_PlayerTeamSwitch(Event event, const char[] name, bool dontBroadcast) {
@@ -52,7 +72,7 @@ public Action CheckTimer(Handle timer) {
 	static int timer_update_pos;
 	if(GetClientCount(true) == 0) return Plugin_Continue;
 	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i) && bIsSurvivorClient[i]) {
+		if(bIsSurvivorClient[i] && IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i)) {
 			bool usingMinigun = GetEntProp(i, Prop_Send, "m_usingMountedGun", 1) == 1;
 			bool usingMountedWeapon = GetEntProp(i, Prop_Send, "m_usingMountedWeapon", 1) == 1;
 
@@ -67,7 +87,7 @@ public Action CheckTimer(Handle timer) {
 				}
 
 				for(int bot = 1; bot < MaxClients; bot++) {
-					if(IsClientConnected(bot) && IsClientInGame(i) && IsFakeClient(bot) && bIsSurvivorClient[bot]) {
+					if(bIsSurvivorClient[bot] && IsClientInGame(bot) && IsFakeClient(bot) && IsPlayerAlive(bot)) {
 						float botPos[3];
 						GetClientAbsOrigin(bot, botPos);
 						
