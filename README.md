@@ -104,7 +104,7 @@ Spawn the holdout bots used in the passing. This supports all 8 characters, incl
 
 **Notes:** 
 * The minigun holdout bot has to internally be Louis, so it will be Louis making sounds, but whatever model specified shown. This doesn't apply for normal holdout bot.
-* <survivor name> can be "bill" or their numeric id (4). 
+* \<survivor name> can be "bill" or their numeric id (4). 
 
 Code modified from https://forums.alliedmods.net/showthread.php?p=1741099
 
