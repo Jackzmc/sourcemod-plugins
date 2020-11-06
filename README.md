@@ -100,16 +100,18 @@ Another joke plugin, with it configured, a victim will have a % chance their sho
 Makes the bots avoid standing in front of or on top of the player that is using a minigun. It checks every 2.0 seconds if they are in the way, then forces them to move to behind you.  There is no configuration, all automatic.
 
 ### l4d2_ai_minigun
-Allows you to spawn a holdout type bot. This bot will spawn with a minigun, like louis in the passing. Supports all 8 characters. 
-Technically it is louis using minigun with a model change, but it works fine.
+Spawn the holdout bots used in the passing. This supports all 8 characters, including with the minigun. They can spawn with any weapon or default to ak47.
 
-**Notes:** Sometimes bill model fails to spawn in, and is just invisible. Also, the minigun holdout bot has to internally be Louis, so it will be louis making sounds, but whatever model specified shown. This doesn't apply for normal holdout bot.
+**Notes:** 
+* The minigun holdout bot has to internally be Louis, so it will be Louis making sounds, but whatever model specified shown. This doesn't apply for normal holdout bot.
+* <survivor name> can be "bill" or their numeric id (4). 
 
 Code modified from https://forums.alliedmods.net/showthread.php?p=1741099
 
 * **Commands:**
   * `sm_ai_minigun <survivor name>` - Spawns an ai bot with minigun infront of wherever you are looking. Can also use numbers (0-7).
-  * `sm_ai_holdout <survivor name>` - Spawns a normal ai holdout bot (no minigun), with ak47 w/ laser sight. 
+  * `sm_ai_holdout <survivor name> [wpn]` - Spawns a normal ai holdout bot (no minigun), with any weapon w/ laser sight (default is ak). 
+  * `sm_ai_remove_far` - Removes any holdout or minigun bots that are 750 units or more from any player.
 
 ### L4D2Tools
 A collection of small tools: Notification of when someone picks up laser sights (only the first user, includes bots), and records time it takes for a finale or gauntlet run.
