@@ -66,14 +66,46 @@ stock void ShowDelayedHintToAll(const char[] format, any ...) {
 	}
 	hintInt++;
 }
+stock int GetSurvivorId(const char str[16]) {
+	int possibleNumber = StringToInt(str, 10);
+	if(strlen(str) == 1) {
+		if(possibleNumber <= 7 && possibleNumber >= 0) {
+			return possibleNumber;
+		}
+	}else if(possibleNumber == 0) {
+		if(StrEqual(str, "nick", false)) return 0;
+		else if(StrEqual(str, "rochelle", false)) return 1;
+		else if(StrEqual(str, "coach", false)) return 2;
+		else if(StrEqual(str, "ellis", false)) return 3;
+		else if(StrEqual(str, "bill", false)) return 4;
+		else if(StrEqual(str, "zoey", false)) return 5;
+		else if(StrEqual(str, "francis", false)) return 6;
+		else if(StrEqual(str, "louis", false)) return 7;
+	}
+	return -1;
+}
+stock bool GetSurvivorModel(int character, char[] model, int modelStrSize) {
+	switch(character) {
+		case 0: strcopy(model, modelStrSize, MODEL_NICK);
+		case 1: strcopy(model, modelStrSize, MODEL_ROCHELLE);
+		case 2: strcopy(model, modelStrSize, MODEL_COACH);
+		case 3: strcopy(model, modelStrSize, MODEL_ELLIS);
+		case 4: strcopy(model, modelStrSize, MODEL_BILL);
+		case 5: strcopy(model, modelStrSize, MODEL_ZOEY);
+		case 6: strcopy(model, modelStrSize, MODEL_FRANCIS);
+		case 7: strcopy(model, modelStrSize, MODEL_LOUIS);
+		default: return false;
+	}
+	return true;
+}
 stock bool FindSurvivorModel(const char str[16], char[] model, int modelStrSize) {
 	int possibleNumber = StringToInt(str, 10);
-	if(sizeof(str) == 1 && possibleNumber <= 7 && possibleNumber >= 0) {
+	if(strlen(str) == 1 && possibleNumber <= 7 && possibleNumber >= 0) {
 		switch(possibleNumber) {
 			case 0: strcopy(model, modelStrSize, MODEL_NICK);
-			case 3: strcopy(model, modelStrSize, MODEL_ELLIS);
-			case 2: strcopy(model, modelStrSize, MODEL_COACH);
 			case 1: strcopy(model, modelStrSize, MODEL_ROCHELLE);
+			case 2: strcopy(model, modelStrSize, MODEL_COACH);
+			case 3: strcopy(model, modelStrSize, MODEL_ELLIS);
 			case 4: strcopy(model, modelStrSize, MODEL_BILL);
 			case 5: strcopy(model, modelStrSize, MODEL_ZOEY);
 			case 6: strcopy(model, modelStrSize, MODEL_FRANCIS);
@@ -124,7 +156,7 @@ stock bool GetGround(int client, float[3] vPos, float[3] vAng) {
 	GetClientAbsAngles(client, vAng);
 	return true;
 }
-
+//Taken from https://forums.alliedmods.net/showthread.php?p=1741099
 stock bool SpawnMinigun(const float vPos[3], const float vAng[3]) {
 	float vDir[3], newPos[3];
 	GetAngleVectors(vAng, vDir, NULL_VECTOR, NULL_VECTOR);

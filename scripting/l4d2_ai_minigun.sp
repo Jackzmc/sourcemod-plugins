@@ -34,6 +34,8 @@ public void OnPluginStart() {
 
 	RegAdminCmd("sm_ai_holdout", Command_SpawnHoldoutBot, ADMFLAG_ROOT);
 	RegAdminCmd("sm_ai_minigun", Command_SpawnMinigunBot, ADMFLAG_ROOT);
+	RegAdminCmd("sm_ai_remove_far", Command_RemoveFar,	ADMFLAG_ROOT);
+	//todo: add cmd to remove any that are out of range? possibly only ones you past
 }
 
 public void OnMapStart() {
@@ -49,6 +51,38 @@ public void OnClientPutInServer(int client) {
 	{
 		g_iSurvivors[client] = GetClientUserId(client);
 		g_iLastSpawnClient = GetClientUserId(client);
+	}
+}
+
+public Action Command_RemoveFar(int client, int args) {
+	for(int bot = 1; bot < MaxClients; bot++)  {
+		if(IsClientConnected(bot) && IsClientInGame(bot) && GetClientTeam(bot) == 4 && IsFakeClient(bot)) {
+			char name[64];
+			GetClientName(bot, name, sizeof(name));
+			//Only work on <Holdout/Minigun>Bot's 
+			if(StrContains(name, "HoldoutBot", true) || StrContains(name, "MinigunBot", true)) {
+				float botPos[3];
+				GetClientAbsOrigin(bot, botPos);
+				bool isClose = false;
+				//Loop all players, if distance is less than 750, break out of loop
+				for(int i = 1; i < MaxClients; i++)  {
+					if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && !IsFakeClient(i)) {
+						float playerPos[3];
+						GetClientAbsOrigin(i, playerPos);
+
+						float distance = GetVectorDistance(playerPos, botPos);
+						if(distance <= 750) {
+							isClose = true;
+							break;
+						}
+					}
+				}
+				if(!isClose) {
+					KickClient(bot);
+					ReplyToCommand(client, "Removed %N", bot);
+				}
+			}
+		}
 	}
 }
 
@@ -90,12 +124,16 @@ public Action Command_SpawnHoldoutBot(int client, int args) {
 	if(args > 0) {
 		GetCmdArg(1, arg1, sizeof(arg1));
 		char model[64];
-		if(!FindSurvivorModel(arg1, model, sizeof(model))) {
+		int survivorId = GetSurvivorId(arg1);
+		if(survivorId == -1) {
+			ReplyToCommand(client, "That is not a valid survivor.");
+			return Plugin_Handled;
+		}
+		if(!GetSurvivorModel(survivorId, model, sizeof(model))) {
 			LogError("Could not find a survivor model.");
 			ReplyToCommand(client, "Could not find that survivor.");
 			return Plugin_Handled;
 		}
-
 		//get ground:
 		float vPos[3], vAng[3];
 		if(!GetGround(client, vPos, vAng)) {
@@ -106,15 +144,22 @@ public Action Command_SpawnHoldoutBot(int client, int args) {
 		//make sure spawns a little above
 		vPos[2] += 1.0;
 
+		char wpn[64];
+		if(args > 1) {
+			GetCmdArg(2, wpn, sizeof(wpn));
+		}else {
+			wpn = "rifle_ak47";
+		}
+
 		int survivor = SpawnSurvivor(vPos, vAng, model, false);
 		if(survivor > -1) {
-			GiveClientWeapon(survivor, "rifle_ak47", true);
-			SetEntProp(survivor, Prop_Send, "m_survivorCharacter", GetSurvivorType(model));
+			GiveClientWeapon(survivor, wpn, true);
+			SetEntProp(survivor, Prop_Send, "m_survivorCharacter", survivorId);
 		}else{
 			ReplyToCommand(client, "Failed to spawn survivor.");
 		}
 	}else{
-		ReplyToCommand(client, "Usage: sm_spawn_minigun_bot <4=Bill, 5=Zoey, 6=Francis, 7=Louis>");
+		ReplyToCommand(client, "Usage: sm_spawn_minigun_bot <4=Bill, 5=Zoey, 6=Francis, 7=Louis> [weapon]");
 	}
 	return Plugin_Handled;
 }
@@ -125,17 +170,16 @@ public Action Command_SpawnHoldoutBot(int client, int args) {
 //
 ///////////////////////////////////////////
 
-
+//Taken from https://forums.alliedmods.net/showthread.php?p=1741099 and modified slightly (and documented)
 stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] model, bool spawn_minigun) {
 	int entity = CreateEntityByName("info_l4d1_survivor_spawn");
 	if( entity == -1 ) {
 		LogError("Failed to create \"info_l4d1_survivor_spawn\"");
 		return -1;
 	}
-	//set character type (7 = Louis)
-	DispatchKeyValue(entity, "character", "7");
 	//on spawn, to kill spawner
 	//AcceptEntityInput(entity, "AddOutput");
+	DispatchKeyValue(entity, "character", "7");
 	AcceptEntityInput(entity, "Kill");
 
 	//teleport spawner to valid spot & spawn it
@@ -147,6 +191,7 @@ stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] m
 	AvoidCharacter(7, true);
 	AcceptEntityInput(entity, "SpawnSurvivor");
 	AvoidCharacter(7, false);
+
 	
 	//remove reference to last spawn id
 	int bot_user_id = g_iLastSpawnClient, bot_client_id;
@@ -167,8 +212,7 @@ stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] m
 		return -1;
 	}
 	TeleportEntity(bot_client_id, vPos, NULL_VECTOR, NULL_VECTOR);
-	SetEntityModel(bot_client_id, model);
-	CreateTimer(1.5, TimerMove, bot_user_id);
+	SetEntityModel(bot_client_id, model); //set entity model to custom survivor model
 	//probably return user_id?
 	return bot_client_id;
 }
@@ -191,8 +235,8 @@ void AvoidCharacter(int type, bool avoid) {
 				{
 					case 4: set = 3;	// Bill
 					case 5: set = 2;	// Zoey
-					case 7: set = 1;	// Francis
-					case 6: set = 0;	// Louis
+					case 6: set = 1;	// Francis
+					case 7: set = 0;	// Louis
 					default: return;
 				}
 				SetEntProp(i, Prop_Send, "m_survivorCharacter", set);
