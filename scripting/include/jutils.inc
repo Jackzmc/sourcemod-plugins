@@ -139,6 +139,11 @@ stock bool FindSurvivorModel(const char str[16], char[] model, int modelStrSize)
 	}
 	return false;
 }
+stock bool TraceFilter(int entity, int contentsMask) {
+	if( entity <= MaxClients )
+		return false;
+	return true;
+}
 stock bool GetGround(int client, float[3] vPos, float[3] vAng) {
 	GetClientAbsOrigin(client, vPos);
 	vAng = vPos;

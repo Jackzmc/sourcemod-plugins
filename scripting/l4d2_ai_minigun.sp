@@ -216,11 +216,6 @@ stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] m
 	//probably return user_id?
 	return bot_client_id;
 }
-stock bool TraceFilter(int entity, int contentsMask) {
-	if( entity <= MaxClients )
-		return false;
-	return true;
-}
 void AvoidCharacter(int type, bool avoid) {
 	for( int i = 1; i <= MaxClients; i++ )
 	{
