@@ -46,8 +46,8 @@ public void OnMapStart() {
 	}
 }
 
-public void OnClientConnected(int client) {
-	if(GetClientTeam(client) == 2) {
+public void OnClientPutInGame(int client) {
+	if(IsClientInGame(client) && GetClientTeam(client) == 2) {
 		bIsSurvivorClient[client] = true;
 	}
 }
@@ -71,15 +71,17 @@ public Action CheckTimer(Handle timer) {
 	//optimization: Only update player-based positions ever 5 loops (2 * 5 = 10 seconds)
 	static int timer_update_pos;
 	if(GetClientCount(true) == 0) return Plugin_Continue;
+	float pos[3], ang[3], botPos[3], center_distance;
+	static float finalPos[3], checkPos[3];
+	bool usingMinigun, usingMountedWeapon;
+
 	for(int i = 1; i < MaxClients; i++) {
 		if(bIsSurvivorClient[i] && IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i)) {
-			bool usingMinigun = GetEntProp(i, Prop_Send, "m_usingMountedGun", 1) == 1;
-			bool usingMountedWeapon = GetEntProp(i, Prop_Send, "m_usingMountedWeapon", 1) == 1;
+			usingMinigun = GetEntProp(i, Prop_Send, "m_usingMountedGun", 1) == 1;
+			usingMountedWeapon = GetEntProp(i, Prop_Send, "m_usingMountedWeapon", 1) == 1;
 
 			if(usingMinigun || usingMountedWeapon) {
-				static float finalPos[3], checkPos[3];
 				if(timer_update_pos == 0) {
-					float pos[3], ang[3];
 					GetClientAbsOrigin(i, pos);
 					GetClientEyeAngles(i, ang);
 					GetHorizontalPositionFromOrigin(pos, ang, 40.0, checkPos); //get center point of check radius
@@ -88,10 +90,9 @@ public Action CheckTimer(Handle timer) {
 
 				for(int bot = 1; bot < MaxClients; bot++) {
 					if(bIsSurvivorClient[bot] && IsClientInGame(bot) && IsFakeClient(bot) && IsPlayerAlive(bot)) {
-						float botPos[3];
 						GetClientAbsOrigin(bot, botPos);
 						
-						float center_distance = GetVectorDistance(checkPos, botPos);
+						center_distance = GetVectorDistance(checkPos, botPos);
 						
 						if(center_distance <= 70) {
 							L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(bot), finalPos[0], finalPos[1], finalPos[2]);
