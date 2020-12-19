@@ -14,6 +14,7 @@ All my sourcemod plugins... shitty probably
 * [l4d2_avoid_minigun](#l4d2_avoid_minigun)
 * [l4d2_ai_minigun](#l4d2_ai_minigun)
 * [L4D2Tools](#L4D2Tools)
+* [l4d2_swarm](#l4d2_swarm)
 
 ## Descriptions
 ### csgo-knifehp
@@ -119,3 +120,20 @@ A collection of small tools: Notification of when someone picks up laser sights 
 * **Convars:**
    * `sm_laser_use_notice <0/1>` - Enable notification of when a laser box was used first
    * `sm_time_finale <0/1/2>` - Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales
+
+### l4d2_swarm
+This plugin is used to counter trolls and otherwise bad players. It simply uses the new script function RushVictim() to make all zombies in X radius attack Y target. It's that simple. 
+
+This really only affects wandering zombies, mobs and panic events, but it may work slightly when bile or pipes are thrown. It does not and can't change the targets of zombies.
+
+* **Convars:**
+  * `sm_swarm_default_range <20-Infinity>` - The default range for commands & menus. Defaults to 7,500
+* **Commands:**
+  * `sm_swarm [player] [range]` - Swarm a player, or random if none."
+    * Aliases: `sm_rush`
+  * `sm_rushmenu` - Opens a menu to quickly rush any player. Can be bound to a key to quickly rush as well
+    * Aliases: `sm_rmenu`
+  * `sm_swarmtoggle <player> [range]` - Will continuously run the swarm method on the player at the range. Use the command again or type "disable" for player to disable. Switching players will not disable, just switches target.
+    * Aliases: `sm_rushtoggle`, `sm_rt`
+  * `sm_rushtogglemenu` - Will open a menu to quickly select a player to continuously rush.
+    * Aliases: `sm_rtmenu`
