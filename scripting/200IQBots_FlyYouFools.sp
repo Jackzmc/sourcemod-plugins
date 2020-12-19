@@ -86,28 +86,30 @@ public Action BotControlTimerV2(Handle timer)
 		return Plugin_Stop;
 	}
 	if(iAliveTanks == 0) return Plugin_Continue;
+
+	int botHealth, closestTank, tank_target, distanceFromSurvivor;
+	float BotPosition[3], TankPosition[3], smallestDistance;
+
 	//Loop all players, finding survivors. (survivor team, bots, not tank.)
 	for (int i = 1; i <= MaxClients; i++) {
 		if (IsClientInGame(i) && IsPlayerAlive(i) && IsFakeClient(i) && !bIsTank[i] && GetClientTeam(i) == 2) {	
 			//Grab health of bot and current position
-			int botHealth = GetClientHealth(i);
-			float BotPosition[3];
+			botHealth = GetClientHealth(i);
 			GetClientAbsOrigin(i, BotPosition);
 
-			float smallestDistance = 0.0;
-			int closestTank = -1;
+			smallestDistance = 0.0;
+			closestTank = -1;
 			//Loop all players, finding tanks (alive, bot, tank)
 			for(int tankID = 1; tankID <= MaxClients; tankID++) {
 				if (IsClientInGame(tankID) && IsPlayerAlive(tankID) && IsFakeClient(tankID) && bIsTank[tankID]) {	
 					//Check if tank has a target. tank_target will be -1 if not activated
-					int tank_target = GetEntPropEnt(tankID, Prop_Send, "m_lookatPlayer", 0);
+					tank_target = GetEntPropEnt(tankID, Prop_Send, "m_lookatPlayer", 0);
 					if(tank_target > -1) {
 						
 						//Fetch the tank's position
-						float TankPosition[3];
 						GetClientAbsOrigin(tankID, TankPosition);
 						//Get distance to survivor, and compare to get closest tank
-						float distanceFromSurvivor = GetVectorDistance(BotPosition, TankPosition);
+						distanceFromSurvivor = GetVectorDistance(BotPosition, TankPosition);
 						if(distanceFromSurvivor <= 1000 && smallestDistance > distanceFromSurvivor || smallestDistance == 0.0) {
 							smallestDistance = distanceFromSurvivor;
 							closestTank = tankID;
@@ -137,9 +139,9 @@ void resetPlugin() {
 public void FindExistingTank() {
 	//Loop all valid clients, check if they a BOT and an infected. Check for a name that contains "Tank"
 	iAliveTanks = 0;
+	char name[16];
 	for (int i = 1; i < MaxClients+1 ;i++) {
 		if(IsClientInGame(i) && IsFakeClient(i) && IsPlayerAlive(i) && GetClientTeam(i) == 3) {
-			char name[16];
 			GetClientName(i, name, sizeof(name));
 			if(StrContains(name, "Tank", true) > -1) {
 				bIsTank[i] = true;
