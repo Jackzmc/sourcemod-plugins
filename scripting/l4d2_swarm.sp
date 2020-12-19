@@ -50,62 +50,8 @@ public void OnPluginStart()
 	RegAdminCmd("sm_rt", Cmd_SwarmToggle, ADMFLAG_ROOT, "sm_swarmtoggle <player> [range]");
 	RegAdminCmd("sm_rushtogglemenu", Cmd_SwarmToggleMenu, ADMFLAG_ROOT, "sm_swarmtogglemenu - Open swarm toggle menu");
 	RegAdminCmd("sm_rtmenu", Cmd_SwarmToggleMenu, ADMFLAG_ROOT, "sm_swarmtogglemenu - Open swarm toggle menu");
-}
 
-
-public Action Cmd_SwarmToggle(int client, int args) {
-	//SwarmTarget, SwarmRadius
-	if(args == 0) {
-		ReplyToCommand(client, "Usage: sm_rushtoggle <player> [radius]");
-	}else{
-		char arg1[32], arg2[32];
-		GetCmdArg(1, arg1, sizeof(arg1));
-		GetCmdArg(2, arg2, sizeof(arg2));
-
-		if(StrEqual(arg1, "disable", true)) {
-			SwarmTarget = -1;
-			SwarmRadius = hSwarmDefaultRange.IntValue;
-			ReplyToCommand(client, "Deactivated swarm toggle.");
-			CloseHandle(timer);
-		}
-
-		int range = StringToInt(arg2);
-		if(range <= 0) range = hSwarmDefaultRange.IntValue;
-		SwarmRadius = range;
-
-		char target_name[MAX_TARGET_LENGTH];
-		int target_list[1], target_count;
-		bool tn_is_ml;
-
-		if ((target_count = ProcessTargetString(
-				arg1,
-				client,
-				target_list,
-				1,
-				COMMAND_FILTER_ALIVE, /* Only allow alive players */
-				target_name,
-				sizeof(target_name),
-				tn_is_ml)) <= 0)
-		{
-			/* This function replies to the admin with a failure message */
-			ReplyToTargetError(client, target_count);
-			return Plugin_Handled;
-		}
-		if(target_list[0] == SwarmTarget) {
-			SwarmTarget = -1;
-			SwarmRadius = hSwarmDefaultRange.IntValue;
-			ReplyToCommand(client, "Deactivated swarm toggle.");
-			CloseHandle(timer);
-			timer = INVALID_HANDLE;
-		}else{
-			SwarmTarget = target_list[0];
-			SwarmUser(GetClientUserId(target_list[0]), range);
-			ReplyToCommand(client, "Now continously swarming victim %N. Radius: %d", target_list[0], range);
-			if(timer == INVALID_HANDLE)
-				timer = CreateTimer(1.0, Timer_Swarm, _, TIMER_REPEAT);
-		}
-	}
-	return Plugin_Handled;
+	HookEvent("triggered_car_alarm", Event_CarAlarm);
 }
 
 public Action Cmd_Swarm(int client, int args) {
@@ -138,30 +84,63 @@ public Action Cmd_Swarm(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		/*int entity = -1;
-		do {
-			entity = FindEntityByClassname(entity, "zombie");
-		} while(entity != -1)
-		
-		for (int target = 1; target <= MaxClients; target++)
-		{
-			if (IsClientInGame(target) && IsPlayerAlive(target) && GetClientTeam(ta))
-			{
-				if (IsPlayerAlive(target) && GetClientTeam(target) == 3)
-				{
-					new Float:targetVector[3];
-					GetClientAbsimpact(target, targetVector);
-					
-					new Float:distance = GetVectorDistance(targetVector, impact);
-					if (distance < DISTANCESETTING)
-						{                            
-						//ACTIONS ON AFFECTED TARGET
-						}
-				}
-			}
-		}  */
 		SwarmUser(GetClientUserId(target_list[0]), range);
 		ReplyToCommand(client, "Swarming victim %N. Radius: %d", target_list[0], range);
+	}
+	return Plugin_Handled;
+}
+
+public Action Cmd_SwarmToggle(int client, int args) {
+	//SwarmTarget, SwarmRadius
+	if(args == 0) {
+		ReplyToCommand(client, "Usage: sm_rushtoggle <player> [radius]");
+	}else{
+		char arg1[32], arg2[32];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+
+		if(StrEqual(arg1, "disable", true) || StrEqual(arg1, "x", true)) {
+			SwarmTarget = -1;
+			SwarmRadius = hSwarmDefaultRange.IntValue;
+			ReplyToCommand(client, "Deactivated swarm toggle.");
+			CloseHandle(timer);
+			return Plugin_Handled;
+		}
+
+		int range = StringToInt(arg2);
+		if(range <= 0) range = hSwarmDefaultRange.IntValue;
+		SwarmRadius = range;
+
+		char target_name[MAX_TARGET_LENGTH];
+		int target_list[1], target_count;
+		bool tn_is_ml;
+
+		if ((target_count = ProcessTargetString(
+				arg1,
+				client,
+				target_list,
+				1,
+				COMMAND_FILTER_ALIVE, 
+				target_name,
+				sizeof(target_name),
+				tn_is_ml)) <= 0)
+		{
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		if(target_list[0] == SwarmTarget) {
+			SwarmTarget = -1;
+			SwarmRadius = hSwarmDefaultRange.IntValue;
+			ReplyToCommand(client, "Deactivated swarm toggle.");
+			CloseHandle(timer);
+			timer = INVALID_HANDLE;
+		}else{
+			SwarmTarget = GetClientUserId(target_list[0]);
+			SwarmUser(GetClientUserId(target_list[0]), range);
+			ReplyToCommand(client, "Now continously swarming victim %N. Radius: %d", target_list[0], range);
+			if(timer == INVALID_HANDLE)
+				timer = CreateTimer(1.0, Timer_Swarm, _, TIMER_REPEAT);
+		}
 	}
 	return Plugin_Handled;
 }
@@ -170,7 +149,7 @@ public Action Cmd_SwarmMenu(int client, int args) {
 	menu.SetTitle("Swarm a Player");
 	char name[32], idStr[4];
 	for(int id = 1; id < MaxClients; id++) {
-		if(IsClientConnected(id) && IsClientInGame(id) && IsPlayerAlive(id)) {
+		if(IsClientConnected(id) && IsClientInGame(id) && IsPlayerAlive(id) && GetClientTeam(id) == 2) {
 			GetClientName(id, name, sizeof(name));
 			Format(idStr, sizeof(idStr), "%d", GetClientUserId(id));
 			menu.AddItem(idStr, name);
@@ -182,10 +161,10 @@ public Action Cmd_SwarmMenu(int client, int args) {
 public Action Cmd_SwarmToggleMenu(int client, int args) {
 	Menu menu = new Menu(Handle_SwarmMenuToggle);
 	menu.SetTitle("Toggle Swarm On Player");
-	menu.AddItem("disable", "Disable");
+	menu.AddItem("x", "Disable");
 	char name[32], idStr[3];
 	for(int id = 1; id < MaxClients; id++) {
-		if(IsClientConnected(id) && IsClientInGame(id) && IsPlayerAlive(id)) {
+		if(IsClientConnected(id) && IsClientInGame(id) && IsPlayerAlive(id) && GetClientTeam(id) == 2) {
 			GetClientName(id, name, sizeof(name));
 			Format(idStr, sizeof(idStr), "%d", GetClientUserId(id));
 			menu.AddItem(idStr, name);
@@ -204,7 +183,7 @@ public int Handle_SwarmMenu(Menu menu, MenuAction action, int client, int index)
 		menu.GetItem(index, info, sizeof(info));
 		int userid = StringToInt(info);
 		SwarmUser(userid, hSwarmDefaultRange.IntValue);
-		PrintToChat(client, "Swarming player %N with radius %d", userid, hSwarmDefaultRange.IntValue);
+		PrintToChat(client, "Swarming player #%d with radius %d", userid, hSwarmDefaultRange.IntValue);
 		Cmd_SwarmMenu(client, 0);
 	} else if (action == MenuAction_End) {
 		delete menu;
@@ -218,18 +197,27 @@ public int Handle_SwarmMenuToggle(Menu menu, MenuAction action, int client, int 
 	{
 		char info[4];
 		menu.GetItem(index, info, sizeof(info));
-		if(StrEqual(info, "disable", true)) {
+		if(StrEqual(info, "x", true)) {
 			SwarmTarget = -1;
 			SwarmRadius = hSwarmDefaultRange.IntValue;
 			PrintToChat(client, "Disabled swarm toggle.", SwarmTarget, SwarmRadius);
 			CloseHandle(timer);
 			timer = INVALID_HANDLE;
 		}else{
-			SwarmTarget = StringToInt(info);
-			int clientID = GetClientOfUserId(SwarmTarget);
-			PrintToChat(client, "Toggled swarm on for %N. Radius: %d", clientID, SwarmRadius);
-			if(timer == INVALID_HANDLE)
-				timer = CreateTimer(1.0, Timer_Swarm, _, TIMER_REPEAT);
+			int clickedUser = StringToInt(info);
+			if(clickedUser != SwarmTarget) {
+				SwarmTarget = clickedUser;
+				int clientID = GetClientOfUserId(SwarmTarget);
+				PrintToChat(client, "Toggled swarm on for %N (#%d). Radius: %d", clientID, SwarmTarget, SwarmRadius);
+				if(timer == INVALID_HANDLE)
+					timer = CreateTimer(1.0, Timer_Swarm, _, TIMER_REPEAT);
+			}else{
+				SwarmTarget = -1;
+				SwarmRadius = hSwarmDefaultRange.IntValue;
+				ReplyToCommand(client, "Deactivated swarm toggle.");
+				CloseHandle(timer);
+				timer = INVALID_HANDLE;
+			}
 		}
 	} else if (action == MenuAction_End) {
 		delete menu;
@@ -237,7 +225,7 @@ public int Handle_SwarmMenuToggle(Menu menu, MenuAction action, int client, int 
 }
 
 public Action Timer_Swarm(Handle timerH, any data) {
-	if(SwarmTarget >= 0 && IsClientConnected(SwarmTarget) && IsPlayerAlive(SwarmTarget)) {
+	if(SwarmTarget >= 0) {
 		SwarmUser(SwarmTarget, SwarmRadius);
 		return Plugin_Continue;
 	}else {
@@ -248,4 +236,9 @@ public Action Timer_Swarm(Handle timerH, any data) {
 
 void SwarmUser(int clientUserId, int range) {
 	L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", clientUserId, range);
+}
+
+public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
+	int user = event.GetInt("userid");
+	SwarmUser(user, hSwarmDefaultRange.IntValue);
 }
