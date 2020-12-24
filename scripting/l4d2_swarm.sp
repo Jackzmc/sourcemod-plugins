@@ -54,6 +54,25 @@ public void OnPluginStart()
 	HookEvent("triggered_car_alarm", Event_CarAlarm);
 }
 
+public void OnMapStart() {
+	SwarmTarget = -1;
+	SwarmRadius = hSwarmDefaultRange.IntValue;
+	CloseHandle(timer);
+	timer = INVALID_HANDLE;
+}
+
+public void OnClientDisconnect(int client) {
+	if(SwarmTarget != -1 || timer != INVALID_HANDLE) {
+		int userid = GetClientUserId(client);
+		if(userid == SwarmTarget) {
+			SwarmTarget = -1;
+			SwarmRadius = hSwarmDefaultRange.IntValue;
+			CloseHandle(timer);
+			timer = INVALID_HANDLE;
+		}
+	}
+}
+
 public Action Cmd_Swarm(int client, int args) {
 	if(args == 0) {
 		SwarmUser(-1, hSwarmDefaultRange.IntValue);
@@ -104,6 +123,7 @@ public Action Cmd_SwarmToggle(int client, int args) {
 			SwarmRadius = hSwarmDefaultRange.IntValue;
 			ReplyToCommand(client, "Deactivated swarm toggle.");
 			CloseHandle(timer);
+			timer = INVALID_HANDLE;
 			return Plugin_Handled;
 		}
 
