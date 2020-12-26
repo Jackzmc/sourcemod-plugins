@@ -26,19 +26,21 @@
 9 -> CameTooEarly
 10 -> KillMeSoftly
 */
-enum trollMode {
-	Disabled,
-	SlowSpeed,
-	HigherGravity,
-	HalfPrimary,
-	UziRules,
-	PrimaryDisable,
-	SlowDrain,
-	Clusmy,
-	iCantSpellNoMore,
-	CameTooEArly,
-	KillMeSoftly
-}
+#define TROLL_MODE_COUNT 12
+static const char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
+	"Disabled", //0
+	"SlowSpeed", //1
+	"HigherGravity", //2 
+	"HalfPrimary", //3 
+	"UziRules", //4
+	"PrimaryDisable", //5
+	"SlowDrain", //6
+	"Clusmy", //7
+	"iCantSpellNoMore", //8
+	"CameTooEarly", //9
+	"KillMeSoftly", //10
+	"ThrowItall" //11
+};
 
 public Plugin myinfo = 
 {
@@ -72,12 +74,6 @@ public void OnPluginStart() {
 	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
-	TopMenu topmenu;
-	if (LibraryExists("adminmenu") && ((topmenu = GetAdminTopMenu()) != null))
-	{
-		/* If so, manually fire the callback */
-		OnAdminMenuReady(topmenu);
-	}
 	LoadTranslations("common.phrases");
 	g_iAmmoTable = FindSendPropInfo("CTerrorPlayer", "m_iAmmo");
 
@@ -92,29 +88,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_fta", Command_ApplyUser, ADMFLAG_ROOT, "apply mode");
 
 	if(lateLoaded) UpdateTrollTargets();
-
-	CreateTimer(10.0, Timer_MainProcess, _, TIMER_REPEAT);
-	hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
 }
-public void OnLibraryRemoved(const char[] name) {
-  if (StrEqual(name, "adminmenu", false)) {
-    hAdminMenu = null;
-  }
-}
-public void OnAdminMenuReady(Handle aTopMenu) {
-  TopMenu topmenu = TopMenu.FromHandle(aTopMenu);
- 
-  /* Try to add the category first, if we want to add one.
-     Leave this out, if you don't add a new category. */
-  if (obj_dmcommands == INVALID_TOPMENUOBJECT) {
-    OnAdminMenuCreated(topmenu);
-  }
-  if (topmenu == hAdminMenu) {
-    return;
-  }
-  hAdminMenu = topmenu;
-}
-
 
 //(dis)connection events
 public void OnClientAuthorized(int client, const char[] auth) {
@@ -130,8 +104,12 @@ public void Change_VictimList(ConVar convar, const char[] oldValue, const char[]
     UpdateTrollTargets();
 }
 public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const char[] newValue) {
-	CloseHandle(hThrowTimer);
-	hThrowTimer = CreateTimer(convar.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
+	//If a throw timer exists (someone has mode 11), destroy & recreate w/ new interval
+	if(hThrowTimer != INVALID_HANDLE) {
+		delete hThrowTimer;
+		PrintToServer("Reset new throw item timer");
+		hThrowTimer = CreateTimer(convar.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
+	}
 }
 // #endregion
 // #region commands
@@ -168,7 +146,18 @@ public Action Command_ResetUser(int client, int args) {
 }
 public Action Command_ApplyUser(int client, int args) {
 	if(args < 2) {
-		ReplyToCommand(client, "Usage: sm_fta <user(s)> <mode>");
+		Menu menu = new Menu(ChoosePlayerHandler);
+		menu.SetTitle("Choose a player");
+		for(int i = 1; i < MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+				char userid[8], display[16];
+				Format(userid, sizeof(userid), "%d", GetClientUserId(i));
+				GetClientName(i, display, sizeof(display));
+				menu.AddItem(userid, display);
+			}
+		}
+		menu.ExitButton = true;
+		menu.Display(client, 0);
 	}else{
 		char arg1[32], arg2[32];
 		GetCmdArg(1, arg1, sizeof(arg1));
@@ -204,6 +193,7 @@ public Action Command_ApplyUser(int client, int args) {
 	}
 	return Plugin_Handled;
 }
+
 public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
@@ -216,6 +206,42 @@ public Action Command_ListTheTrolls(int client, int args) {
 		ReplyToCommand(client, "No clients have a mode applied.");
 	}
 	return Plugin_Handled;
+}
+public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int param2) {
+	/* If an option was selected, tell the client about the item. */
+    if (action == MenuAction_Select) {
+		char info[16];
+		menu.GetItem(param2, info, sizeof(info));
+		int userid = StringToInt(info);
+		int client = GetClientOfUserId(userid);
+
+		PrintToChatAll("You selected player: %N (userid: %d)", client, userid);
+		
+		Menu trollMenu = new Menu(ChooseModeMenuHandler);
+		trollMenu.SetTitle("Choose a troll mode");
+		for(int i = 1; i < TROLL_MODE_COUNT; i++) {
+			char id[8];
+			Format(id, sizeof(id), "%d|%d", userid, i);
+			trollMenu.AddItem(id, TROLL_MODES_NAMES[i]);
+		}
+		trollMenu.ExitButton = true;
+		trollMenu.Display(param1, 0);
+    } else if (action == MenuAction_End)
+        delete menu;
+}
+public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
+    /* If an option was selected, tell the client about the item. */
+    if (action == MenuAction_Select) {
+		char info[16];
+		menu.GetItem(param2, info, sizeof(info));
+		char str[2][8];
+		ExplodeString(info, "|", str, 2, 8, false);
+		int client = GetClientOfUserId(StringToInt(str[0]));
+		int mode = StringToInt(str[1]);
+		PrintToChatAll("You selected item: %d (mode: %d, player: %N)", param2, mode, client);
+		ApplyModeToClient(param1, client, mode);
+    } else if (action == MenuAction_End)
+        delete menu;
 }
 public Action Event_ItemPickup(int client, int weapon) {
 	char wpnName[64];
@@ -251,22 +277,14 @@ public Action Event_ItemPickup(int client, int weapon) {
 }
 // #endregion
 // #region timer
-public Action Timer_MainProcess(Handle timer) {
-	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && iTrollUsers[i] > 0) {
-			int mode = iTrollUsers[i];
-			if(mode == 11) {
-				ThrowAllItems(i);
-			}
-		}
-	}
-}
 public Action Timer_ThrowTimer(Handle timer) {
+	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
 		if(IsClientConnected(i) && iTrollUsers[i] == 11) {
 			ThrowAllItems(i);
 		}
 	}
+	return count > 0 ? Plugin_Continue : Plugin_Stop;
 }
 
 // #endregion
@@ -326,11 +344,11 @@ void ApplyModeToClient(int client, int victim, int mode) {
 		case 8:
 			ReplyToCommand(client, "This troll mode is not implemented.");
 		case 11: {
-			if(IsFakeClient(victim)) {
-				ReplyToCommand(client, "This mode does not work for bots.");
-				return;
-			}
 			ThrowAllItems(victim);
+			if(hThrowTimer == INVALID_HANDLE) {
+				PrintToServer("Created new throw item timer");
+				hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
+			}
 		}
 		default: {
 			ReplyToCommand(client, "Unknown troll mode: %d", mode);
