@@ -20,11 +20,12 @@
 3 -> Set primary reserve ammo in half
 4 -> UziRules (Pickup weapon defaults to uzi)
 5 -> PrimaryDisable (Cannot pickup primary weapons at all)
-6 -> Slow Drain
-7 -> Clusmy
-8 -> IcantSpellNoMore
-9 -> CameTooEarly
-10 -> KillMeSoftly
+6 -> Slow Drain (Slowly drains hp over time)
+7 -> Clusmy (Drops their melee weapon)
+8 -> IcantSpellNoMore (Chat messages letter will randomly changed with wrong letters )
+9 -> CameTooEarly (When they shoot, they empty the whole clip at once.)
+10 -> KillMeSoftly (Make player eat or waste pills whenever)
+11 -> ThrowItAll (Makes player just throw all their items at a nearby player, and periodically)
 */
 #define TROLL_MODE_COUNT 12
 static const char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
@@ -52,7 +53,7 @@ public Plugin myinfo =
 };
 Handle hThrowTimer;
 ConVar hVictimsList, hThrowItemInterval;
-bool bTrollTargets[MAXPLAYERS+1], lateLoaded, bTimerEnabled = false;
+bool bTrollTargets[MAXPLAYERS+1], lateLoaded;
 int iTrollMode = 0; //troll mode. 0 -> Slosdown | 1 -> Higher Gravity | 2 -> CameTooEarly | 3 -> UziRules
 
 int g_iAmmoTable;
@@ -108,7 +109,7 @@ public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const cha
 	if(hThrowTimer != INVALID_HANDLE) {
 		delete hThrowTimer;
 		PrintToServer("Reset new throw item timer");
-		hThrowTimer = CreateTimer(convar.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
+		hThrowTimer = CreateTimer(convar.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
 // #endregion
@@ -329,17 +330,16 @@ void ApplyModeToClient(int client, int victim, int mode) {
 				int clientCount = GetClientsInRange(pos, RangeType_Visibility, clients, sizeof(clients));
 				for(int i = 0; i < clientCount; i++) {
 					if(clients[i] != victim) {
-						PrintToChatAll("client %d throw to %d", victim, clients[i]);
 						float targPos[3];
 						GetClientAbsOrigin(clients[i], targPos);
 						SDKHooks_DropWeapon(victim, wpn, targPos);
 						iTrollUsers[victim] = mode;
+						CreateTimer(0.2, Timer_GivePistol);
 						return;
 					}
 				}
 				SDKHooks_DropWeapon(victim, wpn);
 			}
-			ReplyToCommand(client, "res = %d" , hasMelee ? 1 : 0);
 		}
 		case 8:
 			ReplyToCommand(client, "This troll mode is not implemented.");
@@ -469,10 +469,6 @@ bool TestForTarget(int client, const char[] auth) {
 			PrintToServer("[Debug] Troll target detected with id %d and steamid %s", client, auth);
             #endif
 			bTrollTargets[client] = true;
-			if(!bTimerEnabled) {
-				bTimerEnabled = true;
-				
-			}
 			return true;
 		}
 	}

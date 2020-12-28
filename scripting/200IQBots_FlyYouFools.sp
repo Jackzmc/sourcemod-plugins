@@ -51,7 +51,7 @@ public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) 
 	int userID = GetClientOfUserId(GetEventInt(event, "userid"));
 	bIsTank[userID] = true;
 	if(iAliveTanks == 0 && !bEscapeReady) {
-		CreateTimer(0.1, BotControlTimerV2, _, TIMER_REPEAT);
+		CreateTimer(0.1, BotControlTimerV2, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 	iAliveTanks++;
 }
@@ -154,7 +154,7 @@ public void FindExistingTank() {
 		
 	}
 	if(iAliveTanks > 0) {
-		CreateTimer(0.1, BotControlTimerV2, _, TIMER_REPEAT);
+		CreateTimer(0.1, BotControlTimerV2, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
 

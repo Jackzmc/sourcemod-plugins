@@ -159,7 +159,7 @@ public Action Cmd_SwarmToggle(int client, int args) {
 			SwarmUser(GetClientUserId(target_list[0]), range);
 			ReplyToCommand(client, "Now continously swarming victim %N. Radius: %d", target_list[0], range);
 			if(timer == INVALID_HANDLE)
-				timer = CreateTimer(1.0, Timer_Swarm, _, TIMER_REPEAT);
+				timer = CreateTimer(1.0, Timer_Swarm, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}
 	return Plugin_Handled;
@@ -230,7 +230,7 @@ public int Handle_SwarmMenuToggle(Menu menu, MenuAction action, int client, int 
 				int clientID = GetClientOfUserId(SwarmTarget);
 				PrintToChat(client, "Toggled swarm on for %N (#%d). Radius: %d", clientID, SwarmTarget, SwarmRadius);
 				if(timer == INVALID_HANDLE)
-					timer = CreateTimer(1.0, Timer_Swarm, _, TIMER_REPEAT);
+					timer = CreateTimer(1.0, Timer_Swarm, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 			}else{
 				SwarmTarget = -1;
 				SwarmRadius = hSwarmDefaultRange.IntValue;

@@ -34,7 +34,7 @@ public void OnPluginStart()
 	{
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
-	CreateTimer(2.0, CheckTimer, _, TIMER_REPEAT);
+	CreateTimer(5.0, CheckTimer, _, TIMER_REPEAT);
 	HookEvent("player_team", Event_PlayerTeamSwitch);
 }
 
@@ -68,7 +68,7 @@ public void Event_PlayerTeamSwitch(Event event, const char[] name, bool dontBroa
 
 public Action CheckTimer(Handle timer) {
 	//Don't do any processing if no one is connected.
-	//optimization: Only update player-based positions ever 5 loops (2 * 5 = 10 seconds)
+	//optimization: Only update player-based positions ever 5 loops (5 * 5 = 25 seconds)
 	static int timer_update_pos;
 	if(GetClientCount(true) == 0) return Plugin_Continue;
 	float pos[3], ang[3], botPos[3], center_distance;
