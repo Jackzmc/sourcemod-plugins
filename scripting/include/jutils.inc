@@ -326,3 +326,33 @@ stock void GetEntityAbsOrigin(int entity, float origin[3]) {
 		origin[2] += (mins[2] + maxs[2]) * 0.5;
 	}
 }
+stock bool IsPrimaryWeapon(const char[] wpnName) {
+	return StrContains(wpnName, "rifle") > -1 
+		|| StrContains(wpnName, "smg") > -1 
+		|| StrContains(wpnName, "weapon_grenade_launcher") > -1 
+		|| StrContains(wpnName, "sniper") > -1
+		|| StrContains(wpnName, "shotgun") > -1;
+}
+stock int GetClientSecondaryWeapon(int client) {
+	int wpnRef = GetPlayerWeaponSlot(client, 1);
+	if(wpnRef != -1) {
+		int wpn = EntRefToEntIndex(wpnRef);
+		if(wpn != INVALID_ENT_REFERENCE) {
+			return wpn;
+		}else{
+			return -1;
+		}
+	}else{
+		return -1;
+	}
+}
+stock bool DoesClientHaveMelee(int client) {
+	int wpnEnt = GetClientSecondaryWeapon(client);
+	if(wpnEnt > -1) {
+		char wpn[16];
+		GetEdictClassname(wpnEnt, wpn, sizeof(wpn));
+		return StrEqual(wpn, "weapon_melee");
+	}else{
+		return false;
+	}
+}
