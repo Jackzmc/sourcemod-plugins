@@ -71,7 +71,7 @@ public Action CheckTimer(Handle timer) {
 	//optimization: Only update player-based positions ever 5 loops (5 * 5 = 25 seconds)
 	static int timer_update_pos;
 	if(GetClientCount(true) == 0) return Plugin_Continue;
-	float pos[3], ang[3], botPos[3], center_distance;
+	static float pos[3], ang[3], botPos[3], center_distance;
 	static float finalPos[3], checkPos[3];
 	bool usingMinigun, usingMountedWeapon;
 
@@ -92,9 +92,9 @@ public Action CheckTimer(Handle timer) {
 					if(bIsSurvivorClient[bot] && IsClientInGame(bot) && IsFakeClient(bot) && IsPlayerAlive(bot)) {
 						GetClientAbsOrigin(bot, botPos);
 						
-						center_distance = GetVectorDistance(checkPos, botPos);
+						center_distance = GetVectorDistance(checkPos, botPos, true);
 						
-						if(center_distance <= 70) {
+						if(center_distance <= 4900) {
 							L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(bot), finalPos[0], finalPos[1], finalPos[2]);
 						}else{
 							L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)})", GetClientUserId(bot));

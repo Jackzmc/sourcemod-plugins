@@ -4,6 +4,9 @@
 #define PLUGIN_VERSION "1.5" 
 #pragma newdecls required
 
+#define MAX_TANK_DISTANCE_FROM_SURVIVOR 1000
+#define MAX_TANK_DIST_SQUARED MAX_TANK_DISTANCE_FROM_SURVIVOR^2
+
 //#define DEBUG
 
 static bool bEscapeReady = false;
@@ -34,7 +37,6 @@ public void OnPluginStart()
 	HookEvent("round_start", Event_RoundStart, EventHookMode_PostNoCopy);
 	HookEvent("tank_spawn", Event_TankSpawn);
 	HookEvent("tank_killed", Event_TankDeath);
-	HookEvent("tank_killed", Event_RoundStart, EventHookMode_PostNoCopy);	
 	HookEvent("finale_vehicle_incoming", Event_FinaleArriving, EventHookMode_PostNoCopy);
 }
 
@@ -109,8 +111,8 @@ public Action BotControlTimerV2(Handle timer)
 						//Fetch the tank's position
 						GetClientAbsOrigin(tankID, TankPosition);
 						//Get distance to survivor, and compare to get closest tank
-						distanceFromSurvivor = GetVectorDistance(BotPosition, TankPosition);
-						if(distanceFromSurvivor <= 1000 && smallestDistance > distanceFromSurvivor || smallestDistance == 0.0) {
+						distanceFromSurvivor = GetVectorDistance(BotPosition, TankPosition, true);
+						if(distanceFromSurvivor <= MAX_TANK_DIST_SQUARED && smallestDistance > distanceFromSurvivor || smallestDistance == 0.0) {
 							smallestDistance = distanceFromSurvivor;
 							closestTank = tankID;
 						}
