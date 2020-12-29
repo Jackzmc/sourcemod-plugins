@@ -274,7 +274,7 @@ stock int GetNearestEntity(int client, char[] classname)
     while ((entity = FindEntityByClassname(entity, classname)) != -1)
     {
         GetEntPropVector(entity, Prop_Data, "m_vecOrigin", entityVecOrigin);
-        distance = GetVectorDistance(clientVecOrigin, entityVecOrigin);
+        distance = GetVectorDistance(clientVecOrigin, entityVecOrigin, true);
         
         if (distance < nearestDistance || nearestDistance == -1.0)
         {
