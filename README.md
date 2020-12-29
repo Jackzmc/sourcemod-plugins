@@ -65,6 +65,7 @@ A group of misc tools for l4d2. Including: Notify on lasers use, and a finale ti
 * **Convars:**
    * `sm_laser_use_notice <1/0>` - Enable notification of a laser box being used
    * `sm_time_finale <0/1/2>` - Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales
+   * `sm_ff_notice <0/1/2>` - Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text
    
 ### 200IQBots_FlyYouFools
 Updated version of ConnerRia's plugin. Improves bots avoidance of tanks. Change from original is updated source syntax, some optimizations/cleanup, and fixes such as bots avoiding tank that has not been activated, or not escaping in vehicle due to presence of tank.

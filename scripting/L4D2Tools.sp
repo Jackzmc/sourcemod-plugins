@@ -15,7 +15,7 @@
 
 
 bool bLasersUsed[2048];
-ConVar hLaserNotice, hFinaleTimer;
+ConVar hLaserNotice, hFinaleTimer, hFFNotice;
 int iFinaleStartTime;
 
 public Plugin myinfo = {
@@ -34,8 +34,10 @@ public void OnPluginStart() {
 	}
 	hLaserNotice = CreateConVar("sm_laser_use_notice", "1.0", "Enable notification of a laser box being used", FCVAR_NONE, true, 0.0, true, 1.0);
 	hFinaleTimer = CreateConVar("sm_time_finale", "2.0", "Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales", FCVAR_NONE, true, 0.0, true, 2.0);
+	hFFNotice    = CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
 
 	HookEvent("player_use", Event_PlayerUse);
+	HookEvent("player_hurt", Event_PlayerHurt);
 	HookEvent("round_end", Event_RoundEnd);
 	HookEvent("gauntlet_finale_start", Event_GauntletStart);
 	HookEvent("finale_start", Event_FinaleStart);
@@ -45,6 +47,24 @@ public void OnPluginStart() {
 }
 
 //laserNotice
+public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) {
+	if(hFFNotice.IntValue > 0) {
+		int victim = GetClientOfUserId(event.GetInt("userid"));
+		int attacker = GetClientOfUserId(event.GetInt("attacker"));
+		int dmg = event.GetInt("dmg_health");
+		if(dmg > 0) {
+			if(attacker > 0 && !IsFakeClient(attacker) && attacker != victim) {
+				if(GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
+					if(hFFNotice.IntValue == 1) {
+						PrintHintTextToAll("%N has done %d HP of friendly fire damage to %N", attacker, dmg, victim);
+					}else{
+						PrintToChatAll("%N has done %d HP of friendly fire damage to %N", attacker, dmg, victim);
+					}
+				}
+			}
+		}
+	}
+}
 public void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast) {
 	if(hLaserNotice.BoolValue) {
 		char player_name[32];
@@ -75,13 +95,11 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 public void Event_GauntletStart(Event event, const char[] name, bool dontBroadcast) {
 	if(hFinaleTimer.IntValue > 0) {
 		iFinaleStartTime = GetTime();
-		PrintHintTextToAll("The finale timer has been started");
 	}
 }
 public void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
 	if(hFinaleTimer.IntValue == 2) {
 		iFinaleStartTime = GetTime();
-		PrintHintTextToAll("The finale timer has been started");
 	}
 }
 public void Event_FinaleEnd(Event event, const char[] name, bool dontBroadcast) {
