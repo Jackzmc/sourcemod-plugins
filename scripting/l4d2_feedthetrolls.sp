@@ -3,13 +3,13 @@
 
 //#define DEBUG
 
+#define MAIN_TIMER_INTERVAL_S 5.0
 #define PLUGIN_VERSION "1.0"
 
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
 #include "jutils.inc"
-#include <dhooks>
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
@@ -28,11 +28,25 @@
 11 -> ThrowItAll (Makes player just throw all their items at a nearby player, and periodically)
 */
 #define TROLL_MODE_COUNT 12
+enum TROLL_MODE {
+	ResetUser, //0
+	SlowSpeed, //1
+	HigherGravity, //2
+	HalfPrimaryAmmo, //3
+	UziRules, //4
+	PrimaryDisable, //5
+	SlowDrain, //6
+	Clumsy, //7
+	iCantSpellNoMore, //8
+	CameTooEarly, //9
+	KillMeSoftly, //10
+	ThrowItAll //1
+}
 static const char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
-	"Disabled", //0
-	"SlowSpeed", //1
-	"HigherGravity", //2 
-	"HalfPrimary", //3 
+	"Reset User", //0
+	"Slow Speed", //1
+	"Higher Gravity", //2 
+	"Half Primary Ammo", //3 
 	"UziRules", //4
 	"PrimaryDisable", //5
 	"SlowDrain", //6
@@ -40,7 +54,21 @@ static const char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
 	"iCantSpellNoMore", //8
 	"CameTooEarly", //9
 	"KillMeSoftly", //10
-	"ThrowItall" //11
+	"ThrowItAll" //11
+};
+static const char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
+	"Resets the user, removes all troll effects", //0
+	"Sets player speed to 0.8x of normal speed", //1
+	"Sets player gravity to 1.3x of normal gravity", //2 
+	"Cuts their primary reserve ammo in half", //3 
+	"Picking up a weapon gives them a UZI instead", //4
+	"Player cannot pickup any weapons, only melee/pistols", //5
+	"Player slowly loses health", //6
+	"Player drops axe periodically or on demand", //7
+	"Chat messages letter will randomly changed with wrong letters ", //8
+	"When they shoot, random chance they empty whole clip", //9
+	"Make player eat or waste pills whenever possible", //10
+	"Player throws all their items at nearby player, periodically" //11
 };
 
 public Plugin myinfo = 
@@ -84,14 +112,20 @@ public void OnPluginStart() {
 	hThrowItemInterval.AddChangeHook(Change_ThrowInterval);
 
 	RegAdminCmd("sm_ftl", Command_ListTheTrolls, ADMFLAG_ROOT, "Lists all the trolls currently ingame.");
-
+	RegAdminCmd("sm_ftm", Command_ListModes, ADMFLAG_ROOT, "Lists all the troll modes and their description");
 	RegAdminCmd("sm_ftr", Command_ResetUser, ADMFLAG_ROOT, "Reset user");
 	RegAdminCmd("sm_fta", Command_ApplyUser, ADMFLAG_ROOT, "apply mode");
 
-	if(lateLoaded) UpdateTrollTargets();
+	if(lateLoaded) {
+		UpdateTrollTargets();
+		CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	}
 }
 
 //(dis)connection events
+public void OnMapStart() {
+	CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+}
 public void OnClientAuthorized(int client, const char[] auth) {
     if(StrContains(auth, "BOT", true) == -1) {
         TestForTarget(client, auth);
@@ -140,6 +174,7 @@ public Action Command_ResetUser(int client, int args) {
 		for (int i = 0; i < target_count; i++)
 		{
 			ResetClient(target_list[i]);
+			ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
 		}
 		ReplyToCommand(client, "Cleared troll effects for %d players", target_count);
 	}
@@ -166,7 +201,7 @@ public Action Command_ApplyUser(int client, int args) {
 
 		int mode = StringToInt(arg2);
 		if(mode == 0) {
-			ReplyToCommand(client, "Not a valid mode. Must be greater than 0. Usage: sm_fta <user(s)> <mode>");
+			ReplyToCommand(client, "Not a valid mode. Must be greater than 0. Usage: sm_fta <player> <mode>. Use sm_ftr <player> to reset.");
 		}else{
 			char target_name[MAX_TARGET_LENGTH];
 			int target_list[MAXPLAYERS], target_count;
@@ -187,14 +222,18 @@ public Action Command_ApplyUser(int client, int args) {
 			}
 			for (int i = 0; i < target_count; i++)
 			{
-				ReplyToCommand(client, "Applied troll mode %d to %N", mode, target_list[i]);
-				ApplyModeToClient(client, target_list[i], mode);
+				ApplyModeToClient(client, target_list[i], mode, false);
 			}
 		}
 	}
 	return Plugin_Handled;
 }
-
+public Action Command_ListModes(int client, int args) {
+	for(int mode = 0; mode < TROLL_MODE_COUNT; mode++) {
+		ReplyToCommand(client, "%d. %s - %s", mode, TROLL_MODES_NAMES[mode], TROLL_MODES_DESCRIPTIONS[mode]);
+	}
+	return Plugin_Handled;
+}
 public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
@@ -216,11 +255,11 @@ public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int par
 		int userid = StringToInt(info);
 		int client = GetClientOfUserId(userid);
 
-		PrintToChatAll("You selected player: %N (userid: %d)", client, userid);
+		ReplyToCommand(param1, "You selected player: %N (userid: %d)", client, userid);
 		
 		Menu trollMenu = new Menu(ChooseModeMenuHandler);
 		trollMenu.SetTitle("Choose a troll mode");
-		for(int i = 1; i < TROLL_MODE_COUNT; i++) {
+		for(int i = 0; i < TROLL_MODE_COUNT; i++) {
 			char id[8];
 			Format(id, sizeof(id), "%d|%d", userid, i);
 			trollMenu.AddItem(id, TROLL_MODES_NAMES[i]);
@@ -239,8 +278,7 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 		ExplodeString(info, "|", str, 2, 8, false);
 		int client = GetClientOfUserId(StringToInt(str[0]));
 		int mode = StringToInt(str[1]);
-		PrintToChatAll("You selected item: %d (mode: %d, player: %N)", param2, mode, client);
-		ApplyModeToClient(param1, client, mode);
+		ApplyModeToClient(param1, client, mode, false);
     } else if (action == MenuAction_End)
         delete menu;
 }
@@ -283,44 +321,47 @@ public Action Timer_ThrowTimer(Handle timer) {
 	for(int i = 1; i < MaxClients; i++) {
 		if(IsClientConnected(i) && iTrollUsers[i] == 11) {
 			ThrowAllItems(i);
+			count++;
 		}
 	}
 	return count > 0 ? Plugin_Continue : Plugin_Stop;
 }
-
-// #endregion
-// #region methods
-/*
-TROLL MODES
-1 -> Slow speed (0.8 < 1.0 base)
-2 -> Higher gravity (1.3 > 1.0)
-3 -> Set primary reserve ammo in half
-4 -> UziRules (Pickup weapon defaults to uzi)
-5 -> PrimaryDisable (Cannot pickup primary weapons at all)
-6 -> Slow Drain
-7 -> Clusmy
-8 -> IcantSpellNoMore
-9 -> CameTooEarly
-10 -> KillMeSoftly
-11 -> ThrowItAll
-12 -> TakeMyPills
-*/
-void ApplyModeToClient(int client, int victim, int mode) {
+public Action Timer_Main(Handle timer) {
+	static int loop;
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i)) {
+			switch(iTrollUsers[i]) {
+				case SlowDrain:
+					if(loop % 4 == 0) {
+						int hp = GetClientHealth(i);
+						if(hp > 50) {
+							SetEntProp(i, Prop_Send, "m_iHealth", hp - 1); 
+						}
+					}
+			}
+		}
+	}
+	if(++loop >= 60) {
+		loop = 0;
+	}
+	return Plugin_Continue;
+}
+void ApplyModeToClient(int client, int victim, int mode, bool single) {
 	ResetClient(victim);
 	switch(mode) {
-		case 1: 
+		case SlowDrain: 
 			SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 0.8);
-		case 2:
+		case HigherGravity:
 			SetEntityGravity(victim, 1.3);
-		case 3: {
+		case HalfPrimaryAmmo: {
 			int current = GetPrimaryReserveAmmo(victim);
 			SetPrimaryReserveAmmo(victim, current / 2);
 		}
-		case 4:
+		case UziRules:
 			SDKHook(victim, SDKHook_WeaponEquip, Event_ItemPickup);
-		case 5: 
+		case PrimaryDisable: 
 			SDKHook(victim, SDKHook_WeaponEquip, Event_ItemPickup);
-		case 7: {
+		case Clumsy: {
 			int wpn = GetClientSecondaryWeapon(victim);
 			bool hasMelee = DoesClientHaveMelee(victim);
 			if(hasMelee) {
@@ -341,11 +382,11 @@ void ApplyModeToClient(int client, int victim, int mode) {
 				SDKHooks_DropWeapon(victim, wpn);
 			}
 		}
-		case 8:
+		case CameTooEarly:
 			ReplyToCommand(client, "This troll mode is not implemented.");
-		case 11: {
+		case ThrowItAll: {
 			ThrowAllItems(victim);
-			if(hThrowTimer == INVALID_HANDLE) {
+			if(hThrowTimer == INVALID_HANDLE && !single) {
 				PrintToServer("Created new throw item timer");
 				hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
 			}
@@ -355,6 +396,7 @@ void ApplyModeToClient(int client, int victim, int mode) {
 			PrintToServer("Unknown troll mode to apply: %d", mode);
 		}
 	}
+	ShowActivity(client, "activated troll mode \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
 	iTrollUsers[victim] = mode;
 }
 
