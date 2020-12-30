@@ -28,8 +28,8 @@
 11 -> ThrowItAll (Makes player just throw all their items at a nearby player, and periodically)
 */
 #define TROLL_MODE_COUNT 13
-enum TROLL_MODE {
-	Troll_ResetUser, //0
+enum TrollMode {
+	Troll_Reset, //0
 	Troll_SlowSpeed, //1
 	Troll_HigherGravity, //2
 	Troll_HalfPrimaryAmmo, //3
@@ -88,7 +88,7 @@ bool bTrollTargets[MAXPLAYERS+1], lateLoaded;
 int iTrollMode = 0; //troll mode. 0 -> Slosdown | 1 -> Higher Gravity | 2 -> CameTooEarly | 3 -> UziRules
 
 int g_iAmmoTable;
-int iTrollUsers[MAXPLAYERS+1];
+TrollMode iTrollUsers[MAXPLAYERS+1];
 int gChargerVictim = -1;
 
 bool bChooseVictimAvailable = false;
@@ -227,7 +227,7 @@ public Action Command_ApplyUser(int client, int args) {
 			for (int i = 0; i < target_count; i++)
 			{
 				if(GetClientTeam(target_list[i]) == 2)
-					ApplyModeToClient(client, target_list[i], mode, false);
+					ApplyModeToClient(client, target_list[i], view_as<TrollMode>(mode), false);
 			}
 		}
 	}
@@ -242,8 +242,8 @@ public Action Command_ListModes(int client, int args) {
 public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsPlayerAlive(i) && iTrollUsers[i] > 0) {
-			int mode = iTrollUsers[i];
+		if(IsClientConnected(i) && IsPlayerAlive(i) && view_as<int>(iTrollUsers[i]) > 0) {
+			TrollMode mode = iTrollUsers[i];
 			ReplyToCommand(client, "%N | Mode %s (#%d)", i, TROLL_MODES_NAMES[mode], mode);
 			count++;
 		}
@@ -280,10 +280,42 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 		char str[2][8];
 		ExplodeString(info, "|", str, 2, 8, false);
 		int client = GetClientOfUserId(StringToInt(str[0]));
-		int mode = StringToInt(str[1]);
-		ApplyModeToClient(param1, client, mode, false);
+		TrollMode mode = view_as<TrollMode>(StringToInt(str[1]));
+		//If mode has an option to be single-time fired/continous/both, prompt:
+		if(mode == Troll_Clumsy 
+			|| mode ==Troll_ThrowItAll
+			|| mode == Troll_PrimaryDisable
+			|| mode == Troll_CameTooEarly
+		) {
+			Menu modiferMenu = new Menu(CHooseTrollModiferHandler); 
+			modiferMenu.SetTitle("Choose Troll Modifer Option");
+			char singleUse[16], multiUse[16], bothUse[16];
+			Format(singleUse, sizeof(singleUse), "%d|%d|1");
+			Format(multiUse,   sizeof(multiUse), "%d|%d|2");
+			Format(bothUse,     sizeof(bothUse), "%d|%d|0");
+			menu.AddItem(singleUse, "Activate once");
+			menu.AddItem(multiUse, "Activate Periodically");
+			menu.AddItem(bothUse, "Activate Periodically & Instantly");
+			modiferMenu.ExitButton = true;
+			modiferMenu.Display(param1, 0);
+		} else {
+			ApplyModeToClient(param1, client, mode, 0);
+		}
     } else if (action == MenuAction_End)
         delete menu;
+}
+public int CHooseTrollModiferHandler(Menu menu, MenuAction action, int param1, int param2) {
+	if (action == MenuAction_Select) {
+		char info[16];
+		menu.GetItem(param2, info, sizeof(info));
+		char str[3][8];
+		ExplodeString(info, "|", str, 3, 8, false);
+		int client = GetClientOfUserId(StringToInt(str[0]));
+		TrollMode mode = view_as<TrollMode>(StringToInt(str[1]));
+		int modifier = StringToInt(str[2]);
+		ApplyModeToClient(param1, client, mode, modifier);
+	} else if (action == MenuAction_End)	
+		delete menu;
 }
 public Action Event_ItemPickup(int client, int weapon) {
 	char wpnName[64];
@@ -295,7 +327,7 @@ public Action Event_ItemPickup(int client, int weapon) {
 		|| StrContains(wpnName, "shotgun") > -1
 	) {
 		//If 4: Only UZI, if 5: Can't switch.
-		if(iTrollUsers[client] == view_as<int>(Troll_UziRules)) {
+		if(iTrollUsers[client] == Troll_UziRules) {
 			char currentWpn[32];
 			GetClientWeaponName(client, 0, currentWpn, sizeof(currentWpn));
 			if(StrEqual(wpnName, "weapon_smg", true)) {
@@ -309,7 +341,7 @@ public Action Event_ItemPickup(int client, int weapon) {
 				SetCommandFlags("give", flags|FCVAR_CHEAT);
 				return Plugin_Stop;
 			}
-		}else if(iTrollUsers[client] == view_as<int>(Troll_PrimaryDisable)) {
+		}else if(iTrollUsers[client] == Troll_PrimaryDisable) {
 			return Plugin_Stop;
 		}
 		return Plugin_Continue;
@@ -319,7 +351,7 @@ public Action Event_ItemPickup(int client, int weapon) {
 }
 public Action Event_WeaponReload(int weapon) {
 	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwner");
-	if(iTrollUsers[client] == view_as<int>(Troll_GunJam)) {
+	if(iTrollUsers[client] == Troll_GunJam) {
 		float dec = GetRandomFloat(0.0, 1.0);
 		if(FloatCompare(dec, 0.10) == -1) { //10% chance gun jams
 			return Plugin_Stop;
@@ -332,7 +364,7 @@ public Action Event_WeaponReload(int weapon) {
 public Action Timer_ThrowTimer(Handle timer) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && iTrollUsers[i] == 11) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && iTrollUsers[i] == Troll_ThrowItAll) {
 			ThrowAllItems(i);
 			count++;
 		}
@@ -359,9 +391,11 @@ public Action Timer_Main(Handle timer) {
 	}
 	return Plugin_Continue;
 }
-void ApplyModeToClient(int client, int victim, int mode, bool single) {
+//Applies the selected TrollMode to the victim.
+//Modifiers are as followed: 0 -> Both (fire instant, and timer), 1 -> Fire Once, 2 -> Start timer
+void ApplyModeToClient(int client, int victim, TrollMode mode, int modifier) {
 	ResetClient(victim);
-	if(mode > TROLL_MODE_COUNT || mode < 0) {
+	if(view_as<int>(mode) > TROLL_MODE_COUNT || view_as<int>(mode) < 0) {
 		ReplyToCommand(client, "Unknown troll mode ID '%d'. Pick a mode between 1 and %d", mode, TROLL_MODE_COUNT - 1);
 		return;
 	}
@@ -404,7 +438,7 @@ void ApplyModeToClient(int client, int victim, int mode, bool single) {
 			ReplyToCommand(client, "This troll mode is not implemented.");
 		case Troll_ThrowItAll: {
 			ThrowAllItems(victim);
-			if(hThrowTimer == INVALID_HANDLE && !single) {
+			if(hThrowTimer == INVALID_HANDLE && modifier != 2) {
 				PrintToServer("Created new throw item timer");
 				hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
 			}
@@ -457,7 +491,7 @@ public Action Timer_ThrowWeapon(Handle timer, Handle pack) {
 }
 
 void ResetClient(int victim) {
-	iTrollUsers[victim] = 0;
+	iTrollUsers[victim] = Troll_Reset;
 	SetEntityGravity(victim, 1.0);
 	SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
 	SDKUnhook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
