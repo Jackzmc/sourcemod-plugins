@@ -27,7 +27,7 @@
 10 -> KillMeSoftly (Make player eat or waste pills whenever)
 11 -> ThrowItAll (Makes player just throw all their items at a nearby player, and periodically)
 */
-#define TROLL_MODE_COUNT 12
+#define TROLL_MODE_COUNT 13
 enum TROLL_MODE {
 	Troll_ResetUser, //0
 	Troll_SlowSpeed, //1
@@ -40,7 +40,8 @@ enum TROLL_MODE {
 	Troll_iCantSpellNoMore, //8
 	Troll_CameTooEarly, //9
 	Troll_KillMeSoftly, //10
-	Troll_ThrowItAll //1
+	Troll_ThrowItAll, //11
+	Troll_GunJam //12
 }
 static const char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
 	"Reset User", //0
@@ -54,7 +55,8 @@ static const char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
 	"iCantSpellNoMore", //8
 	"CameTooEarly", //9
 	"KillMeSoftly", //10
-	"ThrowItAll" //11
+	"ThrowItAll", //11
+	"GunJam" //12
 };
 static const char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Resets the user, removes all troll effects", //0
@@ -68,7 +70,8 @@ static const char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Chat messages letter will randomly changed with wrong letters ", //8
 	"When they shoot, random chance they empty whole clip", //9
 	"Make player eat or waste pills whenever possible", //10
-	"Player throws all their items at nearby player, periodically" //11
+	"Player throws all their items at nearby player, periodically", //11
+	"On reload, small chance their gun gets jammed - Can't reload." //12
 };
 
 public Plugin myinfo = 
@@ -120,6 +123,7 @@ public void OnPluginStart() {
 		UpdateTrollTargets();
 		CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
+
 }
 
 //(dis)connection events
@@ -222,7 +226,8 @@ public Action Command_ApplyUser(int client, int args) {
 			}
 			for (int i = 0; i < target_count; i++)
 			{
-				ApplyModeToClient(client, target_list[i], mode, false);
+				if(GetClientTeam(target_list[i]) == 2)
+					ApplyModeToClient(client, target_list[i], mode, false);
 			}
 		}
 	}
@@ -238,7 +243,8 @@ public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
 		if(IsClientConnected(i) && IsPlayerAlive(i) && iTrollUsers[i] > 0) {
-			ReplyToCommand(client, "%N | Mode %d", i, iTrollUsers[i]);
+			int mode = iTrollUsers[i];
+			ReplyToCommand(client, "%N | Mode %s (#%d)", i, TROLL_MODES_NAMES[mode], mode);
 			count++;
 		}
 	}
@@ -311,6 +317,16 @@ public Action Event_ItemPickup(int client, int weapon) {
 		return Plugin_Continue;
 	}
 }
+public Action Event_WeaponReload(int weapon) {
+	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwner");
+	if(iTrollUsers[client] == view_as<int>(Troll_GunJam)) {
+		float dec = GetRandomFloat(0.0, 1.0);
+		if(FloatCompare(dec, 0.10) == -1) { //10% chance gun jams
+			return Plugin_Stop;
+		}
+	}
+	return Plugin_Continue;
+}
 // #endregion
 // #region timer
 public Action Timer_ThrowTimer(Handle timer) {
@@ -345,6 +361,11 @@ public Action Timer_Main(Handle timer) {
 }
 void ApplyModeToClient(int client, int victim, int mode, bool single) {
 	ResetClient(victim);
+	if(mode > TROLL_MODE_COUNT || mode < 0) {
+		ReplyToCommand(client, "Unknown troll mode ID '%d'. Pick a mode between 1 and %d", mode, TROLL_MODE_COUNT - 1);
+		return;
+	}
+
 	switch(mode) {
 		case Troll_SlowDrain: 
 			SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 0.8);
@@ -388,9 +409,15 @@ void ApplyModeToClient(int client, int victim, int mode, bool single) {
 				hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
 			}
 		}
-		default: {
-			ReplyToCommand(client, "Unknown troll mode: %d", mode);
-			PrintToServer("Unknown troll mode to apply: %d", mode);
+		case Troll_GunJam: {
+			int wpn = GetClientWeaponEntIndex(victim, 0);
+			if(wpn > -1)
+				SDKHook(wpn, SDKHook_Reload, Event_WeaponReload);
+			else
+				ReplyToCommand(client, "Victim does not have a primary weapon.");
+		} default: {
+			ReplyToCommand(client, "This trollmode is not implemented.");
+			PrintToServer("Troll Mode #%d not implemented (%s)", mode, TROLL_MODES_NAMES[mode]);
 		}
 	}
 	ShowActivity(client, "activated troll mode \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
@@ -433,7 +460,10 @@ void ResetClient(int victim) {
 	iTrollUsers[victim] = 0;
 	SetEntityGravity(victim, 1.0);
 	SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
-	SDKUnhook(victim, SDKHook_WeaponEquip, Event_ItemPickup);
+	SDKUnhook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+	int wpn = GetClientWeaponEntIndex(victim, 0);
+	if(wpn > -1)
+		SDKUnhook(wpn, SDKHook_Reload, Event_WeaponReload);
 }
 
 void ThrowAllItems(int victim) {
