@@ -29,18 +29,18 @@
 */
 #define TROLL_MODE_COUNT 12
 enum TROLL_MODE {
-	ResetUser, //0
-	SlowSpeed, //1
-	HigherGravity, //2
-	HalfPrimaryAmmo, //3
-	UziRules, //4
-	PrimaryDisable, //5
-	SlowDrain, //6
-	Clumsy, //7
-	iCantSpellNoMore, //8
-	CameTooEarly, //9
-	KillMeSoftly, //10
-	ThrowItAll //1
+	Troll_ResetUser, //0
+	Troll_SlowSpeed, //1
+	Troll_HigherGravity, //2
+	Troll_HalfPrimaryAmmo, //3
+	Troll_UziRules, //4
+	Troll_PrimaryDisable, //5
+	Troll_SlowDrain, //6
+	Troll_Clumsy, //7
+	Troll_iCantSpellNoMore, //8
+	Troll_CameTooEarly, //9
+	Troll_KillMeSoftly, //10
+	Troll_ThrowItAll //1
 }
 static const char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
 	"Reset User", //0
@@ -253,9 +253,6 @@ public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int par
 		char info[16];
 		menu.GetItem(param2, info, sizeof(info));
 		int userid = StringToInt(info);
-		int client = GetClientOfUserId(userid);
-
-		ReplyToCommand(param1, "You selected player: %N (userid: %d)", client, userid);
 		
 		Menu trollMenu = new Menu(ChooseModeMenuHandler);
 		trollMenu.SetTitle("Choose a troll mode");
@@ -292,12 +289,11 @@ public Action Event_ItemPickup(int client, int weapon) {
 		|| StrContains(wpnName, "shotgun") > -1
 	) {
 		//If 4: Only UZI, if 5: Can't switch.
-		if(iTrollUsers[client] == 4) {
-			char currentWpn[16];
-			//TODO: Fix new weapons being given when user has one??
-			GetClientWeapon(client, currentWpn, sizeof(currentWpn));
+		if(iTrollUsers[client] == view_as<int>(Troll_UziRules)) {
+			char currentWpn[32];
+			GetClientWeaponName(client, 0, currentWpn, sizeof(currentWpn));
 			if(StrEqual(wpnName, "weapon_smg", true)) {
-				return StrEqual(currentWpn, "weapon_smg", true) ? Plugin_Stop : Plugin_Continue;
+				return Plugin_Continue;
 			} else if(StrEqual(currentWpn, "weapon_smg", true)) {
 				return Plugin_Stop;
 			}else{
@@ -307,9 +303,10 @@ public Action Event_ItemPickup(int client, int weapon) {
 				SetCommandFlags("give", flags|FCVAR_CHEAT);
 				return Plugin_Stop;
 			}
-		}else{
+		}else if(iTrollUsers[client] == view_as<int>(Troll_PrimaryDisable)) {
 			return Plugin_Stop;
 		}
+		return Plugin_Continue;
 	}else{
 		return Plugin_Continue;
 	}
@@ -319,7 +316,7 @@ public Action Event_ItemPickup(int client, int weapon) {
 public Action Timer_ThrowTimer(Handle timer) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && iTrollUsers[i] == 11) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && iTrollUsers[i] == 11) {
 			ThrowAllItems(i);
 			count++;
 		}
@@ -331,7 +328,7 @@ public Action Timer_Main(Handle timer) {
 	for(int i = 1; i < MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i)) {
 			switch(iTrollUsers[i]) {
-				case SlowDrain:
+				case Troll_SlowDrain:
 					if(loop % 4 == 0) {
 						int hp = GetClientHealth(i);
 						if(hp > 50) {
@@ -349,19 +346,19 @@ public Action Timer_Main(Handle timer) {
 void ApplyModeToClient(int client, int victim, int mode, bool single) {
 	ResetClient(victim);
 	switch(mode) {
-		case SlowDrain: 
+		case Troll_SlowDrain: 
 			SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 0.8);
-		case HigherGravity:
+		case Troll_HigherGravity:
 			SetEntityGravity(victim, 1.3);
-		case HalfPrimaryAmmo: {
+		case Troll_HalfPrimaryAmmo: {
 			int current = GetPrimaryReserveAmmo(victim);
 			SetPrimaryReserveAmmo(victim, current / 2);
 		}
-		case UziRules:
-			SDKHook(victim, SDKHook_WeaponEquip, Event_ItemPickup);
-		case PrimaryDisable: 
-			SDKHook(victim, SDKHook_WeaponEquip, Event_ItemPickup);
-		case Clumsy: {
+		case Troll_UziRules:
+			SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+		case Troll_PrimaryDisable: 
+			SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+		case Troll_Clumsy: {
 			int wpn = GetClientSecondaryWeapon(victim);
 			bool hasMelee = DoesClientHaveMelee(victim);
 			if(hasMelee) {
@@ -382,9 +379,9 @@ void ApplyModeToClient(int client, int victim, int mode, bool single) {
 				SDKHooks_DropWeapon(victim, wpn);
 			}
 		}
-		case CameTooEarly:
+		case Troll_CameTooEarly:
 			ReplyToCommand(client, "This troll mode is not implemented.");
-		case ThrowItAll: {
+		case Troll_ThrowItAll: {
 			ThrowAllItems(victim);
 			if(hThrowTimer == INVALID_HANDLE && !single) {
 				PrintToServer("Created new throw item timer");
@@ -440,7 +437,6 @@ void ResetClient(int victim) {
 }
 
 void ThrowAllItems(int victim) {
-
 	float vicPos[3], destPos[3];
 	int clients[4];
 	GetClientAbsOrigin(victim, vicPos);
