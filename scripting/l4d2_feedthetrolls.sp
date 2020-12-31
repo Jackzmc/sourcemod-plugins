@@ -13,21 +13,10 @@
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
+//TODO: Detect if player activates crescendo from far away
+//Possibly cancel event, make poll for other users. if no one responds, activate troll mode/swarm or kick/ban depending on FF amount?
 
-/*
-1 -> Slow speed (0.8 < 1.0 base)
-2 -> Higher gravity (1.3 > 1.0)
-3 -> Set primary reserve ammo in half
-4 -> UziRules (Pickup weapon defaults to uzi)
-5 -> PrimaryDisable (Cannot pickup primary weapons at all)
-6 -> Slow Drain (Slowly drains hp over time)
-7 -> Clusmy (Drops their melee weapon)
-8 -> IcantSpellNoMore (Chat messages letter will randomly changed with wrong letters )
-9 -> CameTooEarly (When they shoot, they empty the whole clip at once.)
-10 -> KillMeSoftly (Make player eat or waste pills whenever)
-11 -> ThrowItAll (Makes player just throw all their items at a nearby player, and periodically)
-*/
-#define TROLL_MODE_COUNT 13
+#define TROLL_MODE_COUNT 15
 enum TrollMode {
 	Troll_Reset, //0
 	Troll_SlowSpeed, //1
@@ -41,7 +30,9 @@ enum TrollMode {
 	Troll_CameTooEarly, //9
 	Troll_KillMeSoftly, //10
 	Troll_ThrowItAll, //11
-	Troll_GunJam //12
+	Troll_GunJam, //12
+	Troll_NoPickup, //13
+	Troll_Swarm //14
 }
 enum TrollModifer(<<= 1) {
 	TrollMod_None = 0,
@@ -61,7 +52,9 @@ static const char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
 	"CameTooEarly", //9
 	"KillMeSoftly", //10
 	"ThrowItAll", //11
-	"GunJam" //12
+	"GunJam", //12
+	"NoPickup",
+	"Swarm"
 };
 static const char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Resets the user, removes all troll effects", //0
@@ -76,7 +69,9 @@ static const char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"When they shoot, random chance they empty whole clip", //9
 	"Make player eat or waste pills whenever possible", //10
 	"Player throws all their items at nearby player, periodically", //11
-	"On reload, small chance their gun gets jammed - Can't reload." //12
+	"On reload, small chance their gun gets jammed - Can't reload.", //12
+	"Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop",
+	"Swarms a player with zombies. Requires swarm plugin"
 };
 
 public Plugin myinfo = 
@@ -88,7 +83,7 @@ public Plugin myinfo =
 	url = ""
 };
 Handle hThrowTimer;
-ConVar hVictimsList, hThrowItemInterval;
+ConVar hVictimsList, hThrowItemInterval, hAutoPunish;
 bool bTrollTargets[MAXPLAYERS+1], lateLoaded;
 int iTrollMode = 0; //troll mode. 0 -> Slosdown | 1 -> Higher Gravity | 2 -> CameTooEarly | 3 -> UziRules
 
@@ -118,6 +113,7 @@ public void OnPluginStart() {
 	hVictimsList.AddChangeHook(Change_VictimList);
 	hThrowItemInterval = CreateConVar("sm_ftt_throw_interval", "30", "The interval in seconds to throw items. 0 to disable", FCVAR_NONE, true, 0.0);
 	hThrowItemInterval.AddChangeHook(Change_ThrowInterval);
+	hAutoPunish = CreateConVar("sm_autopunish_mode", "0", "Setup automatic punishment of players. Add bits together. 0: Disabled, 1: Early Crescendos", FCVAR_NONE, true, 0.0);
 
 	RegAdminCmd("sm_ftl", Command_ListTheTrolls, ADMFLAG_ROOT, "Lists all the trolls currently ingame.");
 	RegAdminCmd("sm_ftm", Command_ListModes, ADMFLAG_ROOT, "Lists all the troll modes and their description");
@@ -128,8 +124,37 @@ public void OnPluginStart() {
 		UpdateTrollTargets();
 		CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
-
+	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 }
+public void OnPluginEnd() {
+	UnhookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
+}
+
+public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
+	if(hAutoPunish.IntValue & 1 > 0) {
+		float closestDistance = -1.0, cPos[3], scanPos[3];
+		GetClientAbsOrigin(client, cPos);
+
+		for(int i = 1; i < MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && i != client) {
+				GetClientAbsOrigin(i, scanPos);
+				float dist = GetVectorDistance(cPos, scanPos, false);
+				if(closestDistance < dist) {
+					closestDistance = dist;
+				}
+			}
+		}
+		if(FloatCompare(closestDistance, -1.0) == 1 && closestDistance <= 1000) {
+			TrollMode mode = view_as<TrollMode>(GetRandomInt(1, TROLL_MODE_COUNT));
+			ApplyModeToClient(0, client, mode, TrollMod_InstantFire);
+			UnhookSingleEntityOutput(entity, "OnPressed", Event_ButtonPress);
+			return Plugin_Stop;
+		}
+		return Plugin_Continue;
+	}
+	return Plugin_Continue;
+}
+
 
 //(dis)connection events
 public void OnMapStart() {
@@ -291,6 +316,7 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 			|| mode ==Troll_ThrowItAll
 			|| mode == Troll_PrimaryDisable
 			|| mode == Troll_CameTooEarly
+			|| mode == Troll_Swarm
 		) {
 			Menu modiferMenu = new Menu(CHooseTrollModiferHandler); 
 			modiferMenu.SetTitle("Choose Troll Modifer Option");
@@ -323,35 +349,39 @@ public int CHooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 		delete menu;
 }
 public Action Event_ItemPickup(int client, int weapon) {
-	char wpnName[64];
-	GetEdictClassname(weapon, wpnName, sizeof(wpnName));
-	if(StrContains(wpnName, "rifle") > -1 
-		|| StrContains(wpnName, "smg") > -1 
-		|| StrContains(wpnName, "weapon_grenade_launcher") > -1 
-		|| StrContains(wpnName, "sniper") > -1
-		|| StrContains(wpnName, "shotgun") > -1
-	) {
-		//If 4: Only UZI, if 5: Can't switch.
-		if(iTrollUsers[client] == Troll_UziRules) {
-			char currentWpn[32];
-			GetClientWeaponName(client, 0, currentWpn, sizeof(currentWpn));
-			if(StrEqual(wpnName, "weapon_smg", true)) {
-				return Plugin_Continue;
-			} else if(StrEqual(currentWpn, "weapon_smg", true)) {
-				return Plugin_Stop;
-			}else{
-				int flags = GetCommandFlags("give");
-				SetCommandFlags("give", flags & ~FCVAR_CHEAT);
-				FakeClientCommand(client, "give smg");
-				SetCommandFlags("give", flags|FCVAR_CHEAT);
+	if(iTrollUsers[client] == Troll_NoPickup) {
+		return Plugin_Stop;
+	}else{
+		char wpnName[64];
+		GetEdictClassname(weapon, wpnName, sizeof(wpnName));
+		if(StrContains(wpnName, "rifle") > -1 
+			|| StrContains(wpnName, "smg") > -1 
+			|| StrContains(wpnName, "weapon_grenade_launcher") > -1 
+			|| StrContains(wpnName, "sniper") > -1
+			|| StrContains(wpnName, "shotgun") > -1
+		) {
+			//If 4: Only UZI, if 5: Can't switch.
+			if(iTrollUsers[client] == Troll_UziRules) {
+				char currentWpn[32];
+				GetClientWeaponName(client, 0, currentWpn, sizeof(currentWpn));
+				if(StrEqual(wpnName, "weapon_smg", true)) {
+					return Plugin_Continue;
+				} else if(StrEqual(currentWpn, "weapon_smg", true)) {
+					return Plugin_Stop;
+				}else{
+					int flags = GetCommandFlags("give");
+					SetCommandFlags("give", flags & ~FCVAR_CHEAT);
+					FakeClientCommand(client, "give smg");
+					SetCommandFlags("give", flags|FCVAR_CHEAT);
+					return Plugin_Stop;
+				}
+			}else if(iTrollUsers[client] == Troll_PrimaryDisable) {
 				return Plugin_Stop;
 			}
-		}else if(iTrollUsers[client] == Troll_PrimaryDisable) {
-			return Plugin_Stop;
+			return Plugin_Continue;
+		}else{
+			return Plugin_Continue;
 		}
-		return Plugin_Continue;
-	}else{
-		return Plugin_Continue;
 	}
 }
 public Action Event_WeaponReload(int weapon) {
@@ -421,6 +451,8 @@ void ApplyModeToClient(int client, int victim, TrollMode mode, TrollModifer modi
 			SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
 		case Troll_PrimaryDisable: 
 			SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+		case Troll_NoPickup:
+			SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
 		case Troll_Clumsy: {
 			//TODO: Implement modifier code
 			int wpn = GetClientSecondaryWeapon(victim);
@@ -453,6 +485,9 @@ void ApplyModeToClient(int client, int victim, TrollMode mode, TrollModifer modi
 				PrintToServer("Created new throw item timer");
 				hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
 			}
+		}
+		case Troll_Swarm: {
+			//TODO: Implement swarm
 		}
 		case Troll_GunJam: {
 			int wpn = GetClientWeaponEntIndex(victim, 0);
