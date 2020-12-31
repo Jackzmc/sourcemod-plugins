@@ -87,10 +87,10 @@ public Action BotControlTimerV2(Handle timer)
 		if(!bEscapeReady) FindExistingTank();
 		return Plugin_Stop;
 	}
-	if(iAliveTanks == 0) return Plugin_Continue;
+	if(iAliveTanks == 0 || GetClientCount(true) == 0) return Plugin_Continue;
 
-	int botHealth, closestTank, tank_target, distanceFromSurvivor;
-	float BotPosition[3], TankPosition[3], smallestDistance;
+	int botHealth, closestTank, tank_target;
+	float BotPosition[3], TankPosition[3], smallestDistance, distanceFromSurvivor;
 
 	//Loop all players, finding survivors. (survivor team, bots, not tank.)
 	for (int i = 1; i <= MaxClients; i++) {
