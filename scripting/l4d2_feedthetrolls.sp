@@ -43,6 +43,11 @@ enum TrollMode {
 	Troll_ThrowItAll, //11
 	Troll_GunJam //12
 }
+enum TrollModifer(<<= 1) {
+	TrollMod_None = 0,
+	TrollMod_InstantFire = 1,
+	TrollMod_Repeat
+}
 static const char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
 	"Reset User", //0
 	"Slow Speed", //1
@@ -227,7 +232,7 @@ public Action Command_ApplyUser(int client, int args) {
 			for (int i = 0; i < target_count; i++)
 			{
 				if(GetClientTeam(target_list[i]) == 2)
-					ApplyModeToClient(client, target_list[i], view_as<TrollMode>(mode), false);
+					ApplyModeToClient(client, target_list[i], view_as<TrollMode>(mode), TrollMod_None);
 			}
 		}
 	}
@@ -292,14 +297,14 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 			char singleUse[16], multiUse[16], bothUse[16];
 			Format(singleUse, sizeof(singleUse), "%d|%d|1");
 			Format(multiUse,   sizeof(multiUse), "%d|%d|2");
-			Format(bothUse,     sizeof(bothUse), "%d|%d|0");
+			Format(bothUse,     sizeof(bothUse), "%d|%d|3");
 			menu.AddItem(singleUse, "Activate once");
 			menu.AddItem(multiUse, "Activate Periodically");
 			menu.AddItem(bothUse, "Activate Periodically & Instantly");
 			modiferMenu.ExitButton = true;
 			modiferMenu.Display(param1, 0);
 		} else {
-			ApplyModeToClient(param1, client, mode, 0);
+			ApplyModeToClient(param1, client, mode, TrollMod_None);
 		}
     } else if (action == MenuAction_End)
         delete menu;
@@ -312,7 +317,7 @@ public int CHooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 		ExplodeString(info, "|", str, 3, 8, false);
 		int client = GetClientOfUserId(StringToInt(str[0]));
 		TrollMode mode = view_as<TrollMode>(StringToInt(str[1]));
-		int modifier = StringToInt(str[2]);
+		TrollModifer modifier = view_as<TrollModifer>(StringToInt(str[2]));
 		ApplyModeToClient(param1, client, mode, modifier);
 	} else if (action == MenuAction_End)	
 		delete menu;
@@ -393,12 +398,14 @@ public Action Timer_Main(Handle timer) {
 }
 //Applies the selected TrollMode to the victim.
 //Modifiers are as followed: 0 -> Both (fire instant, and timer), 1 -> Fire Once, 2 -> Start timer
-void ApplyModeToClient(int client, int victim, TrollMode mode, int modifier) {
+void ApplyModeToClient(int client, int victim, TrollMode mode, TrollModifer modifiers) {
 	ResetClient(victim);
 	if(view_as<int>(mode) > TROLL_MODE_COUNT || view_as<int>(mode) < 0) {
 		ReplyToCommand(client, "Unknown troll mode ID '%d'. Pick a mode between 1 and %d", mode, TROLL_MODE_COUNT - 1);
 		return;
 	}
+
+	bool hasActivationMod = (modifiers & ~TrollMod_InstantFire & ~TrollMod_Repeat) == TrollMod_None;
 
 	switch(mode) {
 		case Troll_SlowDrain: 
@@ -406,6 +413,7 @@ void ApplyModeToClient(int client, int victim, TrollMode mode, int modifier) {
 		case Troll_HigherGravity:
 			SetEntityGravity(victim, 1.3);
 		case Troll_HalfPrimaryAmmo: {
+			//TODO: Implement modifier code
 			int current = GetPrimaryReserveAmmo(victim);
 			SetPrimaryReserveAmmo(victim, current / 2);
 		}
@@ -414,6 +422,7 @@ void ApplyModeToClient(int client, int victim, TrollMode mode, int modifier) {
 		case Troll_PrimaryDisable: 
 			SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
 		case Troll_Clumsy: {
+			//TODO: Implement modifier code
 			int wpn = GetClientSecondaryWeapon(victim);
 			bool hasMelee = DoesClientHaveMelee(victim);
 			if(hasMelee) {
@@ -435,10 +444,12 @@ void ApplyModeToClient(int client, int victim, TrollMode mode, int modifier) {
 			}
 		}
 		case Troll_CameTooEarly:
+			//TODO: Implement modifier code
 			ReplyToCommand(client, "This troll mode is not implemented.");
 		case Troll_ThrowItAll: {
-			ThrowAllItems(victim);
-			if(hThrowTimer == INVALID_HANDLE && modifier != 2) {
+			if(!hasActivationMod || (modifiers | TrollMod_InstantFire) == TrollMod_InstantFire)
+				ThrowAllItems(victim);
+			if(hThrowTimer == INVALID_HANDLE && (!hasActivationMod|| (modifiers | TrollMod_Repeat) == TrollMod_Repeat)) {
 				PrintToServer("Created new throw item timer");
 				hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
 			}
