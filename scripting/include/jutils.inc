@@ -333,18 +333,34 @@ stock bool IsPrimaryWeapon(const char[] wpnName) {
 		|| StrContains(wpnName, "sniper") > -1
 		|| StrContains(wpnName, "shotgun") > -1;
 }
-stock int GetClientSecondaryWeapon(int client) {
-	int wpnRef = GetPlayerWeaponSlot(client, 1);
-	if(wpnRef != -1) {
-		int wpn = EntRefToEntIndex(wpnRef);
-		if(wpn != INVALID_ENT_REFERENCE) {
-			return wpn;
+stock int GetClientWeaponEntIndex(int client, int slot) {
+	if(slot >= 0 && slot <= 4) {
+		int wpnRef = GetPlayerWeaponSlot(client, slot);
+		if(wpnRef != -1) {
+			int wpn = EntRefToEntIndex(wpnRef);
+			if(wpn != INVALID_ENT_REFERENCE) {
+				return wpn;
+			}else{
+				return -1;
+			}
 		}else{
 			return -1;
 		}
 	}else{
 		return -1;
 	}
+}
+stock bool GetClientWeaponName(int client, int slot, char[] name, int nameSize) {
+	int wpn = GetClientWeaponEntIndex(client, slot);
+	if(wpn > -1) {
+		GetEntityClassname(wpn, name, nameSize);
+		return true;
+	}else{
+		return false;
+	}
+}
+stock int GetClientSecondaryWeapon(int client) {
+	return GetClientWeaponEntIndex(client, 1);
 }
 stock bool DoesClientHaveMelee(int client) {
 	int wpnEnt = GetClientSecondaryWeapon(client);
@@ -355,4 +371,91 @@ stock bool DoesClientHaveMelee(int client) {
 	}else{
 		return false;
 	}
+}
+
+stock bool IsValidClient(int client, int checkTeam = 0) {
+	int team = checkTeam > 0 ? GetClientTeam(client) : 0;
+	return IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && team == checkTeam; 
+} 
+
+stock bool IsClientInSightRange(int client, int target, float angle = 90.0, float distance = 0.0, bool heightcheck = true, bool negativeangle = false) {
+	if(angle > 360.0 || angle < 0.0)
+		ThrowError("Angle Max : 360 & Min : 0. %d isn't proper angle.", angle);
+	else if(!IsValidClient(client))
+		ThrowError("Client is not Alive.");
+	else if(!IsValidClient(target))
+		ThrowError("Target is not Alive.");
+		
+	float clientPos[3], targetPos[3], angleVector[3], targetVector[3], resultAngle, resultDistance;
+	
+	GetClientEyeAngles(client, angleVector);
+	angleVector[0] = angleVector[2] = 0.0;
+	GetAngleVectors(angleVector, angleVector, NULL_VECTOR, NULL_VECTOR);
+	NormalizeVector(angleVector, angleVector);
+	if(negativeangle)
+		NegateVector(angleVector);
+
+	GetClientAbsOrigin(client, clientPos);
+	GetClientAbsOrigin(target, targetPos);
+	if(heightcheck && distance > 0)
+		resultDistance = GetVectorDistance(clientPos, targetPos);
+	clientPos[2] = targetPos[2] = 0.0;
+	MakeVectorFromPoints(clientPos, targetPos, targetVector);
+	NormalizeVector(targetVector, targetVector);
+	
+	resultAngle = RadToDeg(ArcCosine(GetVectorDotProduct(targetVector, angleVector)));
+	
+	if(resultAngle <= angle/2)	
+	{
+		if(distance > 0)
+		{
+			if(!heightcheck)
+				resultDistance = GetVectorDistance(clientPos, targetPos);
+				
+			return distance >= resultDistance;
+		}
+		else return true;
+	}
+	else return false;
+}
+
+stock bool IsEntityInSightRange(int client, int target, float angle = 90.0, float distance = 0.0, bool heightcheck = true, bool negativeangle = false) {
+	if(angle > 360.0 || angle < 0.0)
+		ThrowError("Angle Max : 360 & Min : 0. %d isn't proper angle.", angle);
+	else if(!IsValidClient(client))
+		ThrowError("Client is not Alive.");
+	else if(target <= MaxClients || !IsValidEntity(target))
+		ThrowError("Target is not valid entity.");
+		
+	float clientPos[3], targetPos[3], angleVector[3], targetVector[3], resultAngle, resultDistance;
+	
+	GetClientEyeAngles(client, angleVector);
+	angleVector[0] = angleVector[2] = 0.0;
+	GetAngleVectors(angleVector, angleVector, NULL_VECTOR, NULL_VECTOR);
+	NormalizeVector(angleVector, angleVector);
+	if(negativeangle)
+		NegateVector(angleVector);
+
+	GetClientAbsOrigin(client, clientPos);
+	GetEntPropVector(target, Prop_Send, "m_vecOrigin", targetPos);
+	if(heightcheck && distance > 0)
+		resultDistance = GetVectorDistance(clientPos, targetPos);
+	clientPos[2] = targetPos[2] = 0.0;
+	MakeVectorFromPoints(clientPos, targetPos, targetVector);
+	NormalizeVector(targetVector, targetVector);
+	
+	resultAngle = RadToDeg(ArcCosine(GetVectorDotProduct(targetVector, angleVector)));
+	
+	if(resultAngle <= angle/2)	
+	{
+		if(distance > 0)
+		{
+			if(!heightcheck)
+				resultDistance = GetVectorDistance(clientPos, targetPos);
+				
+			return distance >= resultDistance;
+		}
+		else return true;
+	}
+	else return false;
 }
