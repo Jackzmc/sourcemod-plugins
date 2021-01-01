@@ -3,11 +3,7 @@
 
 #define DEBUG
 
-#define PLUGIN_NAME "L4D2 Misc Tools"
-#define PLUGIN_DESCRIPTION "Includes: Notice on laser use, Timer for gauntlet runs"
-#define PLUGIN_AUTHOR "jackzmc"
 #define PLUGIN_VERSION "1.0"
-#define PLUGIN_URL ""
 
 #include <sourcemod>
 #include <sdktools>
@@ -19,11 +15,11 @@ ConVar hLaserNotice, hFinaleTimer, hFFNotice;
 int iFinaleStartTime;
 
 public Plugin myinfo = {
-	name = PLUGIN_NAME, 
-	author = PLUGIN_AUTHOR, 
-	description = PLUGIN_DESCRIPTION, 
+	name = "L4D2 Misc Tools",
+	author = "Includes: Notice on laser use, Timer for gauntlet runs",
+	description = "jackzmc", 
 	version = PLUGIN_VERSION, 
-	url = PLUGIN_URL
+	url = ""
 };
 
 public void OnPluginStart() {
@@ -33,7 +29,7 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 	hLaserNotice = CreateConVar("sm_laser_use_notice", "1.0", "Enable notification of a laser box being used", FCVAR_NONE, true, 0.0, true, 1.0);
-	hFinaleTimer = CreateConVar("sm_time_finale", "2.0", "Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales", FCVAR_NONE, true, 0.0, true, 2.0);
+	hFinaleTimer = CreateConVar("sm_time_finale", "0.0", "Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales", FCVAR_NONE, true, 0.0, true, 2.0);
 	hFFNotice    = CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
 
 	HookEvent("player_use", Event_PlayerUse);
@@ -42,6 +38,8 @@ public void OnPluginStart() {
 	HookEvent("gauntlet_finale_start", Event_GauntletStart);
 	HookEvent("finale_start", Event_FinaleStart);
 	HookEvent("finale_vehicle_leaving", Event_FinaleEnd);
+
+	AutoExecConfig(true, "l4d2_tools");
 	
 	//RegAdminCmd("sm_respawn", Command_SpawnSpecial, ADMFLAG_CHEATS, "Respawn a dead survivor right where they died.");
 }
