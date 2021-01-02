@@ -76,6 +76,7 @@ public void OnClientDisconnect(int client) {
 public Action Cmd_Swarm(int client, int args) {
 	if(args == 0) {
 		SwarmUser(-1, hSwarmDefaultRange.IntValue);
+		ShowActivity(client, "toggled swarming random player with radius %d", hSwarmDefaultRange.IntValue);
 		ReplyToCommand(client, "Swarming random player at %d radius.", hSwarmDefaultRange.IntValue);
 	}else{
 		char arg1[32], arg2[32];
@@ -104,6 +105,7 @@ public Action Cmd_Swarm(int client, int args) {
 			return Plugin_Handled;
 		}
 		SwarmUser(GetClientUserId(target_list[0]), range);
+		ShowActivity(client, "swarming player \"%N\" with radius %d", target_list[0], range);
 		ReplyToCommand(client, "Swarming victim %N. Radius: %d", target_list[0], range);
 	}
 	return Plugin_Handled;
@@ -157,6 +159,7 @@ public Action Cmd_SwarmToggle(int client, int args) {
 		}else{
 			SwarmTarget = GetClientUserId(target_list[0]);
 			SwarmUser(GetClientUserId(target_list[0]), range);
+			ShowActivity(client, "toggled swarming player \"%N\" with radius %d", target_list[0], range);
 			ReplyToCommand(client, "Now continously swarming victim %N. Radius: %d", target_list[0], range);
 			if(timer == INVALID_HANDLE)
 				timer = CreateTimer(1.0, Timer_Swarm, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
@@ -202,8 +205,9 @@ public int Handle_SwarmMenu(Menu menu, MenuAction action, int client, int index)
 		char info[4];
 		menu.GetItem(index, info, sizeof(info));
 		int userid = StringToInt(info);
+		int clientID = GetClientOfUserId(userid);
 		SwarmUser(userid, hSwarmDefaultRange.IntValue);
-		PrintToChat(client, "Swarming player #%d with radius %d", userid, hSwarmDefaultRange.IntValue);
+		ShowActivity(client, "swarming player \"%N\" with radius %d", clientID, hSwarmDefaultRange.IntValue);
 		Cmd_SwarmMenu(client, 0);
 	} else if (action == MenuAction_End) {
 		delete menu;
@@ -220,6 +224,7 @@ public int Handle_SwarmMenuToggle(Menu menu, MenuAction action, int client, int 
 		if(StrEqual(info, "x", true)) {
 			SwarmTarget = -1;
 			SwarmRadius = hSwarmDefaultRange.IntValue;
+			ShowActivity(client, "disabled swarm toggle");
 			PrintToChat(client, "Disabled swarm toggle.", SwarmTarget, SwarmRadius);
 			CloseHandle(timer);
 			timer = INVALID_HANDLE;
@@ -228,12 +233,14 @@ public int Handle_SwarmMenuToggle(Menu menu, MenuAction action, int client, int 
 			if(clickedUser != SwarmTarget) {
 				SwarmTarget = clickedUser;
 				int clientID = GetClientOfUserId(SwarmTarget);
+				ShowActivity(client, "toggled swarming player \"%N\" with radius %d", clientID, SwarmRadius);
 				PrintToChat(client, "Toggled swarm on for %N (#%d). Radius: %d", clientID, SwarmTarget, SwarmRadius);
 				if(timer == INVALID_HANDLE)
 					timer = CreateTimer(1.0, Timer_Swarm, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 			}else{
 				SwarmTarget = -1;
 				SwarmRadius = hSwarmDefaultRange.IntValue;
+				PrintToChat(client, "Disabled swarm toggle.", SwarmTarget, SwarmRadius);
 				ReplyToCommand(client, "Deactivated swarm toggle.");
 				CloseHandle(timer);
 				timer = INVALID_HANDLE;
