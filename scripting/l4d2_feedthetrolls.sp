@@ -10,6 +10,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include "jutils.inc"
+#include <multicolors>
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
@@ -19,7 +20,7 @@
 
 public Plugin myinfo = 
 {
-	name = "L4D(2) Feed The Trolls", 
+	name = "L4D2 Feed The Trolls", 
 	author = "jackzmc", 
 	description = "https://forums.alliedmods.net/showthread.php?t=325331", 
 	version = PLUGIN_VERSION, 
@@ -48,7 +49,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
-	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2) {
+	if(g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 	LoadTranslations("common.phrases");
@@ -301,6 +302,80 @@ public Action Event_ButtonPress(const char[] output, int entity, int client, flo
 	}
 	return Plugin_Continue;
 }
+public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
+	if(HasTrollMode(client, Troll_iCantSpellNoMore)) {
+		int type = GetRandomInt(1, 24);
+		char letterSrc, replaceChar;
+		switch(type) {
+			case 1: {
+				letterSrc = 'e';
+				replaceChar = 'b';
+			}
+			case 2: {
+				letterSrc = 't';
+				replaceChar = 'e';
+			}
+			case 3: {
+				letterSrc = 'i';
+				replaceChar = 'e';
+			}
+			case 4: {
+				letterSrc = 'a';
+				replaceChar = 's';
+			}
+			case 5: {
+				letterSrc = 'u';
+				replaceChar = 'i';
+			}
+			case 6: {
+				letterSrc = '.';
+				replaceChar = '/';
+			}
+			case 7: {
+				letterSrc = 'm';
+				replaceChar = 'n';
+			}
+			case 8: {
+				letterSrc = 'n';
+				replaceChar = 'm';
+			}
+			case 9: {
+				letterSrc = 'l';
+				replaceChar = 'b';
+			}
+			case 10: {
+				letterSrc = 'l';
+				replaceChar = 'b';
+			}
+			case 11: {
+				letterSrc = 'h';
+				replaceChar = 'j';
+			}
+			case 12: {
+				letterSrc = 'o';
+				replaceChar = 'i';
+			}
+
+			default:
+				return Plugin_Continue;
+		}
+		
+		int strLength = strlen(sArgs);
+		char[] newMessage = new char[strLength + 20];
+		int n = 0;
+		while (sArgs[n] != '\0') {
+			if(sArgs[n] == letterSrc) {
+				newMessage[n] = replaceChar;
+			}else{
+				newMessage[n] = sArgs[n];
+			}
+			n++;
+		}  
+		CPrintToChatAll("{blue}%N {default}:  %s", client, newMessage);
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
+}
 public Action Event_ItemPickup(int client, int weapon) {
 	if(HasTrollMode(client,Troll_NoPickup)) {
 		return Plugin_Stop;
@@ -336,6 +411,21 @@ public Action Event_ItemPickup(int client, int weapon) {
 			return Plugin_Continue;
 		}
 	}
+}
+public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
+	if(g_bPendingItemGive[client] && !(buttons & IN_ATTACK2)) {
+		int target = GetClientAimTarget(client, true);
+		if(target > -1) {
+			buttons |= IN_ATTACK2;
+			RequestFrame(StopItemGive, client);
+			return Plugin_Changed;
+		}
+		return Plugin_Continue;
+	}
+	return Plugin_Continue;
+}
+public void StopItemGive(int client) {
+	g_bPendingItemGive[client] = false;
 }
 public Action Event_WeaponReload(int weapon) {
 	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwner");
@@ -509,5 +599,20 @@ stock bool SetPrimaryReserveAmmo(int client, int amount) {
 		return true;
 	} else {
 		return false;
+	}
+}
+
+
+stock void SendChatToAll(int client, const char[] message) {
+	char nameBuf[MAX_NAME_LENGTH];
+	
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientInGame(i) || IsFakeClient(i))
+		{
+			continue;
+		}
+		FormatActivitySource(client, i, nameBuf, sizeof(nameBuf));
+		PrintToChat(i, "\x03 %s : \x01%s", nameBuf, message);
 	}
 }
