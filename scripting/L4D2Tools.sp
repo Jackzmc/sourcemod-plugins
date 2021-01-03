@@ -40,11 +40,41 @@ public void OnPluginStart() {
 	HookEvent("finale_start", Event_FinaleStart);
 	HookEvent("finale_vehicle_leaving", Event_FinaleEnd);
 	HookEvent("player_entered_checkpoint", Event_EnterSaferoom);
+	HookEvent("player_bot_replace", Event_BotPlayerSwap);
+	HookEvent("bot_player_replace", Event_BotPlayerSwap);
 
 	AutoExecConfig(true, "l4d2_tools");
+
+	for(int client = 1; client < MaxClients; client++) {
+		if(IsClientConnected(client) && IsClientInGame(client) && IsFakeClient(client) && GetClientTeam(client) == 2) {
+			SDKHook(client, SDKHook_WeaponDrop, Event_OnWeaponDrop);
+		}
+	}
 	
 	//RegAdminCmd("sm_respawn", Command_SpawnSpecial, ADMFLAG_CHEATS, "Respawn a dead survivor right where they died.");
 }
+
+public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
+	int bot = GetClientOfUserId(event.GetInt("bot"));
+	if(StrEqual(name, "player_bot_replace")) {
+		//Bot replaced player
+		SDKHook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
+	}else{
+		//Player replaced a bot
+		SDKUnhook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
+	}
+}
+
+public Action Event_OnWeaponDrop(int client, int weapon) {
+	char wpn[32];
+	GetEdictClassname(weapon, wpn, sizeof(wpn));
+	if(StrEqual(wpn, "weapon_melee") && GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
+		return Plugin_Stop;
+	}else{
+		return Plugin_Continue;
+	}
+}
+
 
 public void Event_EnterSaferoom(Event event, const char[] name, bool dontBroadcast) {
 	char currentGamemode[16];
