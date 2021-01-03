@@ -144,15 +144,15 @@ This really only affects wandering zombies, mobs and panic events, but it may wo
 This plugin allows you to enact certain troll modes on any player, some are subtle some are less so. Either way, it works great to deal with a rusher, an asshole or even your friends.
 
 Troll Modes: (updated 1/2/2021)
-1. **SlowSpeed** (0.8 < 1.0 base) Slows down a user
-2. **HigherGravity** (1.3 > 1.0) Adds more gravity to a user
-3. **HalfPrimary** Sets user's primary reserve ammo in half
-4. **UziRules** Picking up a weapon only gives them a UZI
-5. **PrimaryDisable** Cannot pickup primary weapons at all
+1. **SlowSpeed** (0.8 < 1.0 base) - Slows down a user
+2. **HigherGravity** (1.3 > 1.0) - Adds more gravity to a user
+3. **HalfPrimary** - Sets user's primary reserve ammo in half
+4. **UziRules** - Picking up a weapon only gives them a UZI
+5. **PrimaryDisable** - Cannot pickup primary weapons at all
 6. **SlowDrain** - Health slowly drains every few seconds (controlled by cvar)
 7. **Clusmy** - Randomly drops any melee weapon, great with a swarm
-8. **IcantSpellNoMore** (Not Implemented) - Garble their chat messages
-9. **CameTooEarly** - A chance that when shooting, they empty a whole clip at once
+8. **IcantSpellNoMore** - Garble their chat messages
+9. **CameTooEarly** - (not implemented) A chance that when shooting, they empty a whole clip at once
 10. **KillMeSoftly** - Makes the player eat or waste their pills
 11. **ThrowItAll** - Makes a player throw all their items at any nearby players. Runs on the interval set by sm_ftt_throw_interval.
 12. **GunJam** - On reload, small chance their gun gets jammed - Can't reload.
@@ -162,7 +162,7 @@ Troll Modes: (updated 1/2/2021)
 * **Convars:**
   * `sm_ftt_victims` - A comma separated list of troll targets. Unused while new version is being implemented
   * `sm_ftt_throw_interval` - For troll mode 'ThrowItAll' (#11), how often players will re-throw all their items. 0 to disable
-  * `sm_autopunish_mode` - (Not used, WIP) Sets the modes that auto punish will activate for. 1 -> Early crescendo activations
+  * `sm_ftt_autopunish_mode` - (Not used, WIP) Sets the modes that auto punish will activate for. 1 -> Early crescendo activations
 * **Commands:**
   * `sm_fta <player(s)> <mode #>` - Applies a mode to a set of users. See list above
   * `sm_fta` - No arguments: Shows a menu, choose player, mode, and modifiers all in one.
