@@ -7,11 +7,11 @@
 
 #include <sourcemod>
 #include <sdktools>
-//#include <sdkhooks>
+#include <sdkhooks>
 
 
 bool bLasersUsed[2048];
-ConVar hLaserNotice, hFinaleTimer, hFFNotice;
+ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode;
 int iFinaleStartTime;
 
 public Plugin myinfo = {
@@ -38,10 +38,32 @@ public void OnPluginStart() {
 	HookEvent("gauntlet_finale_start", Event_GauntletStart);
 	HookEvent("finale_start", Event_FinaleStart);
 	HookEvent("finale_vehicle_leaving", Event_FinaleEnd);
+	HookEvent("player_entered_checkpoint", Event_EnterSaferoom);
 
 	AutoExecConfig(true, "l4d2_tools");
 	
 	//RegAdminCmd("sm_respawn", Command_SpawnSpecial, ADMFLAG_CHEATS, "Respawn a dead survivor right where they died.");
+}
+
+public void Event_EnterSaferoom(Event event, const char[] name, bool dontBroadcast) {
+	char currentGamemode[16];
+	hMPGamemode.GetString(currentGamemode, sizeof(currentGamemode));
+	if(StrEqual(currentGamemode, "tankrun", false)) {
+		int user = GetClientOfUserId(event.GetInt("userid"));
+		if(!IsFakeClient(user)) {
+			CreateTimer(1.0, Timer_TPBots, user);
+		}
+	}
+}
+
+public Action Timer_TPBots(Handle timer, any user) {
+	float pos[3];
+	GetClientAbsOrigin(user, pos);
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientInGame(i) && IsFakeClient(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			TeleportEntity(i, pos, NULL_VECTOR, NULL_VECTOR);
+		}
+	}
 }
 
 //laserNotice
