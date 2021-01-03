@@ -56,7 +56,8 @@ char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop",
 	"Swarms a player with zombies. Requires swarm plugin"
 };
-int iTrollUsers[MAXPLAYERS+1];
+int g_iTrollUsers[MAXPLAYERS+1];
+bool g_bPendingItemGive[MAXPLAYERS+1];
 
 //Applies the selected trollMode to the victim.
 //Modifiers are as followed: 0 -> Both (fire instant, and timer), 1 -> Fire Once, 2 -> Start timer
@@ -70,9 +71,11 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifer modi
 	bool hasActivationMod = (modifiers & ~TrollMod_InstantFire & ~TrollMod_Repeat) == TrollMod_None;
 
 	switch(mode) {
+		case Troll_iCantSpellNoMore: {}
+		
 		case Troll_Reset: {
 			ShowActivity(client, "reset troll effects for %N. ", victim);
-			iTrollUsers[victim] = Troll_Reset;
+			g_iTrollUsers[victim] = Troll_Reset;
 			return;
 		} 
 		case Troll_SlowSpeed: 
@@ -113,7 +116,7 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifer modi
 						float targPos[3];
 						GetClientAbsOrigin(clients[i], targPos);
 						SDKHooks_DropWeapon(victim, wpn, targPos);
-						iTrollUsers[victim] = mode;
+						g_iTrollUsers[victim] = mode;
 						CreateTimer(0.2, Timer_GivePistol);
 						return;
 					}
@@ -124,6 +127,19 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifer modi
 		case Troll_CameTooEarly:
 			//TODO: Implement modifier code
 			ReplyToCommand(client, "This troll mode is not implemented.");
+		case Troll_KillMeSoftly: {
+			char wpn[32];
+			GetClientWeaponName(victim, 4, wpn, sizeof(wpn));
+			if(StrEqual(wpn, "weapon_adrendaline") || StrEqual(wpn, "weapon_pain_pills")) {
+				ClientCommand(victim, "slot5");
+				g_bPendingItemGive[victim] = true;
+			}else{
+				ReplyToCommand(client, "User does not have pills or adrendaline");
+				return;
+			}
+			//TODO: Implement TrollMod_Repeat
+			return;
+		}
 		case Troll_ThrowItAll: {
 			if(!hasActivationMod || (modifiers | TrollMod_InstantFire) == TrollMod_InstantFire)
 				ThrowAllItems(victim);
@@ -157,16 +173,16 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifer modi
 	ShowActivity(client, "activated troll mode \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
 	//If instant fire mod not provided (aka instead of no modifiers which equals both) OR repeat turned on, set bit:
 	if((modifiers | TrollMod_InstantFire) != TrollMod_InstantFire || ((modifiers | TrollMod_Repeat) == TrollMod_Repeat)) {
-		iTrollUsers[victim]  |= 1 << (view_as<int>(mode) - 1);
+		g_iTrollUsers[victim]  |= 1 << (view_as<int>(mode) - 1);
 	}
 }
 
 bool HasTrollMode(int client, trollMode mode) {
-	return ((iTrollUsers[client] >> view_as<int>(mode) - 1) & 1) == 1;
+	return ((g_iTrollUsers[client] >> view_as<int>(mode) - 1) & 1) == 1;
 }
 
 void ToggleTrollMode(int client, trollMode mode) {
-	iTrollUsers[client] ^= 1 << view_as<int>(mode) -1;
+	g_iTrollUsers[client] ^= 1 << view_as<int>(mode) -1;
 }
 
 void TurnOffTrollMode(int client, trollMode mode) {
@@ -176,7 +192,7 @@ void TurnOffTrollMode(int client, trollMode mode) {
 }
 
 void ResetClient(int victim, bool wipe = true) {
-	if(wipe) iTrollUsers[victim] = Troll_Reset;
+	if(wipe) g_iTrollUsers[victim] = Troll_Reset;
 	SetEntityGravity(victim, 1.0);
 	SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
 	SDKUnhook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);

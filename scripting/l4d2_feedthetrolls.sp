@@ -26,15 +26,17 @@ public Plugin myinfo =
 	version = PLUGIN_VERSION, 
 	url = ""
 };
+//HANDLES
 Handle hThrowTimer;
+//CONVARS
 ConVar hVictimsList, hThrowItemInterval, hAutoPunish;
-bool bTrollTargets[MAXPLAYERS+1], lateLoaded;
-int itrollMode = 0; //troll mode. 0 -> Slosdown | 1 -> Higher Gravity | 2 -> CameTooEarly | 3 -> UziRules
+//BOOLS
+bool lateLoaded; //Is plugin late loaded
+bool bChooseVictimAvailable = false; //For charge player feature, is it available?
+//INTEGERS
+int g_iAmmoTable; //Loads the ammo table to get ammo amounts
+int gChargerVictim = -1; //For charge player feature
 
-int g_iAmmoTable;
-int gChargerVictim = -1;
-
-bool bChooseVictimAvailable = false;
 
 #include "feedthetrolls.inc"
 
@@ -59,23 +61,28 @@ public void OnPluginStart() {
 	hVictimsList.AddChangeHook(Change_VictimList);
 	hThrowItemInterval = CreateConVar("sm_ftt_throw_interval", "30", "The interval in seconds to throw items. 0 to disable", FCVAR_NONE, true, 0.0);
 	hThrowItemInterval.AddChangeHook(Change_ThrowInterval);
-	hAutoPunish = CreateConVar("sm_autopunish_mode", "0", "Setup automatic punishment of players. Add bits together. 0: Disabled, 1: Early Crescendos", FCVAR_NONE, true, 0.0);
+	hAutoPunish = CreateConVar("sm_ftt_autopunish_mode", "0", "Setup automatic punishment of players. Add bits together. 0: Disabled, 1: Early Crescendos", FCVAR_NONE, true, 0.0);
 
 	RegAdminCmd("sm_ftl", Command_ListTheTrolls, ADMFLAG_ROOT, "Lists all the trolls currently ingame.");
 	RegAdminCmd("sm_ftm", Command_ListModes, ADMFLAG_ROOT, "Lists all the troll modes and their description");
 	RegAdminCmd("sm_ftr", Command_ResetUser, ADMFLAG_ROOT, "Resets user of any troll effects.");
 	RegAdminCmd("sm_fta", Command_ApplyUser, ADMFLAG_ROOT, "Apply a troll mod to a player, or shows menu if no parameters.");
 
+	AutoExecConfig(true, "l4d2_feedthetrolls");
+
 	if(lateLoaded) {
-		UpdateTrollTargets();
 		CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+		HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 	}
-	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 }
 public void OnPluginEnd() {
 	UnhookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 }
+public void OnMapEnd() {
+	UnhookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
+}
 public void OnMapStart() {
+	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 	CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 public void OnClientAuthorized(int client, const char[] auth) {
@@ -83,12 +90,8 @@ public void OnClientAuthorized(int client, const char[] auth) {
         TestForTarget(client, auth);
     }
 }
-public void OnClientDisconnect(int client) {
-	bTrollTargets[client] = false;
-}
 // #region evrnts
 public void Change_VictimList(ConVar convar, const char[] oldValue, const char[] newValue) {
-    UpdateTrollTargets();
 }
 public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const char[] newValue) {
 	//If a throw timer exists (someone has mode 11), destroy & recreate w/ new interval
@@ -125,7 +128,7 @@ public Action Command_ResetUser(int client, int args) {
 		}
 		for (int i = 0; i < target_count; i++)
 		{
-			ResetClient(target_list[i]);
+			ResetClient(target_list[i], true);
 			ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
 		}
 	}
@@ -189,8 +192,8 @@ public Action Command_ListModes(int client, int args) {
 public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsPlayerAlive(i) && iTrollUsers[i] > 0) {
-			int modes = iTrollUsers[i], modeCount = 0;
+		if(IsClientConnected(i) && IsPlayerAlive(i) && g_iTrollUsers[i] > 0) {
+			int modes = g_iTrollUsers[i], modeCount = 0;
 			char modeListArr[TROLL_MODE_COUNT][32];
 			for(int mode = 1; mode < TROLL_MODE_COUNT; mode++) {
 				//If troll mode exists:
@@ -453,7 +456,7 @@ public Action Timer_Main(Handle timer) {
 	static int loop;
 	for(int i = 1; i < MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i)) {
-			switch(iTrollUsers[i]) {
+			switch(g_iTrollUsers[i]) {
 				case Troll_SlowDrain:
 					if(loop % 4 == 0) {
 						int hp = GetClientHealth(i);
@@ -533,38 +536,6 @@ void ThrowAllItems(int victim) {
 }
 
 
-bool ApplyModeToTargets() {
-	int users = 0;
-	for(int i=1; i < MaxClients; i++) {
-		if(bTrollTargets[i]) {
-			users++;
-			//clear effects from previous troll:
-			SetEntityGravity(i, 1.0);
-			SetEntPropFloat(i, Prop_Send, "m_flLaggedMovementValue", 1.0);
-			
-			if(itrollMode == 0) { //slow mode, apply slow down affects
-				SetEntPropFloat(i, Prop_Send, "m_flLaggedMovementValue", 0.8);
-			}else if(itrollMode == 1) { //higher gravity
-				SetEntityGravity(i, 1.2);
-			}
-		}
-	}
-	//Stop loop if no one is being affected.
-	return (users == 0) ? true : false;
-	
-}
-void UpdateTrollTargets() {
-	for(int i = 1; i <= MaxClients; i++) {
-        bTrollTargets[i] = false;
-        if(IsClientInGame(i) && IsClientAuthorized(i)) {
-			if(!IsFakeClient(i)) {
-				char auth[64];
-				GetClientAuthId(i, AuthId_Steam2, auth, sizeof(auth));
-				TestForTarget(i, auth);
-			}
-		}
-	}
-}
 bool TestForTarget(int client, const char[] auth) {
 	char targets[32][8];
 	char raw_targets[64];
@@ -575,7 +546,6 @@ bool TestForTarget(int client, const char[] auth) {
             #if defined debug
 			PrintToServer("[Debug] Troll target detected with id %d and steamid %s", client, auth);
             #endif
-			bTrollTargets[client] = true;
 			return true;
 		}
 	}
