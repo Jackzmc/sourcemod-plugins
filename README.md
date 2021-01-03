@@ -155,11 +155,16 @@ Troll Modes: (updated 12/25/2020)
 9. **CameTooEarly** - A chance that when shooting, they empty a whole clip at once
 10. **KillMeSoftly** - Makes the player eat or waste their pills
 11. **ThrowItAll** - Makes a player throw all their items at any nearby players. Runs on the interval set by sm_ftt_throw_interval.
+12. **GunJam** - On reload, small chance their gun gets jammed - Can't reload.
+13. **NoPickup** - Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop
+14.	**Swarm** - Swarms a player with zombies. Requires my [swarm plugin](#l4d2_swarm)
 
 * **Convars:**
   * `sm_ftt_victims` - A comma separated list of troll targets. Unused while new version is being implemented
   * `sm_ftt_throw_interval` - For troll mode 'ThrowItAll' (#11), how often players will re-throw all their items. 0 to disable
+  * `sm_autopunish_mode` - (Not used, WIP) Sets the modes that auto punish will activate for. 1 -> Early crescendo activations
 * **Commands:**
   * `sm_fta <player(s)> <mode #>` - Applies a mode to a set of users. See list above
-  * `sm_ftr <player(s)>` - Removes the current troll mode, deactivates any feature.
-  * `sm_ftl` - Lists all players that have a troll mode activated.
+  * `sm_fta` - No arguments: Shows a menu, choose player, mode, and modifiers all in one.
+  * `sm_ftr <player(s)>` - Removes & deactivates all trolls.
+  * `sm_ftl` - Lists all players that have a mode applied.
