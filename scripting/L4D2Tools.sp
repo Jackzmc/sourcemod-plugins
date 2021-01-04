@@ -13,7 +13,9 @@
 bool bLasersUsed[2048];
 ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode;
 int iFinaleStartTime;
+int botDropMeleeWeapon[MAXPLAYERS+1];
 
+//TODO: Remove the Plugin_Stop on pickup, and give item back instead. keep reference to dropped weapon to delete.
 public Plugin myinfo = {
 	name = "L4D2 Misc Tools",
 	author = "Includes: Notice on laser use, Timer for gauntlet runs",
@@ -61,18 +63,33 @@ public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroad
 		SDKHook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 	}else{
 		//Player replaced a bot
+		int client = GetClientOfUserId(event.GetInt("player"));
+		if(botDropMeleeWeapon[bot] > 0) {
+			//todo:
+			int meleeOwnerEnt = GetEntPropEnt(botDropMeleeWeapon[bot], Prop_Send, "m_hOwnerEntity");
+			if(meleeOwnerEnt == -1) { 
+				EquipPlayerWeapon(client, botDropMeleeWeapon[bot]);
+				botDropMeleeWeapon[bot] = -1;
+			}else{
+				PrintToChatAll("client %N cannot equip", client);
+				PrintToConsole(client, "Could not give back your melee weapon, %N has it instead.", meleeOwnerEnt);
+			}
+		}
 		SDKUnhook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 	}
+}
+
+public void OnClientDisconnect(int client) {
+	botDropMeleeWeapon[client] = -1;
 }
 
 public Action Event_OnWeaponDrop(int client, int weapon) {
 	char wpn[32];
 	GetEdictClassname(weapon, wpn, sizeof(wpn));
 	if(StrEqual(wpn, "weapon_melee") && GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
-		return Plugin_Stop;
-	}else{
-		return Plugin_Continue;
+		botDropMeleeWeapon[client] = weapon;
 	}
+	return Plugin_Continue;
 }
 
 
