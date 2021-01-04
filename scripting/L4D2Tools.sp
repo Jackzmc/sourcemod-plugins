@@ -8,6 +8,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include "jutils.inc"
 
 
 bool bLasersUsed[2048];
@@ -52,8 +53,54 @@ public void OnPluginStart() {
 			SDKHook(client, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 		}
 	}
-	
-	//RegAdminCmd("sm_respawn", Command_SpawnSpecial, ADMFLAG_CHEATS, "Respawn a dead survivor right where they died.");
+
+	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_ROOT);
+}
+
+public Action Command_SetClientModel(int client, int args) {
+	if(args < 1) {
+		ReplyToCommand(client, "Usage: sm_model <player> <model>");
+	}else{
+		char arg1[32], arg2[16];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+
+		char modelPath[64];
+		int modelID = GetSurvivorId(arg2);
+		if(modelID == -1) {
+			ReplyToCommand(client, "Could not find a valid survivor.");
+			return Plugin_Handled;
+		}
+		GetSurvivorModel(modelID, modelPath, sizeof(modelPath));
+
+		char target_name[MAX_TARGET_LENGTH];
+		int target_list[MAXPLAYERS], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+				arg1,
+				client,
+				target_list,
+				MAXPLAYERS,
+				COMMAND_FILTER_ALIVE, /* Only allow alive players */
+				target_name,
+				sizeof(target_name),
+				tn_is_ml)) <= 0)
+		{
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		for (int i = 0; i < target_count; i++) {
+			SetEntProp(target_list[i], Prop_Send, "m_survivorCharacter", modelID);
+			SetEntityModel(target_list[i], modelPath);
+			if (IsFakeClient(target_list[i])) {
+				char name[32];
+				GetSurvivorName(target_list[i], name, sizeof(name));
+				SetClientInfo(target_list[i], "name", name);
+            }
+		}
+	}
+	return Plugin_Handled;
 }
 
 public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
@@ -71,7 +118,6 @@ public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroad
 				EquipPlayerWeapon(client, botDropMeleeWeapon[bot]);
 				botDropMeleeWeapon[bot] = -1;
 			}else{
-				PrintToChatAll("client %N cannot equip", client);
 				PrintToConsole(client, "Could not give back your melee weapon, %N has it instead.", meleeOwnerEnt);
 			}
 		}
@@ -206,35 +252,6 @@ stock void FormatSeconds(int raw_sec, char[] str, int strSize) {
 	}
 	
 }
-stock void ShowDelayedHintToAll(const char[] format, any ...) {
-	char buffer[254];
-	VFormat(buffer, sizeof(buffer), format, 2);
-	static int hintInt = 0;
-	if(hintInt >= 10) {
-		PrintHintTextToAll("%s",buffer);
-		hintInt = 0;
-	}
-	hintInt++;
-}
-stock void ShowDelayedHint(int client, const char[] format, any ...) {
-	char buffer[254];
-	VFormat(buffer, sizeof(buffer), format, 2);
-	static int hintInt = 0;
-	if(hintInt >= 10) {
-		PrintHintText(client, "%s",buffer);
-		hintInt = 0;
-	}
-	hintInt++;
-}
-stock void CheatCommand(int client, const char[] command, const char[] argument1, const char[] argument2) {
-	int userFlags = GetUserFlagBits(client);
-	SetUserFlagBits(client, ADMFLAG_ROOT);
-	int flags = GetCommandFlags(command);
-	SetCommandFlags(command, flags & ~FCVAR_CHEAT);
-	FakeClientCommand(client, "%s %s %s", command, argument1, argument2);
-	SetCommandFlags(command, flags);
-	SetUserFlagBits(client, userFlags);
-} 
 stock int GetAnyValidClient() {
 	for (int i = 1; i <= MaxClients; i++)
 	{
