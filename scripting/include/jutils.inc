@@ -139,6 +139,54 @@ stock bool FindSurvivorModel(const char str[16], char[] model, int modelStrSize)
 	}
 	return false;
 }
+//returns true if model found
+stock bool GetSurvivorName(int client, char[] buffer, int length) {
+
+	char modelName[38];
+	GetClientModel(client, modelName, sizeof(modelName));
+	if(StrContains(modelName,"biker",false) > -1) {
+		strcopy(buffer, length, "Francis"); 
+	}else if(StrContains(modelName,"teenangst",false) > -1) {
+		strcopy(buffer, length, "Zoey"); 
+	}else if(StrContains(modelName,"namvet",false) > -1) {
+		strcopy(buffer, length, "Bill"); 
+	}else if(StrContains(modelName,"manager",false) > -1) {
+		strcopy(buffer, length, "Louis"); 
+	}else if(StrContains(modelName,"coach",false) > -1) {
+		strcopy(buffer, length, "Coach"); 
+	}else if(StrContains(modelName,"producer",false) > -1) {
+		strcopy(buffer, length, "Rochelle"); 
+	}else if(StrContains(modelName,"gambler",false) > -1) {
+		strcopy(buffer, length, "Nick"); 
+	}else if(StrContains(modelName,"mechanic",false) > -1) {
+		strcopy(buffer, length, "Ellis"); 
+	}else{
+		return false;
+	}
+	return true;
+}
+
+stock int GetSurvivorType(const char[] modelName) {
+	if(StrContains(modelName,"biker",false) > -1) {
+		return 6;
+	}else if(StrContains(modelName,"teenangst",false) > -1) {
+		return 5;
+	}else if(StrContains(modelName,"namvet",false) > -1) {
+		return 4;
+	}else if(StrContains(modelName,"manager",false) > -1) {
+		return 7;
+	}else if(StrContains(modelName,"coach",false) > -1) {
+		return 2;
+	}else if(StrContains(modelName,"producer",false) > -1) {
+		return 1;
+	}else if(StrContains(modelName,"gambler",false) > -1) {
+		return 0;
+	}else if(StrContains(modelName,"mechanic",false) > -1) {
+		return 3;
+	}else{
+		return false;
+	}
+}
 stock bool TraceFilter(int entity, int contentsMask) {
 	if( entity <= MaxClients )
 		return false;
@@ -193,54 +241,7 @@ stock bool SpawnMinigun(const float vPos[3], const float vAng[3]) {
 		return false;
 	}
 }
-//returns true if model found
-stock bool GetSurvivorName(int client, char[] buffer, int length) {
 
-	char modelName[38];
-	GetClientModel(client, modelName, sizeof(modelName));
-	if(StrContains(modelName,"biker",false) > -1) {
-		strcopy(buffer, length, "Francis"); 
-	}else if(StrContains(modelName,"teenangst",false) > -1) {
-		strcopy(buffer, length, "Zoey"); 
-	}else if(StrContains(modelName,"namvet",false) > -1) {
-		strcopy(buffer, length, "Bill"); 
-	}else if(StrContains(modelName,"manager",false) > -1) {
-		strcopy(buffer, length, "Louis"); 
-	}else if(StrContains(modelName,"coach",false) > -1) {
-		strcopy(buffer, length, "Coach"); 
-	}else if(StrContains(modelName,"producer",false) > -1) {
-		strcopy(buffer, length, "Rochelle"); 
-	}else if(StrContains(modelName,"gambler",false) > -1) {
-		strcopy(buffer, length, "Nick"); 
-	}else if(StrContains(modelName,"mechanic",false) > -1) {
-		strcopy(buffer, length, "Ellis"); 
-	}else{
-		return false;
-	}
-	return true;
-}
-
-stock int GetSurvivorType(const char[] modelName) {
-	if(StrContains(modelName,"biker",false) > -1) {
-		return 6;
-	}else if(StrContains(modelName,"teenangst",false) > -1) {
-		return 5;
-	}else if(StrContains(modelName,"namvet",false) > -1) {
-		return 4;
-	}else if(StrContains(modelName,"manager",false) > -1) {
-		return 7;
-	}else if(StrContains(modelName,"coach",false) > -1) {
-		return 2;
-	}else if(StrContains(modelName,"producer",false) > -1) {
-		return 1;
-	}else if(StrContains(modelName,"gambler",false) > -1) {
-		return 0;
-	}else if(StrContains(modelName,"mechanic",false) > -1) {
-		return 3;
-	}else{
-		return false;
-	}
-}
 
 stock bool GiveClientWeapon(int client, const char[] wpnName, bool lasers) {
 	char sTemp[64];
@@ -298,8 +299,7 @@ stock int GetPrimaryAmmo(int client) {
 	else
 		return -1;
 }
-stock void CheatCommand(int client, const char[] command, const char[] argument1, const char[] argument2)
-{
+stock void CheatCommand(int client, const char[] command, const char[] argument1, const char[] argument2) {
 	int userFlags = GetUserFlagBits(client);
 	SetUserFlagBits(client, ADMFLAG_ROOT);
 	int flags = GetCommandFlags(command);

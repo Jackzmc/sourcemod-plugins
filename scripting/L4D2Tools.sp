@@ -1,7 +1,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define DEBUG
+//#define DEBUG
 
 #define PLUGIN_VERSION "1.0"
 
@@ -10,11 +10,11 @@
 #include <sdkhooks>
 #include "jutils.inc"
 
+static bool bLasersUsed[2048];
+static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode;
+static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1];
 
-bool bLasersUsed[2048];
-ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode;
-int iFinaleStartTime;
-int botDropMeleeWeapon[MAXPLAYERS+1];
+static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
 
 //TODO: Remove the Plugin_Stop on pickup, and give item back instead. keep reference to dropped weapon to delete.
 public Plugin myinfo = {
@@ -112,7 +112,8 @@ public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroad
 		//Player replaced a bot
 		int client = GetClientOfUserId(event.GetInt("player"));
 		if(botDropMeleeWeapon[bot] > 0) {
-			//todo:
+			//TODO: If entity (weapon) not valid (aka level switched), give them a new one no matter what
+			//Also possibly prevent players from picking up any dropped weapons (no duplicates then ^)
 			int meleeOwnerEnt = GetEntPropEnt(botDropMeleeWeapon[bot], Prop_Send, "m_hOwnerEntity");
 			if(meleeOwnerEnt == -1) { 
 				EquipPlayerWeapon(client, botDropMeleeWeapon[bot]);
@@ -126,16 +127,28 @@ public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroad
 }
 
 public void OnClientDisconnect(int client) {
-	botDropMeleeWeapon[client] = -1;
+	if(botDropMeleeWeapon[client] > -1) {
+		float pos[3];
+		GetClientAbsOrigin(client, pos);
+		TeleportEntity(botDropMeleeWeapon[client], pos, NULL_VECTOR, NULL_VECTOR);
+		botDropMeleeWeapon[client] = -1;
+	}
 }
 
 public Action Event_OnWeaponDrop(int client, int weapon) {
 	char wpn[32];
 	GetEdictClassname(weapon, wpn, sizeof(wpn));
-	if(StrEqual(wpn, "weapon_melee") && GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
+	if(IsFakeClient(client) && StrEqual(wpn, "weapon_melee") && GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
+		#if defined DEBUG 0
+		PrintToServer("Bot %N dropped melee weapon %s", client, wpn);
+		#endif
+		CreateTimer(0.1, Timer_HideEntity, weapon);
 		botDropMeleeWeapon[client] = weapon;
 	}
 	return Plugin_Continue;
+}
+public Action Timer_HideEntity(Handle timer, int entity) {
+	TeleportEntity(entity, OUT_OF_BOUNDS, NULL_VECTOR, NULL_VECTOR);
 }
 
 
