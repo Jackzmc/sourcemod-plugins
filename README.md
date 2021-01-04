@@ -117,11 +117,20 @@ Code modified from https://forums.alliedmods.net/showthread.php?p=1741099
   * `sm_ai_remove_far` - Removes any holdout or minigun bots that are 750 units or more from any player.
 
 ### L4D2Tools
-A collection of small tools: Notification of when someone picks up laser sights (only the first user, includes bots), and records time it takes for a finale or gauntlet run.
+A collection of small tools: 
+  * Notification of when someone picks up laser sights (only the first user, includes bots), 
+  * Record time it takes for a finale or gauntlet run to be completed.
+  * Record the amount of friendly fire damage done
+  * Set the survivor models of any survivor to another
+  * Alert when a player activates a car alarm
+  * Automatically give back any dropped melee weapons once no longer idle (if not equipped by another player)
 
 * **Convars:**
    * `sm_laser_use_notice <0/1>` - Enable notification of when a laser box was used first
    * `sm_time_finale <0/1/2>` - Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales
+   * `sm_ff_notice <0/1/2>` - Should we record FF damages? 0: OFF, 1: To chat, 2: To HUD text.
+* **Commands:**
+  * `sm_model <player> <character>` - Sets the survivor model of the target player(s). 'character' is name or ID of character.
 
 ### l4d2_swarm
 This plugin is used to counter trolls and otherwise bad players. It simply uses the new script function RushVictim() to make all zombies in X radius attack Y target. It's that simple. 
