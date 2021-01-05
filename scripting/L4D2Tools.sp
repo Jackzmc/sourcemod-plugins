@@ -91,13 +91,17 @@ public Action Command_SetClientModel(int client, int args) {
 			return Plugin_Handled;
 		}
 		for (int i = 0; i < target_count; i++) {
-			SetEntProp(target_list[i], Prop_Send, "m_survivorCharacter", modelID);
-			SetEntityModel(target_list[i], modelPath);
-			if (IsFakeClient(target_list[i])) {
-				char name[32];
-				GetSurvivorName(target_list[i], name, sizeof(name));
-				SetClientInfo(target_list[i], "name", name);
-            }
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+				SetEntProp(target_list[i], Prop_Send, "m_survivorCharacter", modelID);
+				SetEntityModel(target_list[i], modelPath);
+				if (IsFakeClient(target_list[i])) {
+					char name[32];
+					GetSurvivorName(target_list[i], name, sizeof(name));
+					SetClientInfo(target_list[i], "name", name);
+				}
+			}else{
+				ReplyToCommand(client, "%N is not a valid player. Must be an alive survivor.", target_list[i]);
+			}
 		}
 	}
 	return Plugin_Handled;
@@ -140,15 +144,14 @@ public Action Event_OnWeaponDrop(int client, int weapon) {
 		#if defined DEBUG 0
 		PrintToServer("Bot %N dropped melee weapon %s", client, wpn);
 		#endif
-		CreateTimer(0.1, Timer_HideEntity, weapon);
+		RequestFrame(Frame_HideEntity, weapon);
 		botDropMeleeWeapon[client] = weapon;
 	}
 	return Plugin_Continue;
 }
-public Action Timer_HideEntity(Handle timer, int entity) {
+public void Frame_HideEntity(int entity) {
 	TeleportEntity(entity, OUT_OF_BOUNDS, NULL_VECTOR, NULL_VECTOR);
 }
-
 
 public void Event_EnterSaferoom(Event event, const char[] name, bool dontBroadcast) {
 	char currentGamemode[16];

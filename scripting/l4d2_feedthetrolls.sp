@@ -17,6 +17,8 @@
 //TODO: Detect if player activates crescendo from far away
 //Possibly cancel event, make poll for other users. if no one responds, activate troll mode/swarm or kick/ban depending on FF amount?
 
+//TODO: Replace all timers with userID not clientID. GetClientUserId() -> timer
+//On player_disconnect event, NOT the forward remove?
 
 public Plugin myinfo = 
 {
@@ -47,7 +49,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		lateLoaded = true;
 	}
 } 
-//TODO: Register a main loop (create / destroy on troll targets count). Implement 'slow drain' with loop.
+
 
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
@@ -68,6 +70,8 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_ftr", Command_ResetUser, ADMFLAG_ROOT, "Resets user of any troll effects.");
 	RegAdminCmd("sm_fta", Command_ApplyUser, ADMFLAG_ROOT, "Apply a troll mod to a player, or shows menu if no parameters.");
 
+	HookEvent("player_disconnect", Event_PlayerDisconnect);
+
 	AutoExecConfig(true, "l4d2_feedthetrolls");
 
 	if(lateLoaded) {
@@ -84,6 +88,13 @@ public void OnMapEnd() {
 public void OnMapStart() {
 	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 	CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+}
+public void OnPlayerDisconnect(int client) {
+	g_iTrollUsers[client] = 0;
+}
+public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	g_iTrollUsers[client] = 0;
 }
 public void OnClientAuthorized(int client, const char[] auth) {
     if(StrContains(auth, "BOT", true) == -1) {
@@ -128,8 +139,10 @@ public Action Command_ResetUser(int client, int args) {
 		}
 		for (int i = 0; i < target_count; i++)
 		{
-			ResetClient(target_list[i], true);
-			ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+				ResetClient(target_list[i], true);
+				ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
+			}
 		}
 	}
 	return Plugin_Handled;
@@ -282,6 +295,8 @@ public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 		delete menu;
 }
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
+	PrintToServer("Client %N pressed a func_button", client);
+	PrintToConsoleAll("Client %N pressed a func_button", client);
 	if(hAutoPunish.IntValue & 1 > 0) {
 		float closestDistance = -1.0, cPos[3], scanPos[3];
 		GetClientAbsOrigin(client, cPos);
