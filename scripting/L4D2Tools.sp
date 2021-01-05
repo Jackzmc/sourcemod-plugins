@@ -112,8 +112,6 @@ public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroad
 		//Player replaced a bot
 		int client = GetClientOfUserId(event.GetInt("player"));
 		if(botDropMeleeWeapon[bot] > 0) {
-			//TODO: If entity (weapon) not valid (aka level switched), give them a new one no matter what
-			//Also possibly prevent players from picking up any dropped weapons (no duplicates then ^)
 			int meleeOwnerEnt = GetEntPropEnt(botDropMeleeWeapon[bot], Prop_Send, "m_hOwnerEntity");
 			if(meleeOwnerEnt == -1) { 
 				EquipPlayerWeapon(client, botDropMeleeWeapon[bot]);
@@ -125,7 +123,7 @@ public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroad
 		SDKUnhook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 	}
 }
-
+//TODO: Might have to actually check for the bot they control, or possibly the bot will call this itself.
 public void OnClientDisconnect(int client) {
 	if(botDropMeleeWeapon[client] > -1) {
 		float pos[3];

@@ -10,3 +10,5 @@ scripting/L4D2Testing.sp
 plugins/L4D2Testing.smx
 scripting/cancer.sp
 plugins/sm_give.smx
+plugins/l4d2_stats_recorder.smx
+scripting/l4d2_stats_recorder.sp
