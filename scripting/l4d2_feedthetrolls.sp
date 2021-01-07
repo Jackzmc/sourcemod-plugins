@@ -139,7 +139,7 @@ public Action Command_ResetUser(int client, int args) {
 		}
 		for (int i = 0; i < target_count; i++)
 		{
-			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+			if(IsClientConnected(target_list[i]) && IsClientInGame(target_list[i]) && IsPlayerAlive(target_list[i]) && GetClientTeam(target_list[i]) == 2) {
 				ResetClient(target_list[i], true);
 				ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
 			}

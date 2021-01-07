@@ -130,11 +130,11 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifer modi
 		case Troll_KillMeSoftly: {
 			char wpn[32];
 			GetClientWeaponName(victim, 4, wpn, sizeof(wpn));
-			if(StrEqual(wpn, "weapon_adrendaline") || StrEqual(wpn, "weapon_pain_pills")) {
+			if(StrEqual(wpn, "weapon_adrenaline") || StrEqual(wpn, "weapon_pain_pills")) {
 				ClientCommand(victim, "slot5");
 				g_bPendingItemGive[victim] = true;
 			}else{
-				ReplyToCommand(client, "User does not have pills or adrendaline");
+				ReplyToCommand(client, "User does not have pills or adrenaline");
 				return;
 			}
 			//TODO: Implement TrollMod_Repeat

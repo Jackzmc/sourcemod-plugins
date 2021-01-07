@@ -350,6 +350,9 @@ stock int GetClientWeaponEntIndex(int client, int slot) {
 		return -1;
 	}
 }
+stock int GetClientSecondaryWeapon(int client) {
+	return GetClientWeaponEntIndex(client, 1);
+}
 stock bool GetClientWeaponName(int client, int slot, char[] name, int nameSize) {
 	int wpn = GetClientWeaponEntIndex(client, slot);
 	if(wpn > -1) {
@@ -359,9 +362,15 @@ stock bool GetClientWeaponName(int client, int slot, char[] name, int nameSize) 
 		return false;
 	}
 }
-stock int GetClientSecondaryWeapon(int client) {
-	return GetClientWeaponEntIndex(client, 1);
+stock bool DoesClientHaveWeapon(int client, int slot, const char[] name) {
+	char wpn[32];
+	if(GetClientWeaponName(client, slot, wpn, sizeof(wpn))) {
+		return StrEqual(wpn, name, false);
+	}else{
+		return false;
+	}
 }
+
 stock bool DoesClientHaveMelee(int client) {
 	int wpnEnt = GetClientSecondaryWeapon(client);
 	if(wpnEnt > -1) {
