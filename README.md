@@ -16,6 +16,7 @@ All my sourcemod plugins... shitty probably
 * [L4D2Tools](#L4D2Tools)
 * [l4d2_swarm](#l4d2_swarm)
 * [l4d2_feedthetrolls](#l4d2_feedthetrolls)
+* [l4d2_autobotcrown](#l4d2_autobotcrown)
 
 ## Descriptions
 ### csgo-knifehp
@@ -177,3 +178,6 @@ Troll Modes: (updated 1/2/2021)
   * `sm_fta` - No arguments: Shows a menu, choose player, mode, and modifiers all in one.
   * `sm_ftr <player(s)>` - Removes & deactivates all trolls.
   * `sm_ftl` - Lists all players that have a mode applied.
+
+### l4d2_autobotcrown
+Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Supports multiple bots, but only one bot can crown one witch at a time.
