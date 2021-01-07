@@ -136,7 +136,9 @@ public Action Timer_BotControlTimer(Handle hdl) {
 			//Check if bot has a valid shotgun, with ammo (probably can skip: bot mostly will be full).
 			if(GetClientHealth(bot) > 40) {
 				char wpn[32];
-				if(GetClientWeapon(bot, wpn, sizeof(wpn)) && StrEqual(wpn, "weapon_autoshotgun") || StrEqual(wpn, "weapon_shotgun_spas")) {
+				if(GetClientWeapon(bot, wpn, sizeof(wpn)) && 
+					StrEqual(wpn, "weapon_autoshotgun") || StrEqual(wpn, "weapon_shotgun_spas")
+				) {
 					GetClientAbsOrigin(bot, botPosition);
 					
 					for(int i = 0; i < WitchList.Length; i++) {
