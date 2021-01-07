@@ -27,10 +27,11 @@ public Plugin myinfo = {
 
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
-	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2)
-	{
+	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
+	LoadTranslations("common.phrases");
+	
 	hLaserNotice = CreateConVar("sm_laser_use_notice", "1.0", "Enable notification of a laser box being used", FCVAR_NONE, true, 0.0, true, 1.0);
 	hFinaleTimer = CreateConVar("sm_time_finale", "0.0", "Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales", FCVAR_NONE, true, 0.0, true, 2.0);
 	hFFNotice    = CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
@@ -91,7 +92,7 @@ public Action Command_SetClientModel(int client, int args) {
 			return Plugin_Handled;
 		}
 		for (int i = 0; i < target_count; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+			if(IsClientConnected(target_list[i]) && IsClientInGame(target_list[i]) && IsPlayerAlive(target_list[i]) && GetClientTeam(target_list[i]) == 2) {
 				SetEntProp(target_list[i], Prop_Send, "m_survivorCharacter", modelID);
 				SetEntityModel(target_list[i], modelPath);
 				if (IsFakeClient(target_list[i])) {
@@ -99,12 +100,25 @@ public Action Command_SetClientModel(int client, int args) {
 					GetSurvivorName(target_list[i], name, sizeof(name));
 					SetClientInfo(target_list[i], "name", name);
 				}
-			}else{
-				ReplyToCommand(client, "%N is not a valid player. Must be an alive survivor.", target_list[i]);
+
+				int primaryWeapon = GetClientWeaponEntIndex(target_list[i], 0);
+				SDKHooks_DropWeapon(target_list[i], primaryWeapon, NULL_VECTOR, NULL_VECTOR);
+
+				Handle pack;
+				CreateDataTimer(0.1, Timer_RequipWeapon, pack);
+				WritePackCell(pack, target_list[i]);
+				WritePackCell(pack, primaryWeapon);
 			}
 		}
 	}
 	return Plugin_Handled;
+}
+
+public Action Timer_RequipWeapon(Handle hdl, Handle pack) {
+	ResetPack(pack);
+	int client = ReadPackCell(pack);
+	int weaponID = ReadPackCell(pack);
+	EquipPlayerWeapon(client, weaponID);
 }
 
 public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
@@ -138,6 +152,7 @@ public void OnClientDisconnect(int client) {
 }
 
 public Action Event_OnWeaponDrop(int client, int weapon) {
+	if(!IsValidEntity(weapon)) return Plugin_Continue;
 	char wpn[32];
 	GetEdictClassname(weapon, wpn, sizeof(wpn));
 	if(IsFakeClient(client) && StrEqual(wpn, "weapon_melee") && GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
