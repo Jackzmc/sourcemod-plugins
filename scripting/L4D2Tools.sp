@@ -8,6 +8,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <left4dhooks>
 #include "jutils.inc"
 
 static bool bLasersUsed[2048];
@@ -15,6 +16,7 @@ static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode;
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1];
 
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
+static int extraKitsAmount = 0;
 
 //TODO: Remove the Plugin_Stop on pickup, and give item back instead. keep reference to dropped weapon to delete.
 public Plugin myinfo = {
@@ -25,6 +27,7 @@ public Plugin myinfo = {
 	url = ""
 };
 
+//TODO: Implement automatic extra kits
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
 	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2) {
@@ -46,16 +49,38 @@ public void OnPluginStart() {
 	HookEvent("player_entered_checkpoint", Event_EnterSaferoom);
 	HookEvent("player_bot_replace", Event_BotPlayerSwap);
 	HookEvent("bot_player_replace", Event_BotPlayerSwap);
+	HookEvent("map_transition", Event_MapTransition);
 
 	AutoExecConfig(true, "l4d2_tools");
 
 	for(int client = 1; client < MaxClients; client++) {
-		if(IsClientConnected(client) && IsClientInGame(client) && IsFakeClient(client) && GetClientTeam(client) == 2) {
-			SDKHook(client, SDKHook_WeaponDrop, Event_OnWeaponDrop);
+		if(IsClientConnected(client) && IsClientInGame(client) && GetClientTeam(client) == 2) {
+			if(IsFakeClient(client))
+				SDKHook(client, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 		}
 	}
 
 	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_ROOT);
+}
+//TODO: Give kits on fresh start as well, need to set extraKitsAmount
+public void OnMapStart() {
+	if(L4D_IsFirstMapInScenario()) {
+		extraKitsAmount = GetClientCount(true) - 4;
+		if(extraKitsAmount < 0) extraKitsAmount = 0;
+		PrintToServer("New map has started");
+	}
+	if(extraKitsAmount > 0) {
+		for(int i = 1; i < MaxClients + 1; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+				PrintToServer("Found a client to spawn %d extra kits: %N", extraKitsAmount, i);
+				while(extraKitsAmount > 0) {
+					CheatCommand(i, "give", "first_aid_kit", "");
+					extraKitsAmount--;
+				}
+				break;
+			}
+		}
+	}
 }
 
 public Action Command_SetClientModel(int client, int args) {
@@ -101,13 +126,15 @@ public Action Command_SetClientModel(int client, int args) {
 					SetClientInfo(target_list[i], "name", name);
 				}
 
-				int primaryWeapon = GetClientWeaponEntIndex(target_list[i], 0);
-				SDKHooks_DropWeapon(target_list[i], primaryWeapon, NULL_VECTOR, NULL_VECTOR);
+				int primaryWeapon = GetPlayerWeaponSlot(client, 0);
+				if(primaryWeapon > -1) {
+					SDKHooks_DropWeapon(target_list[i], primaryWeapon, NULL_VECTOR, NULL_VECTOR);
 
-				Handle pack;
-				CreateDataTimer(0.1, Timer_RequipWeapon, pack);
-				WritePackCell(pack, target_list[i]);
-				WritePackCell(pack, primaryWeapon);
+					Handle pack;
+					CreateDataTimer(0.1, Timer_RequipWeapon, pack);
+					WritePackCell(pack, target_list[i]);
+					WritePackCell(pack, primaryWeapon);
+				}
 			}
 		}
 	}
@@ -169,10 +196,17 @@ public void Frame_HideEntity(int entity) {
 }
 
 public void Event_EnterSaferoom(Event event, const char[] name, bool dontBroadcast) {
+	int user = GetClientOfUserId(event.GetInt("userid"));
+	if(user == 0) return;
+	if(botDropMeleeWeapon[user] > -1) {
+		float pos[3];
+		GetClientAbsOrigin(user, pos);
+		TeleportEntity(botDropMeleeWeapon[user], pos, NULL_VECTOR, NULL_VECTOR);
+		botDropMeleeWeapon[user] = -1;
+	}
 	char currentGamemode[16];
 	hMPGamemode.GetString(currentGamemode, sizeof(currentGamemode));
 	if(StrEqual(currentGamemode, "tankrun", false)) {
-		int user = GetClientOfUserId(event.GetInt("userid"));
 		if(!IsFakeClient(user)) {
 			CreateTimer(1.0, Timer_TPBots, user);
 		}
@@ -210,8 +244,7 @@ public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 }
 public void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast) {
 	if(hLaserNotice.BoolValue) {
-		char player_name[32];
-		char entity_name[64];
+		char player_name[32], entity_name[32];
 		int player_id = GetClientOfUserId(event.GetInt("userid"));
 		int target_id = event.GetInt("targetid");
 	
@@ -261,6 +294,11 @@ public void Event_CarAlarmTriggered(Event event, const char[] name, bool dontBro
 	int userID = GetClientOfUserId(event.GetInt("userid"));
 	PrintToChatAll("%N activated a car alarm!", userID);
 }
+public Action Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
+	extraKitsAmount = GetClientCount(true) - 4;
+	if(extraKitsAmount < 0) extraKitsAmount = 0;
+	PrintToServer("Will spawn an extra %d kits", extraKitsAmount);
+}	
 /**
  * Prints human readable duration from milliseconds
  *
