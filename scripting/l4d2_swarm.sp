@@ -267,5 +267,9 @@ void SwarmUser(int clientUserId, int range) {
 
 public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
 	int user = event.GetInt("userid");
+	CreateTimer(0.5, Timer_SwarmSingle, user);
+}
+
+public Action Timer_SwarmSingle(Handle hdl, int user) {
 	SwarmUser(user, hSwarmDefaultRange.IntValue);
 }
