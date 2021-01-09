@@ -122,9 +122,10 @@ A collection of small tools:
   * Notification of when someone picks up laser sights (only the first user, includes bots), 
   * Record time it takes for a finale or gauntlet run to be completed.
   * Record the amount of friendly fire damage done
-  * Set the survivor models of any survivor to another
+  * Set the survivor models of any survivor to another correctly.
   * Alert when a player activates a car alarm
   * Automatically give back any dropped melee weapons once no longer idle (if not equipped by another player)
+  * Automatically spawn extra health kits after a level transition based on player count
 
 * **Convars:**
    * `sm_laser_use_notice <0/1>` - Enable notification of when a laser box was used first
@@ -180,4 +181,8 @@ Troll Modes: (updated 1/2/2021)
   * `sm_ftl` - Lists all players that have a mode applied.
 
 ### l4d2_autobotcrown
-Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Supports multiple bots, but only one bot can crown one witch at a time.
+Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Supports multiple bots and witches, but only one bot can crown one witch at a time. Plugin is obviously disabled in realism, and is really on suitable for coop or versus. Even works with idle players.
+
+* **Convars:**
+  * `l4d2_autocrown_allowed_difficulty <default: 7>` - The difficulties the plugin is active on. 1=Easy, 2=Normal 4=Advanced 8=Expert. Add numbers together.
+  * `l4d2_autocrown_modes_tog <default: 7>` - (Not implemented) - Turn on the plugin in these game modes. 0=All, 1=Coop, 2=Survival, 4=Versus, 8=Scavenge. Add numbers together
