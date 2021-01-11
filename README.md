@@ -17,6 +17,8 @@ All my sourcemod plugins... shitty probably
 * [l4d2_swarm](#l4d2_swarm)
 * [l4d2_feedthetrolls](#l4d2_feedthetrolls)
 * [l4d2_autobotcrown](#l4d2_autobotcrown)
+* [l4d2_extraplayeritems](#l4d2_extraplayeritems)
+* [l4d_survivor_identity_fix](#l4d_survivor_identity_fix)
 
 ## Descriptions
 ### csgo-knifehp
@@ -125,7 +127,6 @@ A collection of small tools:
   * Set the survivor models of any survivor to another correctly.
   * Alert when a player activates a car alarm
   * Automatically give back any dropped melee weapons once no longer idle (if not equipped by another player)
-  * Automatically spawn extra health kits after a level transition based on player count
 
 * **Convars:**
    * `sm_laser_use_notice <0/1>` - Enable notification of when a laser box was used first
@@ -186,3 +187,14 @@ Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Suppo
 * **Convars:**
   * `l4d2_autocrown_allowed_difficulty <default: 7>` - The difficulties the plugin is active on. 1=Easy, 2=Normal 4=Advanced 8=Expert. Add numbers together.
   * `l4d2_autocrown_modes_tog <default: 7>` - (Not implemented) - Turn on the plugin in these game modes. 0=All, 1=Coop, 2=Survival, 4=Versus, 8=Scavenge. Add numbers together
+
+### l4d2_extraplayeritems
+A tool that can automatically provide items for > 5 player co-op games (or versus). When the second saferoom is entered, any time someone heals they will be given an extra kit afterwards until all extra kits are consumed. Extra kits are the same amount of extra palyers. When the level transitions, any players who do not have kits will receive one, and if there is still extra kits, on heal they will be given still.
+
+Also features a part that will increase the item count on any item, kit, or weapon spawns at a random percentage that increases based on player count. This is controlled by the `l4d2_extraitem_chance` cvar.
+
+* **Convars:**
+  * `l4d2_extraitem_chance` - The base chance (multiplied by player count) of an extra item being spawned. Default: 0.056
+
+### l4d_survivor_identity_fix
+A fork of Merudo, Shadowysn's identity fix plugin that adds support for other plugins to update the model cache. This is used by [L4D2Tools](#L4D2Tools) to update the identity when someone changes their model with sm_model. It also will clear the memory of model when a player disconnects entirely or on a new map.
