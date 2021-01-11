@@ -61,7 +61,7 @@ public void OnPluginStart()
 	}
 
 	hValidDifficulties = CreateConVar("l4d2_autocrown_allowed_difficulty", "7", "The difficulties the plugin is active on. 1=Easy, 2=Normal 4=Advanced 8=Expert. Add numbers together.", FCVAR_NONE);
-	hAllowedGamemodes = CreateConVar("l4d2_autocrown_modes_tog", "7", "Turn on the plugin in these game modes. 0=All, 1=Coop, 2=Survival, 4=Versus, 8=Scavenge. Add numbers together.", FCVAR_NONE);
+	hAllowedGamemodes = CreateConVar("l4d2_autocrown_modes_tog", "1", "Turn on the plugin in these game modes. 0=All, 1=Coop, 2=Survival, 4=Versus, 8=Scavenge. Add numbers together.", FCVAR_NONE);
 	
 	char diff[16];
 	FindConVar("z_difficulty").GetString(diff, sizeof(diff));

@@ -10,17 +10,16 @@
 #include <sdkhooks>
 #include <left4dhooks>
 #include "jutils.inc"
+#include "l4d_survivor_identity_fix.inc"
 
-static bool bLasersUsed[2048], waitingForPlayers;
+static bool bLasersUsed[2048];
 static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode;
-static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], extraKitsAmount;
-static Handle waitTimer = INVALID_HANDLE;
+static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1];
 
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
 
-native int IdentityFix_SetPlayerModel(int client, int args);
 
-//TODO: Remove the Plugin_Stop on pickup, and give item back instead. keep reference to dropped weapon to delete.
+
 public Plugin myinfo = {
 	name = "L4D2 Misc Tools",
 	author = "Includes: Notice on laser use, Timer for gauntlet runs",
@@ -35,7 +34,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
     return APLRes_Success;
 }
 
-//TODO: Implement automatic extra kits
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
 	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2) {
@@ -48,8 +46,12 @@ public void OnPluginStart() {
 	hFFNotice    = CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
 	hMPGamemode  = FindConVar("mp_gamemode");
 
+	hFFNotice.AddChangeHook(CVC_FFNotice);
+	if(hFFNotice.IntValue > 0) {
+		HookEvent("player_hurt", Event_PlayerHurt);
+	}
+
 	HookEvent("player_use", Event_PlayerUse);
-	HookEvent("player_hurt", Event_PlayerHurt);
 	HookEvent("round_end", Event_RoundEnd);
 	HookEvent("gauntlet_finale_start", Event_GauntletStart);
 	HookEvent("finale_start", Event_FinaleStart);
@@ -57,91 +59,32 @@ public void OnPluginStart() {
 	HookEvent("player_entered_checkpoint", Event_EnterSaferoom);
 	HookEvent("player_bot_replace", Event_BotPlayerSwap);
 	HookEvent("bot_player_replace", Event_BotPlayerSwap);
-	HookEvent("map_transition", Event_MapTransition);
-	HookEvent("player_spawn", Event_PlayerSpawn);
 
 	AutoExecConfig(true, "l4d2_tools");
 
 	for(int client = 1; client < MaxClients; client++) {
-		if(IsClientConnected(client) && IsClientInGame(client) && GetClientTeam(client) == 2 && IsFakeClient(client)) {
-			SDKHook(client, SDKHook_WeaponDrop, Event_OnWeaponDrop);
+		if(IsClientConnected(client) && IsClientInGame(client) && GetClientTeam(client) == 2) {
+			if(IsFakeClient(client)) {
+				SDKHook(client, SDKHook_WeaponDrop, Event_OnWeaponDrop);
+			}
 		}
 	}
 
 	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_ROOT);
 }
-//TODO: Give kits on fresh start as well, need to set extraKitsAmount
-public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
-	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(extraKitsAmount > 0) {
-		char wpn[32];
-		if(GetClientWeaponName(client, 3, wpn, sizeof(wpn))) {
-			if(!StrEqual(wpn, "weapon_first_aid_kit")) {
-				CheatCommand(client, "give", "first_aid_kit", "");
-				extraKitsAmount--;
-			}
-		}
+
+public void CVC_FFNotice(ConVar convar, const char[] oldValue, const char[] newValue) {
+	if(convar.IntValue > 0) {
+		HookEvent("player_hurt", Event_PlayerHurt);
+	}else {
+		UnhookEvent("player_hurt", Event_PlayerHurt);
 	}
 }
-public void OnMapStart() {
-	if(L4D_IsFirstMapInScenario()) {
-		extraKitsAmount = GetSurvivorCount() - 4;
-		if(extraKitsAmount < 0) extraKitsAmount = 0;
-		waitingForPlayers = true;
-		PrintToServer("New map has started");
+
+public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
+	for (int i = 1; i < sizeof(bLasersUsed) ;i++) {
+		bLasersUsed[i] = false;
 	}
-	if(extraKitsAmount > 0 && !waitingForPlayers) {
-		int lastClient;
-		for(int i = 1; i < MaxClients + 1; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
-				PrintToServer("Found a client to spawn %d extra kits: %N", extraKitsAmount, i);
-				char wpn[32];
-				if(GetClientWeaponName(i, 3, wpn, sizeof(wpn))) {
-					if(!StrEqual(wpn, "weapon_first_aid_kit")) {
-						lastClient = GetClientOfUserId(i);
-						CreateTimer(5.0, Timer_SpawnKits, lastClient);
-						extraKitsAmount--;
-					}
-				}
-			}
-			
-		}
-		if(extraKitsAmount > 0) {
-			CreateTimer(0.1, Timer_SpawnKits, lastClient);
-		}
-	}
-	int survivorCount = GetSurvivorCount();
-	if(survivorCount > 4)
-		CreateTimer(60.0, Timer_AddExtraCounts, survivorCount);
-}
-public Action Timer_AddExtraCounts(Handle hd, int players) {
-	float percentage = 0.042 * players;
-	PrintToServer("Populating extra items based on player count (%d)", players);
-	char classname[32];
-	for(int i = MaxClients + 1; i < 2048; i++) {
-		if(IsValidEntity(i)) {
-			GetEntityClassname(i, classname, sizeof(classname));
-			if(StrContains(classname, "_spawn", true) > -1 && !StrEqual(classname, "info_zombie_spawn", true)) {
-				int count = GetEntProp(i, Prop_Data, "m_itemCount");
-				if(GetRandomFloat() < percentage) {
-					PrintToServer("Debug: Incrementing spawn count for %s from %d", classname, count);
-					SetEntProp(i, Prop_Data, "m_itemCount", ++count);
-				}
-				PrintToServer("%s %d", classname, count);
-			}
-		}
-	}
-}
-public Action Timer_SpawnKits(Handle timer, int user) {
-	//After kits given, re-set number to same incase a round restarts.
-	int prevAmount = extraKitsAmount;
-	int client = GetClientOfUserId(user);
-	while(extraKitsAmount > 0) {
-		CheatCommand(client, "give", "first_aid_kit", "");
-		extraKitsAmount--;
-	}
-	extraKitsAmount = prevAmount;
-	return Plugin_Handled;
 }
 
 public Action Command_SetClientModel(int client, int args) {
@@ -177,7 +120,6 @@ public Action Command_SetClientModel(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		bool identityFixAvailable = GetFeatureStatus(FeatureType_Native, "IdentityFix_SetPlayerModel") == FeatureStatus_Available;
 		for (int i = 0; i < target_count; i++) {
 			if(IsClientConnected(target_list[i]) && IsClientInGame(target_list[i]) && IsPlayerAlive(target_list[i]) && GetClientTeam(target_list[i]) == 2) {
 				SetEntProp(target_list[i], Prop_Send, "m_survivorCharacter", modelID);
@@ -187,8 +129,7 @@ public Action Command_SetClientModel(int client, int args) {
 					GetSurvivorName(target_list[i], name, sizeof(name));
 					SetClientInfo(target_list[i], "name", name);
 				}
-				if(identityFixAvailable)
-					IdentityFix_SetPlayerModel(target_list[i], modelID);
+				UpdatePlayerIdentity(target_list[i], view_as<Character>(modelID));
 
 				int primaryWeapon = GetPlayerWeaponSlot(target_list[i], 0);
 				if(primaryWeapon > -1) {
@@ -232,21 +173,6 @@ public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroad
 		SDKUnhook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 	}
 }
-public bool OnClientConnect(int client) {
-	if(waitingForPlayers) {
-		if(waitTimer != INVALID_HANDLE) {
-			CloseHandle(waitTimer);
-		}
-		waitTimer = CreateTimer(2.0, Timer_Wait, client);
-	}
-	return true;
-}
-public Action Timer_Wait(Handle hdl, int client) {
-	waitingForPlayers = false;
-	extraKitsAmount = GetSurvivorCount();
-	CreateTimer(5.0, Timer_SpawnKits, GetClientOfUserId(client));
-	PrintToServer("Debug: No more players joining in 2.0s, spawning kits.");
-}
 //TODO: Might have to actually check for the bot they control, or possibly the bot will call this itself.
 public void OnClientDisconnect(int client) {
 	if(botDropMeleeWeapon[client] > -1) {
@@ -275,20 +201,22 @@ public void Frame_HideEntity(int entity) {
 }
 
 public void Event_EnterSaferoom(Event event, const char[] name, bool dontBroadcast) {
-	int user = GetClientOfUserId(event.GetInt("userid"));
-	if(user == 0) return;
-	if(botDropMeleeWeapon[user] > 0) {
-		PrintToServer("Giving melee weapon back to %N", user);
-		float pos[3];
-		GetClientAbsOrigin(user, pos);
-		TeleportEntity(botDropMeleeWeapon[user], pos, NULL_VECTOR, NULL_VECTOR);
-		botDropMeleeWeapon[user] = -1;
-	}
-	char currentGamemode[16];
-	hMPGamemode.GetString(currentGamemode, sizeof(currentGamemode));
-	if(StrEqual(currentGamemode, "tankrun", false)) {
-		if(!IsFakeClient(user)) {
-			CreateTimer(1.0, Timer_TPBots, user);
+	
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0) {
+		if(botDropMeleeWeapon[client] > 0) {
+			PrintToServer("Giving melee weapon back to %N", client);
+			float pos[3];
+			GetClientAbsOrigin(client, pos);
+			TeleportEntity(botDropMeleeWeapon[client], pos, NULL_VECTOR, NULL_VECTOR);
+			botDropMeleeWeapon[client] = -1;
+		}
+		char currentGamemode[16];
+		hMPGamemode.GetString(currentGamemode, sizeof(currentGamemode));
+		if(StrEqual(currentGamemode, "tankrun", false)) {
+			if(!IsFakeClient(client)) {
+				CreateTimer(1.0, Timer_TPBots, client);
+			}
 		}
 	}
 }
@@ -340,11 +268,6 @@ public void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast) 
 		}	
 	}
 }
-public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
-	for (int i = 1; i < sizeof(bLasersUsed) ;i++) {
-		bLasersUsed[i] = false;
-	}
-}
 
 
 //finaletimer
@@ -374,11 +297,6 @@ public void Event_CarAlarmTriggered(Event event, const char[] name, bool dontBro
 	int userID = GetClientOfUserId(event.GetInt("userid"));
 	PrintToChatAll("%N activated a car alarm!", userID);
 }
-public Action Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
-	extraKitsAmount = GetSurvivorCount() - 4;
-	if(extraKitsAmount < 0) extraKitsAmount = 0;
-	PrintToServer("Will spawn an extra %d kits", extraKitsAmount);
-}	
 /**
  * Prints human readable duration from milliseconds
  *
@@ -408,14 +326,4 @@ stock int GetAnyValidClient() {
 		}
 	}
 	return -1;
-}
-
-stock int GetSurvivorCount() {
-	int count = 0;
-	for(int i = 1; i < MaxClients + 1; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-			count++;
-		}
-	}
-	return count;
 }
