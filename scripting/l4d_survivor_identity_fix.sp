@@ -51,6 +51,8 @@ public void OnPluginStart()
 	
 	HookEvent("player_bot_replace", Event_PlayerToBot, EventHookMode_Post);
 	HookEvent("bot_player_replace", Event_BotToPlayer, EventHookMode_Post);
+	HookEvent("game_newmap", Event_NewGame);
+	HookEvent("player_disconnect", Event_PlayerDisconnect);
 }
 
 // ------------------------------------------------------------------------
@@ -185,6 +187,33 @@ void GetGamedata()
 	}
 	PrepDHooks();
 }
+//Reset models on fresh map start
+/*public void OnMapStart() {
+	if(L4D_IsFirstMapInScenario()) {
+		for(int i = 0 1; i < MaxClients + 1; i++) {
+			g_Models[i][0] = "\0";
+		}
+	}
+}
+public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
+
+}*/
+public void Event_NewGame(Event event, const char[] name, bool dontBroadcast) {
+	for(int i = 1; i < MaxClients + 1; i++) {
+		g_Models[i][0] = '\0';
+	}
+	CreateTimer(10.0, Timer_FillModelList);
+}
+public Action Timer_FillModelList(Handle handle) {
+	for(int i = 1; i < MaxClients + 1; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2)
+			GetClientModel(i, g_Models[i], 64);
+	}
+}
+public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	g_Models[client][0] = '\0';
+}
 
 void PrepDHooks()
 {
@@ -222,12 +251,15 @@ public int Native_SetPlayerModel(Handle plugin, int numParams) {
 	int character = GetNativeCell(2);
 	if(numParams != 2) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Incorrect amount of parameters passed");
+		return 3;
 	}else if(client < 1 || client > MaxClients || !IsClientInGame(client)) {
 		ThrowNativeError(SP_ERROR_INDEX, "Client index %d is not valid or is not in game", client);
+		return 2;
 	} else if(character < 0 || character > 7) {
 		ThrowNativeError(SP_ERROR_INDEX, "Character ID (%d) is not in range (0-7)", character);
+		return 1;
 	} else {
 		strcopy(g_Models[client], 64, survivor_models[character]);
+		return 0;
 	}
-	return 0;
 }
