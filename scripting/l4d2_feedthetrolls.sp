@@ -17,8 +17,6 @@
 //TODO: Detect if player activates crescendo from far away
 //Possibly cancel event, make poll for other users. if no one responds, activate troll mode/swarm or kick/ban depending on FF amount?
 
-//TODO: Replace all timers with userID not clientID. GetClientUserId() -> timer
-//On player_disconnect event, NOT the forward remove?
 
 public Plugin myinfo = 
 {
@@ -88,9 +86,6 @@ public void OnMapEnd() {
 public void OnMapStart() {
 	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 	CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
-}
-public void OnPlayerDisconnect(int client) {
-	g_iTrollUsers[client] = 0;
 }
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));

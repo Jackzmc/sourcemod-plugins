@@ -35,7 +35,6 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_ai_holdout", Command_SpawnHoldoutBot, ADMFLAG_ROOT);
 	RegAdminCmd("sm_ai_minigun", Command_SpawnMinigunBot, ADMFLAG_ROOT);
 	RegAdminCmd("sm_ai_remove_far", Command_RemoveFar,	ADMFLAG_ROOT);
-	//todo: add cmd to remove any that are out of range? possibly only ones you past
 }
 
 public void OnMapStart() {

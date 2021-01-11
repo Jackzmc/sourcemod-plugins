@@ -23,7 +23,7 @@ public Plugin myinfo =
 	url = ""
 };
 
-//TODO: Performance checks, split main loop into scan loop / active loop, and convars for allowed gamemodes / difficulties
+//TODO: convars for allowed gamemodes / difficulties
 
 
 static ArrayList WitchList;
@@ -124,9 +124,6 @@ public Action Event_WitchKilled(Event event, const char[] name, bool dontBroadca
 	if(index > -1) {
 		RemoveFromArray(WitchList, index);
 	}
-	if(WitchList.Length == 0) {
-		CloseHandle(timer);
-	}
 	if(AutoCrownTarget == witchID) {
 		ResetAutoCrown();
 		#if defined DEBUG
@@ -206,12 +203,11 @@ public Action Timer_Scan(Handle hdl) {
 						int witchID = WitchList.Get(i);
 						if(IsValidEntity(witchID) && HasEntProp(witchID, Prop_Send, "m_rage") && GetEntPropFloat(witchID, Prop_Send, "m_rage") <= 0.4) {
 							GetEntPropVector(witchID, Prop_Send, "m_vecOrigin", witchPos);
-							//TODO: Calculate closest witch
 							if(GetVectorDistance(botPosition, witchPos) <= SCAN_RANGE) {
 								//GetEntPropVector(witchID, Prop_Send, "m_angRotation", witchAng);
 								//TODO: Implement a line-of-sight trace
 								#if defined DEBUG
-								PrintToChatAll("Found a valid witch in range of %N: %d", bot, witchID);
+								PrintToServer("Found a valid witch in range of %N: %d", bot, witchID);
 								#endif
 								L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(bot), witchPos[0], witchPos[1], witchPos[2]);
 								AutoCrownTarget = witchID;

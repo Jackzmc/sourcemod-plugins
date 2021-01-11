@@ -45,7 +45,7 @@ public void OnPluginStart()
 	HookEvent("player_entered_checkpoint", Event_EnterSaferoom);
 	HookEvent("heal_success", Event_HealFinished);
 
-	hExtraItemBasePercentage = CreateConVar("l4d2_extraitem_chance", "0.056", "The base chance (multipled by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
+	hExtraItemBasePercentage = CreateConVar("l4d2_extraitem_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	AutoExecConfig(true);
 }

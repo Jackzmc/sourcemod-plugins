@@ -78,7 +78,6 @@ New logic overview:
 3. Find the closest tank
 4. Retreat if in close range (~300 units)
 */
-//TODO: possibly check if multiple loops being created
 public Action BotControlTimerV2(Handle timer)
 {
 	//remove timer once tanks no longer exists/are all dead or finale escape vehicle arrived
@@ -121,7 +120,6 @@ public Action BotControlTimerV2(Handle timer)
 				}
 			}
 			//If the closest tank exists (-1 means no tank.) and is close, avoid.
-			//TODO: Possibly only run if they have an item in the pill shot, or have medkit.
 			if(closestTank > -1 && smallestDistance <= 300 && botHealth >= 40) {
 				//L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)})", GetClientUserId(i));
 				L4D2_RunScript("CommandABot({cmd=2,bot=GetPlayerFromUserID(%i),target=GetPlayerFromUserID(%i)})", GetClientUserId(i), GetClientUserId(closestTank));
