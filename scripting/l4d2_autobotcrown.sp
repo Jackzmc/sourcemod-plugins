@@ -86,7 +86,7 @@ public void Event_DifficultyChanged(Event event, const char[] name, bool dontBro
 	event.GetString("newDifficulty", diff, sizeof(diff));
 	currentDifficulty = GetDifficultyInt(diff);
 	if(hAllowedGamemodes.IntValue & currentDifficulty > 0) {
-		if(timer == INVALID_HANDLE) {
+		if(timer == INVALID_HANDLE && AutoCrownBot == -1) {
 			timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}else{
@@ -110,7 +110,7 @@ public Action Event_WitchSpawn(Event event, const char[] name, bool dontBroadcas
 	#if defined DEBUG
 	PrintToServer("Witch spawned: %d", witchID);
 	#endif
-	if(timer == INVALID_HANDLE) {
+	if(timer == INVALID_HANDLE && AutoCrownBot == -1) {
 		timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
@@ -214,7 +214,7 @@ public Action Timer_Scan(Handle hdl) {
 								AutoCrownBot = GetClientUserId(bot);
 								AutoCrownInPosition = false;
 								CreateTimer(ACTIVE_INTERVAL, Timer_Active, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
-								return Plugin_Continue;
+								return Plugin_Stop;
 							}
 						}
 					}
@@ -242,7 +242,7 @@ public void ResetAutoCrown() {
 	AutoCrownTarget = -1;
 	AutoCrownInPosition = false;
 	if(AutoCrownBot > -1)
-		L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)})", GetClientUserId(AutoCrownBot)); 
+		L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)})", AutoCrownBot); 
 	AutoCrownBot = -1;
 }
 
