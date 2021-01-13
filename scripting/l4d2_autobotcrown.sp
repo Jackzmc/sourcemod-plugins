@@ -69,7 +69,7 @@ public void OnPluginStart()
 
 	FindConVar("mp_gamemode").AddChangeHook(Change_Gamemode);
 
-	AutoExecConfig(true);
+	AutoExecConfig(true, "l4d2_autobotcrown");
 
 	HookEvent("witch_spawn", Event_WitchSpawn);
 	HookEvent("witch_killed", Event_WitchKilled);

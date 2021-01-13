@@ -47,7 +47,7 @@ public void OnPluginStart()
 
 	hExtraItemBasePercentage = CreateConVar("l4d2_extraitem_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
 
-	AutoExecConfig(true);
+	AutoExecConfig(true, "l4d2_extraplayeritems");
 }
 
 /////////////////////////////////////
