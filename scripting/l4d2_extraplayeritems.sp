@@ -4,6 +4,7 @@
 //#define DEBUG
 
 #define PLUGIN_VERSION "1.0"
+#define MAX_ENTITY_LIMIT 2000
 
 #include <sourcemod>
 #include <sdktools>
@@ -21,7 +22,7 @@ public Plugin myinfo =
 };
 
 static ConVar hExtraItemBasePercentage;
-static int extraKitsAmount, totalSurvivorCount, isFailureRound;
+static int extraKitsAmount = -1, totalSurvivorCount, isFailureRound;
 
 /*
 on first start: Everyone has a kit, new comers also get a kit.
@@ -40,7 +41,6 @@ public void OnPluginStart()
 	
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
-	HookEvent("player_disconnect", Event_Disconnect);
 	HookEvent("round_end", Event_RoundEnd);
 	HookEvent("player_entered_checkpoint", Event_EnterSaferoom);
 	HookEvent("heal_success", Event_HealFinished);
@@ -55,29 +55,34 @@ public void OnPluginStart()
 ////////////////////////////////////
 
 //Called on the first spawn in a mission. 
+bool startingKitsGiven = false;
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) { 
-	//int client = GetClientOfUserId(event.GetInt("userid"));
-	totalSurvivorCount++;
+	if(L4D_IsFirstMapInScenario() && !startingKitsGiven) {
+		CreateTimer(0.5, Timer_GiveStartingKits);
+	}
+}
+public Action Timer_GiveStartingKits(Handle hdl) {
+	for(int i = 1; i < MaxClients + 1; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2){
+			if(!DoesClientHaveKit(i)) {
+				CheatCommand(i, "give", "first_aid_kit", "");
+			} 
+		}
+	}
 }
 
 //Provide extra kits when a player spawns (aka after a map transition)
 public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(extraKitsAmount > 0) {
-		char wpn[32];
-		if(GetClientWeaponName(client, 3, wpn, sizeof(wpn))) {
-			if(!StrEqual(wpn, "weapon_first_aid_kit")) {
-				CheatCommand(client, "give", "first_aid_kit", "");
-				extraKitsAmount--;
-				if(extraKitsAmount == 0) {
-					extraKitsAmount = -1;
-				}
+	if(GetClientTeam(client) == 2 && extraKitsAmount > 0) {
+		if(!DoesClientHaveKit(client)) {
+			CheatCommand(client, "give", "first_aid_kit", "");
+			extraKitsAmount--;
+			if(extraKitsAmount == 0) {
+				extraKitsAmount = -1;
 			}
-		}
+		} 
 	}
-}
-public Action Event_Disconnect(Event event, const char[] name, bool dontBroadcast) {
-	totalSurvivorCount--;
 }
 
 //TODO: Possibly switch to game_init or game_newmap ?
@@ -86,11 +91,13 @@ public void OnMapStart() {
 	if(L4D_IsFirstMapInScenario()) {
 		if(isFailureRound) 
 			isFailureRound = false;
-		else
+		else {
 			totalSurvivorCount = 0;
+			startingKitsGiven = false;
+		}
 	}
 
-	if(totalSurvivorCount > 4)
+	if(totalSurvivorCount > 4 && GetEntityCount() < MAX_ENTITY_LIMIT)
 		CreateTimer(20.0, Timer_AddExtraCounts);
 }
 
@@ -99,9 +106,10 @@ public void Event_EnterSaferoom(Event event, const char[] name, bool dontBroadca
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0) {
 		if(extraKitsAmount == -1 && L4D_IsInLastCheckpoint(client)) {
-			if(totalSurvivorCount > 4) {
-				extraKitsAmount = totalSurvivorCount - 4;
-				PrintToServer("Player entered saferoom. An extra %d kits will be provided on heal", extraKitsAmount);
+			int survivors = GetSurvivorsCount();
+			if(survivors > 4) {
+				extraKitsAmount = survivors - 4;
+				PrintToServer("Player entered saferoom. An extra %d kits will be provided", extraKitsAmount);
 			}
 		}
 	}
@@ -132,19 +140,47 @@ public Action Event_HealFinished(Event event, const char[] name, bool dontBroadc
 
 public Action Timer_AddExtraCounts(Handle hd) {
 	float percentage = hExtraItemBasePercentage.FloatValue * totalSurvivorCount;
-	PrintToServer("Populating extra items based on player count (%d)", totalSurvivorCount);
+	PrintToServer("Populating extra items based on player count (%d) | Percentage %d", totalSurvivorCount, percentage);
 	char classname[32];
+	int entityCount = GetEntityCount();
 	for(int i = MaxClients + 1; i < 2048; i++) {
-		if(IsValidEntity(i)) {
+		if(IsValidEntity(i) && entityCount < MAX_ENTITY_LIMIT) {
 			GetEntityClassname(i, classname, sizeof(classname));
 			if(StrContains(classname, "_spawn", true) > -1 && !StrEqual(classname, "info_zombie_spawn", true)) {
+				if(StrEqual(classname, "weapon_melee_spawn")) {
+
+				}
 				int count = GetEntProp(i, Prop_Data, "m_itemCount");
 				if(GetRandomFloat() < percentage) {
 					PrintToServer("Debug: Incrementing spawn count for %s from %d", classname, count);
 					SetEntProp(i, Prop_Data, "m_itemCount", ++count);
 				}
-				PrintToServer("%s %d", classname, count);
+				entityCount++;
 			}
 		}
 	}
+}
+
+/////////////////////////////////////
+/// Stocks
+////////////////////////////////////
+
+stock int GetSurvivorsCount() {
+	int count = 0;
+	for(int i = 1; i < MaxClients + 1; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+			count++;
+		}
+	}
+	return count;
+}
+
+stock bool DoesClientHaveKit(int client) {
+	char wpn[32];
+	if(GetClientWeaponName(client, 3, wpn, sizeof(wpn))) {
+		if(StrEqual(wpn, "weapon_first_aid_kit")) {
+			return true;
+		}
+	}
+	return false;
 }
