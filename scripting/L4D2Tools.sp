@@ -12,13 +12,13 @@
 #include "jutils.inc"
 #include "l4d_survivor_identity_fix.inc"
 
-static bool bLasersUsed[2048];
+static ArrayList LasersUsed;
 static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode;
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1];
 
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
 
-
+//TODO: Drop melee on death AND clear on respawn by defib.
 
 public Plugin myinfo = {
 	name = "L4D2 Misc Tools",
@@ -51,6 +51,8 @@ public void OnPluginStart() {
 		HookEvent("player_hurt", Event_PlayerHurt);
 	}
 
+	LasersUsed = new ArrayList(1, 0);
+
 	HookEvent("player_use", Event_PlayerUse);
 	HookEvent("round_end", Event_RoundEnd);
 	HookEvent("gauntlet_finale_start", Event_GauntletStart);
@@ -82,9 +84,7 @@ public void CVC_FFNotice(ConVar convar, const char[] oldValue, const char[] newV
 }
 
 public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
-	for (int i = 1; i < sizeof(bLasersUsed) ;i++) {
-		bLasersUsed[i] = false;
-	}
+	LasersUsed.Clear();
 }
 
 public Action Command_SetClientModel(int client, int args) {
@@ -121,7 +121,8 @@ public Action Command_SetClientModel(int client, int args) {
 			return Plugin_Handled;
 		}
 		for (int i = 0; i < target_count; i++) {
-			if(IsClientConnected(target_list[i]) && IsClientInGame(target_list[i]) && IsPlayerAlive(target_list[i]) && GetClientTeam(target_list[i]) == 2) {
+			int team = GetClientTeam(target_list[i]);
+			if(IsClientConnected(target_list[i]) && IsClientInGame(target_list[i]) && IsPlayerAlive(target_list[i]) && team == 2 || team == 3) {
 				SetEntProp(target_list[i], Prop_Send, "m_survivorCharacter", modelID);
 				SetEntityModel(target_list[i], modelPath);
 				if (IsFakeClient(target_list[i])) {
@@ -209,24 +210,27 @@ public void Event_EnterSaferoom(Event event, const char[] name, bool dontBroadca
 			float pos[3];
 			GetClientAbsOrigin(client, pos);
 			TeleportEntity(botDropMeleeWeapon[client], pos, NULL_VECTOR, NULL_VECTOR);
+			EquipPlayerWeapon(client, botDropMeleeWeapon[client]);
 			botDropMeleeWeapon[client] = -1;
 		}
 		char currentGamemode[16];
 		hMPGamemode.GetString(currentGamemode, sizeof(currentGamemode));
 		if(StrEqual(currentGamemode, "tankrun", false)) {
 			if(!IsFakeClient(client)) {
-				CreateTimer(1.0, Timer_TPBots, client);
+				CreateTimer(1.0, Timer_TPBots, client, TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 	}
 }
 
-public Action Timer_TPBots(Handle timer, any user) {
+public Action Timer_TPBots(Handle timer, int user) {
 	float pos[3];
 	GetClientAbsOrigin(user, pos);
-	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientInGame(i) && IsFakeClient(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+	for(int i = 1; i < MaxClients + 1; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsFakeClient(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 			TeleportEntity(i, pos, NULL_VECTOR, NULL_VECTOR);
+			L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(i), pos[0], pos[1], pos[2]);
+			
 		}
 	}
 }
@@ -252,18 +256,16 @@ public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 }
 public void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast) {
 	if(hLaserNotice.BoolValue) {
-		char player_name[32], entity_name[32];
+		char entity_name[32];
 		int player_id = GetClientOfUserId(event.GetInt("userid"));
 		int target_id = event.GetInt("targetid");
 	
-		GetClientName(player_id, player_name, sizeof(player_name));
 		GetEntityClassname(target_id, entity_name, sizeof(entity_name));
 		
-		
 		if(StrEqual(entity_name,"upgrade_laser_sight")) {
-			if(!bLasersUsed[target_id]) {
-				bLasersUsed[target_id] = true;
-				PrintToChatAll("%s picked up laser sights",player_name);
+			if(LasersUsed.FindValue(target_id) == -1) {
+				LasersUsed.Push(target_id);
+				PrintToChatAll("%N picked up laser sights", player_id);
 			}
 		}	
 	}
