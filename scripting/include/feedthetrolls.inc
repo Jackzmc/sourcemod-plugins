@@ -157,7 +157,6 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifer modi
 				ReplyToCommand(client, "Invalid modifier for mode.");
 				return;
 			}
-			//TODO: Implement swarm
 		}
 		case Troll_GunJam: {
 			int wpn = GetClientWeaponEntIndex(victim, 0);

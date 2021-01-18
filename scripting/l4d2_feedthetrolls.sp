@@ -444,7 +444,7 @@ public Action Event_WeaponReload(int weapon) {
 	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwner");
 	if(HasTrollMode(client,Troll_GunJam)) {
 		float dec = GetRandomFloat(0.0, 1.0);
-		if(FloatCompare(dec, 0.30) == -1) { //10% chance gun jams
+		if(FloatCompare(dec, 0.50) == -1) { //10% chance gun jams
 			return Plugin_Stop;
 		}
 	}
