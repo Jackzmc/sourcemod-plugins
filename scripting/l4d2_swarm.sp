@@ -234,14 +234,12 @@ public int Handle_SwarmMenuToggle(Menu menu, MenuAction action, int client, int 
 				SwarmTarget = clickedUser;
 				int clientID = GetClientOfUserId(SwarmTarget);
 				ShowActivity(client, "toggled swarming player \"%N\" with radius %d", clientID, SwarmRadius);
-				PrintToChat(client, "Toggled swarm on for %N (#%d). Radius: %d", clientID, SwarmTarget, SwarmRadius);
 				if(timer == INVALID_HANDLE)
 					timer = CreateTimer(1.0, Timer_Swarm, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 			}else{
 				SwarmTarget = -1;
 				SwarmRadius = hSwarmDefaultRange.IntValue;
 				PrintToChat(client, "Disabled swarm toggle.", SwarmTarget, SwarmRadius);
-				ReplyToCommand(client, "Deactivated swarm toggle.");
 				CloseHandle(timer);
 				timer = INVALID_HANDLE;
 			}
