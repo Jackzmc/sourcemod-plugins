@@ -23,6 +23,7 @@ char g_Models[MAXPLAYERS+1][128];
 Handle hConf = null;
 #define NAME_SetModel "CBasePlayer::SetModel"
 static Handle hDHookSetModel = null;
+static bool isLateLoad;
 
 #define SIG_SetModel_LINUX "@_ZN11CBasePlayer8SetModelEPKc"
 #define SIG_SetModel_WINDOWS "\\x55\\x8B\\x2A\\x8B\\x2A\\x2A\\x56\\x57\\x50\\x8B\\x2A\\xE8\\x2A\\x2A\\x2A\\x2A\\x8B\\x2A\\x2A\\x2A\\x2A\\x2A\\x8B\\x2A\\x8B\\x2A\\x2A\\x8B"
@@ -39,8 +40,9 @@ public Plugin myinfo =
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
-    CreateNative("IdentityFix_SetPlayerModel", Native_SetPlayerModel);
-    return APLRes_Success;
+	CreateNative("IdentityFix_SetPlayerModel", Native_SetPlayerModel);
+	if(late) isLateLoad = true;
+	return APLRes_Success;
 }
 
 public void OnPluginStart()
@@ -52,7 +54,12 @@ public void OnPluginStart()
 	HookEvent("player_bot_replace", Event_PlayerToBot, EventHookMode_Post);
 	HookEvent("bot_player_replace", Event_BotToPlayer, EventHookMode_Post);
 	HookEvent("game_newmap", Event_NewGame);
+	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
+
+	if(isLateLoad) {
+		CreateTimer(1.0, Timer_FillModelList);
+	}
 }
 
 // ------------------------------------------------------------------------
@@ -199,14 +206,20 @@ public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 
 }*/
 public void Event_NewGame(Event event, const char[] name, bool dontBroadcast) {
+	PrintToServer("Clearing models");
 	for(int i = 1; i < MaxClients + 1; i++) {
 		g_Models[i][0] = '\0';
 	}
 	CreateTimer(10.0, Timer_FillModelList);
 }
+public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(IsSurvivor(client))
+		GetClientModel(client, g_Models[client], 64);
+}
 public Action Timer_FillModelList(Handle handle) {
 	for(int i = 1; i < MaxClients + 1; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2)
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && IsSurvivor(i))
 			GetClientModel(i, g_Models[i], 64);
 	}
 }
