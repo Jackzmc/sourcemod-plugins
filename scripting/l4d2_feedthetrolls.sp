@@ -284,8 +284,11 @@ public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 		ExplodeString(info, "|", str, 3, 8, false);
 		int client = GetClientOfUserId(StringToInt(str[0]));
 		trollMode mode = view_as<trollMode>(StringToInt(str[1]));
-		TrollModifer modifier = view_as<TrollModifer>(StringToInt(str[2]));
-		ApplyModeToClient(param1, client, mode, modifier);
+		int modifier = StringToInt(str[2]);
+		if(modifier == 2 || modifier == 3)
+			ApplyModeToClient(param1, client, mode, TrollMod_Repeat);
+		else
+			ApplyModeToClient(param1, client, mode, TrollMod_InstantFire);
 	} else if (action == MenuAction_End)	
 		delete menu;
 }

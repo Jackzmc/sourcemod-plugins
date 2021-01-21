@@ -17,7 +17,7 @@ enum trollMode {
 	Troll_NoPickup, //13
 	Troll_Swarm //14
 }
-enum TrollModifer {
+enum TrollModifier{
 	TrollMod_None = 0,
 	TrollMod_InstantFire = 1,
 	TrollMod_Repeat = 2
@@ -61,15 +61,14 @@ bool g_bPendingItemGive[MAXPLAYERS+1];
 
 //Applies the selected trollMode to the victim.
 //Modifiers are as followed: 0 -> Both (fire instant, and timer), 1 -> Fire Once, 2 -> Start timer
-void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifer modifiers) {
+//TODO: change it to only modifier at once? at least for instant fire & repeat. Menu runs ApplyMode twice
+void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier modifier) {
 	ResetClient(victim, false);
 	if(view_as<int>(mode) > TROLL_MODE_COUNT || view_as<int>(mode) < 0) {
 		ReplyToCommand(client, "Unknown troll mode ID '%d'. Pick a mode between 1 and %d", mode, TROLL_MODE_COUNT - 1);
 		return;
 	}
 	//bool activating = !HasTrollMode(victim, mode);
-	bool hasActivationMod = (modifiers & ~TrollMod_InstantFire & ~TrollMod_Repeat) == TrollMod_None;
-
 	switch(mode) {
 		case Troll_iCantSpellNoMore: {}
 		
@@ -141,17 +140,17 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifer modi
 			return;
 		}
 		case Troll_ThrowItAll: {
-			if(!hasActivationMod || (modifiers | TrollMod_InstantFire) == TrollMod_InstantFire)
+			if(modifier == TrollMod_InstantFire)
 				ThrowAllItems(victim);
-			if(hThrowTimer == INVALID_HANDLE && (!hasActivationMod|| (modifiers | TrollMod_Repeat) == TrollMod_Repeat)) {
+			if(hThrowTimer == INVALID_HANDLE && modifier == TrollMod_Repeat) {
 				PrintToServer("Created new throw item timer");
 				hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
 			}
 		}
 		case Troll_Swarm: {
-			if((modifiers | TrollMod_InstantFire) == TrollMod_InstantFire) {
+			if(modifier == TrollMod_InstantFire) {
 				FakeClientCommandEx(client, "sm_swarm #%d", victim);
-			}else if((modifiers | TrollMod_Repeat) == TrollMod_Repeat) {
+			}else if(modifier == TrollMod_Repeat) {
 				FakeClientCommandEx(client, "sm_swarmtoggle #%d", victim);
 			}else{
 				ReplyToCommand(client, "Invalid modifier for mode.");
@@ -171,7 +170,7 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifer modi
 	}
 	ShowActivity(client, "activated troll mode \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
 	//If instant fire mod not provided (aka instead of no modifiers which equals both) OR repeat turned on, set bit:
-	if((modifiers | TrollMod_InstantFire) != TrollMod_InstantFire || ((modifiers | TrollMod_Repeat) == TrollMod_Repeat)) {
+	if(modifier == TrollMod_Repeat || modifier == TrollMod_None) {
 		g_iTrollUsers[victim]  |= 1 << (view_as<int>(mode) - 1);
 	}
 }
