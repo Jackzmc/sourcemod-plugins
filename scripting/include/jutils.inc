@@ -1,5 +1,5 @@
 #if defined _jutils_included
-#endinput
+	#endinput
 #endif
 #define _jutils_included
 
@@ -347,6 +347,7 @@ stock int GetClientWeaponEntIndex(int client, int slot) {
 			return -1;
 		}
 	}else{
+		ThrowError("Slot must be a number between 0 and 4");
 		return -1;
 	}
 }
@@ -355,7 +356,7 @@ stock int GetClientSecondaryWeapon(int client) {
 }
 stock bool GetClientWeaponName(int client, int slot, char[] name, int nameSize) {
 	int wpn = GetClientWeaponEntIndex(client, slot);
-	if(wpn > -1) {
+	if(wpn > 0) {
 		GetEntityClassname(wpn, name, nameSize);
 		return true;
 	}else{
@@ -468,3 +469,19 @@ stock bool IsEntityInSightRange(int client, int target, float angle = 90.0, floa
 	}
 	else return false;
 }
+stock void PrintToAdmins(const char[] message, const char[] flags) {
+    for (int x = 1; x <= MaxClients; x++){
+        if (IsValidClient(x) && IsValidAdmin(x, flags)) {
+            PrintToChat(x, message);
+        }
+    }
+} 
+stock bool IsValidAdmin(int client, const char[] flags) {
+    int ibFlags = ReadFlagString(flags);
+    if ((GetUserFlagBits(client) & ibFlags) == ibFlags) {
+        return true;
+    }else if (GetUserFlagBits(client) & ADMFLAG_ROOT) {
+        return true;
+    }
+    return false;
+}  
