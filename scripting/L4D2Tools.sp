@@ -19,6 +19,7 @@ static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1];
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
 
 //TODO: Drop melee on death AND clear on respawn by defib.
+//TODO: Auto increase abm_minplayers based on highest player count
 
 public Plugin myinfo = {
 	name = "L4D2 Misc Tools",
@@ -72,6 +73,8 @@ public void OnPluginStart() {
 		}
 	}
 
+	HookUserMessage(GetUserMessageId("VGUIMenu"), VGUIMenu, true);
+
 	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_ROOT);
 }
 
@@ -98,7 +101,7 @@ public Action Command_SetClientModel(int client, int args) {
 		char modelPath[64];
 		int modelID = GetSurvivorId(arg2);
 		if(modelID == -1) {
-			ReplyToCommand(client, "Could not find a valid survivor.");
+			ReplyToCommand(client, "Invalid survivor type entered. Case-sensitive, full name required.");
 			return Plugin_Handled;
 		}
 		GetSurvivorModel(modelID, modelPath, sizeof(modelPath));
@@ -174,9 +177,14 @@ public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroad
 		SDKUnhook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 	}
 }
+public Action VGUIMenu(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init) {
+	char buffer[5];
+	BfReadString(bf, buffer, sizeof(buffer));
+	return StrEqual(buffer, "info") ? Plugin_Handled : Plugin_Continue;
+}  
 //TODO: Might have to actually check for the bot they control, or possibly the bot will call this itself.
 public void OnClientDisconnect(int client) {
-	if(botDropMeleeWeapon[client] > -1) {
+	if(IsClientConnected(client) && IsClientInGame(client) && botDropMeleeWeapon[client] > -1) {
 		float pos[3];
 		GetClientAbsOrigin(client, pos);
 		TeleportEntity(botDropMeleeWeapon[client], pos, NULL_VECTOR, NULL_VECTOR);
