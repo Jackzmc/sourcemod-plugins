@@ -215,13 +215,19 @@ public void Event_NewGame(Event event, const char[] name, bool dontBroadcast) {
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(IsSurvivor(client))
-		GetClientModel(client, g_Models[client], 64);
+		CreateTimer(0.2, Timer_FillModel, client);
 }
 public Action Timer_FillModelList(Handle handle) {
 	for(int i = 1; i < MaxClients + 1; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && IsSurvivor(i))
 			GetClientModel(i, g_Models[i], 64);
 	}
+}
+public Action Timer_FillModel(Handle hdl, int client) {
+	int type = GetLeastUsedSurvivor();
+	SetEntityModel(client, survivor_models[type]);
+	SetEntProp(client, Prop_Send, "m_survivorCharacter", type);
+	strcopy(g_Models[client], 64, survivor_models[type]);
 }
 public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
@@ -274,5 +280,41 @@ public int Native_SetPlayerModel(Handle plugin, int numParams) {
 	} else {
 		strcopy(g_Models[client], 64, survivor_models[character]);
 		return 0;
+	}
+}
+
+stock int GetLeastUsedSurvivor() {
+	int count[8], lowestID;
+	for(int i = 1; i <= MaxClients; ++i) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+			count[GetSurvivorType(g_Models[i]) + 1]++;
+		}
+	}
+	for(int id = 1; id <= 8; ++id) {
+		if(count[id] < count[lowestID]) {
+			lowestID = id;
+		}
+	}
+	return lowestID;
+}
+stock int GetSurvivorType(const char[] modelName) {
+	if(StrContains(modelName,"biker",false) > -1) {
+		return 6;
+	}else if(StrContains(modelName,"teenangst",false) > -1) {
+		return 5;
+	}else if(StrContains(modelName,"namvet",false) > -1) {
+		return 4;
+	}else if(StrContains(modelName,"manager",false) > -1) {
+		return 7;
+	}else if(StrContains(modelName,"coach",false) > -1) {
+		return 2;
+	}else if(StrContains(modelName,"producer",false) > -1) {
+		return 1;
+	}else if(StrContains(modelName,"gambler",false) > -1) {
+		return 0;
+	}else if(StrContains(modelName,"mechanic",false) > -1) {
+		return 3;
+	}else{
+		return false;
 	}
 }
