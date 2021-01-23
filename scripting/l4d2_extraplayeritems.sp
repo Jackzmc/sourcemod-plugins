@@ -31,32 +31,20 @@ then when you reach the saferoom, extraKitsAmount is set to the amount of player
 Then on heal at the point, you get an extra kit. After a map transition when a player_spawn is fired, if they do not have a kit; give an extra kit if there is any.
 Any left over kits will be used on heals until depleted. 
 */
-
-/*
-extra utilities:
-Far away player detection (ahead), start countdown if they continue to be farther away then a majority of the group (% based on Surv. count)
-	-> probably dynamic array if using % system.
-Far away player detection (behind), tell players in chat.
-*/
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
-	if(late) 
-		isLateLoaded = true;
-	
+	if(late) isLateLoaded = true;
 } 
 
 
-public void OnPluginStart()
-{
+public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
-	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2)
-	{
+	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 	
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 	HookEvent("round_end", Event_RoundEnd);
-	HookEvent("player_entered_checkpoint", Event_EnterSaferoom);
 	HookEvent("heal_success", Event_HealFinished);
 	HookEvent("map_transition", Event_MapTransition);
 	HookEvent("game_start", Event_GameStart);
@@ -124,10 +112,8 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 				firstGiven = true;
 				CreateTimer(1.0, Timer_GiveKits);
 			}
-		}else{
-			if(!DoesClientHaveKit(client)) {
-				CheatCommand(client, "give", "first_aid_kit", "");
-			} 
+		}else if(!DoesClientHaveKit(client)) {
+			CheatCommand(client, "give", "first_aid_kit", "");
 		}
 	}
 }
@@ -161,34 +147,41 @@ public void OnMapStart() {
 		}
 		isFailureRound = false;
 	}
+
 	#if defined DEBUG
 	PrintToServer(">>> MAP START. Extra Kits: %d", extraKitsAmount);
 	#endif
+
 	if(!isLateLoaded) {
 		CreateTimer(30.0, Timer_AddExtraCounts);
 		isLateLoaded = false;
 	}
+
+	//Hook the end saferoom as event
+	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
+	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 }
-public void Event_EnterSaferoom(Event event, const char[] name, bool dontBroadcast) {
-	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(client > 0 && !isCheckpointReached && GetClientTeam(client) == 2 && L4D_IsInLastCheckpoint(client)) {
-		isCheckpointReached = true;
+public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
+    if(!isCheckpointReached && IsValidClient(client) && GetClientTeam(client) == 2){
+        isCheckpointReached = true;
 		int extraPlayers = GetSurvivorsCount() - 4;
+
 		if(extraPlayers > 0) {
 			#if defined DEBUG
 			PrintToConsoleAll("CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
 			#endif
+
 			//If hAddExtraKits TRUE: Append to previous, FALSE: Overwrite
 			if(hAddExtraKits.BoolValue) 
 				extraKitsAmount += extraPlayers;
 			else
 				extraKitsAmount = extraPlayers;
+				
 			extraKitsStarted = extraKitsAmount;
 			PrintToServer(">>> Player entered saferoom. An extra %d kits will be provided", extraKitsAmount);
 		}
-	}
+    }
 }
-
 public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	if(!isFailureRound) isFailureRound = true;
 }
