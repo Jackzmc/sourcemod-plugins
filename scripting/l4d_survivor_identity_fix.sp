@@ -12,23 +12,27 @@
 #include <sourcemod>
 #include <sdktools>
 #include <dhooks>
+#include <clientprefs>
 
 #define TEAM_SURVIVOR 2
 #define TEAM_PASSING 4
 
 char g_Models[MAXPLAYERS+1][128];
+int g_iPendingCookieModel[MAXPLAYERS+1];
 
 #define GAMEDATA "l4d_survivor_identity_fix"
 
 Handle hConf = null;
 #define NAME_SetModel "CBasePlayer::SetModel"
-static Handle hDHookSetModel = null;
+static Handle hDHookSetModel = null, hModelPrefCookie;
 static bool isLateLoad;
 
 #define SIG_SetModel_LINUX "@_ZN11CBasePlayer8SetModelEPKc"
 #define SIG_SetModel_WINDOWS "\\x55\\x8B\\x2A\\x8B\\x2A\\x2A\\x56\\x57\\x50\\x8B\\x2A\\xE8\\x2A\\x2A\\x2A\\x2A\\x8B\\x2A\\x2A\\x2A\\x2A\\x2A\\x8B\\x2A\\x8B\\x2A\\x2A\\x8B"
 
 #define SIG_L4D1SetModel_WINDOWS "\\x8B\\x2A\\x2A\\x2A\\x56\\x57\\x50\\x8B\\x2A\\xE8\\x2A\\x2A\\x2A\\x2A\\x8B\\x3D"
+
+//TODO: Setup cookies
 
 public Plugin myinfo =
 {
@@ -58,8 +62,14 @@ public void OnPluginStart()
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 
 	if(isLateLoad) {
-		CreateTimer(1.0, Timer_FillModelList);
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && IsSurvivor(i))
+				GetClientModel(i, g_Models[i], 64);
+				//TODO: Convert ^ to ID
+		}
 	}
+
+	hModelPrefCookie = RegClientCookie("surv_model", "Survivor model preference", CookieAccess_Public);
 }
 
 // ------------------------------------------------------------------------
@@ -194,37 +204,49 @@ void GetGamedata()
 	}
 	PrepDHooks();
 }
-//Reset models on fresh map start
-/*public void OnMapStart() {
-	if(L4D_IsFirstMapInScenario()) {
-		for(int i = 0 1; i < MaxClients + 1; i++) {
-			g_Models[i][0] = "\0";
+//Reset the list of models on a new game -> no players.
+public void Event_NewGame(Event event, const char[] name, bool dontBroadcast) {
+	PrintToServer("Clearing models");
+	for(int i = 1; i <= MaxClients; i++) {
+		g_Models[i][0] = '\0';
+	}
+}
+//Checks if a user has a model preference cookie (set by native). If so, populate g_Models w/ it
+public void OnClientCookiesCached(int client) {
+	if(IsFakeClient(client)) return;
+
+	char modelPref[2];
+	GetClientCookie(client, hModelPrefCookie, modelPref, sizeof(modelPref));
+	if(strlen(modelPref) > 0) {
+		int type = StringToInt(modelPref);
+		if(type > 0 && type <= 8) {
+			strcopy(g_Models[client], 64, survivor_models[type - 1]);
+			g_iPendingCookieModel[client] = type;
+			//A valid cookie was found, set their model.
+		}else{
+			SetClientCookie(client, hModelPrefCookie, "0");
+			//Set to current model?
 		}
 	}
 }
-public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
-
-}*/
-public void Event_NewGame(Event event, const char[] name, bool dontBroadcast) {
-	PrintToServer("Clearing models");
-	for(int i = 1; i < MaxClients + 1; i++) {
-		g_Models[i][0] = '\0';
-	}
-	CreateTimer(10.0, Timer_FillModelList);
-}
+//Either use preferred model OR find the least-used.
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(IsSurvivor(client))
-		CreateTimer(0.2, Timer_FillModel, client);
-}
-public Action Timer_FillModelList(Handle handle) {
-	for(int i = 1; i < MaxClients + 1; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && IsSurvivor(i))
-			GetClientModel(i, g_Models[i], 64);
+	if(GetClientTeam(client) == 2 && !IsFakeClient(client) && g_iPendingCookieModel[client] > 0) {
+		//A model is set: Fetched from cookie
+		RequestFrame(Frame_SetPlayerModel, client);
+	}else{
+		//Model was not set: Use least-used survivor.
+		RequestFrame(Frame_SetPlayerToLeastUsedModel, client);
 	}
 }
-public Action Timer_FillModel(Handle hdl, int client) {
-	int type = GetLeastUsedSurvivor();
+public void Frame_SetPlayerModel(int client) {
+	SetEntityModel(client, survivor_models[g_iPendingCookieModel[client] - 1]);
+	SetEntProp(client, Prop_Send, "m_survivorCharacter", g_iPendingCookieModel[client] - 1);
+	g_iPendingCookieModel[client] = 0;
+}
+public void Frame_SetPlayerToLeastUsedModel(int client) {
+	int type = GetLeastUsedSurvivor(client) ;
 	SetEntityModel(client, survivor_models[type]);
 	SetEntProp(client, Prop_Send, "m_survivorCharacter", type);
 	strcopy(g_Models[client], 64, survivor_models[type]);
@@ -278,20 +300,28 @@ public int Native_SetPlayerModel(Handle plugin, int numParams) {
 		ThrowNativeError(SP_ERROR_INDEX, "Character ID (%d) is not in range (0-7)", character);
 		return 1;
 	} else {
+		//Set a cookie to remember their model, starting at 1.
+		char charTypeStr[2];
+		Format(charTypeStr, sizeof(charTypeStr), "%d", ++character);
+		if(!IsFakeClient(client))
+			SetClientCookie(client, hModelPrefCookie, charTypeStr);
+
 		strcopy(g_Models[client], 64, survivor_models[character]);
 		return 0;
 	}
 }
 
-stock int GetLeastUsedSurvivor() {
+stock int GetLeastUsedSurvivor(int client) {
 	int count[8], lowestID;
 	for(int i = 1; i <= MaxClients; ++i) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-			count[GetSurvivorType(g_Models[i]) + 1]++;
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && i != client) {
+			count[GetSurvivorType(g_Models[i])]++;
 		}
 	}
-	for(int id = 1; id <= 8; ++id) {
-		if(count[id] < count[lowestID]) {
+	for(int id = 0; id < 8; ++id) {
+		if(count[id] == 0) {
+			return id;
+		}else if(count[id] < count[lowestID]) {
 			lowestID = id;
 		}
 	}
