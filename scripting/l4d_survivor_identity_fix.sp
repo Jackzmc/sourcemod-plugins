@@ -125,6 +125,7 @@ public Action Event_BotToPlayer(Handle event, const char[] name, bool dontBroadc
 	char model[128];
 	GetClientModel(bot, model, sizeof(model));
 	SetEntityModel(player, model);
+	strcopy(g_Models[player], 64, model);
 	SetEntProp(player, Prop_Send, "m_survivorCharacter", GetEntProp(bot, Prop_Send, "m_survivorCharacter"));
 }
 
@@ -137,15 +138,12 @@ public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
 	int bot    = GetClientOfUserId(GetEventInt(event, "bot")); 
 
 	if (!IsValidClient(player) || !IsSurvivor(player) || IsFakeClient(player)) return; // ignore fake players (side product of creating bots)
-	
 	if (g_Models[player][0] != '\0')
 	{
-		SetEntProp(bot, Prop_Send, "m_survivorCharacter", GetEntProp(player, Prop_Send, "m_survivorCharacter"));
+		int playerType = GetEntProp(player, Prop_Send, "m_survivorCharacter");
+		SetEntProp(bot, Prop_Send, "m_survivorCharacter", playerType);
 		SetEntityModel(bot, g_Models[player]); // Restore saved model. Player model is hunter at this point
-		for (int i = 0; i < 8; i++)
-		{
-			if (StrEqual(g_Models[player], survivor_models[i])) SetClientInfo(bot, "name", survivor_names[i]);
-		}
+		SetClientInfo(bot, "name", survivor_names[playerType]);
 	}
 }
 
@@ -232,11 +230,13 @@ public void OnClientCookiesCached(int client) {
 //Either use preferred model OR find the least-used.
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(GetClientTeam(client) == 2 && !IsFakeClient(client) && g_iPendingCookieModel[client] > 0) {
+	if(IsFakeClient(client)) return; //Have to ignore bots for now, due to idle bots
+	if(GetClientTeam(client) == 2 && g_iPendingCookieModel[client] > 0) {
 		//A model is set: Fetched from cookie
 		RequestFrame(Frame_SetPlayerModel, client);
 	}else{
 		//Model was not set: Use least-used survivor.
+		
 		RequestFrame(Frame_SetPlayerToLeastUsedModel, client);
 	}
 }
@@ -302,7 +302,7 @@ public int Native_SetPlayerModel(Handle plugin, int numParams) {
 	} else {
 		//Set a cookie to remember their model, starting at 1.
 		char charTypeStr[2];
-		Format(charTypeStr, sizeof(charTypeStr), "%d", ++character);
+		Format(charTypeStr, sizeof(charTypeStr), "%d", character + 1);
 		if(!IsFakeClient(client))
 			SetClientCookie(client, hModelPrefCookie, charTypeStr);
 
