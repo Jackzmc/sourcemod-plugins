@@ -107,16 +107,32 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 	if(GetClientTeam(client) == 2) {
 		if(L4D_IsFirstMapInScenario()) {
 			//Check if all clients are ready, and survivor count is > 4. 
-			//TODO: Possibly stop redudant double loops (ready check & survivor count)0
-			if(AreAllClientsReady() && GetSurvivorsCount() > 4 && !firstGiven) {
+			abmExtraCount = GetSurvivorsCount();
+			if(AreAllClientsReady() && abmExtraCount > 4 && !firstGiven) {
 				firstGiven = true;
+				//Set the initial value ofhMinPlayers
+				if(hMinPlayers != null) {
+					hMinPlayers.IntValue = abmExtraCount;
+				}
 				CreateTimer(1.0, Timer_GiveKits);
 			}
-		}else if(!DoesClientHaveKit(client)) {
-			CheatCommand(client, "give", "first_aid_kit", "");
+		}else {
+			//Set abm's min players to the amount of real survivors
+			int newPlayerCount = abmExtraCount + 1;
+			if(hMinPlayers != null && hMinPlayers.IntValue < newPlayerCount && newPlayerCount < 18) {
+				abmExtraCount = newPlayerCount;
+				#if defined DEBUG
+				PrintToServer("update abm_minplayers -> %d", abmExtraCount);
+				#endif
+				hMinPlayers.IntValue = abmExtraCount;
+			}
+			if(!DoesClientHaveKit(client)) {
+				CheatCommand(client, "give", "first_aid_kit", "");
+			}
 		}
 	}
 }
+
 public Action Timer_GiveKits(Handle timer) { GiveStartingKits(); }
 
 //Provide extra kits when a player spawns (aka after a map transition)
@@ -125,14 +141,6 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	if(GetClientTeam(client) == 2) {
 		if(!DoesClientHaveKit(client))
 			UseExtraKit(client);
-		
-		int survivors = GetSurvivorsCount();
-		if(hMinPlayers != null && hMinPlayers.IntValue < abmExtraCount) {
-			#if defined DEBUG
-			PrintToServer("update abm_minplayers -> %d", abmExtraCount);
-			#endif
-			hMinPlayers.IntValue = abmExtraCount;
-		}
 	}
 }
 
@@ -146,25 +154,23 @@ public void OnMapStart() {
 			GiveStartingKits();
 		}
 		isFailureRound = false;
+	}else if(!L4D_IsFirstMapInScenario()) {
+		//Re-set value incase it reset.
+		hMinPlayers.IntValue = abmExtraCount;
 	}
-
-	#if defined DEBUG
-	PrintToServer(">>> MAP START. Extra Kits: %d", extraKitsAmount);
-	#endif
-
 	if(!isLateLoaded) {
 		CreateTimer(30.0, Timer_AddExtraCounts);
 		isLateLoaded = false;
 	}
-
 	//Hook the end saferoom as event
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 }
 public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
-    if(!isCheckpointReached && IsValidClient(client) && GetClientTeam(client) == 2){
+    if(client > 0 && client <= MaxClients && !isCheckpointReached && IsValidClient(client) && GetClientTeam(client) == 2){
         isCheckpointReached = true;
 		int extraPlayers = GetSurvivorsCount() - 4;
+		if(GetRandomFloat() < 0.5) ++extraPlayers;
 
 		if(extraPlayers > 0) {
 			#if defined DEBUG
@@ -180,7 +186,9 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 			extraKitsStarted = extraKitsAmount;
 			PrintToServer(">>> Player entered saferoom. An extra %d kits will be provided", extraKitsAmount);
 		}
-    }
+    }else if(isCheckpointReached) {
+		//TODO: Auto give instead on spawn?
+	}
 }
 public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	if(!isFailureRound) isFailureRound = true;
@@ -270,20 +278,12 @@ stock void GiveStartingKits() {
 			}
 		}
 	}
-	//Set abm's min players to the amount of real survivors
-	//TODO: Reset on map start when changed
-	if(hMinPlayers != null && hMinPlayers.IntValue < realPlayersCount) {
-		#if defined DEBUG
-		PrintToServer("Found abm_minplayers, setting to %d", realPlayersCount);
-		#endif
-		hMinPlayers.IntValue = realPlayersCount;
-	}
 }
 
-stock int GetSurvivorsCount() {
+stock int GetSurvivorsCount(bool ignoreBots = false) {
 	int count = 0;
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && (ignoreBots && !IsFakeClient(i))) {
 			++count;
 		}
 	}
