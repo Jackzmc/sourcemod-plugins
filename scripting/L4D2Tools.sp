@@ -59,7 +59,6 @@ public void OnPluginStart() {
 	HookEvent("gauntlet_finale_start", Event_GauntletStart);
 	HookEvent("finale_start", Event_FinaleStart);
 	HookEvent("finale_vehicle_leaving", Event_FinaleEnd);
-	HookEvent("player_entered_checkpoint", Event_EnterSaferoom);
 	HookEvent("player_bot_replace", Event_BotPlayerSwap);
 	HookEvent("bot_player_replace", Event_BotPlayerSwap);
 
@@ -76,6 +75,8 @@ public void OnPluginStart() {
 	HookUserMessage(GetUserMessageId("VGUIMenu"), VGUIMenu, true);
 
 	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_ROOT);
+	RegAdminCmd("sm_respawn_all", Command_RespawnAll, ADMFLAG_CHEATS, "Makes all dead players respawn in a closet");
+	RegConsoleCmd("sm_pmodels", Command_ListClientModels, "Lists all player's models");
 }
 
 public void CVC_FFNotice(ConVar convar, const char[] oldValue, const char[] newValue) {
@@ -89,14 +90,27 @@ public void CVC_FFNotice(ConVar convar, const char[] oldValue, const char[] newV
 public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	LasersUsed.Clear();
 }
-
+public Action Command_RespawnAll(int client, int args) {
+	L4D_CreateRescuableSurvivors();
+}
+//TODO: Implement idle bot support
+public Action Command_ListClientModels(int client, int args) {
+	char model[64];
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+			GetClientModel(i, model, sizeof(model));
+			ReplyToCommand(client, "%N's model: %s", i, model);
+		}
+	}
+}
 public Action Command_SetClientModel(int client, int args) {
 	if(args < 1) {
-		ReplyToCommand(client, "Usage: sm_model <player> <model>");
+		ReplyToCommand(client, "Usage: sm_model <player> <model> [keep]");
 	}else{
-		char arg1[32], arg2[16];
+		char arg1[32], arg2[16], arg3[8];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		GetCmdArg(2, arg2, sizeof(arg2));
+		GetCmdArg(3, arg3, sizeof(arg3));
 
 		char modelPath[64];
 		int modelID = GetSurvivorId(arg2);
@@ -114,7 +128,7 @@ public Action Command_SetClientModel(int client, int args) {
 				client,
 				target_list,
 				MAXPLAYERS,
-				COMMAND_FILTER_ALIVE, /* Only allow alive players */
+				COMMAND_FILTER_CONNECTED,
 				target_name,
 				sizeof(target_name),
 				tn_is_ml)) <= 0)
@@ -123,26 +137,47 @@ public Action Command_SetClientModel(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
+		int target;
 		for (int i = 0; i < target_count; i++) {
 			int team = GetClientTeam(target_list[i]);
-			if(IsClientConnected(target_list[i]) && IsClientInGame(target_list[i]) && IsPlayerAlive(target_list[i]) && team == 2 || team == 3) {
-				SetEntProp(target_list[i], Prop_Send, "m_survivorCharacter", modelID);
-				SetEntityModel(target_list[i], modelPath);
-				if (IsFakeClient(target_list[i])) {
-					char name[32];
-					GetSurvivorName(target_list[i], name, sizeof(name));
-					SetClientInfo(target_list[i], "name", name);
+			target = target_list[i];
+			/*if(team == 1) {
+				int bot = GetIdleBot(target);
+				if(bot > -1) {
+					target = bot;
+					team = 2;
 				}
-				UpdatePlayerIdentity(target_list[i], view_as<Character>(modelID));
+				else {
+					ReplyToCommand(client, "Player %N is spectating and is not idle.", target);
+					return Plugin_Handled;
+				}
+			}*/
+			bool keepModel = StrEqual(arg3, "keep", false);
+			if(IsClientConnected(target) && IsClientInGame(target) && IsClientInGame(target) && IsPlayerAlive(target) && team == 2 || team == 3) {
+				SetEntProp(target, Prop_Send, "m_survivorCharacter", modelID);
+				SetEntityModel(target, modelPath);
+				if (IsFakeClient(target)) {
+					char name[32];
+					GetSurvivorName(target, name, sizeof(name));
+					SetClientInfo(target, "name", name);
+				}
+				UpdatePlayerIdentity(target, view_as<Character>(modelID), keepModel);
 
-				int primaryWeapon = GetPlayerWeaponSlot(target_list[i], 0);
-				if(primaryWeapon > -1) {
-					SDKHooks_DropWeapon(target_list[i], primaryWeapon, NULL_VECTOR, NULL_VECTOR);
+				int weapon = GetEntPropEnt(client, Prop_Data, "m_hActiveWeapon");
+				if( weapon != -1 ) {
+					DataPack pack = new DataPack();
+					pack.WriteCell(GetClientUserId(target));
+					pack.WriteCell(EntIndexToEntRef(weapon)); // Save last held weapon to switch back
 
-					Handle pack;
-					CreateDataTimer(0.1, Timer_RequipWeapon, pack);
-					WritePackCell(pack, target_list[i]);
-					WritePackCell(pack, primaryWeapon);
+					CreateTimer(0.1, Timer_RequipWeapon, pack);
+
+					for( int slot = 0; slot <= 4; slot++ ) {
+						weapon = GetPlayerWeaponSlot(target, slot);
+						if( weapon != -1 ) {
+							pack.WriteCell(EntIndexToEntRef(weapon));
+							SDKHooks_DropWeapon(target, weapon, NULL_VECTOR, NULL_VECTOR);
+						}
+					}
 				}
 			}
 		}
@@ -150,11 +185,24 @@ public Action Command_SetClientModel(int client, int args) {
 	return Plugin_Handled;
 }
 
-public Action Timer_RequipWeapon(Handle hdl, Handle pack) {
-	ResetPack(pack);
-	int client = ReadPackCell(pack);
-	int weaponID = ReadPackCell(pack);
-	EquipPlayerWeapon(client, weaponID);
+public Action Timer_RequipWeapon(Handle hdl, DataPack pack) {
+	pack.Reset();
+	int client = GetClientOfUserId(pack.ReadCell());
+	if(client == 0) return;
+
+	int activeWeapon = pack.ReadCell();
+	int weapon;
+	
+	while( pack.IsReadable() )
+	{
+		weapon = pack.ReadCell();
+		if( EntRefToEntIndex(weapon) != INVALID_ENT_REFERENCE ) {
+			EquipPlayerWeapon(client, weapon);
+		}
+	}
+	if( EntRefToEntIndex(activeWeapon) != INVALID_ENT_REFERENCE ) {
+		SetEntPropEnt(client, Prop_Data, "m_hActiveWeapon", activeWeapon);
+	}
 }
 
 public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
@@ -191,6 +239,10 @@ public void OnClientDisconnect(int client) {
 		botDropMeleeWeapon[client] = -1;
 	}
 }
+public void OnMapStart() {
+	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
+	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
+}
 
 public Action Event_OnWeaponDrop(int client, int weapon) {
 	if(!IsValidEntity(weapon)) return Plugin_Continue;
@@ -209,10 +261,8 @@ public void Frame_HideEntity(int entity) {
 	TeleportEntity(entity, OUT_OF_BOUNDS, NULL_VECTOR, NULL_VECTOR);
 }
 
-public void Event_EnterSaferoom(Event event, const char[] name, bool dontBroadcast) {
-	
-	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(client > 0) {
+public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
+	if(client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
 		if(botDropMeleeWeapon[client] > 0) {
 			PrintToServer("Giving melee weapon back to %N", client);
 			float pos[3];
@@ -333,6 +383,27 @@ stock int GetAnyValidClient() {
 		if (IsClientInGame(i) && !IsFakeClient(i))
 		{
 			return i;
+		}
+	}
+	return -1;
+}
+
+stock int GetRealClient(int client) {
+	if(IsFakeClient(client)) {
+		int realPlayer = GetClientOfUserId(GetEntProp(client, Prop_Send, "m_humanSpectatorUserID"));
+		return realPlayer > 0 ? realPlayer : -1;
+	}else{
+		return client;
+	}
+}
+
+stock int GetIdleBot(int client) {
+	for(int i = 1; i <= MaxClients; i++ ) {
+		if(IsClientConnected(i) && HasEntProp(i, Prop_Send, "m_humanSpectatorUserID")) {
+			int realPlayer = GetClientOfUserId(GetEntProp(i, Prop_Send, "m_humanSpectatorUserID"));
+			if(realPlayer == client) {
+				return i;
+			}
 		}
 	}
 	return -1;
