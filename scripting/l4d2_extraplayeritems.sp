@@ -21,7 +21,7 @@ public Plugin myinfo =
 	url = ""
 };
 
-static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers;
+static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers;
 static int extraKitsAmount, extraKitsStarted, isFailureRound, abmExtraCount;
 static bool isCheckpointReached, isLateLoaded, firstGiven;
 
@@ -50,9 +50,12 @@ public void OnPluginStart() {
 	HookEvent("game_start", Event_GameStart);
 
 	hExtraItemBasePercentage = CreateConVar("l4d2_extraitem_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
-	hAddExtraKits = CreateConVar("l4d2_extraitems_kitmode", "0", "Decides how extra kits should be added. 0 -> Overwrites previous extra kits, 1 -> Adds onto previous extra kits");
-	hMinPlayers = FindConVar("abm_minplayers");
-	if(hMinPlayers != null) PrintToServer("Found convar abm_minplayers");
+	hAddExtraKits 			 = CreateConVar("l4d2_extraitems_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits, 1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
+	hUpdateMinPlayers		 = CreateConVar("l4d2_extraitems_updateminplayers", "1", "Should the plugin update abm's cvar min_players convar to the player count?\n 0 -> NO, 1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
+	if(hUpdateMinPlayers.BoolValue) {
+		hMinPlayers = FindConVar("abm_minplayers");
+		if(hMinPlayers != null) PrintToServer("Found convar abm_minplayers");
+	}
 
 	AutoExecConfig(true, "l4d2_extraplayeritems");
 
@@ -61,6 +64,8 @@ public void OnPluginStart() {
 		RegAdminCmd("sm_epi_kits", Command_GetKitAmount, ADMFLAG_CHEATS);
 		RegAdminCmd("sm_epi_items", Command_RunExtraItems, ADMFLAG_CHEATS);
 	#endif
+
+
 }
 
 /////////////////////////////////////
@@ -100,36 +105,53 @@ public Action Command_RunExtraItems(int client, int args) {
 //Called on the first spawn in a mission. 
 public Action Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
 	firstGiven = false;
+	extraKitsAmount = 0;
+	extraKitsStarted = 0;
 }
 
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) { 
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(GetClientTeam(client) == 2) {
+	if(GetClientTeam(client) == 2 && !IsFakeClient(client)) {
 		if(L4D_IsFirstMapInScenario()) {
 			//Check if all clients are ready, and survivor count is > 4. 
 			abmExtraCount = GetSurvivorsCount();
 			if(AreAllClientsReady() && abmExtraCount > 4 && !firstGiven) {
 				firstGiven = true;
 				//Set the initial value ofhMinPlayers
-				if(hMinPlayers != null) {
+				if(hUpdateMinPlayers.BoolValue && hMinPlayers != null) {
 					hMinPlayers.IntValue = abmExtraCount;
 				}
 				CreateTimer(1.0, Timer_GiveKits);
 			}
+			//TODO: Some logic to give extra kits on round failure on first map?
+			//Give kit if first map and kits given
+			if(firstGiven) {
+				RequestFrame(Frame_GiveNewClientKit, client);
+			}
 		}else {
-			//Set abm's min players to the amount of real survivors
-			int newPlayerCount = abmExtraCount + 1;
-			if(hMinPlayers != null && hMinPlayers.IntValue < newPlayerCount && newPlayerCount < 18) {
-				abmExtraCount = newPlayerCount;
-				#if defined DEBUG
-				PrintToServer("update abm_minplayers -> %d", abmExtraCount);
-				#endif
-				hMinPlayers.IntValue = abmExtraCount;
-			}
-			if(!DoesClientHaveKit(client)) {
-				CheatCommand(client, "give", "first_aid_kit", "");
-			}
+			RequestFrame(Frame_GiveNewClientKit, client);
 		}
+	}
+}
+
+public void Frame_GiveNewClientKit(int client) {
+	if(!DoesClientHaveKit(client)) {
+		CheatCommand(client, "give", "first_aid_kit", "");
+	}
+}
+public void Frame_GiveClientKit(int client) {
+	if(!DoesClientHaveKit(client)) {
+		UseExtraKit(client);
+	}
+	//Set abm's min players to the amount of real survivors. Ran AFTER spawned incase they are pending joining
+	if(!hUpdateMinPlayers.BoolValue) return;
+	int newPlayerCount = abmExtraCount + 1;
+	if(hMinPlayers != null && newPlayerCount > 4 && hMinPlayers.IntValue < newPlayerCount && newPlayerCount < 18) {
+		abmExtraCount = newPlayerCount;
+		#if defined DEBUG
+		PrintToServer("update abm_minplayers -> %d", abmExtraCount);
+		#endif
+		hMinPlayers.IntValue = abmExtraCount;
 	}
 }
 
@@ -139,8 +161,7 @@ public Action Timer_GiveKits(Handle timer) { GiveStartingKits(); }
 public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(GetClientTeam(client) == 2) {
-		if(!DoesClientHaveKit(client))
-			UseExtraKit(client);
+		RequestFrame(Frame_GiveClientKit, client);
 	}
 }
 
@@ -170,12 +191,19 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
     if(client > 0 && client <= MaxClients && !isCheckpointReached && IsValidClient(client) && GetClientTeam(client) == 2){
         isCheckpointReached = true;
 		int extraPlayers = GetSurvivorsCount() - 4;
+		#if defined DEBUG
+		PrintToConsoleAll("CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
+		#endif
+
+		float averageTeamHP = getAverageHP();
+		if(averageTeamHP <= 30) extraPlayers += extraPlayers; //if perm. health < 30, give an extra 4 on top of the extra
+		else if(averageTeamHP <= 50) ++extraPlayers; //if the team's average health is less than 50 (permament) then give another
+		//Chance to get 1-2 extra kits (might need to be nerfed or restricted to > 50 HP)
 		if(GetRandomFloat() < 0.5) ++extraPlayers;
+		if(GetRandomFloat() < 0.2) ++extraPlayers;
 
 		if(extraPlayers > 0) {
-			#if defined DEBUG
-			PrintToConsoleAll("CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
-			#endif
+
 
 			//If hAddExtraKits TRUE: Append to previous, FALSE: Overwrite
 			if(hAddExtraKits.BoolValue) 
@@ -207,9 +235,6 @@ public Action Event_MapTransition(Event event, const char[] name, bool dontBroad
 
 public Action Event_HealFinished(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	#if defined DEBUG
-	PrintToConsoleAll("Client %N Used Kit (healed). Extras: %d", client, extraKitsAmount);
-	#endif
 	UseExtraKit(client);
 }
 
@@ -280,10 +305,10 @@ stock void GiveStartingKits() {
 	}
 }
 
-stock int GetSurvivorsCount(bool ignoreBots = false) {
+stock int GetSurvivorsCount() {
 	int count = 0;
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && (ignoreBots && !IsFakeClient(i))) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 ) {
 			++count;
 		}
 	}
@@ -319,4 +344,15 @@ stock void UseExtraKit(int client) {
 		PrintToServer("Client %N used extra: %d", client, extraKitsAmount);
 		#endif
 	}
+}
+
+stock float getAverageHP() {
+	int totalHP, clients;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			totalHP += GetClientHealth(i);
+			++clients;
+		}
+	}
+	return totalHP / clients;
 }
