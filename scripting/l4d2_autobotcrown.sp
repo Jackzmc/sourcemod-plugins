@@ -5,7 +5,7 @@
 
 //#define DEBUG 0
 
-#define SCAN_INTERVAL 5.0
+#define SCAN_INTERVAL 4.0
 #define SCAN_RANGE 750.0
 #define ACTIVE_INTERVAL 0.4
 
@@ -78,7 +78,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_ws", Cmd_Status, ADMFLAG_ROOT);
 }
 public Action Cmd_Status(int client, int args) {
-	ReplyToCommand(client, "Scan Timer: %b | Active: %b | In Position %b | Witches %d", timer != INVALID_HANDLE, AutoCrownBot > -1, AutoCrownInPosition, WitchList.Length);
+	ReplyToCommand(client, "Scan Timer: %b | Active: %b | In Position %b | Witches %d | Bot %N", timer != INVALID_HANDLE, AutoCrownBot > -1, AutoCrownInPosition, WitchList.Length, GetClientOfUserId(AutoCrownBot));
 	return Plugin_Handled;
 }
 public void Event_DifficultyChanged(Event event, const char[] name, bool dontBroadcast) {
@@ -91,11 +91,13 @@ public void Event_DifficultyChanged(Event event, const char[] name, bool dontBro
 		}
 	}else{
 		CloseHandle(timer);
+		timer = INVALID_HANDLE;
 	}
 }
 public void Change_Gamemode(ConVar convar, const char[] oldValue, const char[] newValue) {
 	if(StrEqual(newValue, "realism")) {
 		CloseHandle(timer);
+		timer = INVALID_HANDLE;
 	}
 
 }
@@ -137,12 +139,13 @@ public Action Timer_Active(Handle hdl) {
 		#if defined DEBUG
 		PrintToServer("No witches detected, ending timer");
 		#endif
+		timer = INVALID_HANDLE;
 		return Plugin_Stop;
 	}
 	//TODO: Also check if startled and cancel it immediately. 
 	if(AutoCrownBot > -1) {
 		int client = GetClientOfUserId(AutoCrownBot);
-		if(!IsValidEntity(AutoCrownTarget)) {
+		if(!IsValidEntity(AutoCrownTarget) || IsPlayerIncapped(client)) {
 			ResetAutoCrown();
 			
 			#if defined DEBUG
@@ -150,10 +153,18 @@ public Action Timer_Active(Handle hdl) {
 			#endif
 			return Plugin_Stop;
 		}else if(client <= 0 || !IsClientConnected(client) || !IsClientInGame(client) || !IsPlayerAlive(client)) {
-			AutoCrownBot = -1;
-			AutoCrownTarget = -1;
+			ResetAutoCrown();
 			#if defined DEBUG
 			PrintToServer("Could not find valid AutoCrownBot");
+			#endif
+			return Plugin_Stop;
+		}
+
+		char wpn[32];
+		if(!GetClientWeapon(client, wpn, sizeof(wpn)) || !StrEqual(wpn, "weapon_autoshotgun") && !StrEqual(wpn, "weapon_shotgun_spas")) {
+			ResetAutoCrown();
+			#if defined DEBUG
+			PrintToServer("AutoCrownBot does not have a valid weapon (%s)", wpn);
 			#endif
 			return Plugin_Stop;
 		}
@@ -189,14 +200,12 @@ public Action Timer_Scan(Handle hdl) {
 		#endif
 		return Plugin_Stop;
 	}
-	for(int bot = 1; bot < MaxClients+1; bot++) {
+	for(int bot = 1; bot <= MaxClients; bot++) {
 		if(IsClientConnected(bot) && IsClientInGame(bot) && IsFakeClient(bot) && IsPlayerAlive(bot)) {
 			//Check if bot has a valid shotgun, with ammo (probably can skip: bot mostly will be full).
 			if(GetClientHealth(bot) > 40) {
 				char wpn[32];
-				if(GetClientWeapon(bot, wpn, sizeof(wpn)) && 
-					StrEqual(wpn, "weapon_autoshotgun") || StrEqual(wpn, "weapon_shotgun_spas")
-				) {
+				if(GetClientWeapon(bot, wpn, sizeof(wpn)) && (StrEqual(wpn, "weapon_autoshotgun") || StrEqual(wpn, "weapon_shotgun_spas"))) {
 					GetClientAbsOrigin(bot, botPosition);
 					
 					for(int i = 0; i < WitchList.Length; i++) {
@@ -208,12 +217,14 @@ public Action Timer_Scan(Handle hdl) {
 								//TODO: Implement a line-of-sight trace
 								#if defined DEBUG
 								PrintToServer("Found a valid witch in range of %N: %d", bot, witchID);
+								PrintToChatAll("Found a valid witch in range of %N: %d", bot, witchID);
 								#endif
 								L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(bot), witchPos[0], witchPos[1], witchPos[2]);
 								AutoCrownTarget = witchID;
 								AutoCrownBot = GetClientUserId(bot);
 								AutoCrownInPosition = false;
 								CreateTimer(ACTIVE_INTERVAL, Timer_Active, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+								timer = INVALID_HANDLE;
 								return Plugin_Stop;
 							}
 						}
@@ -244,6 +255,7 @@ public void ResetAutoCrown() {
 	if(AutoCrownBot > -1)
 		L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)})", AutoCrownBot); 
 	AutoCrownBot = -1;
+	timer = INVALID_HANDLE;
 }
 
 int GetDifficultyInt(const char[] type) {
@@ -256,4 +268,8 @@ int GetDifficultyInt(const char[] type) {
 	}else{
 		return 1;
 	}
+}
+
+stock bool IsPlayerIncapped(int client) {
+	return GetEntProp(client, Prop_Send, "m_isIncapacitated") == 1;
 }
