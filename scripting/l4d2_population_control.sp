@@ -27,13 +27,15 @@ public void OnPluginStart() {
 	if(g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
-	PrecacheModel("models/infected/common_male_clown.mdl");
-	PrecacheModel("models/infected/common_male_mud.mdl");
-
 
 	hPercentTotal = CreateConVar("l4d2_population_global_chance", "1.0", "The % chance that any the below chances occur.\n0.0 = NEVER, 1.0: ALWAYS");
 	hPercentClown = CreateConVar("l4d2_population_clowns", "0.0", "The % chance that a common spawns as a clown.\n0.0 = OFF, 1.0 = ALWAYS", FCVAR_NONE, true, 0.0, true, 1.0);
 	hPercentMud = CreateConVar("l4d2_population_mud", "0.0", "The % chance that a common spawns as a mud zombie.\n0.0 = OFF, 1.0 = ALWAYS", FCVAR_NONE, true, 0.0, true, 1.0);
+}
+
+public void OnMapStart() {
+	PrecacheModel("models/infected/common_male_clown.mdl");
+	PrecacheModel("models/infected/common_male_mud.mdl");
 }
 
 public void OnEntityCreated(int entity, const char[] classname) {
