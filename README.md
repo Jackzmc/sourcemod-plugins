@@ -2,12 +2,12 @@
 All my sourcemod plugins... shitty probably
 
 ## Plugin List
+
+### Created by Me
 * [csgo-knifehp](#csgo-knifehp)
 * [l4d2-manual-director](#l4d2-manual-director)
 * [l4d2-info-cmd](#l4d2-info-cmd)
 * [AutoWarpBot](#AutoWarpBot)
-* [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
-* [BetterWitchAvoidance](#BetterWitchAvoidance)
 * [L4D2FFKickProtection](#L4D2FFKickProtection)
 * [l4d2_ff_test](#l4d2_ff_test)
 * [CSGOTroll](#CSGOTroll)
@@ -18,7 +18,13 @@ All my sourcemod plugins... shitty probably
 * [l4d2_feedthetrolls](#l4d2_feedthetrolls)
 * [l4d2_autobotcrown](#l4d2_autobotcrown)
 * [l4d2_extraplayeritems](#l4d2_extraplayeritems)
+* [l4d2_population_control](#l4d2_population_control)
+
+### Modified Others
+* [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
 * [l4d_survivor_identity_fix](#l4d_survivor_identity_fix)
+* [BetterWitchAvoidance](#BetterWitchAvoidance)
+
 
 ## Descriptions
 ### csgo-knifehp
@@ -198,3 +204,13 @@ Also features a part that will increase the item count on any item, kit, or weap
 
 ### l4d_survivor_identity_fix
 A fork of Merudo, Shadowysn's identity fix plugin that adds support for other plugins to update the model cache. This is used by [L4D2Tools](#L4D2Tools) to update the identity when someone changes their model with sm_model. It also will clear the memory of model when a player disconnects entirely or on a new map.
+
+### l4d2_population_control
+Allows you to set the chances that a common spawns as a certain uncommon. Currently only supports two types:
+* Clown
+* Mud
+
+* **Convars:**
+  * `l4d2_population_chance <0.0-1.0>` Default: 1.0, the chance that the code runs on a spawn (basically if 0.0, none of the % chances will run for all types)
+  * `l4d2_population_clowns <0.0-1.0>` The chance that on a common spawn that the special will be a clown.
+  * `l4d2_population_mud <0.0-1.0>` The chance that on a common spawn that the special will be a mud common.
