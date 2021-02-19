@@ -22,6 +22,16 @@ static ConVar hPercentTotal;
 static ConVar hPercentClown;
 static ConVar hPercentMud;
 
+#define COMMON_MODELS_COUNT 2
+static char INFECTED_MODELS[COMMON_MODELS_COUNT][] = {
+	"models/infected/common_male_clown.mdl",
+	"models/infected/common_male_mud.mdl"
+};
+enum CommonTypes {
+	Common_Clown,
+	Common_Mud
+};
+
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
 	if(g_Game != Engine_Left4Dead2) {
@@ -34,21 +44,21 @@ public void OnPluginStart() {
 }
 
 public void OnMapStart() {
-	PrecacheModel("models/infected/common_male_clown.mdl");
-	PrecacheModel("models/infected/common_male_mud.mdl");
+	for(int i = 0; i < COMMON_MODELS_COUNT; i++) {
+		PrecacheModel(INFECTED_MODELS[i], true);
+	}
 }
 
 public void OnEntityCreated(int entity, const char[] classname) {
 	if (StrEqual(classname, "infected")) {
 		char m_ModelName[PLATFORM_MAX_PATH];
 		GetEntPropString(entity, Prop_Data, "m_ModelName", m_ModelName, sizeof(m_ModelName));
-		PrintToConsoleAll("Infected -> %s", m_ModelName);
 		if(GetRandomFloat() <= hPercentTotal.FloatValue) {
 			float spawnPercentage = GetRandomFloat();
 			if(spawnPercentage <= hPercentClown.FloatValue) {
-				SetEntityModel(entity, "models/infected/common_male_clown.mdl");
+				SetEntityModel(entity, INFECTED_MODELS[Common_Clown]);
 			}else if(spawnPercentage <= hPercentMud.FloatValue) {
-				SetEntityModel(entity, "models/infected/common_male_mud.mdl");
+				SetEntityModel(entity, INFECTED_MODELS[Common_Mud]);
 			}
 		}
 	}
