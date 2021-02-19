@@ -67,7 +67,7 @@ public void OnPluginStart() {
 	hPercentRiot   = CreateConVar("l4d2_population_riot", "0.0", "The % chance that a common spawns as a riot zombie.\n0.0 = OFF, 1.0 = ALWAYS", FCVAR_NONE, true, 0.0, true, 1.0);
 	hPercentJimmy  = CreateConVar("l4d2_population_jimmy", "0.0", "The % chance that a common spawns as a Jimmy Gibs Jr. zombie.\n0.0 = OFF, 1.0 = ALWAYS", FCVAR_NONE, true, 0.0, true, 1.0);
 
-	AutoExecConfig(true, "l4d2_population_control");
+	//AutoExecConfig(true, "l4d2_population_control");
 }
 public void OnMapStart() {
 	for(int i = 0; i < COMMON_MODELS_COUNT; i++) {
