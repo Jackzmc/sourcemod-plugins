@@ -206,11 +206,12 @@ Also features a part that will increase the item count on any item, kit, or weap
 A fork of Merudo, Shadowysn's identity fix plugin that adds support for other plugins to update the model cache. This is used by [L4D2Tools](#L4D2Tools) to update the identity when someone changes their model with sm_model. It also will clear the memory of model when a player disconnects entirely or on a new map.
 
 ### l4d2_population_control
-Allows you to set the chances that a common spawns as a certain uncommon. Currently only supports two types:
-* Clown
-* Mud
-
+Allows you to set the chances that a common spawns as a certain uncommon. The order of the cvars is the order the percentages are ran
 * **Convars:**
   * `l4d2_population_chance <0.0-1.0>` Default: 1.0, the chance that the code runs on a spawn (basically if 0.0, none of the % chances will run for all types)
   * `l4d2_population_clowns <0.0-1.0>` The chance that on a common spawn that the special will be a clown.
-  * `l4d2_population_mud <0.0-1.0>` The chance that on a common spawn that the special will be a mud common.
+  * `l4d2_population_mud    <0.0-1.0>` The chance that on a common spawn that the special will be a mud common.
+  * `l4d2_population_ceda   <0.0-1.0>` The chance that on a common spawn that the special will be a ceda common.
+  * `l4d2_population_worker <0.0-1.0>` The chance that on a common spawn that the special will be a worker common.
+  * `l4d2_population_riot   <0.0-1.0>` The chance that on a common spawn that the special will be a riot common.
+  * `l4d2_population_jimmy  <0.0-1.0>` The chance that on a common spawn that the special will be a jimmy common
