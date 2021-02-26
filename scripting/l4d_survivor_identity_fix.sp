@@ -62,6 +62,7 @@ public void OnPluginStart()
 	HookEvent("game_newmap", Event_NewGame);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
+	HookEvent("finale_start", Event_FinaleStart);
 
 	if(isLateLoad) {
 		for(int i = 1; i <= MaxClients; i++) {
@@ -232,6 +233,48 @@ public void OnClientCookiesCached(int client) {
 		}
 	}
 }
+//Prevent issues with L4D1 characters being TP'd and stuck in brain dead form
+static bool IsTemporarilyL4D2[MAXPLAYERS]; //Use index 0 to state if its activated
+public void OnMapStart() {
+	char map[16];
+	GetCurrentMap(map, sizeof(map));
+	if(StrEqual(map, "c6m3_port")) {
+		HookEvent("door_open", Event_DoorOpen);
+	}
+}
+public Action Event_DoorOpen(Event event, const char[] name, bool dontBroadcast) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+			int playerType = GetEntProp(i, Prop_Send, "m_survivorCharacter");
+			//If character is L4D1 Character (4: bill, etc..) then swap
+			if(playerType > 3) {
+				SetEntProp(i, Prop_Send, "m_survivorCharacter", playerType - 4);
+				IsTemporarilyL4D2[i] = true;
+			}
+		}
+	}
+	IsTemporarilyL4D2[0] = true;
+	UnhookEvent("door_open", Event_DoorOpen);
+}
+public void OnClientPutInServer(int client) {
+	RequestFrame(Frame_PutInServer, client);
+	
+}
+public void Frame_PutInServer(int client) {
+	
+}
+//On finale start: Set back to their L4D1 character.
+public Action Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
+	if(IsTemporarilyL4D2[0]) {
+		for(int i = 0; i <= MaxClients; i++) {
+			if(i > 0 && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsTemporarilyL4D2[i]) {
+				int playerType = GetEntProp(i, Prop_Send, "m_survivorCharacter");
+				SetEntProp(i, Prop_Send, "m_survivorCharacter", playerType + 4);
+			}
+			IsTemporarilyL4D2[i] = false;
+		}
+	}
+}
 //Either use preferred model OR find the least-used.
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
@@ -263,7 +306,7 @@ public void Frame_SetPlayerModel(int client) {
 	g_iPendingCookieModel[client] = 0;
 }
 public Action Timer_SetAllCookieModels(Handle h) {
-	for(int i = 1; i < MaxClients+1; i++) {
+	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && g_iPendingCookieModel[i] && GetClientTeam(i) == 2) {
 			SetEntityModel(i, survivor_models[g_iPendingCookieModel[i] - 1]);
 			SetEntProp(i, Prop_Send, "m_survivorCharacter", g_iPendingCookieModel[i] - 1);
@@ -280,6 +323,7 @@ public void Frame_SetPlayerToLeastUsedModel(int client) {
 public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	g_Models[client][0] = '\0';
+	survivors--;
 }
 
 void PrepDHooks()
