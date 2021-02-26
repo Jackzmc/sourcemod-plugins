@@ -67,15 +67,16 @@ public void OnPluginStart() {
 	hPercentRiot   = CreateConVar("l4d2_population_riot", "0.0", "The % chance that a common spawns as a riot zombie.\n0.0 = OFF, 1.0 = ALWAYS", FCVAR_NONE, true, 0.0, true, 1.0);
 	hPercentJimmy  = CreateConVar("l4d2_population_jimmy", "0.0", "The % chance that a common spawns as a Jimmy Gibs Jr. zombie.\n0.0 = OFF, 1.0 = ALWAYS", FCVAR_NONE, true, 0.0, true, 1.0);
 
+	RegConsoleCmd("sm_population_list", Cmd_List, "Lists the current population percentages", FCVAR_NONE);
+	RegConsoleCmd("sm_populations", Cmd_List, "Lists the current population percentages", FCVAR_NONE);
+
 	//AutoExecConfig(true, "l4d2_population_control");
 }
 public void OnMapStart() {
 	for(int i = 0; i < COMMON_MODELS_COUNT; i++) {
-		PrintToServer(">>> Precache %s", INFECTED_MODELS[i]);
 		PrecacheModel(INFECTED_MODELS[i], true);
 	}
 	for(int i = 0; i < 3; i++) {
-		PrintToServer(">>> Precache %s", INFECTED_MODELS[i]);
 		PrecacheModel(WORKER_MODELS[i], true);
 	}
 	IsDoneLoading = true;
@@ -89,21 +90,32 @@ public void OnEntityCreated(int entity, const char[] classname) {
 		char m_ModelName[PLATFORM_MAX_PATH];
 		GetEntPropString(entity, Prop_Data, "m_ModelName", m_ModelName, sizeof(m_ModelName));
 		if(GetRandomFloat() <= hPercentTotal.FloatValue) {
-			float spawnPercentage = GetRandomFloat();
-			if(spawnPercentage <= hPercentClown.FloatValue) {
+			if(GetRandomFloat() <= hPercentClown.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Clown]);
-			}else if(spawnPercentage <= hPercentMud.FloatValue) {
+			}else if(GetRandomFloat() <= hPercentMud.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Mud]);
-			}else if(spawnPercentage <= hPercentCeda.FloatValue) {
+			}else if(GetRandomFloat() <= hPercentCeda.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Ceda]);
-			}else if(spawnPercentage <= hPercentWorker.FloatValue) {
+			}else if(GetRandomFloat() <= hPercentWorker.FloatValue) {
 				//worker has multiple models:
 				SetEntityModel(entity, WORKER_MODELS[GetRandomInt(0,2)]);
-			}else if(spawnPercentage <= hPercentRiot.FloatValue) {
+			}else if(GetRandomFloat() <= hPercentRiot.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Riot]);
-			}else if(spawnPercentage <= hPercentJimmy.FloatValue) {
+			}else if(GetRandomFloat() <= hPercentJimmy.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Jimmy]);
 			}
 		}
 	}
+}
+
+public Action Cmd_List(int client, int args) {
+	ReplyToCommand(client, "L4D2 Population Chances");
+	ReplyToCommand(client, "%.1f%% global chance", hPercentTotal.FloatValue * 100);
+	ReplyToCommand(client, "%.1f%% Clowns", hPercentClown.FloatValue * 100);
+	ReplyToCommand(client, "%.1f%% Mud Commons", hPercentMud.FloatValue * 100);
+	ReplyToCommand(client, "%.1f%% Ceda Commons", hPercentCeda.FloatValue * 100);
+	ReplyToCommand(client, "%.1f%% Worker Commons", hPercentWorker.FloatValue * 100);
+	ReplyToCommand(client, "%.1f%% Riot Commons", hPercentRiot.FloatValue * 100);
+	ReplyToCommand(client, "%.1f%% Jimmy Gibs", hPercentJimmy.FloatValue * 100);
+	return Plugin_Handled;
 }

@@ -215,3 +215,5 @@ Allows you to set the chances that a common spawns as a certain uncommon. The or
   * `l4d2_population_worker <0.0-1.0>` The chance that on a common spawn that the special will be a worker common.
   * `l4d2_population_riot   <0.0-1.0>` The chance that on a common spawn that the special will be a riot common.
   * `l4d2_population_jimmy  <0.0-1.0>` The chance that on a common spawn that the special will be a jimmy common
+* **Commands:**
+  * `sm_populations` or `sm_population_list` - Lists all the cvar values
