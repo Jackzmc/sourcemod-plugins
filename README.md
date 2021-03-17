@@ -1,6 +1,11 @@
 # sourcemod-plugins
 All my sourcemod plugins... shitty probably
 
+Not always the latest versions, if you have any interest with plugins I can make sure to upload the latest.
+
+Useful things:
+1. Netprop viewer https://jackz.me/netprops/l
+
 ## Plugin List
 
 ### Created by Me
