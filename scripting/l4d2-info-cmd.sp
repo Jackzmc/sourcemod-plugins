@@ -20,8 +20,6 @@ int g_icPlayerManager; //entid -> typically 25 (MaxClients+1)
 bool g_icHealing[MAXPLAYERS+1]; //state
 bool g_icBeingHealed[MAXPLAYERS+1]; //state
 
-ConVar g_icCouponCode, g_icCouponCoins;
-
 public Plugin myinfo = 
 {
 	name = PLUGIN_NAME, 
@@ -52,23 +50,13 @@ public OnPluginStart()
 	FindConVar("z_difficulty").GetString(g_icDifficulty, sizeof(g_icDifficulty));
 	ConVar ic_gamemode = FindConVar("mp_gamemode"); 
 	ic_gamemode.GetString(g_icGamemode, sizeof(g_icGamemode));
-	if (ic_gamemode != null) ic_gamemode.AddChangeHook(Event_GamemodeChange);
+	ic_gamemode.AddChangeHook(Event_GamemodeChange);
 	GetCurrentMap(g_icCurrentMap, sizeof(g_icCurrentMap));
-	
-	AutoExecConfig();
 	
 	//setup advertisement
 	CreateConVar("l4d2_gameinfo_version", PLUGIN_VERSION, "plugin version", FCVAR_SPONLY | FCVAR_DONTRECORD);
-	g_icCouponCode = CreateConVar("l4d2_gameinfo_code","","Provide a coupon code");
-	g_icCouponCoins = CreateConVar("l4d2_gameinfo_coins","0","Provide a coupon code's zekoins", FCVAR_NONE, true, 0.0);
-	CreateTimer(400.0, Timer_PrintInfoMessage, _, TIMER_REPEAT);
 }
 // print info
-public Action Timer_PrintInfoMessage(Handle timer)
-{
-	PrintToChatAll("This is the Manual Director server. Access the panel, and info about the server at l4d2.jackz.me");
-	return Plugin_Continue;
-}
 public Action PrintGameInfo(int client, int args) {
 	//print server info
 	ReplyToCommand(client, ">map,diff,mode,tempoState,totalSeconds");
@@ -76,8 +64,15 @@ public Action PrintGameInfo(int client, int args) {
 	int tempoState = GetEntProp(g_icPlayerManager, Prop_Send, "m_tempoState", 1);
 	ReplyToCommand(client, "%s,%s,%s,%d,%d",g_icCurrentMap,g_icDifficulty,g_icGamemode,tempoState,missionDuration);
 	//print client info
-	ReplyToCommand(client,">id,name,bot,health,status,throwSlot,kitSlot,pillSlot,modelName,velocity");
-	for (int i = 1; i < MaxClients;i++) {
+	ReplyToCommand(client,">id,name,bot,health,status,throwSlot,kitSlot,pillSlot,survivorType,velocity,primaryWpn,secondaryWpn");
+	char status[9];
+	char name[32];
+	char pillItem[32];
+	char kitItem[32];
+	char throwItem[32];
+	char character[9];
+	char primaryWeapon[32], secondaryWeapon[32];
+	for (int i = 1; i <= MaxClients; i++) {
 		if (!IsClientInGame(i)) continue;
 		if (GetClientTeam(i) != 2) continue;
 		int hp = GetClientRealHealth(i);
@@ -86,13 +81,6 @@ public Action PrintGameInfo(int client, int args) {
 		bool incap = GetEntProp(i, Prop_Send, "m_isIncapacitated", 1) == 1;
 		bool blackandwhite = GetEntProp(i, Prop_Send, "m_bIsOnThirdStrike", 1) == 1;
 		int velocity = RoundFloat(GetPlayerSpeed(i));
-		
-		char status[9];
-		char name[32];
-		char pillItem[32];
-		char kitItem[32];
-		char throwItem[32];
-		char character[9];
 		
 		if(hp < 0) {
 			status = "dead";
@@ -109,14 +97,24 @@ public Action PrintGameInfo(int client, int args) {
 		}else{
 			status = "alive";
 		}
+		primaryWeapon[0] 	= '\0';
+		throwItem[0] 		= '\0';
+		kitItem[0]  		= '\0';
+		pillItem[0]  		= '\0';
+		GetItemSlotClassName(i, 0, primaryWeapon, sizeof(primaryWeapon), true);
+		GetItemSlotClassName(i, 1, secondaryWeapon, sizeof(secondaryWeapon), true);
 		GetItemSlotClassName(i, 2, throwItem, sizeof(throwItem), true);
 		GetItemSlotClassName(i, 3, kitItem, sizeof(kitItem), true);
 		GetItemSlotClassName(i, 4, pillItem, sizeof(pillItem), true);
+
+		/*if(StrEqual(secondaryWeapon, "melee", true)) {
+			GetMeleeWeaponName()
+		}*/
 		
 		GetClientName(i, name, sizeof(name));
 		GetModelName(i, character, sizeof(character));
 		
-		ReplyToCommand(client,"%d,%s,%d,%d,%s,%s,%s,%s,%s,%d", i, name, bot, hp, status, throwItem, kitItem, pillItem, character, velocity);
+		ReplyToCommand(client,"%d,%s,%d,%d,%s,%s,%s,%s,%s,%d,%s,%s", i, name, bot, hp, status, throwItem, kitItem, pillItem, character, velocity, primaryWeapon, secondaryWeapon);
 	}
 	
 }
@@ -167,18 +165,6 @@ public PlayerManager_OnThinkPost(int playerManager) {
 	if (++g_ichuddelay >= 10) g_ichuddelay = 0;
 }
 #endif
-public OnClientPutInServer(client)
-{
-	PrintToChat(client, "Welcome to the Manual Director server! For information or access the panel go to l4d2.jackz.me.");
-	char coupon[9]; 
-	g_icCouponCode.GetString(coupon, sizeof(coupon));
-	if(strlen(coupon) > 0) {
-		char coins[32] = "free";
-		if (g_icCouponCoins.IntValue > 0) IntToString(g_icCouponCoins.IntValue, coins, sizeof(coins));
-		PrintToChat(client, "Signup with redemption code '%s' for %s initial coins", coupon, coins);
-	}
-	
-}
 // METHODS //
 stock float GetPlayerSpeed(int client) {
 	int iVelocity = FindSendPropInfo("CTerrorPlayer", "m_vecVelocity[0]");

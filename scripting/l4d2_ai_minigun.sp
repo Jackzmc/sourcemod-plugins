@@ -107,7 +107,7 @@ public Action Command_SpawnMinigunBot(int client, int args) {
 		vPos[2] += 1.0;
 
 		int survivor = SpawnSurvivor(vPos, vAng, model, true);
-		if(survivor > -1) {
+		if(survivor > 0) {
 			GiveClientWeapon(survivor, "rifle_ak47", true);
 		}else{
 			ReplyToCommand(client, "Failed to spawn survivor.");
@@ -151,7 +151,7 @@ public Action Command_SpawnHoldoutBot(int client, int args) {
 		}
 
 		int survivor = SpawnSurvivor(vPos, vAng, model, false);
-		if(survivor > -1) {
+		if(survivor > 0) {
 			GiveClientWeapon(survivor, wpn, true);
 			SetEntProp(survivor, Prop_Send, "m_survivorCharacter", survivorId);
 		}else{
@@ -200,20 +200,16 @@ stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] m
 		LogError("Failed to match survivor, did they not spawn? [%d/%d]", bot_user_id, bot_client_id);
 		return -1;
 	}
-	if(spawn_minigun) SetClientName(bot_client_id, "MinigunBot");
-	else SetClientName(bot_client_id, "HoldoutBot");
-	
-	TeleportEntity(bot_client_id, vPos, NULL_VECTOR, NULL_VECTOR);
-
 	if(spawn_minigun && !SpawnMinigun(vPos, vAng)) {
 		LogError("Failed to spawn minigun for client #%d", bot_client_id);
 		KickClient(bot_client_id, "AIMinigun:MinigunSpawnFailure");
 		return -1;
 	}
+	SetClientName(bot_client_id, spawn_minigun ? "MinigunBot" : "HoldoutBot");
+	
 	TeleportEntity(bot_client_id, vPos, NULL_VECTOR, NULL_VECTOR);
 	SetEntityModel(bot_client_id, model); //set entity model to custom survivor model
-	//probably return user_id?
-	return bot_client_id;
+	return bot_user_id;
 }
 void AvoidCharacter(int type, bool avoid) {
 	for( int i = 1; i <= MaxClients; i++ )
