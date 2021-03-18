@@ -75,6 +75,7 @@ public void OnPluginStart() {
 	HookUserMessage(GetUserMessageId("VGUIMenu"), VGUIMenu, true);
 
 	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_ROOT);
+	RegAdminCmd("sm_surv", Cmd_SetSurvivor, ADMFLAG_ROOT);
 	RegAdminCmd("sm_respawn_all", Command_RespawnAll, ADMFLAG_CHEATS, "Makes all dead players respawn in a closet");
 	RegConsoleCmd("sm_pmodels", Command_ListClientModels, "Lists all player's models");
 }
@@ -139,47 +140,69 @@ public Action Command_SetClientModel(int client, int args) {
 		}
 		int target;
 		for (int i = 0; i < target_count; i++) {
-			int team = GetClientTeam(target_list[i]);
 			target = target_list[i];
-			/*if(team == 1) {
-				int bot = GetIdleBot(target);
-				if(bot > -1) {
-					target = bot;
-					team = 2;
-				}
-				else {
-					ReplyToCommand(client, "Player %N is spectating and is not idle.", target);
-					return Plugin_Handled;
-				}
-			}*/
 			bool keepModel = StrEqual(arg3, "keep", false);
-			if(IsClientConnected(target) && IsClientInGame(target) && IsClientInGame(target) && IsPlayerAlive(target) && team == 2 || team == 3) {
-				SetEntProp(target, Prop_Send, "m_survivorCharacter", modelID);
-				SetEntityModel(target, modelPath);
-				if (IsFakeClient(target)) {
-					char name[32];
-					GetSurvivorName(target, name, sizeof(name));
-					SetClientInfo(target, "name", name);
-				}
-				UpdatePlayerIdentity(target, view_as<Character>(modelID), keepModel);
+			if(IsClientConnected(target) && IsClientInGame(target) && IsPlayerAlive(target)) {
+				int team = GetClientTeam(target_list[i]);
+				if(team == 2 || team == 4) {
+					SetEntProp(target, Prop_Send, "m_survivorCharacter", modelID);
+					SetEntityModel(target, modelPath);
+					if (IsFakeClient(target)) {
+						char name[32];
+						GetSurvivorName(target, name, sizeof(name));
+						SetClientInfo(target, "name", name);
+					}
+					UpdatePlayerIdentity(target, view_as<Character>(modelID), keepModel);
 
-				int weapon = GetEntPropEnt(client, Prop_Data, "m_hActiveWeapon");
-				if( weapon != -1 ) {
-					DataPack pack = new DataPack();
-					pack.WriteCell(GetClientUserId(target));
-					pack.WriteCell(EntIndexToEntRef(weapon)); // Save last held weapon to switch back
+					int weapon = GetPlayerWeaponSlot(target, 0);
+					if( weapon != -1 ) {
+						DataPack pack = new DataPack();
+						pack.WriteCell(GetClientUserId(target));
+						pack.WriteCell(EntIndexToEntRef(weapon)); // Save last held weapon to switch back
 
-					CreateTimer(0.1, Timer_RequipWeapon, pack);
-
-					for( int slot = 0; slot <= 4; slot++ ) {
-						weapon = GetPlayerWeaponSlot(target, slot);
-						if( weapon != -1 ) {
-							pack.WriteCell(EntIndexToEntRef(weapon));
-							SDKHooks_DropWeapon(target, weapon, NULL_VECTOR, NULL_VECTOR);
-						}
+						CreateTimer(0.1, Timer_RequipWeapon, pack);
 					}
 				}
 			}
+		}
+	}
+	return Plugin_Handled;
+}
+
+public Action Cmd_SetSurvivor(int client, int args) {
+	if(args < 1) {
+		ReplyToCommand(client, "Usage: sm_surv <player> <survivor>");
+	}else{
+		char arg1[32], arg2[16];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+
+		int modelID = GetSurvivorId(arg2);
+		if(modelID == -1) {
+			ReplyToCommand(client, "Invalid survivor type entered. Case-sensitive, full name required.");
+			return Plugin_Handled;
+		}
+		char target_name[MAX_TARGET_LENGTH];
+		int target_list[MAXPLAYERS], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+				arg1,
+				client,
+				target_list,
+				MAXPLAYERS,
+				COMMAND_FILTER_CONNECTED,
+				target_name,
+				sizeof(target_name),
+				tn_is_ml)) <= 0)
+		{
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		int target;
+		for (int i = 0; i < target_count; i++) {
+			target = target_list[i];
+			SetEntProp(target, Prop_Send, "m_survivorCharacter", modelID);
 		}
 	}
 	return Plugin_Handled;
@@ -190,7 +213,6 @@ public Action Timer_RequipWeapon(Handle hdl, DataPack pack) {
 	int client = GetClientOfUserId(pack.ReadCell());
 	if(client == 0) return;
 
-	int activeWeapon = pack.ReadCell();
 	int weapon;
 	
 	while( pack.IsReadable() )
@@ -199,9 +221,6 @@ public Action Timer_RequipWeapon(Handle hdl, DataPack pack) {
 		if( EntRefToEntIndex(weapon) != INVALID_ENT_REFERENCE ) {
 			EquipPlayerWeapon(client, weapon);
 		}
-	}
-	if( EntRefToEntIndex(activeWeapon) != INVALID_ENT_REFERENCE ) {
-		SetEntPropEnt(client, Prop_Data, "m_hActiveWeapon", activeWeapon);
 	}
 }
 
@@ -242,6 +261,7 @@ public void OnClientDisconnect(int client) {
 public void OnMapStart() {
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
+
 }
 
 public Action Event_OnWeaponDrop(int client, int weapon) {
@@ -279,6 +299,7 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 			}
 		}
 	}
+
 }
 
 public Action Timer_TPBots(Handle timer, int user) {
