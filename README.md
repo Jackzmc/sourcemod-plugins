@@ -30,8 +30,8 @@ Useful things:
 * [l4d_survivor_identity_fix](#l4d_survivor_identity_fix)
 * [BetterWitchAvoidance](#BetterWitchAvoidance)
 
-
 ## Descriptions
+
 ### csgo-knifehp
 On knife kill, gives the player 100 HP (configurable)
 * **Convars:**
@@ -49,46 +49,40 @@ Probably going to be posted publicly sometime. allows you to spawn specials on c
    * `mandirector_enable_witch <0/1>` - Should witches be allowed to be spawned?
    * `mandirector_enable_mob <0/1>` - Should mobs be allowed to be spawned
 * **Commands:**
-   * `sm_spawnspecial` - Spawn a special via director
-   * `sm_forcespecial` - Force spawn a special via director, bypassing spawn limits
-   * `sm_forcecursor` - Force spawn a special at cursor, bypassing spawn limits
+   * `sm_spawnspecial <special> [amount]` - Spawn a special via director
+   * `sm_forcespecial <special> [amount]` - Force spawn a special via director, bypassing spawn limits
+   * `sm_forcecursor  <special> [amount]` - Force spawn a special at cursor, bypassing spawn limits
    * `sm_cursormenu` - Show the spawn menu for cursor spawning
    * `sm_specialmenu` - Show the spawn menu for director spawning
    * `sm_directormenu` (Same as sm_specialmenu for now)
    
 ### l4d2-info-cmd
-Technically 'l4d2 game info', havent changed name. Just prints general information, used for a project
+Technically 'l4d2 game info', haven't changed name. Just prints general information, used for a project
 * **Commands:**
    * `sm_gameinfo`
 * Example Response:
     ```
-    >map,diff
-    c8m2_subway,Normal
-    >id,name,bot,health,status,afk,throwSlot,kitSlot,pillSlot,modelName
-    1,Jackz,0,80,alive,0,,first_aid_kit,,Bill
-    3,Zoey,1,75,alive,0,,first_aid_kit,,Zoey
-    4,Francis,1,76,alive,0,,,,Francis
-    5,Louis,1,90,alive,0,,first_aid_kit,,Louis
+    >map,diff,mode,tempoState,totalSeconds
+    c1m1_hotel,1,coop,3,1622
+    >id,name,bot,health,status,throwSlot,kitSlot,pillSlot,survivorType,velocity,primaryWpn,secondaryWpn
+    1,Jackz,0,80,alive,0,,first_aid_kit,,Bill,0,,pistol
+    3,Zoey,1,75,alive,0,,first_aid_kit,,Zoey,0,,pistol
+    4,Francis,1,76,alive,0,,,,Francis,0,,pistol
+    5,Louis,1,90,alive,0,,first_aid_kit,,Louis,0,,pistol
     ```
     
 ### AutoWarpBot
 Simple l4d2 plugin that will auto teleport everyone to checkpoint once all real players have reached the saferoom
 
-### L4D2Tools
-A group of misc tools for l4d2. Including: Notify on lasers use, and a finale timer (gauntlets or all finales), and who trigger a car alarm in the chat.
-* **Convars:**
-   * `sm_laser_use_notice <1/0>` - Enable notification of a laser box being used
-   * `sm_time_finale <0/1/2>` - Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales
-   * `sm_ff_notice <0/1/2>` - Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text
    
 ### 200IQBots_FlyYouFools
-Updated version of ConnerRia's plugin. Improves bots avoidance of tanks. Change from original is updated source syntax, some optimizations/cleanup, and fixes such as bots avoiding tank that has not been activated, or not escaping in vehicle due to presence of tank.
+Updated version of ConnerRia's plugin. Improves bots avoidance of tanks. Change from original is updated sourcepawn syntax, some optimizations/cleanup, and fixes such as bots avoiding tank that has not been activated, or not escaping in vehicle due to presence of tank.
 Latest version now has support for multiple tanks, the bots might not avoid them as effectively as they would with one tank but they still try their best.
 * **Convars:**
    * `FlyYouFools_Version` - Prints the version of plugin
 
 ### BetterWitchAvoidance
-Inspired by the 200IQBots_FlyYouFools. Bots avoid witch if its over 40% anger when close, or a little bigger range at 60% or more.
+Inspired by the 200IQBots_FlyYouFools. Bots avoid witch if its over 40% anger when close, or a little bigger range at 60% or more. Not recommended to use, normal behavior seems fine.
 
 ### L4D2FFKickProtection
 Simple plugin that prevents a player that is being vote-kicked from doing any ff damage to teammates. 
@@ -136,8 +130,8 @@ A collection of small tools:
   * Record time it takes for a finale or gauntlet run to be completed.
   * Record the amount of friendly fire damage done
   * Set the survivor models of any survivor to another correctly.
-  * Alert when a player activates a car alarm
-  * Automatically give back any dropped melee weapons once no longer idle (if not equipped by another player)
+  * Chat Alert when a player activates a car alarm
+  * Automatically gives melee weapons that an idle bot dropped once no longer idle
 
 * **Convars:**
    * `sm_laser_use_notice <0/1>` - Enable notification of when a laser box was used first
@@ -167,6 +161,7 @@ This really only affects wandering zombies, mobs and panic events, but it may wo
 This plugin allows you to enact certain troll modes on any player, some are subtle some are less so. Either way, it works great to deal with a rusher, an asshole or even your friends.
 
 Troll Modes: (updated 1/2/2021)
+
 1. **SlowSpeed** (0.8 < 1.0 base) - Slows down a user
 2. **HigherGravity** (1.3 > 1.0) - Adds more gravity to a user
 3. **HalfPrimary** - Sets user's primary reserve ammo in half
@@ -219,6 +214,8 @@ Also features a part that will increase the item count on any item, kit, or weap
 
 ### l4d_survivor_identity_fix
 A fork of Merudo, Shadowysn's identity fix plugin that adds support for other plugins to update the model cache. This is used by [L4D2Tools](#L4D2Tools) to update the identity when someone changes their model with sm_model. It also will clear the memory of model when a player disconnects entirely or on a new map.
+
+In addition, has a fix for the passing finale, and will automatically move L4D characters to L4D2 until finale starts preventing game messing up their characters.
 
 ### l4d2_population_control
 Allows you to set the chances that a common spawns as a certain uncommon. The order of the cvars is the order the percentages are ran
