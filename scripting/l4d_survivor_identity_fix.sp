@@ -239,6 +239,7 @@ public void OnMapStart() {
 	char map[16];
 	GetCurrentMap(map, sizeof(map));
 	if(StrEqual(map, "c6m3_port")) {
+		UnhookEvent("door_open", Event_DoorOpen);
 		HookEvent("door_open", Event_DoorOpen);
 	}
 }
@@ -256,13 +257,6 @@ public Action Event_DoorOpen(Event event, const char[] name, bool dontBroadcast)
 	IsTemporarilyL4D2[0] = true;
 	UnhookEvent("door_open", Event_DoorOpen);
 }
-public void OnClientPutInServer(int client) {
-	RequestFrame(Frame_PutInServer, client);
-	
-}
-public void Frame_PutInServer(int client) {
-	
-}
 //On finale start: Set back to their L4D1 character.
 public Action Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
 	if(IsTemporarilyL4D2[0]) {
@@ -278,8 +272,7 @@ public Action Event_FinaleStart(Event event, const char[] name, bool dontBroadca
 //Either use preferred model OR find the least-used.
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(IsFakeClient(client)) return; //Have to ignore bots for now, due to idle bots
-	if(GetClientTeam(client) == 2) {
+	if(client > 0 && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
 		//todo: hCookiesEnabled.IntVal
 		if(++survivors > 4 && g_iPendingCookieModel[client] > 0) {
 			//A model is set: Fetched from cookie
