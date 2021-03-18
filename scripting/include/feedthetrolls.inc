@@ -1,4 +1,6 @@
-#define TROLL_MODE_COUNT 15
+#define AUTOPUNISH_FLOW_MIN_DISTANCE 5000.0
+#define AUTOPUNISH_MODE_COUNT 3
+#define TROLL_MODE_COUNT 22
 //
 enum trollMode {
 	Troll_Reset = 0, //0
@@ -15,9 +17,16 @@ enum trollMode {
 	Troll_ThrowItAll, //11
 	Troll_GunJam, //12
 	Troll_NoPickup, //13
-	Troll_Swarm //14
+	Troll_Swarm, //14
+	Troll_Honk, //15, //TODO: Modify sounds :)
+	Troll_SpecialMagnet, //16
+	Troll_TankMagnet, //17
+	Troll_NoShove, //18
+	Troll_DamageBoost, //19
+	Troll_TempHealthQuickDrain,
+	Troll_VomitPlayer
 }
-enum TrollModifier{
+enum TrollModifier {
 	TrollMod_None = 0,
 	TrollMod_InstantFire = 1,
 	TrollMod_Repeat = 2
@@ -37,7 +46,14 @@ char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
 	"ThrowItAll", //11
 	"GunJam", //12
 	"NoPickup",
-	"Swarm"
+	"Swarm",
+	"Honk",
+	"Special Magnet",
+	"Tank Magnet",
+	"No Shove",
+	"Damage Boost",
+	"Temp Quick Drain",
+	"Vomit Player"
 };
 char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Resets the user, removes all troll effects", //0
@@ -54,10 +70,30 @@ char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Player throws all their items at nearby player, periodically", //11
 	"On reload, small chance their gun gets jammed - Can't reload.", //12
 	"Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop",
-	"Swarms a player with zombies. Requires swarm plugin"
+	"Swarms a player with zombies. Requires swarm plugin",
+	"Honk",
+	"Attracts ALL specials to any alive target with this troll enabled",
+	"Attracts ALL tanks to any alive target with this troll enabled",
+	"Prevents a player from shoving",
+	"Makes a player take more damage than normal",
+	"Makes a player's temporarily health drain very quickly",
+	"Shortcut to sm_vomitplayer. vomits the player."
 };
-int g_iTrollUsers[MAXPLAYERS+1];
+enum L4D2Infected
+{
+	L4D2Infected_None = 0,
+	L4D2Infected_Smoker = 1,
+	L4D2Infected_Boomer = 2,
+	L4D2Infected_Hunter = 3,
+	L4D2Infected_Spitter = 4,
+	L4D2Infected_Jockey = 5,
+	L4D2Infected_Charger = 6,
+	L4D2Infected_Witch = 7,
+	L4D2Infected_Tank = 8
+};
+int g_iTrollUsers[MAXPLAYERS+1], g_iAttackerTarget[MAXPLAYERS+1], autoPunished = -1, autoPunishMode;
 bool g_bPendingItemGive[MAXPLAYERS+1];
+
 
 //Applies the selected trollMode to the victim.
 //Modifiers are as followed: 0 -> Both (fire instant, and timer), 1 -> Fire Once, 2 -> Start timer
@@ -71,6 +107,15 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 	//bool activating = !HasTrollMode(victim, mode);
 	switch(mode) {
 		case Troll_iCantSpellNoMore: {}
+		case Troll_Honk: {}
+		case Troll_TankMagnet: {}
+		case Troll_SpecialMagnet: {}
+		case Troll_NoShove: {}
+		case Troll_SlowDrain: {}
+		case Troll_TempHealthQuickDrain: {}
+		case Troll_VomitPlayer: {
+			ServerCommand("sm_vomitplayer #%d", GetClientUserId(victim));
+		}
 		
 		case Troll_Reset: {
 			ShowActivity(client, "reset troll effects for %N. ", victim);
@@ -100,6 +145,9 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 			TurnOffTrollMode(victim, Troll_UziRules);
 			TurnOffTrollMode(victim, Troll_PrimaryDisable);
 			SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+		}
+		case Troll_DamageBoost: {
+			SDKHook(victim, SDKHook_OnTakeDamage, Event_TakeDamage);
 		}
 		case Troll_Clumsy: {
 			//TODO: Implement modifier code
@@ -176,7 +224,7 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 }
 
 bool HasTrollMode(int client, trollMode mode) {
-	return ((g_iTrollUsers[client] >> view_as<int>(mode) - 1) & 1) == 1;
+	return ((g_iTrollUsers[client] >> view_as<int>(mode) - 1) & 1) == 1  && IsClientInGame(client) && IsPlayerAlive(client);
 }
 
 void ToggleTrollMode(int client, trollMode mode) {
@@ -197,4 +245,5 @@ void ResetClient(int victim, bool wipe = true) {
 	int wpn = GetClientWeaponEntIndex(victim, 0);
 	if(wpn > -1)
 		SDKUnhook(wpn, SDKHook_Reload, Event_WeaponReload);
+	SDKUnhook(victim, SDKHook_OnTakeDamage, Event_TakeDamage);
 }
