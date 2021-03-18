@@ -180,17 +180,27 @@ Troll Modes: (updated 1/2/2021)
 11. **ThrowItAll** - Makes a player throw all their items at any nearby players. Runs on the interval set by sm_ftt_throw_interval.
 12. **GunJam** - On reload, small chance their gun gets jammed - Can't reload.
 13. **NoPickup** - Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop
-14.	**Swarm** - Swarms a player with zombies. Requires my [swarm plugin](#l4d2_swarm)
+14. **Swarm** - Swarms a player with zombies. Requires my [swarm plugin](#l4d2_swarm)
+15. **Honk** – Replaces player's chat messages with honk
+16. **Special Magnet** – Attracts ALL specials to the closest alive trolled target with this troll enabled
+17. **Tank Magnet** – Attracts ALL tanks to the closest alive trolled target with this troll enabled
+18. **No Shove** – Prevents player from shoving at a % chance
+19. **Damage Boost** – Will make the player take 2x more damage than normal
+20. **Temp Quick Drain** – Will make a player’s temp health drain very quickly
+21. **Vomit Player** – Shortcut to sm_vomitplayer. Vomits the player.
 
 * **Convars:**
   * `sm_ftt_victims` - A comma separated list of troll targets. Unused while new version is being implemented
   * `sm_ftt_throw_interval` - For troll mode 'ThrowItAll' (#11), how often players will re-throw all their items. 0 to disable
   * `sm_ftt_autopunish_mode` - (Not used, WIP) Sets the modes that auto punish will activate for. 1 -> Early crescendo activations
+  * `sm_ftt_magnet_chance <0.0 - 1.0>` - % of the time that the magnet will work on a player."
+  * `sm_ftt_shove_fail_chance <0.0 - 1.0>` - The % chance that a shove fails
 * **Commands:**
   * `sm_fta <player(s)> <mode #>` - Applies a mode to a set of users. See list above
   * `sm_fta` - No arguments: Shows a menu, choose player, mode, and modifiers all in one.
   * `sm_ftr <player(s)>` - Removes & deactivates all trolls.
   * `sm_ftl` - Lists all players that have a mode applied.
+  * `sm_ftm` - Lists all troll options & their descriptions
 
 ### l4d2_autobotcrown
 Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Supports multiple bots and witches, but only one bot can crown one witch at a time. Plugin is obviously disabled in realism, and is really on suitable for coop or versus. Even works with idle players.
