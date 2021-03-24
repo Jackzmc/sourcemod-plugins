@@ -14,7 +14,7 @@
 
 static ArrayList LasersUsed;
 static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres;
-static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1];
+static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1];
 static bool isHighPingIdle[MAXPLAYERS+1];
 static Handle hTakeOverBot, hGoAwayFromKeyboard;
 
@@ -60,7 +60,7 @@ public void OnPluginStart() {
 	hLaserNotice 	= CreateConVar("sm_laser_use_notice", "1.0", "Enable notification of a laser box being used", FCVAR_NONE, true, 0.0, true, 1.0);
 	hFinaleTimer 	= CreateConVar("sm_time_finale", "0.0", "Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales", FCVAR_NONE, true, 0.0, true, 2.0);
 	hFFNotice    	= CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
-	hPingDropThres 	= CreateConVar("sm_autoidle_ping_max", "0.0", "The highest ping a player can have until they will automatically go idle.\n0=OFF, Min is 30", FCVAR_NONE, true, 30.0, true, 1000.0);
+	hPingDropThres 	= CreateConVar("sm_autoidle_ping_max", "0.0", "The highest ping a player can have until they will automatically go idle.\n0=OFF, Min is 30", FCVAR_NONE, true, 0.0, true, 1000.0);
 	hMPGamemode  = FindConVar("mp_gamemode");
 
 	hFFNotice.AddChangeHook(CVC_FFNotice);
@@ -108,10 +108,14 @@ public Action Timer_CheckPlayerPings(Handle timer) {
 					SDKCall(hTakeOverBot, i);
 					isHighPingIdle[i] = false;
 				}else if(ping > hPingDropThres.IntValue) {
-					PrintToChat(i, "Due to your high ping (%d ms) you have been moved to AFK.", ping);
-					PrintToChat(i, "You will be automatically switched back once your ping restores");
-					SDKCall(hGoAwayFromKeyboard, i);
-					isHighPingIdle[i] = true;
+					if(iHighPingCount[i]++ > 2) {
+						PrintToChat(i, "Due to your high ping (%d ms) you have been moved to AFK.", ping);
+						PrintToChat(i, "You will be automatically switched back once your ping restores");
+						SDKCall(hGoAwayFromKeyboard, i);
+						isHighPingIdle[i] = true;
+						iHighPingCount[i] = 0;
+					}
+
 				}
 			}
 		}
