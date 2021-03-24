@@ -12,8 +12,7 @@
 #include <sdktools>
 #include <sdkhooks>
 
-static int disableFFClient; //client to disable FF for
-static float  ffDamageDone; //amount of damage offending user has attempted
+static int disableFFClient, ffDamageCount; //client to disable FF for
 static ConVar forceKickFFThreshold;
 
 public Plugin myinfo = {
@@ -34,7 +33,7 @@ public void OnPluginStart() {
 	HookUserMessage(GetUserMessageId("VotePass"), VotePassFail);
 	HookUserMessage(GetUserMessageId("VoteFail"), VotePassFail);
 
-	forceKickFFThreshold = CreateConVar("sm_votekick_force_threshold","0","The threshold of damage where the offending player is just immediately kicked. 0 -> Any attempted damage, -1 -> No auto kick.", FCVAR_NONE, true, -1.0);
+	forceKickFFThreshold = CreateConVar("sm_votekick_force_threshold","20.0","The threshold of amount of FF to then automatically kick.\n0: Any attempted damage\n -1: No auto kick.\n>0: When FF count > this", FCVAR_NONE, true, -1.0);
 
 	//HookEvent("vote_started",Event_VoteStarted);
 }
@@ -68,41 +67,45 @@ public Action VoteStart(int client, const char[] command, int argc) {
 		GetCmdArg(1, issue, sizeof(issue));
 		Format(caller, sizeof(caller), "%N", client);
 
-		if(StrEqual(issue, "Kick", true)) {
+		if(StrEqual(issue, "Kick", false)) {
 			char option[32];
 			GetCmdArg(2, option, sizeof(option));
 			if(strlen(option) < 1) { //empty userid/console can't call votes
 				int target = GetClientOfUserId(StringToInt(option));
-				int team = GetClientTeam(target);
-				if(team == 2) {
-					disableFFClient = target;
-					ffDamageDone = -1.0;
+				AdminId callerAdmin = GetUserAdmin(client);
+				AdminId targetAdmin = GetUserAdmin(target);
+				if (GetAdminImmunityLevel(targetAdmin) >= GetAdminImmunityLevel(callerAdmin)) {
+					PrintToChat(target, "%N attempted to vote kick you!", client);
+					return Plugin_Handled;
 				}
-				return Plugin_Handled;
+				if(GetClientTeam(target)== 2) {
+					disableFFClient = target;
+					ffDamageCount = 0;
+				}
+				return Plugin_Continue;
 			}	
 			//Kick vote started
 			PrintToServer("KICK VOTE STARTED | Issue=%s Option=%s Caller=%N", issue, option, client);
 		}
 	}	
-	return Plugin_Handled; //if it wasn't handled up there I would start panicking
+	return Plugin_Continue; //if it wasn't handled up there I would start panicking
 }
 
 public Action VotePassFail(UserMsg msg_id, BfRead msg, const int[] players, int playersNum, bool reliable, bool init) {
 	disableFFClient = -1;
-	ffDamageDone = -1.0;
+	ffDamageCount = 0;
 }	
 
 public Action OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
 	if(disableFFClient == attacker) {
-		if(ffDamageDone == -1) {
-			PrintToServer("Player in vote to be kicked has done ff damage");
+		if(damage > 0.0) {
+			ffDamageCount++;
 		}
-		ffDamageDone = damage;
-		if(forceKickFFThreshold.FloatValue > -1.0) {
+		if(forceKickFFThreshold.IntValue > -1 && ffDamageCount > 0.0) {
 			//auto kick
 			if(forceKickFFThreshold.FloatValue == 0.0) {
 				KickClient(disableFFClient, "Kicked for excessive friendly fire");
-			}else if(FloatCompare(ffDamageDone, forceKickFFThreshold.FloatValue) == 1) {
+			}else if(ffDamageCount > forceKickFFThreshold.FloatValue) {
 				KickClient(disableFFClient, "Kicked for excessive friendly fire");
 			}
 		}
