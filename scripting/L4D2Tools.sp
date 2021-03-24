@@ -13,8 +13,10 @@
 #include "l4d_survivor_identity_fix.inc"
 
 static ArrayList LasersUsed;
-static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode;
+static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres;
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1];
+static bool isHighPingIdle[MAXPLAYERS+1];
+static Handle hTakeOverBot, hGoAwayFromKeyboard;
 
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
 
@@ -41,10 +43,24 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 	LoadTranslations("common.phrases");
+
+	Handle hConfig = LoadGameConfigFile("l4d2tools");
+	if(hConfig == INVALID_HANDLE) SetFailState("Could not load l4d2tools gamedata.");
+	StartPrepSDKCall(SDKCall_Player);
+	PrepSDKCall_SetFromConf(hConfig, SDKConf_Signature, "TakeOverBot");
+	hTakeOverBot = EndPrepSDKCall();
+	StartPrepSDKCall(SDKCall_Player);
+	PrepSDKCall_SetFromConf(hConfig, SDKConf_Signature, "GoAwayFromKeyboard");
+	hGoAwayFromKeyboard = EndPrepSDKCall();
+	CloseHandle(hConfig);
+	if(hTakeOverBot == INVALID_HANDLE || hGoAwayFromKeyboard == INVALID_HANDLE) {
+		SetFailState("One of 3 signatures is invalid");
+	}
 	
-	hLaserNotice = CreateConVar("sm_laser_use_notice", "1.0", "Enable notification of a laser box being used", FCVAR_NONE, true, 0.0, true, 1.0);
-	hFinaleTimer = CreateConVar("sm_time_finale", "0.0", "Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales", FCVAR_NONE, true, 0.0, true, 2.0);
-	hFFNotice    = CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
+	hLaserNotice 	= CreateConVar("sm_laser_use_notice", "1.0", "Enable notification of a laser box being used", FCVAR_NONE, true, 0.0, true, 1.0);
+	hFinaleTimer 	= CreateConVar("sm_time_finale", "0.0", "Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales", FCVAR_NONE, true, 0.0, true, 2.0);
+	hFFNotice    	= CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
+	hPingDropThres 	= CreateConVar("sm_autoidle_ping_max", "0.0", "The highest ping a player can have until they will automatically go idle.\n0=OFF, Min is 30", FCVAR_NONE, true, 30.0, true, 1000.0);
 	hMPGamemode  = FindConVar("mp_gamemode");
 
 	hFFNotice.AddChangeHook(CVC_FFNotice);
@@ -78,6 +94,29 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_surv", Cmd_SetSurvivor, ADMFLAG_ROOT);
 	RegAdminCmd("sm_respawn_all", Command_RespawnAll, ADMFLAG_CHEATS, "Makes all dead players respawn in a closet");
 	RegConsoleCmd("sm_pmodels", Command_ListClientModels, "Lists all player's models");
+
+	CreateTimer(5.0, Timer_CheckPlayerPings, _, TIMER_REPEAT);
+}
+
+public Action Timer_CheckPlayerPings(Handle timer) {
+	//hPingDropThres
+	if(hPingDropThres.IntValue != 0) {
+		for (int i = 1; i <= MaxClients; i++ ) {
+			if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && IsPlayerAlive(i) && GetClientTeam(i) > 1) {
+				int ping = GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iPing", _, i);
+				if(isHighPingIdle[i] && ping <= hPingDropThres.IntValue) {
+					SDKCall(hTakeOverBot, i);
+					isHighPingIdle[i] = false;
+				}else if(ping > hPingDropThres.IntValue) {
+					PrintToChat(i, "Due to your high ping (%d ms) you have been moved to AFK.", ping);
+					PrintToChat(i, "You will be automatically switched back once your ping restores");
+					SDKCall(hGoAwayFromKeyboard, i);
+					isHighPingIdle[i] = true;
+				}
+			}
+		}
+	}
+	return Plugin_Continue;
 }
 
 public void CVC_FFNotice(ConVar convar, const char[] oldValue, const char[] newValue) {
@@ -428,4 +467,50 @@ stock int GetIdleBot(int client) {
 		}
 	}
 	return -1;
+}
+
+void GoIdle(int client, int onteam=0) {
+    Echo(2, "GoIdle: %d %d", client, onteam);
+
+    if (GetQRecord(client)) {
+        int spec_target;
+
+        // going from idle survivor to infected, leaves an icon behind
+        if (IsClientValid(g_target, 2, 0)) {
+            SwitchToBot(client, g_target);
+        }
+
+        if (g_onteam == 2) {
+            SwitchToSpec(client);
+
+            if (onteam == 0) {
+                SetHumanSpecSig(g_target, client);
+            }
+
+            if (onteam == 1) {
+                SwitchToSpec(client);
+                Unqueue(client);
+            }
+
+            AssignModel(g_target, g_model, g_IdentityFix);
+        }
+
+        else {
+            SwitchToSpec(client);
+        }
+
+        if (g_onteam == 3 && onteam <= 1) {
+            g_QRecord.SetString("model", "", true);
+        }
+
+        switch (IsClientValid(g_target, 0, 0)) {
+            case 1: spec_target = g_target;
+            case 0: spec_target = GetSafeSurvivor(client);
+        }
+
+        if (IsClientValid(spec_target)) {
+            SetEntPropEnt(client, Prop_Send, "m_hObserverTarget", spec_target);
+            SetEntProp(client, Prop_Send, "m_iObserverMode", 5);
+        }
+    }
 }

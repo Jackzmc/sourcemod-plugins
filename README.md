@@ -132,11 +132,13 @@ A collection of small tools:
   * Set the survivor models of any survivor to another correctly.
   * Chat Alert when a player activates a car alarm
   * Automatically gives melee weapons that an idle bot dropped once no longer idle
+  * Automatically make players go idle when ping spikes
 
 * **Convars:**
    * `sm_laser_use_notice <0/1>` - Enable notification of when a laser box was used first
    * `sm_time_finale <0/1/2>` - Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales
    * `sm_ff_notice <0/1/2>` - Should we record FF damages? 0: OFF, 1: To chat, 2: To HUD text.
+   * `sm_autoidle_ping_max <30.0...>` - "The highest ping a player can have until they will automatically go idle.\n0=OFF, Min is 30
 * **Commands:**
   * `sm_model <player> <character>` - Sets the survivor model of the target player(s). 'character' is name or ID of character.
 
