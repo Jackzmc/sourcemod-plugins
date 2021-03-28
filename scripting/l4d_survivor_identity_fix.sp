@@ -63,6 +63,8 @@ public void OnPluginStart()
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("finale_start", Event_FinaleStart);
+	HookEvent("player_spawn", Event_PlayerSpawn);
+	HookEvent("player_death", Event_PlayerDeath, EventHookMode_Pre);
 
 	if(isLateLoad) {
 		for(int i = 1; i <= MaxClients; i++) {
@@ -235,38 +237,60 @@ public void OnClientCookiesCached(int client) {
 }
 //Prevent issues with L4D1 characters being TP'd and stuck in brain dead form
 static bool IsTemporarilyL4D2[MAXPLAYERS]; //Use index 0 to state if its activated
+static char currentMap[16];
 public void OnMapStart() {
-	char map[16];
-	GetCurrentMap(map, sizeof(map));
-	if(StrEqual(map, "c6m3_port")) {
-		UnhookEvent("door_open", Event_DoorOpen);
+	for(int i = 0; i < sizeof(survivor_models); i++) {
+		PrecacheModel(survivor_models[i], true);
+	}
+	
+	GetCurrentMap(currentMap, sizeof(currentMap));
+	if(StrEqual(currentMap, "c6m3_port")) {
 		HookEvent("door_open", Event_DoorOpen);
 	}
+
 }
-public Action Event_DoorOpen(Event event, const char[] name, bool dontBroadcast) {
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-			int playerType = GetEntProp(i, Prop_Send, "m_survivorCharacter");
-			//If character is L4D1 Character (4: bill, etc..) then swap
-			if(playerType > 3) {
-				SetEntProp(i, Prop_Send, "m_survivorCharacter", playerType - 4);
-				IsTemporarilyL4D2[i] = true;
-			}
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	SwapL4D1Survivor(client);
+}
+public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
+	if(StrEqual(currentMap, "c6m3_port")) {
+		int client = GetClientOfUserId(event.GetInt("userid"));
+		if(GetClientTeam(client) == 2) {
+			SwapL4D1Survivor(client);
 		}
 	}
-	IsTemporarilyL4D2[0] = true;
+	return Plugin_Continue;
+}
+
+public void Event_DoorOpen(Event event, const char[] name, bool dontBroadcast) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && !IsTemporarilyL4D2[i]) {
+			SwapL4D1Survivor(i);
+		}
+	}
 	UnhookEvent("door_open", Event_DoorOpen);
 }
 //On finale start: Set back to their L4D1 character.
 public Action Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
-	if(IsTemporarilyL4D2[0]) {
-		for(int i = 0; i <= MaxClients; i++) {
-			if(i > 0 && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsTemporarilyL4D2[i]) {
-				int playerType = GetEntProp(i, Prop_Send, "m_survivorCharacter");
-				SetEntProp(i, Prop_Send, "m_survivorCharacter", playerType + 4);
-			}
-			IsTemporarilyL4D2[i] = false;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+			RevertL4D1Survivor(i);
 		}
+	}
+}
+void SwapL4D1Survivor(int client) {
+	int playerType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
+	//If character is L4D1 Character (4: bill, etc..) then swap
+	if(playerType > 3) {
+		SetEntProp(client, Prop_Send, "m_survivorCharacter", playerType - 4);
+		IsTemporarilyL4D2[client] = true;
+	}
+}
+void RevertL4D1Survivor(int client) {
+	if(IsTemporarilyL4D2[client]) {
+		int playerType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
+		SetEntProp(client, Prop_Send, "m_survivorCharacter", playerType + 4);
 	}
 }
 //Either use preferred model OR find the least-used.
