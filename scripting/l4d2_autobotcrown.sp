@@ -6,7 +6,7 @@
 //#define DEBUG 0
 
 #define SCAN_INTERVAL 4.0
-#define SCAN_RANGE 750.0
+#define SCAN_RANGE 570.0
 #define ACTIVE_INTERVAL 0.4
 
 #include <sourcemod>
@@ -29,7 +29,7 @@ public Plugin myinfo =
 static ArrayList WitchList;
 static Handle timer = INVALID_HANDLE;
 static bool lateLoaded = false, AutoCrownInPosition = false;
-static int AutoCrownBot = -1, AutoCrownTarget, currentDifficulty;
+static int AutoCrownBot = -1, AutoCrownTarget, currentDifficulty, PathfindTries = 0;
 static float CrownPos[3], CrownAng[3];
 static ConVar hValidDifficulties, hAllowedGamemodes;
 
@@ -46,17 +46,21 @@ public void OnPluginStart()
 
 	WitchList = new ArrayList(1, 0);
 	if(lateLoaded) {
-		char classname[32];
+		char classname[8];
 		for(int i = MaxClients; i < 2048; i++) {
 			if(IsValidEntity(i)) {
 				GetEntityClassname(i, classname, sizeof(classname));
 				if(StrEqual(classname, "witch", false)) {
 					WitchList.Push(i);
-					if(timer == INVALID_HANDLE) {
-						timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
-					}
+					#if defined DEBUG
+					PrintToServer("Found pre-existing witch %d", i);
+					#endif
+					
 				}
 			}
+		}
+		if(timer == INVALID_HANDLE && WitchList.Length > 0) {
+			timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT);
 		}
 	}
 
@@ -76,7 +80,20 @@ public void OnPluginStart()
 	HookEvent("difficulty_changed", Event_DifficultyChanged);
 
 	RegAdminCmd("sm_ws", Cmd_Status, ADMFLAG_ROOT);
+
+	#if defined DEBUG
+	CreateTimer(0.6, Timer_Debug, _, TIMER_REPEAT);
+	#endif
 }
+
+#if defined DEBUG
+public Action Timer_Debug(Handle timer) {
+	PrintHintTextToAll("Scan Timer: %b | Active: %b | In Position %b | Witches %d | Bot %N", timer != INVALID_HANDLE, AutoCrownBot > -1, AutoCrownInPosition, WitchList.Length, GetClientOfUserId(AutoCrownBot));
+	return Plugin_Continue;
+}
+#endif
+
+
 public Action Cmd_Status(int client, int args) {
 	ReplyToCommand(client, "Scan Timer: %b | Active: %b | In Position %b | Witches %d | Bot %N", timer != INVALID_HANDLE, AutoCrownBot > -1, AutoCrownInPosition, WitchList.Length, GetClientOfUserId(AutoCrownBot));
 	return Plugin_Handled;
@@ -87,17 +104,15 @@ public void Event_DifficultyChanged(Event event, const char[] name, bool dontBro
 	currentDifficulty = GetDifficultyInt(diff);
 	if(hAllowedGamemodes.IntValue & currentDifficulty > 0) {
 		if(timer == INVALID_HANDLE && AutoCrownBot == -1) {
-			timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+			timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT);
 		}
 	}else{
-		CloseHandle(timer);
-		timer = INVALID_HANDLE;
+		delete timer;
 	}
 }
 public void Change_Gamemode(ConVar convar, const char[] oldValue, const char[] newValue) {
 	if(StrEqual(newValue, "realism")) {
-		CloseHandle(timer);
-		timer = INVALID_HANDLE;
+		delete timer;
 	}
 
 }
@@ -112,8 +127,9 @@ public Action Event_WitchSpawn(Event event, const char[] name, bool dontBroadcas
 	#if defined DEBUG
 	PrintToServer("Witch spawned: %d", witchID);
 	#endif
+	//If not currently scanning, begin scanning ONLY if not active
 	if(timer == INVALID_HANDLE && AutoCrownBot == -1) {
-		timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+		timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT);
 	}
 }
 
@@ -126,6 +142,7 @@ public Action Event_WitchKilled(Event event, const char[] name, bool dontBroadca
 	if(index > -1) {
 		RemoveFromArray(WitchList, index);
 	}
+	//If witch that was killed, terminate active loop
 	if(AutoCrownTarget == witchID) {
 		ResetAutoCrown();
 		#if defined DEBUG
@@ -139,10 +156,10 @@ public Action Timer_Active(Handle hdl) {
 		#if defined DEBUG
 		PrintToServer("No witches detected, ending timer");
 		#endif
-		timer = INVALID_HANDLE;
 		return Plugin_Stop;
 	}
 	//TODO: Also check if startled and cancel it immediately. 
+	//TODO: X amount of tries, then ignore.
 	if(AutoCrownBot > -1) {
 		int client = GetClientOfUserId(AutoCrownBot);
 		if(!IsValidEntity(AutoCrownTarget) || IsPlayerIncapped(client)) {
@@ -185,10 +202,21 @@ public Action Timer_Active(Handle hdl) {
 			AutoCrownInPosition = true;
 		}else{
 			L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", AutoCrownBot, witchPos[0], witchPos[1], witchPos[2]);
+			PathfindTries++;
+		}
+		if(PathfindTries > 30) {
+			ResetAutoCrown();
+			int index = FindValueInArray(WitchList, AutoCrownTarget);
+			if(index > -1)
+				RemoveFromArray(WitchList, index);
+			//remove witch
+			#if defined DEBUG
+			PrintToServer("Could not pathfind to witch in time.");
+			#endif
 		}
 		return Plugin_Continue;
 	}else{
-		timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+		timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT);
 		return Plugin_Stop;
 	}
 }
@@ -198,6 +226,7 @@ public Action Timer_Scan(Handle hdl) {
 		#if defined DEBUG
 		PrintToServer("No witches detected, ending timer");
 		#endif
+		timer = INVALID_HANDLE;
 		return Plugin_Stop;
 	}
 	for(int bot = 1; bot <= MaxClients; bot++) {
@@ -208,6 +237,7 @@ public Action Timer_Scan(Handle hdl) {
 				if(GetClientWeapon(bot, wpn, sizeof(wpn)) && (StrEqual(wpn, "weapon_autoshotgun") || StrEqual(wpn, "weapon_shotgun_spas"))) {
 					GetClientAbsOrigin(bot, botPosition);
 					
+					//Loop all witches, find any valid nearby witches:
 					for(int i = 0; i < WitchList.Length; i++) {
 						int witchID = WitchList.Get(i);
 						if(IsValidEntity(witchID) && HasEntProp(witchID, Prop_Send, "m_rage") && GetEntPropFloat(witchID, Prop_Send, "m_rage") <= 0.4) {
@@ -255,7 +285,23 @@ public void ResetAutoCrown() {
 	if(AutoCrownBot > -1)
 		L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)})", AutoCrownBot); 
 	AutoCrownBot = -1;
-	timer = INVALID_HANDLE;
+	PathfindTries = 0;
+	if(timer != INVALID_HANDLE) {
+		CloseHandle(timer);
+		timer = INVALID_HANDLE;
+	}
+}
+
+public void OnMapStart() {
+	WitchList.Clear();
+	ResetAutoCrown();
+}
+public void OnMapEnd() {
+	if(timer != INVALID_HANDLE) {
+		CloseHandle(timer);
+		timer = INVALID_HANDLE;
+	}
+	WitchList.Clear();
 }
 
 int GetDifficultyInt(const char[] type) {
