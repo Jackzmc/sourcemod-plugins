@@ -106,7 +106,7 @@ public Action Command_SpawnMinigunBot(int client, int args) {
 		//make sure spawns a little above
 		vPos[2] += 1.0;
 
-		int survivor = SpawnSurvivor(vPos, vAng, model, true);
+		int survivor = GetClientOfUserId(SpawnSurvivor(vPos, vAng, model, true));
 		if(survivor > 0) {
 			GiveClientWeapon(survivor, "rifle_ak47", true);
 		}else{

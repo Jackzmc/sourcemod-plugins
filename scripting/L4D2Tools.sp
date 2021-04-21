@@ -99,7 +99,6 @@ public void OnPluginStart() {
 }
 
 public Action Timer_CheckPlayerPings(Handle timer) {
-	//hPingDropThres
 	if(hPingDropThres.IntValue != 0) {
 		for (int i = 1; i <= MaxClients; i++ ) {
 			if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && IsPlayerAlive(i) && GetClientTeam(i) > 1) {

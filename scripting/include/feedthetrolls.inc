@@ -1,6 +1,6 @@
 #define AUTOPUNISH_FLOW_MIN_DISTANCE 5000.0
 #define AUTOPUNISH_MODE_COUNT 3
-#define TROLL_MODE_COUNT 22
+#define TROLL_MODE_COUNT 23
 //
 enum trollMode {
 	Troll_Reset = 0, //0
@@ -23,8 +23,9 @@ enum trollMode {
 	Troll_TankMagnet, //17
 	Troll_NoShove, //18
 	Troll_DamageBoost, //19
-	Troll_TempHealthQuickDrain,
-	Troll_VomitPlayer
+	Troll_TempHealthQuickDrain, //20
+	Troll_VomitPlayer, //21
+	Troll_VocalizeGag
 }
 enum TrollModifier {
 	TrollMod_None = 0,
@@ -53,7 +54,8 @@ char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
 	"No Shove",
 	"Damage Boost",
 	"Temp Quick Drain",
-	"Vomit Player"
+	"Vomit Player",
+	"Vocalize Gag"
 };
 char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Resets the user, removes all troll effects", //0
@@ -77,7 +79,8 @@ char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Prevents a player from shoving",
 	"Makes a player take more damage than normal",
 	"Makes a player's temporarily health drain very quickly",
-	"Shortcut to sm_vomitplayer. vomits the player."
+	"Shortcut to sm_vomitplayer. vomits the player.",
+	"Prevents player from sending any vocalizations (even automatic)"
 };
 enum L4D2Infected
 {
@@ -114,7 +117,7 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 		case Troll_SlowDrain: {}
 		case Troll_TempHealthQuickDrain: {}
 		case Troll_VomitPlayer: {
-			ServerCommand("sm_vomitplayer #%d", GetClientUserId(victim));
+			ClientCommand(client, "sm_vomitplayer #%d", GetClientUserId(victim));
 		}
 		
 		case Troll_Reset: {
@@ -216,15 +219,19 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 			PrintToServer("Troll Mode #%d not implemented (%s)", mode, TROLL_MODES_NAMES[mode]);
 		}
 	}
-	ShowActivity(client, "activated troll mode \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
+	if(HasTrollMode(client, mode)) {
+		ShowActivity(client, "deactivated troll \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
+	}else{
+		ShowActivity(client, "activated troll \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
+	}
 	//If instant fire mod not provided (aka instead of no modifiers which equals both) OR repeat turned on, set bit:
 	if(modifier == TrollMod_Repeat || modifier == TrollMod_None) {
-		g_iTrollUsers[victim]  |= 1 << (view_as<int>(mode) - 1);
+		g_iTrollUsers[victim] ^= 1 << view_as<int>(mode) -1;
 	}
 }
 
 bool HasTrollMode(int client, trollMode mode) {
-	return ((g_iTrollUsers[client] >> view_as<int>(mode) - 1) & 1) == 1  && IsClientInGame(client) && IsPlayerAlive(client);
+	return ((g_iTrollUsers[client] >> view_as<int>(mode) - 1) & 1) == 1;
 }
 
 void ToggleTrollMode(int client, trollMode mode) {

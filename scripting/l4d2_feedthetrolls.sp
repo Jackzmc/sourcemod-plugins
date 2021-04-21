@@ -71,6 +71,7 @@ public void OnPluginStart() {
 
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_death", Event_PlayerDeath);
+	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 
 	AutoExecConfig(true, "l4d2_feedthetrolls");
 
@@ -93,6 +94,7 @@ public void OnMapEnd() {
 public void OnMapStart() {
 	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 	CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	PrecacheSound("player/footsteps/clown/concrete1.wav");
 	//CreateTimer(30.0, Timer_AutoPunishCheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
@@ -144,34 +146,32 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	// =========================
 	if(hMagnetChance.FloatValue < GetRandomFloat()) return Plugin_Continue;
 	L4D2Infected class = view_as<L4D2Infected>(GetEntProp(attacker, Prop_Send, "m_zombieClass"));
-	if(class != L4D2Infected_Tank) {
-		int existingTarget = GetClientOfUserId(g_iAttackerTarget[attacker]);
-		if(existingTarget > 0 && IsClientInGame(existingTarget) && IsPlayerAlive(existingTarget)) {
-			curTarget = existingTarget;
-			return Plugin_Changed;
-		}
+	int existingTarget = GetClientOfUserId(g_iAttackerTarget[attacker]);
+	if(existingTarget > 0 && IsPlayerAlive(existingTarget)) {
+		curTarget = existingTarget;
+		return Plugin_Changed;
+	}
 
-		float closestDistance, survPos[3], spPos[3];
-		GetClientAbsOrigin(attacker, spPos); 
-		int closestClient = -1;
-		for(int i = 1; i <= MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-				if(class == L4D2Infected_Tank && HasTrollMode(i, Troll_TankMagnet) || (class != L4D2Infected_Tank && HasTrollMode(i, Troll_SpecialMagnet))) {
-					GetClientAbsOrigin(i, survPos);
-					float dist = GetVectorDistance(survPos, spPos, true);
-					if(closestClient == -1 || dist < closestDistance) {
-						closestDistance = dist;
-						closestClient = i;
-					}
+	float closestDistance, survPos[3], spPos[3];
+	GetClientAbsOrigin(attacker, spPos); 
+	int closestClient = -1;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			if(class == L4D2Infected_Tank && HasTrollMode(i, Troll_TankMagnet) || (class != L4D2Infected_Tank && HasTrollMode(i, Troll_SpecialMagnet))) {
+				GetClientAbsOrigin(i, survPos);
+				float dist = GetVectorDistance(survPos, spPos, true);
+				if(closestClient == -1 || dist < closestDistance) {
+					closestDistance = dist;
+					closestClient = i;
 				}
 			}
 		}
-		
-		if(closestClient > 0) {
-			g_iAttackerTarget[attacker] = GetClientUserId(closestClient);
-			curTarget = closestClient;
-			return Plugin_Changed;
-		}
+	}
+	
+	if(closestClient > 0) {
+		g_iAttackerTarget[attacker] = GetClientUserId(closestClient);
+		curTarget = closestClient;
+		return Plugin_Changed;
 	}
 	return Plugin_Continue;
 }
@@ -193,6 +193,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		char[] message = new char[length];
 		ImplodeStrings(strings, 32, " ", message, length);
 		CPrintToChatAll("{blue}%N {default}:  %s", client, message);
+		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
 	}else if(HasTrollMode(client, Troll_iCantSpellNoMore)) {
 		int type = GetRandomInt(1, 33);
@@ -254,7 +255,6 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			default:
 				return Plugin_Continue;
 		}
-		
 		int strLength = strlen(sArgs);
 		char[] newMessage = new char[strLength + 20];
 		int n = 0;
@@ -266,6 +266,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			}
 			n++;
 		}  
+		PrintToServer("%N: %s", client, sArgs);
 		CPrintToChatAll("{blue}%N {default}:  %s", client, newMessage);
 		return Plugin_Handled;
 	}
@@ -320,11 +321,25 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	return Plugin_Continue;
 }
 public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
-	if(attacker > 0 && attacker <= MaxClients && HasTrollMode(attacker, Troll_DamageBoost)) {
+	if(attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker) && HasTrollMode(attacker, Troll_DamageBoost)) {
 		damage * 2;
 	}
 }
-
+public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
+	if(numClients > 0 && entity > 0 && entity <= MaxClients) {
+		if(HasTrollMode(entity, Troll_Honk)) {
+			if(StrContains(sample, "survivor/voice") > -1) {
+				strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
+				return Plugin_Changed;
+			}
+		}else if(HasTrollMode( entity, Troll_VocalizeGag)) {
+			if(StrContains(sample, "player\\survivor\\voice") > -1) {
+				return Plugin_Stop;
+			}
+		}
+	}
+	return Plugin_Continue;
+}
 ///////////////////////////////////////////////////////////////////////////////
 // CVAR CHANGES
 ///////////////////////////////////////////////////////////////////////////////
@@ -438,9 +453,7 @@ public Action Command_ListTheTrolls(int client, int args) {
 			char modeListArr[TROLL_MODE_COUNT][32];
 			for(int mode = 1; mode < TROLL_MODE_COUNT; mode++) {
 				//If troll mode exists:
-				bool hasTrollMode = HasTrollMode(i, view_as<trollMode>(mode));
-				PrintToConsole(i, "[%d]: #%d %s value: %b", modes, mode, TROLL_MODES_NAMES[mode], hasTrollMode);
-				if(hasTrollMode) {
+				if(HasTrollMode(i, view_as<trollMode>(mode))) {
 					modeListArr[modeCount] = TROLL_MODES_NAMES[mode];
 					modeCount++;
 				}

@@ -82,10 +82,10 @@ public Action VoteStart(int client, const char[] command, int argc) {
 					disableFFClient = target;
 					ffDamageCount = 0;
 				}
+				PrintToServer("KICK VOTE STARTED | Target=%N | Caller=%N", issue, target, client);
 				return Plugin_Continue;
 			}	
 			//Kick vote started
-			PrintToServer("KICK VOTE STARTED | Issue=%s Option=%s Caller=%N", issue, option, client);
 		}
 	}	
 	return Plugin_Continue; //if it wasn't handled up there I would start panicking

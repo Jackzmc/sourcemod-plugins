@@ -17,6 +17,7 @@ char g_icCurrentMap[32];
 
 int g_icPlayerManager; //entid -> typically 25 (MaxClients+1)
 
+static bool b_isTransitioning[MAXPLAYERS+1];
 bool g_icHealing[MAXPLAYERS+1]; //state
 bool g_icBeingHealed[MAXPLAYERS+1]; //state
 
@@ -29,6 +30,7 @@ public Plugin myinfo =
 	url = ""
 };
 
+//TODO: Transition state
 
 public OnPluginStart()
 {
@@ -45,6 +47,9 @@ public OnPluginStart()
 	//HookEvent("heal_end", Event_HealStop);
 	HookEvent("heal_success", Event_HealStop);
 	HookEvent("heal_interrupted", Event_HealStop);
+	//For transitioning:
+	HookEvent("map_transition", Event_MapTransition);
+	HookEvent("player_spawn", Event_PlayerSpawn);
 	
 	//hook cvars, game info states
 	FindConVar("z_difficulty").GetString(g_icDifficulty, sizeof(g_icDifficulty));
@@ -59,12 +64,13 @@ public OnPluginStart()
 // print info
 public Action PrintGameInfo(int client, int args) {
 	//print server info
-	ReplyToCommand(client, ">map,diff,mode,tempoState,totalSeconds");
+	ReplyToCommand(client, ">map,diff,mode,tempoState,totalSeconds,hastank");
 	int missionDuration = GetEntProp(g_icPlayerManager, Prop_Send, "m_missionDuration", 1);
 	int tempoState = GetEntProp(g_icPlayerManager, Prop_Send, "m_tempoState", 1);
-	ReplyToCommand(client, "%s,%s,%s,%d,%d",g_icCurrentMap,g_icDifficulty,g_icGamemode,tempoState,missionDuration);
+	bool hasTank = false;
+	ReplyToCommand(client, "%s,%s,%s,%d,%d,%b",g_icCurrentMap,g_icDifficulty,g_icGamemode,tempoState,missionDuration,hasTank);
 	//print client info
-	ReplyToCommand(client,">id,name,bot,health,status,throwSlot,kitSlot,pillSlot,survivorType,velocity,primaryWpn,secondaryWpn");
+	ReplyToCommand(client,">id,transitioning,name,bot,health,status,throwSlot,kitSlot,pillSlot,survivorType,velocity,primaryWpn,secondaryWpn");
 	char status[9];
 	char name[32];
 	char pillItem[32];
@@ -73,7 +79,12 @@ public Action PrintGameInfo(int client, int args) {
 	char character[9];
 	char primaryWeapon[32], secondaryWeapon[32];
 	for (int i = 1; i <= MaxClients; i++) {
-		if (!IsClientInGame(i)) continue;
+		if(!IsClientConnected(i)) continue;
+		if(!IsClientInGame(i)) {
+			if(b_isTransitioning[i])
+				ReplyToCommand(client,"%d,1", i);
+			else continue;
+		}
 		if (GetClientTeam(i) != 2) continue;
 		int hp = GetClientRealHealth(i);
 		int bot = IsFakeClient(i);
@@ -101,6 +112,7 @@ public Action PrintGameInfo(int client, int args) {
 		throwItem[0] 		= '\0';
 		kitItem[0]  		= '\0';
 		pillItem[0]  		= '\0';
+		//TODO: Move all string-based stats to events
 		GetItemSlotClassName(i, 0, primaryWeapon, sizeof(primaryWeapon), true);
 		GetItemSlotClassName(i, 1, secondaryWeapon, sizeof(secondaryWeapon), true);
 		GetItemSlotClassName(i, 2, throwItem, sizeof(throwItem), true);
@@ -114,7 +126,7 @@ public Action PrintGameInfo(int client, int args) {
 		GetClientName(i, name, sizeof(name));
 		GetModelName(i, character, sizeof(character));
 		
-		ReplyToCommand(client,"%d,%s,%d,%d,%s,%s,%s,%s,%s,%d,%s,%s", i, name, bot, hp, status, throwItem, kitItem, pillItem, character, velocity, primaryWeapon, secondaryWeapon);
+		ReplyToCommand(client,"%d,0,%s,%d,%d,%s,%s,%s,%s,%s,%d,%s,%s", i, name, bot, hp, status, throwItem, kitItem, pillItem, character, velocity, primaryWeapon, secondaryWeapon);
 	}
 	
 }
@@ -122,7 +134,20 @@ public Action PrintGameInfo(int client, int args) {
 public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
 	cvar.GetString(g_icGamemode, sizeof(g_icGamemode));
 }
+public Action Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2)
+			b_isTransitioning[i] = true;
+	}
+}
+public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client && b_isTransitioning[client]) {
+		b_isTransitioning[client] = false;
+	}
+}
 public void OnMapStart() {
+	//TODO: turn off when over threshold, OR fancier logic (per player)
 	GetCurrentMap(g_icCurrentMap, sizeof(g_icCurrentMap));
 	//grab the player_manager
 	//int playerManager;

@@ -14,6 +14,25 @@
 ConVar g_cMdNotify, g_cMdEnableTank, g_cMdEnableWitch, g_cMdEnableMob, g_cMdAnnounceLevel;
 bool g_bMdIsL4D2 = false;
 
+int g_icSpawnStats[15];
+/*
+0 - Commons
+1 - Mob
+2 - Panics
+3 - Jockey
+4 - Hunter
+5 - Charger
+6 - Smoker
+7 - Spitter
+8 - Boomer
+9 - Witch
+10 - Tank
+11 - Weapons
+12 - Health
+13 - Throwables
+14 - Restarts (cvar?)
+*/
+
 public Plugin myinfo = 
 {
 	name = PLUGIN_NAME, 
@@ -59,13 +78,18 @@ public void OnPluginStart()
 }
 
 public Action Command_SpawnSpecial(int client, int args) {
-	char arg1[32];
+	char arg1[32], arg2[4];
 	GetCmdArg(1, arg1, sizeof(arg1));
+	GetCmdArg(2, arg2, sizeof(arg2));
+	int amount = StringToInt(arg2);
+	if(amount == 0) amount = 1;
 	int executioner = GetAnyValidClient();
 	if (args < 1) {
-		ReplyToCommand(client, "[SM] Usage: sm_spawnspecial <hunter|smoker|boomer|spitter|charger|jockey|mob|tank|witch> - Requests a special to spawn via director", arg1);
+		ReplyToCommand(client, "[SM] Usage: sm_spawnspecial <hunter|smoker|boomer|spitter|charger|jockey|mob|tank|witch> [amount] - Requests a special to spawn via director", arg1);
 	} else {
-		if (executioner <= 0) {
+		if(amount <= 0 || amount >= MaxClients) {
+			ReplyToCommand(client, "[SM] Amount specified is out of range of 1 to %d", MaxClients);
+		}else if (executioner <= 0) {
 			ReplyToCommand(client, "[SM] Cannot spawn a %s as there are no players online.", arg1);
 		} else {
 			if (StrEqual(arg1, "mob", false) && !g_cMdEnableMob.BoolValue) {
@@ -78,56 +102,72 @@ public Action Command_SpawnSpecial(int client, int args) {
 				if(StrEqual(arg1,"panic",false)) {
 					CheatCommand(executioner, "director_force_panic_event", "", "");
 				}else{
-					CheatCommand(executioner, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1, "auto");
+					CheatCommandMultiple(executioner, amount, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1, "auto");
 				}
 				if (g_cMdNotify.BoolValue) {
-					ReplyToCommand(client, "[SM] Director will now attempt to spawn a %s.", arg1);
+					ReplyToCommand(client, "[SM] Director will now attempt to spawn %dx %s.", amount, arg1);
 				}
 				AnnounceSpawn(arg1);
-				LogAction(client, -1, "\"%L\" spawned a \"%s\"", client, arg1);
+				ShowActivity(client, "spawned %dx \"%s\"", amount, arg1);
 			}
 		}
 	}
 	return Plugin_Handled;
 }
 public Action Command_SpawnSpecialForceLocal(int client, int args) {
-    char arg1[32];
-    GetCmdArg(1, arg1, sizeof(arg1));
-    if (args < 1) {
-		ReplyToCommand(client, "[SM] Usage: sm_forcecursor <hunter|smoker|boomer|spitter|charger|jockey|mob|tank|witch> - Requests a special to spawn at cursor", arg1);
-	} else {
+	if(client == 0) {
+		ReplyToCommand(client, "[SM] This command can only be used as a player.");
+		return Plugin_Handled;
+	}
+	char arg1[32], arg2[4];
+	GetCmdArg(1, arg1, sizeof(arg1));
+	GetCmdArg(2, arg2, sizeof(arg2));
+	int amount = StringToInt(arg2);
+	if(amount == 0) amount = 1;
+	if (args < 1) {
+		ReplyToCommand(client, "[SM] Usage: sm_forcecursor <hunter|smoker|boomer|spitter|charger|jockey|mob|tank|witch> [amount] - Requests a special to spawn at cursor", arg1);
+	} else if(amount <= 0 || amount >= MaxClients) {
+		ReplyToCommand(client, "[SM] Amount specified is out of range of 1 to %d", MaxClients);
+	}else {
 		if(StrEqual(arg1,"panic",false)) {
-				CheatCommand(client, "director_force_panic_event", "", "");
+			CheatCommand(client, "director_force_panic_event", "", "");
 		}else{
-	        int bot = CreateFakeClient("ManualDirectorBot");
-	        if (bot != 0) {
-	            ChangeClientTeam(bot, 3);
-	            CreateTimer(0.1, kickbot, bot);
-	        }
-	        CheatCommand(client, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1,"");
-       	}
-        if (g_cMdNotify.BoolValue) {
-            ReplyToCommand(client, "[SM] Spawned a %s.", arg1);
-        }
-        AnnounceSpawn(arg1);
-        LogAction(client, -1, "\"%L\" spawned a \"%s\"", client, arg1);
+			for(int i = 0; i < amount; i++) {
+				int bot = CreateFakeClient("ManualDirectorBot");
+				if (bot != 0) {
+					ChangeClientTeam(bot, 3);
+					CreateTimer(0.1, kickbot, bot);
+				}
+				CheatCommand(client, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1,"");
+			}
+		}
+		if(g_cMdNotify.BoolValue) {
+			ReplyToCommand(client, "[SM] Spawned %dx %s.", amount, arg1);
+		}
+		AnnounceSpawn(arg1);
+		ShowActivity(client, "cursor spawned %dx \"%s\"", amount, arg1);
 	}
 	return Plugin_Continue;
 }
 
 public Action Command_SpawnSpecialForce(int client, int args) {
-	char arg1[32];
+	char arg1[32], arg2[4];
 	GetCmdArg(1, arg1, sizeof(arg1));
+	GetCmdArg(2, arg2, sizeof(arg2));
+	int amount = StringToInt(arg2);
+	if(amount == 0) amount = 1;
 	int executioner = GetAnyValidClient();
 	if (args < 1) {
 		ReplyToCommand(client, "[SM] Usage: sm_forcespecial <hunter|smoker|boomer|spitter|charger|jockey|mob|tank|witch> - Requests a special to spawn via director", arg1);
-	} else {
-		if (executioner <= 0) {
-			ReplyToCommand(client, "[SM] Cannot spawn a %s as there are no players online.", arg1);
-		} else {
-			if(StrEqual(arg1,"panic",false)) {
-				CheatCommand(executioner, "director_force_panic_event", "", "");
-			}else{
+	} else if (executioner <= 0) {
+		ReplyToCommand(client, "[SM] Cannot spawn a %s as there are no players online.", arg1);
+	} else if(amount <= 0 || amount >= MaxClients) {
+		ReplyToCommand(client, "[SM] Amount specified is out of range of 1 to %d", MaxClients);
+	}else {
+		if(StrEqual(arg1,"panic",false)) {
+			CheatCommand(executioner, "director_force_panic_event", "", "");
+		}else{
+			for(int i = 0; i < amount; i++) {
 				int bot = CreateFakeClient("ManualDirectorBot");
 				if (bot != 0) {
 					ChangeClientTeam(bot, 3);
@@ -135,12 +175,12 @@ public Action Command_SpawnSpecialForce(int client, int args) {
 				}
 				CheatCommand(executioner, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1, "auto");
 			}
-			if (g_cMdNotify.BoolValue) {
-				ReplyToCommand(client, "[SM] Spawned a %s.", arg1);
-			}
-			AnnounceSpawn(arg1);
-			LogAction(client, -1, "\"%L\" spawned a \"%s\"", client, arg1);
 		}
+		if (g_cMdNotify.BoolValue) {
+			ReplyToCommand(client, "[SM] Spawned a %dx %s.", amount, arg1);
+		}
+		AnnounceSpawn(arg1);
+		ShowActivity(client, "forced spawned %dx \"%s\"", amount, arg1);
 	}
 	return Plugin_Handled;
 }
@@ -163,14 +203,16 @@ public Action ShowSpecialMenu(int client, int args) {
 	menu.Display(client, 0);
 }
 public Action ShowLocalSpecialMenu(int client, int args) {
-    Menu menu = new Menu(Handle_LocalSpawnMenu);
-    menu.SetTitle("Manual Director - Cursor");
-    menu.AddItem("common", "Single Common");
-    if (g_bMdIsL4D2) {
+	Menu menu = new Menu(Handle_LocalSpawnMenu);
+	menu.SetTitle("Manual Director - Cursor");
+	menu.AddItem("common", "Single Common");
+	
+	if (g_bMdIsL4D2) {
 		menu.AddItem("jockey", "Jockey");
 		menu.AddItem("charger", "Charger");
 		menu.AddItem("spitter", "Spitter");
 	}
+	
 	menu.AddItem("hunter", "Hunter");
 	menu.AddItem("smoker", "Smoker");
 	menu.AddItem("boomer", "Boomer");
@@ -229,14 +271,33 @@ stock Action kickbot(Handle timer, int client)
 		if (IsFakeClient(client))KickClient(client);
 	}
 }
+int FindStatIndex(const char[] type) {
+	return SpawnStats
+	if (StrEqual(type, "common") return 0;
+	else if (StrEqual(type, "mob")) return 1;
+	else if (StrEqual(type, "panic")) return 2;
+	else if (StrEqual(type, "jockey")) return 3;
+	else if (StrEqual(type, "hunter")) return 4;
+	else if (StrEqual(type, "charger")) return 5;
+	else if (StrEqual(type, "smoker")) return 6;
+	else if (StrEqual(type, "spitter")) return 7;
+	else if (StrEqual(type, "boomer")) return 8;
+	else if (StrEqual(type, "witch")) return 9;
+	else if (StrEqual(type, "tank")) return 10;
+	else if (StrEqual(type, "weapon")) return 11;
+	else if (StrEqual(type, "health")) return 12;
+	else if (StrEqual(type, "throwable")) return 13;
+	else if (StrEqual(type, "restart")) return 14;
+	else return sizeof(g_icSpawnStats);
+}
+stock void UpdateIndex(char[] type) {
+	int index = FindStatIndex(type);
+	g_icSpawnStats[index]++;
+}
 
-
-stock int GetAnyValidClient()
-{
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (IsClientInGame(i) && !IsFakeClient(i))
-		{
+stock int GetAnyValidClient() {
+	for (int i = 1; i <= MaxClients; i++) {
+		if (IsClientInGame(i) && !IsFakeClient(i)) {
 			return i;
 		}
 	}
@@ -250,6 +311,18 @@ stock void CheatCommand(int client, const char[] command, const char[] argument1
 	int flags = GetCommandFlags(command);
 	SetCommandFlags(command, flags & ~FCVAR_CHEAT);
 	FakeClientCommand(client, "%s %s %s", command, argument1, argument2);
+	SetCommandFlags(command, flags);
+	SetUserFlagBits(client, userFlags);
+} 
+stock void CheatCommandMultiple(int client, int count, const char[] command, const char[] argument1, const char[] argument2)
+{
+	int userFlags = GetUserFlagBits(client);
+	SetUserFlagBits(client, ADMFLAG_ROOT);
+	int flags = GetCommandFlags(command);
+	SetCommandFlags(command, flags & ~FCVAR_CHEAT);
+	for(int i = 0; i < count; i++) {
+		FakeClientCommand(client, "%s %s %s", command, argument1, argument2);
+	}
 	SetCommandFlags(command, flags);
 	SetUserFlagBits(client, userFlags);
 } 

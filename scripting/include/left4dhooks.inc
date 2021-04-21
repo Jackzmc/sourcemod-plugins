@@ -88,6 +88,7 @@ public void __pl_l4dh_SetNTVOptional()
 	MarkNativeAsOptional("L4D_IsInFirstCheckpoint");
 	MarkNativeAsOptional("L4D_IsInLastCheckpoint");
 	MarkNativeAsOptional("L4D2_IsReachable");
+	MarkNativeAsOptional("L4D_HasPlayerControlledZombies");
 	MarkNativeAsOptional("L4D_PipeBombPrj");
 
 	MarkNativeAsOptional("L4D2_GetVScriptOutput");
@@ -241,6 +242,7 @@ public void __pl_l4dh_SetNTVOptional()
 	// =========================
 	MarkNativeAsOptional("L4D_CTerrorPlayer_OnVomitedUpon");
 	MarkNativeAsOptional("L4D_CancelStagger");
+	MarkNativeAsOptional("L4D_RespawnPlayer");
 	MarkNativeAsOptional("L4D_CreateRescuableSurvivors");
 	MarkNativeAsOptional("L4D_ReviveSurvivor");
 	MarkNativeAsOptional("L4D_GetHighestFlowSurvivor");
@@ -883,9 +885,9 @@ forward void L4D2_OnWaterMove(int client);
  * @param client			Client id to find an area near this player
  * @param zombieClass		Special Infected class to search for a spawn position for
  * @param attempts			How many tries to find a valid location
- * @param vecPos			The vector location. Sometimes is 0,0,0. Use post hook for real selected position.
+ * @param vecPos			The vector location. Sometimes is 0,0,0. Use post hook for real selected position
  *
- * @return					Plugin_Changed to change any values, Plugin_Continue otherwise.
+ * @return					Plugin_Changed to change any values, Plugin_Continue otherwise
  */
 #pragma deprecated Removed because it spawns specials at 0,0,0 when modifying any value.
 forward Action L4D_OnGetRandomPZSpawnPosition(int &client, int &zombieClass, int &attempts, float vecPos[3]);
@@ -962,7 +964,7 @@ native int L4D_AngularVelocity(int entity, const float vecAng[3]);
  * @remarks The zombieClass does not matter but different values yield different results:
  * @remarks Using the Tank zombieClass probably searches for a larger area that's clear of objects
  *
- * @param client			Client id to find an area near this player
+ * @param client			Client id to find an area near this player. Accepts 0 to find a random area instead
  * @param zombieClass		Special Infected class to search for a spawn position for
  * @param attempts			How many tries to find a valid location
  * @param vecPos			The vector array to store the valid location on success
@@ -1032,8 +1034,9 @@ native bool L4D_IsInFirstCheckpoint(int client);
 native bool L4D_IsInLastCheckpoint(int client);
 
 /**
- * @brief Checks if a world position is accessible to a player.
- * @remarks You can pass any client index into this (real or fake players, survivors or special infected).
+ * @brief Checks if a world position is accessible to a Survivor bot.
+ * @remarks You must pass a survivor bots client index into this, otherwise the plugin will attempt to find a bot or throw an error otherwise.
+ * @remarks It appears the server will sometimes crash when passing a real players client index.
  * @remarks If the clients flow distance is too far away from the position to test it will return false.
  *
  * @param client	Client id to use for testing
@@ -1043,6 +1046,13 @@ native bool L4D_IsInLastCheckpoint(int client);
  */
 // L4D2 only.
 native bool L4D2_IsReachable(int client, const float vecPos[3]);
+
+/**
+ * @brief Returns if players can control infected
+ *
+ * @return			True if players can control infected, false otherwise
+ */
+native bool L4D_HasPlayerControlledZombies();
 
 /**
  * @brief Creates an activated PipeBomb projectile
@@ -2603,6 +2613,15 @@ native void L4D2_CTerrorPlayer_Fling(int client, int attacker, float vecDir[3]);
  * @noreturn
  */
 native void L4D_CancelStagger(int client);
+
+/**
+ * @brief Respawns a player from dead state.
+ *
+ * @param client			Client ID of the person to affect
+ *
+ * @noreturn
+ */
+native void L4D_RespawnPlayer(int client);
 
 /**
  * @brief Spawns all dead survivors in rescuable rooms.
