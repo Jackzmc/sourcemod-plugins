@@ -1,10 +1,12 @@
 # sourcemod-plugins
-All my sourcemod plugins... shitty probably
+This is a collection of all the sourcemod plugins I've created, most are just used for my own servers and some for very specific needs.
+
 
 Not always the latest versions, if you have any interest with plugins I can make sure to upload the latest.
 
+
 Useful things:
-1. Netprop viewer https://jackz.me/netprops/l
+1. Netprop viewer https://jackz.me/netprops/l4d2
 
 ## Plugin List
 
@@ -186,7 +188,8 @@ Troll Modes: (updated 1/2/2021)
 18. **No Shove** – Prevents player from shoving at a % chance
 19. **Damage Boost** – Will make the player take 2x more damage than normal
 20. **Temp Quick Drain** – Will make a player’s temp health drain very quickly
-21. **Vomit Player** – Shortcut to sm_vomitplayer. Vomits the player.
+21. **Vomit Player** – Shortcut to [`sm_vomitplayer`](https://forums.alliedmods.net/showthread.php?p=1251446) which vomits the player. 
+22. **Vocalize Gag** - Prevents player from vocalizing entirely
 
 * **Convars:**
   * `sm_ftt_victims` - A comma separated list of troll targets. Unused while new version is being implemented
