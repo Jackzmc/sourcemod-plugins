@@ -24,6 +24,7 @@ Useful things:
 * [l4d2_autobotcrown](#l4d2_autobotcrown)
 * [l4d2_extraplayeritems](#l4d2_extraplayeritems)
 * [l4d2_population_control](#l4d2_population_control)
+* [l4d2_extrafinaletanks](#l4d2_extrafinaletanks)
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
@@ -231,3 +232,10 @@ Allows you to set the chances that a common spawns as a certain uncommon. The or
   * `l4d2_population_jimmy  <0.0-1.0>` The chance that on a common spawn that the special will be a jimmy common
 * **Commands:**
   * `sm_populations` or `sm_population_list` - Lists all the cvar values
+
+### l4d2_extrafinaletanks
+This plugin will automatically spawn an extra amount of tanks (determined by `l4d2_eft_count` cvar) after the second tank stage in a finale is over.
+* **Convars:**
+  * `l4d2_eft_count <#>` - Default is 1, determines how many tanks that are allowed to spawn in the extra tank stage
+  * `l4d2_eft_chance <0.0-1.0> - Default is 0.0, determines the chance of each tank spawning in extra tank stage.
+    * If the spawn fails, it will still count as a spawn, the percentage is PER tank
