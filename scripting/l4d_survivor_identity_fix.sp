@@ -17,21 +17,25 @@
 #define TEAM_SURVIVOR 2
 #define TEAM_PASSING 4
 
-char g_Models[MAXPLAYERS+1][128];
-int g_iPendingCookieModel[MAXPLAYERS+1];
 
 #define GAMEDATA "l4d_survivor_identity_fix"
+#define NAME_SetModel "CBasePlayer::SetModel"
+#define SIG_SetModel_LINUX "@_ZN11CBasePlayer8SetModelEPKc"
+#define SIG_SetModel_WINDOWS "\\x55\\x8B\\x2A\\x8B\\x2A\\x2A\\x56\\x57\\x50\\x8B\\x2A\\xE8\\x2A\\x2A\\x2A\\x2A\\x8B\\x2A\\x2A\\x2A\\x2A\\x2A\\x8B\\x2A\\x8B\\x2A\\x2A\\x8B"
+#define SIG_L4D1SetModel_WINDOWS "\\x8B\\x2A\\x2A\\x2A\\x56\\x57\\x50\\x8B\\x2A\\xE8\\x2A\\x2A\\x2A\\x2A\\x8B\\x3D"
+
+char g_Models[MAXPLAYERS+1][128];
+static int g_iPendingCookieModel[MAXPLAYERS+1];
 
 Handle hConf = null;
-#define NAME_SetModel "CBasePlayer::SetModel"
 static Handle hDHookSetModel = null, hModelPrefCookie;
 static ConVar hCookiesEnabled;
 static bool isLateLoad, cookieModelsSet;
 static int survivors;
-#define SIG_SetModel_LINUX "@_ZN11CBasePlayer8SetModelEPKc"
-#define SIG_SetModel_WINDOWS "\\x55\\x8B\\x2A\\x8B\\x2A\\x2A\\x56\\x57\\x50\\x8B\\x2A\\xE8\\x2A\\x2A\\x2A\\x2A\\x8B\\x2A\\x2A\\x2A\\x2A\\x2A\\x8B\\x2A\\x8B\\x2A\\x2A\\x8B"
+static bool IsTemporarilyL4D2[MAXPLAYERS]; //Use index 0 to state if its activated
+static char currentMap[16];
 
-#define SIG_L4D1SetModel_WINDOWS "\\x8B\\x2A\\x2A\\x2A\\x56\\x57\\x50\\x8B\\x2A\\xE8\\x2A\\x2A\\x2A\\x2A\\x8B\\x3D"
+
 
 //TODO: Setup cookies
 
@@ -224,20 +228,17 @@ public void OnClientCookiesCached(int client) {
 	char modelPref[2];
 	GetClientCookie(client, hModelPrefCookie, modelPref, sizeof(modelPref));
 	if(strlen(modelPref) > 0) {
-		int type = StringToInt(modelPref);
-		if(type > 0 && type <= 8) {
+		int type;
+		if(StringToIntEx(modelPref, type) > 0) {
+			PrintToServer(">>> %N has cookie for: %s", client, survivor_models[type - 1]);
 			strcopy(g_Models[client], 64, survivor_models[type - 1]);
 			g_iPendingCookieModel[client] = type;
-			//A valid cookie was found, set their model.
-		}else{
-			SetClientCookie(client, hModelPrefCookie, "0");
-			//Set to current model?
 		}
 	}
 }
+
 //Prevent issues with L4D1 characters being TP'd and stuck in brain dead form
-static bool IsTemporarilyL4D2[MAXPLAYERS]; //Use index 0 to state if its activated
-static char currentMap[16];
+
 public void OnMapStart() {
 	for(int i = 0; i < sizeof(survivor_models); i++) {
 		PrecacheModel(survivor_models[i], true);
@@ -251,12 +252,19 @@ public void OnMapStart() {
 }
 public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	SwapL4D1Survivor(client);
+	if(StrEqual(currentMap, "c6m1_riverbank") && GetClientTeam(client) == 2) {
+		//If player died as l4d1 character on first map, revert it
+		RevertL4D1Survivor(client);
+	}else if(StrEqual(currentMap, "c6m3_port") && GetClientTeam(client) == 2) {
+		//If player not swapped (joined, or via prev. map, switch)
+		RequestFrame(Frame_SwapSurvivor, client);
+	}
 }
 public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
-	if(StrEqual(currentMap, "c6m3_port")) {
+	//Switch players to L4D2 right before death.
+	if(StrEqual(currentMap, "c6m3_port") || StrEqual(currentMap, "c6m1_riverbank")) {
 		int client = GetClientOfUserId(event.GetInt("userid"));
-		if(GetClientTeam(client) == 2) {
+		if(client && GetClientTeam(client) == 2) {
 			SwapL4D1Survivor(client);
 		}
 	}
@@ -273,12 +281,21 @@ public void Event_DoorOpen(Event event, const char[] name, bool dontBroadcast) {
 }
 //On finale start: Set back to their L4D1 character.
 public Action Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-			RevertL4D1Survivor(i);
+	if(StrEqual(currentMap, "c6m3_port")) {
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+				RevertL4D1Survivor(i);
+			}
 		}
 	}
 }
+public void Frame_SwapSurvivor(int client) {
+	SwapL4D1Survivor(client);
+}
+public void Frame_RevertSurvivor(int client) {
+	RevertL4D1Survivor(client);
+}
+
 void SwapL4D1Survivor(int client) {
 	int playerType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
 	//If character is L4D1 Character (4: bill, etc..) then swap
@@ -303,7 +320,7 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 			
 			if(!cookieModelsSet) {
 				cookieModelsSet = true;
-				CreateTimer(0.1, Timer_SetAllCookieModels);
+				CreateTimer(0.2, Timer_SetAllCookieModels);
 				PrintToServer("Over 4 clients, setting models for all users based on cookie.");
 			}else {
 				PrintToServer("Client joined with model cookie | client %N | cookie %d", client, g_iPendingCookieModel[client]);
