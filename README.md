@@ -25,6 +25,7 @@ Useful things:
 * [l4d2_extraplayeritems](#l4d2_extraplayeritems)
 * [l4d2_population_control](#l4d2_population_control)
 * [l4d2_extrafinaletanks](#l4d2_extrafinaletanks)
+* [globalbans](#globalbans)
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
@@ -239,3 +240,9 @@ This plugin will automatically spawn an extra amount of tanks (determined by `l4
   * `l4d2_eft_count <#>` - Default is 1, determines how many tanks that are allowed to spawn in the extra tank stage
   * `l4d2_eft_chance <0.0-1.0> - Default is 0.0, determines the chance of each tank spawning in extra tank stage.
     * If the spawn fails, it will still count as a spawn, the percentage is PER tank
+
+### globalbans
+This plugin will store bans in a database and read from it on connect. This allows you to easily have bans global between servers.
+It will automatically intercept any ban that calls OnBanIdentity or OnBanClient (so sm_ban will work normally)
+* **Convars:**
+  * `sm_hKickOnDBFailure <0/1>` - Should the plugin kick players if it cannot connect to the database?
