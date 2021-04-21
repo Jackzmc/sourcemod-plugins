@@ -166,7 +166,7 @@ This really only affects wandering zombies, mobs and panic events, but it may wo
 ### l4d2_feedthetrolls
 This plugin allows you to enact certain troll modes on any player, some are subtle some are less so. Either way, it works great to deal with a rusher, an asshole or even your friends.
 
-Troll Modes: (updated 1/2/2021)
+Troll Modes: (updated 4/20/2021)
 
 1. **SlowSpeed** (0.8 < 1.0 base) - Slows down a user
 2. **HigherGravity** (1.3 > 1.0) - Adds more gravity to a user

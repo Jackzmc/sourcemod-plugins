@@ -24,7 +24,7 @@ public Plugin myinfo =
 	url = PLUGIN_URL
 };
 
-bool g_EnteredCheckpoint = false;
+ConVar g_EnteredCheckpoint;
 
 public void OnPluginStart()
 {
@@ -34,28 +34,31 @@ public void OnPluginStart()
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 	HookEvent("player_entered_checkpoint", Event_PlayerEnteredCheckpoint);
-	HookEvent("round_start",Event_RoundStart);
+	HookEvent("player_left_start_area",Event_RoundStart);
+	g_EnteredCheckpoint = CreateConVar("awb_status", "0", "Get status of plugin", FCVAR_SPONLY | FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
-	g_EnteredCheckpoint = false;
+	if(g_EnteredCheckpoint.BoolValue) g_EnteredCheckpoint.BoolValue = false;
 }
 public void Event_PlayerEnteredCheckpoint(Event event, const char[] name, bool dontBroadcast) {
-	if(!g_EnteredCheckpoint) {
+	PrintToChatAll("boolvalue %d | client %d", g_EnteredCheckpoint.BoolValue, GetClientOfUserId(event.GetInt("userid")));
+	if(!g_EnteredCheckpoint.BoolValue) {
+		
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		bool playersLeft = false;
 		for (int i = 1; i < MaxClients;i++) {
-			if (client == i)continue;
-			if (!IsClientConnected(i)) continue;
+			if (client == i) continue;
+			if (!IsClientInGame(i)) continue;
 			if (GetClientTeam(i) != 2) continue;
-			
+			PrintToChatAll("playersLeft: %d . clientr %d", playersLeft, i);
 			if(!IsFakeClient(i)) {
 				playersLeft = true;
 				break;
 			} 
 		}
 		if(!playersLeft) {
-			g_EnteredCheckpoint = true;
+			g_EnteredCheckpoint.BoolValue = true;
 			CheatCommand(client,"warp_all_survivors_to_checkpoint","","");
 		}
 	}

@@ -2,11 +2,24 @@
 // ====================================================================================================
 Change Log:
 
+1.0.6 (12-February-2021)
+    - Fixed custom model cvar typo. (thanks "weffer" for reporting)
+
+1.0.5 (11-February-2021)
+    - Fixed a bug not rendering custom sprites right after turning it on.
+    - Added one more custom sprite option with an alpha background filling the bar.
+
+1.0.4 (11-February-2021)
+    - Added custom sprite option.
+
+1.0.3 (08-February-2021)
+    - Fixed missing client in-game in visibility check. (thanks to "Krufftys Killers" and "Striker black")
+
 1.0.2 (08-February-2021)
     - Fixed wrong value on max health calculation.
     - Fixed sprite hiding behind tank rocks.
     - Fixed sprite hiding while tank throws rocks (ability use).
-    - Moved visibility logic to timer.
+    - Moved visibility logic to timer handle.
 
 1.0.1 (30-January-2021)
     - Public release.
@@ -23,7 +36,7 @@ Change Log:
 #define PLUGIN_NAME                   "[L4D1 & L4D2] Tank HP Sprite"
 #define PLUGIN_AUTHOR                 "Mart"
 #define PLUGIN_DESCRIPTION            "Shows a sprite at the tank head that goes from green to red based on its HP"
-#define PLUGIN_VERSION                "1.0.2"
+#define PLUGIN_VERSION                "1.0.5"
 #define PLUGIN_URL                    "https://forums.alliedmods.net/showthread.php?t=330370"
 
 // ====================================================================================================
@@ -66,6 +79,7 @@ public Plugin myinfo =
 // Defines
 // ====================================================================================================
 #define CLASSNAME_ENV_SPRITE          "env_sprite"
+#define CLASSNAME_ENV_TEXTURETOGGLE   "env_texturetoggle"
 #define CLASSNAME_TANK_ROCK           "tank_rock"
 
 #define TEAM_SPECTATOR                1
@@ -102,6 +116,9 @@ static ConVar g_hCvar_DeadAlpha;
 static ConVar g_hCvar_DeadScale;
 static ConVar g_hCvar_DeadColor;
 static ConVar g_hCvar_Team;
+static ConVar g_hCvar_CustomModel;
+static ConVar g_hCvar_CustomModelVMT;
+static ConVar g_hCvar_CustomModelVTF;
 static ConVar g_hCvar_AllSpecials;
 
 // ====================================================================================================
@@ -115,6 +132,7 @@ static bool   g_bCvar_Sight;
 static bool   g_bCvar_AttackDelay;
 static bool   g_bCvar_AliveShow;
 static bool   g_bCvar_DeadShow;
+static bool   g_bCvar_CustomModel;
 
 // ====================================================================================================
 // int - Plugin Variables
@@ -147,11 +165,14 @@ static char   g_sCvar_DeadAlpha[4];
 static char   g_sCvar_DeadScale[5];
 static char   g_sCvar_DeadColor[12];
 static char   g_sCvar_FadeDistance[5];
+static char   g_sCvar_CustomModelVMT[100];
+static char   g_sCvar_CustomModelVTF[100];
 
 // ====================================================================================================
 // client - Plugin Variables
 // ====================================================================================================
 static int    gc_iTankSpriteRef[MAXPLAYERS+1] = { INVALID_ENT_REFERENCE, ... };
+static int    gc_iTankSpriteFrameRef[MAXPLAYERS+1] = { INVALID_ENT_REFERENCE, ... };
 static bool   gc_bVisible[MAXPLAYERS+1][MAXPLAYERS+1];
 static float  gc_fLastAttack[MAXPLAYERS+1][MAXPLAYERS+1];
 
@@ -185,21 +206,24 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart()
 {
     CreateConVar("l4d_tank_hp_sprite_version", PLUGIN_VERSION, PLUGIN_DESCRIPTION, CVAR_FLAGS_PLUGIN_VERSION);
-    g_hCvar_Enabled      = CreateConVar("l4d_tank_hp_sprite_enable", "1", "Enable/Disable the plugin.\n0 = Disable, 1 = Enable", CVAR_FLAGS, true, 0.0, true, 1.0);
-    g_hCvar_ZAxis        = CreateConVar("l4d_tank_hp_sprite_z_axis", "92", "Additional Z distance based on the tank position.", CVAR_FLAGS, true, 0.0);
-    g_hCvar_FadeDistance = CreateConVar("l4d_tank_hp_sprite_fade_distance", "-1", "Minimum distance that a client must be from the tank to see the sprite (both alive and dead sprites).\n-1 = Always visible.", CVAR_FLAGS, true, -1.0, true, 9999.0);
-    g_hCvar_Sight        = CreateConVar("l4d_tank_hp_sprite_sight", "1", "Show the sprite to the survivor only if the Tank is on sight.\n0 = OFF, 1 = ON.", CVAR_FLAGS, true, 0.0, true, 1.0);
-    g_hCvar_AttackDelay  = CreateConVar("l4d_tank_hp_sprite_attack_delay", "0.0", "Show the sprite to the survivor attacker, by this amount of time in seconds, after hitting the Tank.\n0 = OFF.", CVAR_FLAGS, true, 0.0);
-    g_hCvar_AliveShow    = CreateConVar("l4d_tank_hp_sprite_alive_show", "1", "Show the alive sprite while tank is alive.\n0 = OFF, 1 = ON.", CVAR_FLAGS, true, 0.0, true, 1.0);
-    g_hCvar_AliveModel   = CreateConVar("l4d_tank_hp_sprite_alive_model", "materials/vgui/healthbar_white.vmt", "Model of alive tank sprite.");
-    g_hCvar_AliveAlpha   = CreateConVar("l4d_tank_hp_sprite_alive_alpha", "200", "Alpha of alive tank sprite.\n0 = Invisible, 255 = Fully Visible", CVAR_FLAGS, true, 0.0, true, 255.0);
-    g_hCvar_AliveScale   = CreateConVar("l4d_tank_hp_sprite_alive_scale", "0.25", "Scale of alive tank sprite (increases both height and width).\nNote: Some range values maintain the same size. (e.g. from 0.0 to 0.38 the size doesn't change).", CVAR_FLAGS, true, 0.0);
-    g_hCvar_DeadShow     = CreateConVar("l4d_tank_hp_sprite_dead_show", "1", "Show the dead sprite when a tank dies.\n0 = OFF, 1 = ON.", CVAR_FLAGS, true, 0.0, true, 1.0);
-    g_hCvar_DeadModel    = CreateConVar("l4d_tank_hp_sprite_dead_model", "materials/sprites/death_icon.vmt", "Model of dead tank sprite.");
-    g_hCvar_DeadAlpha    = CreateConVar("l4d_tank_hp_sprite_dead_alpha", "200", "Alpha of dead tank sprite.\n0 = Invisible, 255 = Fully Visible", CVAR_FLAGS, true, 0.0, true, 255.0);
-    g_hCvar_DeadScale    = CreateConVar("l4d_tank_hp_sprite_dead_scale", "0.25", "Scale of dead tank sprite (increases both height and width).\nSome range values maintain the size the same.", CVAR_FLAGS, true, 0.0);
-    g_hCvar_DeadColor    = CreateConVar("l4d_tank_hp_sprite_dead_color", "225 0 0", "Color of dead tank sprite.\nUse three values between 0-255 separated by spaces (\"<0-255> <0-255> <0-255>\").", CVAR_FLAGS);
-    g_hCvar_Team         = CreateConVar("l4d_tank_hp_sprite_team", "3", "Which teams should the sprite be visible.\n0 = NONE, 1 = SURVIVOR, 2 = INFECTED, 4 = SPECTATOR, 8 = HOLDOUT.\nAdd numbers greater than 0 for multiple options.\nExample: \"3\", enables for SURVIVOR and INFECTED.", CVAR_FLAGS, true, 0.0, true, 15.0);
+    g_hCvar_Enabled        = CreateConVar("l4d_tank_hp_sprite_enable", "1", "Enable/Disable the plugin.\n0 = Disable, 1 = Enable.", CVAR_FLAGS, true, 0.0, true, 1.0);
+    g_hCvar_ZAxis          = CreateConVar("l4d_tank_hp_sprite_z_axis", "92", "Additional Z distance based on the tank position.", CVAR_FLAGS, true, 0.0);
+    g_hCvar_FadeDistance   = CreateConVar("l4d_tank_hp_sprite_fade_distance", "-1", "Minimum distance that a client must be from the tank to see the sprite (both alive and dead sprites).\n-1 = Always visible.", CVAR_FLAGS, true, -1.0, true, 9999.0);
+    g_hCvar_Sight          = CreateConVar("l4d_tank_hp_sprite_sight", "1", "Show the sprite to the survivor only if the Tank is on sight.\n0 = OFF, 1 = ON.", CVAR_FLAGS, true, 0.0, true, 1.0);
+    g_hCvar_AttackDelay    = CreateConVar("l4d_tank_hp_sprite_attack_delay", "0.0", "Show the sprite to the survivor attacker, by this amount of time in seconds, after hitting the Tank.\n0 = OFF.", CVAR_FLAGS, true, 0.0);
+    g_hCvar_AliveShow      = CreateConVar("l4d_tank_hp_sprite_alive_show", "1", "Show the alive sprite while tank is alive.\n0 = OFF, 1 = ON.", CVAR_FLAGS, true, 0.0, true, 1.0);
+    g_hCvar_AliveModel     = CreateConVar("l4d_tank_hp_sprite_alive_model", "materials/vgui/healthbar_white.vmt", "Model of alive tank sprite.");
+    g_hCvar_AliveAlpha     = CreateConVar("l4d_tank_hp_sprite_alive_alpha", "200", "Alpha of alive tank sprite.\n0 = Invisible, 255 = Fully Visible", CVAR_FLAGS, true, 0.0, true, 255.0);
+    g_hCvar_AliveScale     = CreateConVar("l4d_tank_hp_sprite_alive_scale", "0.25", "Scale of alive tank sprite (increases both height and width).\nNote: Some range values maintain the same size. (e.g. from 0.0 to 0.38 the size doesn't change).", CVAR_FLAGS, true, 0.0);
+    g_hCvar_DeadShow       = CreateConVar("l4d_tank_hp_sprite_dead_show", "1", "Show the dead sprite when a tank dies.\n0 = OFF, 1 = ON.", CVAR_FLAGS, true, 0.0, true, 1.0);
+    g_hCvar_DeadModel      = CreateConVar("l4d_tank_hp_sprite_dead_model", "materials/sprites/death_icon.vmt", "Model of dead tank sprite.");
+    g_hCvar_DeadAlpha      = CreateConVar("l4d_tank_hp_sprite_dead_alpha", "200", "Alpha of dead tank sprite.\n0 = Invisible, 255 = Fully Visible", CVAR_FLAGS, true, 0.0, true, 255.0);
+    g_hCvar_DeadScale      = CreateConVar("l4d_tank_hp_sprite_dead_scale", "0.25", "Scale of dead tank sprite (increases both height and width).\nSome range values maintain the size the same.", CVAR_FLAGS, true, 0.0);
+    g_hCvar_DeadColor      = CreateConVar("l4d_tank_hp_sprite_dead_color", "225 0 0", "Color of dead tank sprite.\nUse three values between 0-255 separated by spaces (\"<0-255> <0-255> <0-255>\").", CVAR_FLAGS);
+    g_hCvar_Team           = CreateConVar("l4d_tank_hp_sprite_team", "3", "Which teams should the sprite be visible.\n0 = NONE, 1 = SURVIVOR, 2 = INFECTED, 4 = SPECTATOR, 8 = HOLDOUT.\nAdd numbers greater than 0 for multiple options.\nExample: \"3\", enables for SURVIVOR and INFECTED.", CVAR_FLAGS, true, 0.0, true, 15.0);
+    g_hCvar_CustomModel    = CreateConVar("l4d_tank_hp_sprite_custom_model", "0", "Use a custom sprite for the alive model\nNote: This requires the client downloading the custom model (.vmt and .vtf) to work.\nSearch for FastDL for more info.\n0 = OFF, 1 = ON.", CVAR_FLAGS, true, 0.0, true, 1.0);
+    g_hCvar_CustomModelVMT = CreateConVar("l4d_tank_hp_sprite_custom_model_vmt", "materials/mart/mart_custombar.vmt", "Custom sprite VMT path.");
+    g_hCvar_CustomModelVTF = CreateConVar("l4d_tank_hp_sprite_custom_model_vtf", "materials/mart/mart_custombar.vtf", "Custom sprite VTF path.");
     g_hCvar_AllSpecials  = CreateConVar("l4d_tank_hp_sprite_all_specials", "1", "Should all specials have healthbar or only tanks\n0 = Tanks Only, 1 = All Specials", CVAR_FLAGS, true, 0.0, true, 1.0);
 
     g_hCvar_Enabled.AddChangeHook(Event_ConVarChanged);
@@ -217,6 +241,9 @@ public void OnPluginStart()
     g_hCvar_DeadScale.AddChangeHook(Event_ConVarChanged);
     g_hCvar_DeadColor.AddChangeHook(Event_ConVarChanged);
     g_hCvar_Team.AddChangeHook(Event_ConVarChanged);
+    g_hCvar_CustomModel.AddChangeHook(Event_ConVarChanged);
+    g_hCvar_CustomModelVMT.AddChangeHook(Event_ConVarChanged);
+    g_hCvar_CustomModelVTF.AddChangeHook(Event_ConVarChanged);
 
     // Load plugin configs from .cfg
     AutoExecConfig(true, CONFIG_FILENAME);
@@ -234,7 +261,7 @@ public void OnPluginStart()
 public void OnPluginEnd()
 {
     int entity;
-    char targetname[64];
+    char targetname[19];
 
     entity = INVALID_ENT_REFERENCE;
     while ((entity = FindEntityByClassname(entity, CLASSNAME_ENV_SPRITE)) != INVALID_ENT_REFERENCE)
@@ -285,7 +312,6 @@ public void GetCvars()
     g_bCvar_AliveShow = g_hCvar_AliveShow.BoolValue;
     g_hCvar_AliveModel.GetString(g_sCvar_AliveModel, sizeof(g_sCvar_AliveModel));
     TrimString(g_sCvar_AliveModel);
-    PrecacheModel(g_sCvar_AliveModel, true);
     g_iCvar_AliveAlpha = g_hCvar_AliveAlpha.IntValue;
     FormatEx(g_sCvar_AliveAlpha, sizeof(g_sCvar_AliveAlpha), "%i", g_iCvar_AliveAlpha);
     g_fCvar_AliveScale = g_hCvar_AliveScale.FloatValue;
@@ -293,7 +319,6 @@ public void GetCvars()
     g_bCvar_DeadShow = g_hCvar_DeadShow.BoolValue;
     g_hCvar_DeadModel.GetString(g_sCvar_DeadModel, sizeof(g_sCvar_DeadModel));
     TrimString(g_sCvar_DeadModel);
-    PrecacheModel(g_sCvar_DeadModel, true);
     g_iCvar_DeadAlpha = g_hCvar_DeadAlpha.IntValue;
     FormatEx(g_sCvar_DeadAlpha, sizeof(g_sCvar_DeadAlpha), "%i", g_iCvar_DeadAlpha);
     g_fCvar_DeadScale = g_hCvar_DeadScale.FloatValue;
@@ -301,6 +326,28 @@ public void GetCvars()
     g_hCvar_DeadColor.GetString(g_sCvar_DeadColor, sizeof(g_sCvar_DeadColor));
     TrimString(g_sCvar_DeadColor);
     g_iCvar_Team = g_hCvar_Team.IntValue;
+    g_bCvar_CustomModel = g_hCvar_CustomModel.BoolValue;
+    g_hCvar_CustomModelVMT.GetString(g_sCvar_CustomModelVMT, sizeof(g_sCvar_CustomModelVMT));
+    TrimString(g_sCvar_CustomModelVMT);
+    g_hCvar_CustomModelVTF.GetString(g_sCvar_CustomModelVTF, sizeof(g_sCvar_CustomModelVTF));
+    TrimString(g_sCvar_CustomModelVTF);
+
+    if (g_bCvar_AliveShow)
+    {
+        if (g_bCvar_CustomModel)
+        {
+            AddFileToDownloadsTable(g_sCvar_CustomModelVMT);
+            AddFileToDownloadsTable(g_sCvar_CustomModelVTF);
+            PrecacheModel(g_sCvar_CustomModelVMT, true);
+        }
+        else
+        {
+            PrecacheModel(g_sCvar_AliveModel, true);
+        }
+    }
+
+    if (g_bCvar_DeadShow)
+        PrecacheModel(g_sCvar_DeadModel, true);
 }
 
 /****************************************************************************************************/
@@ -309,8 +356,10 @@ public void LateLoad()
 {
     for (int client = 1; client <= MaxClients; client++)
     {
-        if (IsPlayerSpecialInfected(client))
-            TankSprite(client);
+        if (!IsPlayerTank(client))
+            continue;
+
+        TankSprite(client);
     }
 }
 
@@ -322,6 +371,7 @@ public void OnClientDisconnect(int client)
         return;
 
     gc_iTankSpriteRef[client] = INVALID_ENT_REFERENCE;
+    gc_iTankSpriteFrameRef[client] = INVALID_ENT_REFERENCE;
 
     for (int target = 1; target <= MaxClients; target++)
     {
@@ -372,6 +422,7 @@ public void HookEvents(bool hook)
     {
         g_bEventsHooked = true;
 
+        HookEvent("tank_spawn", Event_TankSpawn);
         HookEvent("player_hurt", Event_PlayerHurt);
 
         return;
@@ -381,6 +432,7 @@ public void HookEvents(bool hook)
     {
         g_bEventsHooked = false;
 
+        UnhookEvent("tank_spawn", Event_TankSpawn);
         UnhookEvent("player_hurt", Event_PlayerHurt);
 
         return;
@@ -389,27 +441,37 @@ public void HookEvents(bool hook)
 
 /****************************************************************************************************/
 
+public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast)
+{
+    int client = GetClientOfUserId(event.GetInt("userid"));
 
-public void OnClientPutInServer(int client) {
-    if(GetClientTeam(client) == TEAM_INFECTED) {
-        //If all specials turned off and not tank; ignore.
-        if(!g_hCvar_AllSpecials.BoolValue && GetZombieClass(client) != g_iTankClass) return;
-        TankSprite(client);
-    }
+    if (!IsValidClient(client))
+        return;
+
+    TankSprite(client);
 }
 
 /****************************************************************************************************/
 
-public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) {
-    int tank = GetClientOfUserId(event.GetInt("userid"));
-    if (IsPlayerSpecialInfected(tank)) {
-        TankSprite(tank);
-        if(g_bCvar_AttackDelay) {
-            int attacker = GetClientOfUserId(event.GetInt("attacker"));
-            if (IsValidClient(attacker) && GetClientTeam(attacker) != TEAM_SURVIVOR)
-                gc_fLastAttack[tank][attacker] = GetGameTime();
-        }
-    }
+public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
+{
+    if (!g_bCvar_AttackDelay)
+        return;
+
+    int target = GetClientOfUserId(event.GetInt("userid"));
+
+    if (!IsPlayerTank(target))
+        return;
+
+    int attacker = GetClientOfUserId(event.GetInt("attacker"));
+
+    if (!IsValidClient(attacker))
+        return;
+
+    if (GetClientTeam(attacker) != TEAM_SURVIVOR)
+        return;
+
+    gc_fLastAttack[target][attacker] = GetGameTime();
 }
 
 /****************************************************************************************************/
@@ -419,21 +481,26 @@ public Action TimerKill(Handle timer)
     if (!g_bConfigLoaded)
         return Plugin_Continue;
 
-    for (int client = 1; client <= MaxClients; client++)
+    for (int target = 1; target <= MaxClients; target++)
     {
-        if (gc_iTankSpriteRef[client] != INVALID_ENT_REFERENCE && !IsPlayerSpecialInfected(client)) {
-            int entity = EntRefToEntIndex(gc_iTankSpriteRef[client]);
+        if (gc_iTankSpriteRef[target] == INVALID_ENT_REFERENCE)
+            continue;
 
-            if (entity != INVALID_ENT_REFERENCE)
-                AcceptEntityInput(entity, "Kill");
+        if (g_bCvar_Enabled && IsPlayerTank(target))
+            continue;
 
-            gc_iTankSpriteRef[client] = INVALID_ENT_REFERENCE;
+        int entity = EntRefToEntIndex(gc_iTankSpriteRef[target]);
 
-            for (int client2 = 1; client2 <= MaxClients; client2++)
-            {
-                gc_bVisible[client][client2] = false;
-                gc_fLastAttack[client][client2] = 0.0;
-            }
+        if (entity != INVALID_ENT_REFERENCE)
+            AcceptEntityInput(entity, "Kill");
+
+        gc_iTankSpriteRef[target] = INVALID_ENT_REFERENCE;
+        gc_iTankSpriteFrameRef[target] = INVALID_ENT_REFERENCE;
+
+        for (int client = 1; client <= MaxClients; client++)
+        {
+            gc_bVisible[target][client] = false;
+            gc_fLastAttack[target][client] = 0.0;
         }
     }
 
@@ -455,38 +522,31 @@ public Action TimerVisible(Handle timer)
         if (gc_iTankSpriteRef[target] == INVALID_ENT_REFERENCE)
             continue;
 
-        if (!IsClientConnected(target))
+        if (!IsClientInGame(target))
             continue;
 
         for (int client = 1; client <= MaxClients; client++)
         {
-            if (!IsClientConnected(client))
+            gc_bVisible[target][client] = false;
+
+            if (!IsClientInGame(client))
                 continue;
 
             if (IsFakeClient(client))
                 continue;
 
-            if (!(GetClientTeamFlag(client) & g_iCvar_Team))
-            {
-                gc_bVisible[target][client] = false;
+            if (!(GetTeamFlag(GetClientTeam(client)) & g_iCvar_Team))
                 continue;
-            }
 
             if (g_bCvar_AttackDelay || g_bCvar_Sight)
             {
                 if (GetClientTeam(client) == TEAM_SURVIVOR || GetClientTeam(client) == TEAM_HOLDOUT)
                 {
                     if (g_bCvar_AttackDelay && (GetGameTime() - gc_fLastAttack[target][client] > g_fCvar_AttackDelay))
-                    {
-                        gc_bVisible[target][client] = false;
                         continue;
-                    }
 
                     if (g_bCvar_Sight && !IsVisibleTo(client, target))
-                    {
-                        gc_bVisible[target][client] = false;
                         continue;
-                    }
                 }
             }
 
@@ -509,7 +569,7 @@ public Action TimerRender(Handle timer)
 
     for (int target = 1; target <= MaxClients; target++)
     {
-        if (!IsPlayerSpecialInfected(target))
+        if (!IsPlayerTank(target))
             continue;
 
         TankSprite(target);
@@ -529,14 +589,43 @@ public void TankSprite(int client)
 
     if (entity == INVALID_ENT_REFERENCE)
     {
+        char targetname[22];
+        FormatEx(targetname, sizeof(targetname), "%s-%i", "l4d_tank_hp_sprite", client);
+
         entity = CreateEntityByName(CLASSNAME_ENV_SPRITE);
-        DispatchKeyValue(entity, "targetname", "l4d_tank_hp_sprite");
+        ge_iOwner[entity] = client;
+        gc_iTankSpriteRef[client] = EntIndexToEntRef(entity);
+        DispatchKeyValue(entity, "targetname", targetname);
         DispatchKeyValue(entity, "spawnflags", "1");
         DispatchKeyValue(entity, "fademindist", g_sCvar_FadeDistance);
         SetEntProp(entity, Prop_Data, "m_iHammerID", -1);
         SDKHook(entity, SDKHook_SetTransmit, OnSetTransmit);
-        ge_iOwner[entity] = client;
-        gc_iTankSpriteRef[client] =  EntIndexToEntRef(entity);
+    }
+
+    if (g_bCvar_CustomModel)
+    {
+        int entityFrame = INVALID_ENT_REFERENCE;
+
+        if (gc_iTankSpriteFrameRef[client] != INVALID_ENT_REFERENCE)
+            entityFrame = EntRefToEntIndex(gc_iTankSpriteFrameRef[client]);
+
+        if (entityFrame == INVALID_ENT_REFERENCE)
+        {
+            char targetname[22];
+            FormatEx(targetname, sizeof(targetname), "%s-%i", "l4d_tank_hp_sprite", client);
+
+            entityFrame = CreateEntityByName(CLASSNAME_ENV_TEXTURETOGGLE);
+            gc_iTankSpriteFrameRef[client] = EntIndexToEntRef(entityFrame);
+            DispatchKeyValue(entityFrame, "targetname", "l4d_tank_hp_sprite");
+            DispatchKeyValue(entityFrame, "target", targetname);
+
+            TeleportEntity(entityFrame, g_fVPos, NULL_VECTOR, NULL_VECTOR);
+            DispatchSpawn(entityFrame);
+            ActivateEntity(entityFrame);
+
+            SetVariantString("!activator");
+            AcceptEntityInput(entityFrame, "SetParent", entity);
+        }
     }
 
     if (IsPlayerIncapacitated(client))
@@ -547,12 +636,15 @@ public void TankSprite(int client)
             DispatchKeyValue(entity, "rendercolor", g_sCvar_DeadColor);
             DispatchKeyValue(entity, "renderamt", g_sCvar_DeadAlpha); // If renderamt goes before rendercolor, it doesn't render
             DispatchKeyValue(entity, "scale", g_sCvar_DeadScale);
+
+            TeleportEntity(entity, g_fVPos, NULL_VECTOR, NULL_VECTOR);
             DispatchSpawn(entity);
+            ActivateEntity(entity);
+
             SetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity", client);
             SetVariantString("!activator");
             AcceptEntityInput(entity, "SetParent", client);
             AcceptEntityInput(entity, "ShowSprite");
-            TeleportEntity(entity, g_fVPos, NULL_VECTOR, NULL_VECTOR);
         }
 
         return;
@@ -568,9 +660,7 @@ public void TankSprite(int client)
     int currentHealth = GetClientHealth(client);
 
     float percentageHealth;
-    if (maxHealth == 0)
-        percentageHealth = 0.0;
-    else
+    if (maxHealth > 0)
         percentageHealth = (float(currentHealth) / float(maxHealth));
 
     bool halfHealth = (percentageHealth <= 0.5);
@@ -578,16 +668,35 @@ public void TankSprite(int client)
     char sRenderColor[12];
     Format(sRenderColor, sizeof(sRenderColor), "%i %i 0", halfHealth ? 255 : RoundFloat(255.0 * ((1.0 - percentageHealth) * 2)), halfHealth ? RoundFloat(255.0 * (percentageHealth) * 2) : 255);
 
-    DispatchKeyValue(entity, "model", g_sCvar_AliveModel);
+    DispatchKeyValue(entity, "model", g_bCvar_CustomModel ? g_sCvar_CustomModelVMT : g_sCvar_AliveModel);
     DispatchKeyValue(entity, "rendercolor", sRenderColor);
     DispatchKeyValue(entity, "renderamt", g_sCvar_AliveAlpha); // If renderamt goes before rendercolor, it doesn't render
     DispatchKeyValue(entity, "scale", g_sCvar_AliveScale);
+
+    TeleportEntity(entity, g_fVPos, NULL_VECTOR, NULL_VECTOR);
     DispatchSpawn(entity);
+    ActivateEntity(entity);
+
     SetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity", client);
     SetVariantString("!activator");
     AcceptEntityInput(entity, "SetParent", client);
     AcceptEntityInput(entity, "ShowSprite");
-    TeleportEntity(entity, g_fVPos, NULL_VECTOR, NULL_VECTOR);
+
+    if (!g_bCvar_CustomModel)
+        return;
+
+    int entityFrame = EntRefToEntIndex(gc_iTankSpriteFrameRef[client]);
+
+    if (entityFrame == INVALID_ENT_REFERENCE)
+        return;
+
+    int frame = RoundFloat(percentageHealth * 100);
+
+    char input[38];
+    FormatEx(input, sizeof(input), "OnUser1 !self:SetTextureIndex:%i:0:1", frame);
+    SetVariantString(input);
+    AcceptEntityInput(entityFrame, "AddOutput");
+    AcceptEntityInput(entityFrame, "FireUser1");
 }
 
 /****************************************************************************************************/
@@ -612,14 +721,14 @@ bool IsVisibleTo(int client, int target)
     float vClientPos[3];
     float vEntityPos[3];
     float vLookAt[3];
-    float vAngles[3];
+    float vAng[3];
 
     GetClientEyePosition(client, vClientPos);
     GetClientEyePosition(target, vEntityPos);
     MakeVectorFromPoints(vClientPos, vEntityPos, vLookAt);
-    GetVectorAngles(vLookAt, vAngles);
+    GetVectorAngles(vLookAt, vAng);
 
-    Handle trace = TR_TraceRayFilterEx(vClientPos, vAngles, MASK_PLAYERSOLID, RayType_Infinite, TraceFilter, target);
+    Handle trace = TR_TraceRayFilterEx(vClientPos, vAng, MASK_PLAYERSOLID, RayType_Infinite, TraceFilter, target);
 
     bool isVisible;
 
@@ -682,6 +791,9 @@ public Action CmdPrintCvars(int client, int args)
     PrintToConsole(client, "l4d_tank_hp_sprite_dead_scale : %.2f", g_fCvar_DeadScale);
     PrintToConsole(client, "l4d_tank_hp_sprite_dead_color : \"%s\"", g_sCvar_DeadColor);
     PrintToConsole(client, "l4d_tank_hp_sprite_team : %i", g_iCvar_Team);
+    PrintToConsole(client, "l4d_tank_hp_sprite_custom_model : %b (%s)", g_bCvar_CustomModel, g_bCvar_CustomModel ? "true" : "false");
+    PrintToConsole(client, "l4d_tank_hp_sprite_custom_model_vmt : \"%s\"", g_sCvar_CustomModelVMT);
+    PrintToConsole(client, "l4d_tank_hp_sprite_custom_model_vtf : \"%s\"", g_sCvar_CustomModelVTF);
     PrintToConsole(client, "");
     PrintToConsole(client, "======================================================================");
     PrintToConsole(client, "");
@@ -777,7 +889,8 @@ bool IsPlayerIncapacitated(int client)
  * @param client        Client index.
  * @return              True if client is a tank, false otherwise.
  */
-bool IsPlayerSpecialInfected(int client) {
+bool IsPlayerTank(int client)
+{
     bool isValid = IsValidClient(client) && GetClientTeam(client) == TEAM_INFECTED && IsPlayerAlive(client) && !IsPlayerGhost(client);
     if(!g_hCvar_AllSpecials.BoolValue && GetZombieClass(client) != g_iTankClass)
         return false;
@@ -788,14 +901,14 @@ bool IsPlayerSpecialInfected(int client) {
 /****************************************************************************************************/
 
 /**
- * Returns the team flag from a client.
+ * Returns the team flag from a team.
  *
- * @param client        Client index.
- * @return              Client team flag.
+ * @param team          Team index.
+ * @return              Team flag.
  */
-int GetClientTeamFlag(int client)
+int GetTeamFlag(int team)
 {
-    switch (GetClientTeam(client))
+    switch (team)
     {
         case TEAM_SURVIVOR:
             return FLAG_TEAM_SURVIVOR;
