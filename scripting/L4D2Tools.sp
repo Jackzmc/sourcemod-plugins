@@ -9,13 +9,13 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <left4dhooks>
-#include "jutils.inc"
+#include <jutils.inc>
 #include "l4d_survivor_identity_fix.inc"
 
 static ArrayList LasersUsed;
 static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres;
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1];
-static bool isHighPingIdle[MAXPLAYERS+1];
+static bool isHighPingIdle[MAXPLAYERS+1], isL4D1Survivors;
 static Handle hTakeOverBot, hGoAwayFromKeyboard;
 
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
@@ -187,6 +187,7 @@ public Action Command_SetClientModel(int client, int args) {
 			if(IsClientConnected(target) && IsClientInGame(target) && IsPlayerAlive(target)) {
 				int team = GetClientTeam(target_list[i]);
 				if(team == 2 || team == 4) {
+					modelID = isL4D1Survivors ? modelID - 4 : modelID;
 					SetEntProp(target, Prop_Send, "m_survivorCharacter", modelID);
 					SetEntityModel(target, modelPath);
 					if (IsFakeClient(target)) {
@@ -303,7 +304,9 @@ public void OnClientDisconnect(int client) {
 public void OnMapStart() {
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
-
+	char output[4];
+	L4D2_GetVScriptOutput("GetSurvivorSet()", output, sizeof(output));
+	isL4D1Survivors = StringToInt(output) == 1;
 }
 
 public Action Event_OnWeaponDrop(int client, int weapon) {
