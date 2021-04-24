@@ -30,7 +30,7 @@ public Plugin myinfo =
 //HANDLES
 Handle hThrowTimer;
 //CONVARS
-ConVar hVictimsList, hThrowItemInterval, hAutoPunish, hMagnetChance, hShoveFailChance;
+ConVar hVictimsList, hThrowItemInterval, hAutoPunish, hMagnetChance, hShoveFailChance, hAutoPunishExpire;
 //BOOLS
 bool lateLoaded; //Is plugin late loaded
 bool bChooseVictimAvailable = false; //For charge player feature, is it available?
@@ -60,7 +60,8 @@ public void OnPluginStart() {
 
 	hThrowItemInterval = CreateConVar("sm_ftt_throw_interval", "30", "The interval in seconds to throw items. 0 to disable", FCVAR_NONE, true, 0.0);
 	hThrowItemInterval.AddChangeHook(Change_ThrowInterval);
-	hAutoPunish 		= CreateConVar("sm_ftt_autopunish_action", "0", "Setup automatic punishment of players. Add bits together\n0=Disabled, 1=Tank magnet, 2=Special magnet, 4=Swarm", FCVAR_NONE, true, 0.0);
+	hAutoPunish 		= CreateConVar("sm_ftt_autopunish_action", "0", "Setup automatic punishment of players. Add bits together\n0=Disabled, 1=Tank magnet, 2=Special magnet, 4=Swarm, 8=InstantVomit", FCVAR_NONE, true, 0.0);
+	hAutoPunishExpire 	= CreateConVar("sm_ftt_autopunish_expire", "0", "How many minutes of gametime until autopunish is turned off? 0 for never.", FCVAR_NONE, true, 0.0);
 	hMagnetChance 	 	= CreateConVar("sm_ftt_magnet_chance", "1.0", "% of the time that the magnet will work on a player.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.5", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
 
@@ -117,26 +118,8 @@ public Action Event_WeaponReload(int weapon) {
 	return Plugin_Continue;
 }
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
-	if(client > 0 && client <= MaxClients && hAutoPunish.IntValue & 1 > 0) {
-		float closestDistance = -1.0, cPos[3], scanPos[3];
-		GetClientAbsOrigin(client, cPos);
-
-		for(int i = 1; i < MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && i != client) {
-				GetClientAbsOrigin(i, scanPos);
-				float dist = GetVectorDistance(cPos, scanPos, false);
-				if(closestDistance < dist) {
-					closestDistance = dist;
-				}
-			}
-		}
-		if(FloatCompare(closestDistance, -1.0) == 1 && closestDistance >= 1200) {
-			PrintToServer("Detected button_use firing when no nearby players. Closest Distance: %f.", closestDistance);
-			trollMode mode = view_as<trollMode>(GetRandomInt(1, TROLL_MODE_COUNT));
-			PrintToServer("Activating troll mode #%d: %s for player %N", mode, TROLL_MODES_NAMES[mode], client);
-			ApplyModeToClient(0, client, mode, TrollMod_InstantFire);
-			UnhookSingleEntityOutput(entity, "OnPressed", Event_ButtonPress);
-		}
+	if(client > 0 && client <= MaxClients) {
+		lastButtonUser = client;
 	}
 	return Plugin_Continue;
 }
@@ -196,7 +179,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
 	}else if(HasTrollMode(client, Troll_iCantSpellNoMore)) {
-		int type = GetRandomInt(1, 33);
+		int type = GetRandomInt(1, TROLL_MODE_COUNT + 8);
 		char letterSrc, replaceChar;
 		switch(type) {
 			case 1: {
@@ -326,7 +309,26 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 	}
 }
 public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
-	if(numClients > 0 && entity > 0 && entity <= MaxClients) {
+	if(lastButtonUser > -1 && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
+		PrintToConsoleAll("CRESCENDO STARTED BY %N", lastButtonUser);
+		float distance = GetFarthestClientDistance();
+		if(distance > AUTOPUNISH_FLOW_MIN_DISTANCE) {
+			NotifyAllAdmins("Autopunishing player %N for activation of event far from team (%f away)", lastButtonUser, distance);
+			if(hAutoPunish.IntValue & 2 == 2) 
+				ApplyModeToClient(0, lastButtonUser, Troll_SpecialMagnet, TrollMod_None);
+			if(hAutoPunish.IntValue & 1 == 1) 
+				ApplyModeToClient(0, lastButtonUser, Troll_TankMagnet, TrollMod_None);
+			if(hAutoPunish.IntValue & 8 == 8)
+				ApplyModeToClient(0, lastButtonUser, Troll_VomitPlayer, TrollMod_None);
+			else if(hAutoPunish.IntValue & 4 == 4) 
+				ApplyModeToClient(0, lastButtonUser, Troll_Swarm, TrollMod_None);
+
+			if(hAutoPunishExpire.IntValue > 0) {
+				CreateTimer(60.0 * hAutoPunishExpire.FloatValue, Timer_ResetAutoPunish, GetClientOfUserId(lastButtonUser));
+			}
+		}
+		lastButtonUser = -1;
+	}else if(numClients > 0 && entity > 0 && entity <= MaxClients) {
 		if(HasTrollMode(entity, Troll_Honk)) {
 			if(StrContains(sample, "survivor/voice") > -1) {
 				strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
@@ -592,49 +594,6 @@ public Action Timer_Main(Handle timer) {
 	return Plugin_Continue;
 }
 
-public Action Timer_AutoPunishCheck(Handle timer) {
-	int punished = GetClientOfUserId(autoPunished);
-	if(punished > 0) {
-		PrintToConsoleAll("Auto Punish | Player=%N", punished);
-		//Check flow distance, drop if needed.
-		return Plugin_Continue;
-	}
-
-	int farthestClient = -1, secondClient = -1;
-	float highestFlow, secondHighestFlow;
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
-			float flow = L4D2Direct_GetFlowDistance(i);
-			if(flow > highestFlow || farthestClient == -1) {
-				secondHighestFlow = highestFlow;
-				secondClient = farthestClient;
-				farthestClient = i;
-				highestFlow = flow;
-			}
-		}
-	}
-	//Incase the first player checked is the farthest:
-	if(secondClient == -1) {
-		for(int i = 1; i <= MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
-				float flow = L4D2Direct_GetFlowDistance(i);
-				if(farthestClient != i && ((flow < highestFlow && flow > secondHighestFlow) || secondClient == -1)) {
-					secondClient = i;
-					secondHighestFlow = flow;
-				}
-			}
-		}
-	}
-	float difference = highestFlow - secondHighestFlow;
-	PrintToConsoleAll("Flow Check | Player=%N Flow=%f Delta=%f", farthestClient, highestFlow, difference);
-	PrintToConsoleAll("Flow Check | Player2=%N Flow2=%f", secondClient, secondHighestFlow);
-	if(difference > AUTOPUNISH_FLOW_MIN_DISTANCE) {
-		autoPunished = GetClientUserId(farthestClient);
-		autoPunishMode = GetAutoPunishMode();
-	}
-	return Plugin_Continue;
-}
-
 public Action Timer_GivePistol(Handle timer, int client) {
 	int flags = GetCommandFlags("give");
 	SetCommandFlags("give", flags & ~FCVAR_CHEAT);
@@ -665,6 +624,16 @@ public Action Timer_ThrowWeapon(Handle timer, Handle pack) {
 			}else 
 				SDKHooks_DropWeapon(victim, wpn, dest);
 		}
+	}
+}
+
+public Action Timer_ResetAutoPunish(Handle timer, int user) {
+	int client = GetClientOfUserId(user);
+	if(client) {
+		if(hAutoPunish.IntValue & 2 == 2) 
+			TurnOffTrollMode(client, Troll_SpecialMagnet);
+		if(hAutoPunish.IntValue & 1 == 1) 
+			TurnOffTrollMode(client, Troll_TankMagnet);
 	}
 }
 
@@ -699,6 +668,40 @@ void ThrowAllItems(int victim) {
 	}
 }
 
+float GetFarthestClientDistance() {
+	int farthestClient = -1, secondClient = -1;
+	float highestFlow, secondHighestFlow;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+			float flow = L4D2Direct_GetFlowDistance(i);
+			if(flow > highestFlow || farthestClient == -1) {
+				secondHighestFlow = highestFlow;
+				secondClient = farthestClient;
+				farthestClient = i;
+				highestFlow = flow;
+			}
+		}
+	}
+	//Incase the first player checked is the farthest:
+	if(secondClient == -1) {
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+				float flow = L4D2Direct_GetFlowDistance(i);
+				if(farthestClient != i && ((flow < highestFlow && flow > secondHighestFlow) || secondClient == -1)) {
+					secondClient = i;
+					secondHighestFlow = flow;
+				}
+			}
+		}
+	}
+	float difference = highestFlow - secondHighestFlow;
+	#if defined DEBUG
+	PrintToConsoleAll("Flow Check | Player=%N Flow=%f Delta=%f", farthestClient, highestFlow, difference);
+	PrintToConsoleAll("Flow Check | Player2=%N Flow2=%f", secondClient, secondHighestFlow);
+	#endif
+	return difference;
+}
+
 int GetAutoPunishMode() {
 	int number = 2 ^ GetRandomInt(0, AUTOPUNISH_MODE_COUNT - 1);
 	if(hAutoPunish.IntValue & number == 0) {
@@ -706,6 +709,20 @@ int GetAutoPunishMode() {
 	}else{
 		return number;
 	}
+}
+
+stock void NotifyAllAdmins(const char[] format, any ...) {
+	char buffer[254];
+	VFormat(buffer, sizeof(buffer), format, 2);
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			AdminId admin = GetUserAdmin(i);
+			if(admin != INVALID_ADMIN_ID && admin.ImmunityLevel > 0) {
+				PrintToChat(i, "%s", buffer);
+			}
+		}
+	}
+	PrintToServer("%s", buffer);
 }
 
 stock int GetPrimaryReserveAmmo(int client) {
