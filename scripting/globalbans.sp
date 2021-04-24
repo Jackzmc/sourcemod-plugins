@@ -59,8 +59,9 @@ bool ConnectDB() {
 
 public void OnClientAuthorized(int client, const char[] auth) {
     if(!StrEqual(auth, "BOT", true)) {
-        char query[128];
-        Format(query, sizeof(query), "SELECT steamid, reason, timestamp, time FROM bans WHERE `steamid` = '%s'", auth);
+        char query[128], ip[32];
+        GetClientIP(client, ip, sizeof(ip));
+        Format(query, sizeof(query), "SELECT steamid, ip, reason, timestamp, time FROM bans WHERE `steamid` = '%s' OR ip = '?'", auth, ip);
         g_db.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
     }
 }
@@ -73,12 +74,24 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
         }else{
             executor = "CONSOLE";
         }
-        DBBan(identity, reason, time, executor);
+        char query[255];
+        Format(query, sizeof(query), "INSERT INTO bans"
+            ..."(steamid, reason, time, executor, ip_banned)"
+            ..."VALUES ('%s', '%s', %d, '%s', 0)",
+            identity,
+            reason,
+            time,
+            executor
+        );
+
+        g_db.Query(DB_OnBanQuery, query);
+    }else if(flags == BANFLAG_IP) {
+        LogMessage("Cannot save IP without steamid: %s [Source: %s]", identity, source);
     }
 }
 
 public Action OnBanClient(int client, int time, int flags, const char[] reason, const char[] kick_message, const char[] command, any source) {
-    char executor[32], identity[32];
+    char executor[32], identity[32], ip[32];
     if(source > 0 && source <= MaxClients) {
         GetClientAuthId(source, AuthId_Steam2, executor, sizeof(executor));
     }else{
@@ -86,8 +99,20 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
     }
 
     GetClientAuthId(client, AuthId_Steam2, identity, sizeof(identity));
+    GetClientIP(client, ip, sizeof(ip));
 
-    DBBan(identity, reason, time, executor);
+    char query[255];
+    Format(query, sizeof(query), "INSERT INTO bans"
+        ..."(steamid, ip, reason, time, executor, ip_banned)"
+        ..."VALUES ('%s', '%s', '%s', %d, '%s', 0)",
+        identity,
+        ip,
+        reason,
+        time,
+        executor
+    );
+
+    g_db.Query(DB_OnBanQuery, query);
 }
 
 public Action OnRemoveBan(const char[] identity, int flags, const char[] command, any source) {
@@ -108,7 +133,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
         LogError("DB_OnConnectCheck returned error: %s", error);
         if(client > 0 && hKickOnDBFailure.BoolValue) {
             KickClient(client, "Could not authenticate at this time.");
-            LogMessage("Could not connect to database to authorize user, %d", user);
+            LogMessage("Could not connect to database to authorize user '%N' (#%d)", client, user);
         }
     }else{
         //No failure, check the data.
@@ -136,22 +161,4 @@ public void DB_OnRemoveBanQuery(Database db, DBResultSet results, const char[] e
     if(db == INVALID_HANDLE || results == null) {
         LogError("DB_OnRemoveBanQuery returned error: %s", error);
     }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Methods
-////////////////////////////////////////////////////////////////////////////////
-
-void DBBan(const char[] identity, const char[] reason, int time, const char[] executor) {
-    char query[255];
-    Format(query, sizeof(query), "INSERT INTO bans"
-        ..."(steamid, reason, time, executor, ip_banned)"
-        ..."VALUES ('%s', '%s', %d, '%s', 0)",
-        identity,
-        reason,
-        time,
-        executor
-    );
-
-    g_db.Query(DB_OnBanQuery, query);
 }
