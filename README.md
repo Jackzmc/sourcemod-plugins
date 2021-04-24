@@ -188,13 +188,15 @@ Troll Modes: (updated 4/20/2021)
 18. **No Shove** – Prevents player from shoving at a % chance
 19. **Damage Boost** – Will make the player take 2x more damage than normal
 20. **Temp Quick Drain** – Will make a player’s temp health drain very quickly
-21. **Vomit Player** – Shortcut to [`sm_vomitplayer`](https://forums.alliedmods.net/showthread.php?p=1251446) which vomits the player. 
+21. **Vomit Player** – Instantly vomits the player
 22. **Vocalize Gag** - Prevents player from vocalizing entirely
 
 * **Convars:**
   * `sm_ftt_victims` - A comma separated list of troll targets. Unused while new version is being implemented
   * `sm_ftt_throw_interval` - For troll mode 'ThrowItAll' (#11), how often players will re-throw all their items. 0 to disable
-  * `sm_ftt_autopunish_mode` - (Not used, WIP) Sets the modes that auto punish will activate for. 1 -> Early crescendo activations
+  * `sm_ftt_autopunish_mode <#>` - (Not used, WIP) Sets the modes that auto punish will activate for. 1 -> Early crescendo activations
+  * `sm_ftt_autopunish_action <#>` - Which actions will autopunish activate? Add bits together. 0=None, 1=TankMagnet 2=SpecialMagnet 4=Swarm 8=VomitPlayer
+  * `sm_ftt_autopunish_expires <0...>` - How many minutes (in gameticks) until autopunish trolls are removed. 0 for never.
   * `sm_ftt_magnet_chance <0.0 - 1.0>` - % of the time that the magnet will work on a player."
   * `sm_ftt_shove_fail_chance <0.0 - 1.0>` - The % chance that a shove fails
 * **Commands:**
