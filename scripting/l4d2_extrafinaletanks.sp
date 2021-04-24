@@ -9,8 +9,6 @@
 #include <sdktools>
 #include <left4dhooks>
 
-//#include <sdkhooks>
-
 public ConVar hExtraChance, hExtraCount;
 
 public Plugin myinfo = 
@@ -50,6 +48,7 @@ static int extraTanksCount = 0;
 4 -> all extras spawned, waiting on death
 */
 public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
+	if(hExtraChance.FloatValue == 0.0 || extraTankStage == -1) return Plugin_Continue;
 	if(finaleType == 8 && extraTankStage <= 1) {
 		extraTankStage++;
 		return Plugin_Continue;
@@ -74,9 +73,15 @@ public Action Event_TankSpawn(Event event, const char[] name, bool dontBroadcast
 }
 public Action Event_TankKilled(Event event, const char[] name, bool dontBroadcast) {
 	if(extraTankStage == 4 && --extraTanksCount == 0) {
-		L4D2_ChangeFinaleStage(10, "extratankdeath");
+		L4D2_ForceNextStage();
 		extraTankStage = 0;
 	}
+}
+public void OnMapStart() {
+	char map[32];
+	GetCurrentMap(map, sizeof(map));
+	extraTankStage = StrEqual(map, "c14m2_lighthouse") ? -1 : 0;
+	extraTanksCount = 0;
 }
 
 #if defined DEBUG
