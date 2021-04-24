@@ -69,24 +69,25 @@ public void OnMapStart() {
 }
 
 public Action Command_MakeReservation(int client, int args) {
-	int isAdminOnline = 0, notConnected = 0, iMaxClients = MaxClients;
-	for (int iClient = 1; iClient <= iMaxClients; iClient++) {
-		if (IsClientConnected (iClient) && IsClientInGame (iClient)) {
-			AdminId admin = GetUserAdmin(iClient);
-			if (GetAdminImmunityLevel(admin) >= PluginCvarImmuneLevel.IntValue) {
-				isAdminOnline = 1;
-				break;
+	bool isAdminOnline, isServerEmpty = true;
+	if(client > 0) {
+		for (int i = 1; i <= MaxClients; i++) {
+			if (IsClientConnected(i) && IsClientInGame(i)) {
+				AdminId admin = GetUserAdmin(i);
+				if (admin != INVALID_ADMIN_ID && GetAdminImmunityLevel(admin) >= PluginCvarImmuneLevel.IntValue) {
+					isAdminOnline = true;
+					break;
+				}
+				if(isServerEmpty) isServerEmpty = false;
 			}
 		}
-		else notConnected++;
 	}
-	
+	//If there is no admins playing OR request is from server itself then reserve:
 	if(!isAdminOnline)
 	{
 		LogMessage("Received server reservation request.");
-		if(notConnected < iMaxClients)
-		{	
-			if(GetConVarInt(PluginCvarMode)==1)
+		if(!isServerEmpty) {	
+			if(GetConVarInt(PluginCvarMode) == 1)
 			{
 				doRestartMap = true;
 				ReplyToCommand(client, "Server will be freed from all players and reserved."); 
@@ -100,97 +101,77 @@ public Action Command_MakeReservation(int client, int args) {
 			PrintToChatAll(MESSAGE_FOR_PLAYERS_LINE4);
 			
 			CreateTimer(5.0, FreeTheServer);
-		}
-		else if(GetConVarInt(PluginCvarMode)==1)
-		{
+		} else if(GetConVarInt(PluginCvarMode) == 1) {
 			DisconnectFromMatchmaking();
 			ReloadMap();
 		}
 	}
 	else
 		ReplyToCommand(client, "Server reservation request denied - admin is online!");
-	
 	return Plugin_Handled;
 }
 
-public Action Command_CancelReservation(int client, int args) 
-{
+public Action Command_CancelReservation(int client, int args) {
 	CreateTimer(0.1, MakeServerPublic);
 }
 
-public Action FreeTheServer(Handle timer) 
-{
+public Action FreeTheServer(Handle timer) {
 	CallLobbyVote();
 	PassVote();
 	
-	if(GetConVarInt(PluginCvarMode)==1)
-	{
+	if(GetConVarInt(PluginCvarMode) == 1) {
 		DisconnectFromMatchmaking();
 	}
 }
 
-public Action MakeServerPublic(Handle timer) 
-{
+public Action MakeServerPublic(Handle timer) {
 	ConnectToMatchmaking();
 	
-	int notConnected = 0, iMaxClients = MaxClients;
-	for (int iClient = 1; iClient <= iMaxClients; iClient++)
+	int notConnected = 0;
+	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientConnected (iClient) && IsClientInGame (iClient))
+		if (IsClientConnected (i) && IsClientInGame (i))
 			break;
 		else
 			notConnected++;
 	}
 	
-	if(notConnected==iMaxClients)
+	if(notConnected == MaxClients)
 		ReloadMap();
 	
 	if(HibernationCvarValue != 0 && GetConVarInt(HibernationCvar) == 0)
 		SetConVarInt(HibernationCvar, 1);
 }
 
-public Action MapReloadCheck(Handle timer)
-{
-	if (isMapChange)
-		return;
-	
-	if(doRestartMap == true)
-	{
+public Action MapReloadCheck(Handle timer) {
+	if (!isMapChange && doRestartMap) {
 		doRestartMap = false;
 		ReloadMap();
 	}
 }
 
-void CallLobbyVote()
-{
-	for (int iClient = 1; iClient <= MaxClients; iClient++)
-	{
-		if (IsClientConnected (iClient) && IsClientInGame (iClient))
-		{
+void CallLobbyVote() {
+	for (int iClient = 1; iClient <= MaxClients; iClient++) {
+		if (IsClientConnected (iClient) && IsClientInGame (iClient)) {
 			FakeClientCommand (iClient, "callvote returntolobby");
 		}
 	}
 }
 
-void PassVote()
-{
-	for(int iClient = 1; iClient <= MaxClients; iClient++)
-	{
-		if (IsClientConnected (iClient) && IsClientInGame (iClient))
-		{
+void PassVote() {
+	for(int iClient = 1; iClient <= MaxClients; iClient++) {
+		if (IsClientConnected (iClient) && IsClientInGame (iClient)) {
 			FakeClientCommand(iClient, "Vote Yes");
 		}
 	}
 }
 
-void ReloadMap() 
-{
+void ReloadMap() {
 	GetCurrentMap(CurrentMapString, sizeof(CurrentMapString));
 	ServerCommand("map %s", CurrentMapString);
 }
 
-void DisconnectFromMatchmaking()
-{
+void DisconnectFromMatchmaking() {
 	GetConVarString(PluginCvarSearchKey, PluginSearchKeyString, sizeof(PluginSearchKeyString));
 	SetConVarInt(SteamGroupExclusiveCvar, 1);
 	SetConVarString(SearchKeyCvar, PluginSearchKeyString);
@@ -202,8 +183,7 @@ void DisconnectFromMatchmaking()
 		CreateTimer(GetConVarFloat(PluginCvarTimeout), MakeServerPublic);
 }
 
-void ConnectToMatchmaking()
-{
+void ConnectToMatchmaking() {
 	SetConVarInt(SteamGroupExclusiveCvar, 0);
 	SetConVarString(SearchKeyCvar, "");
 }
