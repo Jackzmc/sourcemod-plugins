@@ -10,6 +10,7 @@
 #include <sdkhooks>
 #include <left4dhooks>
 #include <jutils.inc>
+#include <sceneprocessor>
 #include "l4d_survivor_identity_fix.inc"
 
 static ArrayList LasersUsed;
@@ -307,6 +308,20 @@ public void OnMapStart() {
 	char output[2];
 	L4D2_GetVScriptOutput("Director.GetSurvivorSet()", output, sizeof(output));
 	isL4D1Survivors = StringToInt(output) == 1;
+}
+
+public void OnSceneStageChanged(int scene, SceneStages stage) {
+	if(stage == SceneStage_Started) {
+		char sceneFile[64];
+		GetSceneFile(scene, sceneFile, sizeof(sceneFile));
+		int activator = GetSceneInitiator(scene);
+		if(StrContains(sceneFile, "scenes/mechanic/dlc1_c6m1_initialmeeting") > -1 || StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting07.vcd")) {
+			CancelScene(scene);
+		}else if(StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting13.vcd") && activator == 0) {
+			PrintToChatAll("activator = %d", activator);
+			CancelScene(scene);
+		}
+	}
 }
 
 public Action Event_OnWeaponDrop(int client, int weapon) {
