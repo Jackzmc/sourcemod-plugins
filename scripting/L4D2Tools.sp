@@ -203,7 +203,7 @@ public Action Command_SetClientModel(int client, int args) {
 						pack.WriteCell(GetClientUserId(target));
 						pack.WriteCell(EntIndexToEntRef(weapon)); // Save last held weapon to switch back
 
-						CreateTimer(0.1, Timer_RequipWeapon, pack);
+						CreateTimer(0.2, Timer_RequipWeapon, pack);
 					}
 				}
 			}
@@ -304,8 +304,8 @@ public void OnClientDisconnect(int client) {
 public void OnMapStart() {
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
-	char output[4];
-	L4D2_GetVScriptOutput("GetSurvivorSet()", output, sizeof(output));
+	char output[2];
+	L4D2_GetVScriptOutput("Director.GetSurvivorSet()", output, sizeof(output));
 	isL4D1Survivors = StringToInt(output) == 1;
 }
 
