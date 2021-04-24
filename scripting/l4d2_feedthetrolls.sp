@@ -12,6 +12,7 @@
 #include "jutils.inc"
 #include <multicolors>
 #include <left4dhooks>
+#include <sceneprocessor>
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
@@ -93,6 +94,7 @@ public void OnMapEnd() {
 	UnhookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 }
 public void OnMapStart() {
+	lastButtonUser = -1;
 	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 	CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	PrecacheSound("player/footsteps/clown/concrete1.wav");
@@ -118,10 +120,17 @@ public Action Event_WeaponReload(int weapon) {
 	return Plugin_Continue;
 }
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
+	PrintToChatAll("func_button");
 	if(client > 0 && client <= MaxClients) {
 		lastButtonUser = client;
 	}
 	return Plugin_Continue;
+}
+public void Event_PanicEventCreate(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client) {
+		lastButtonUser = client;
+	}
 }
 public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	// =========================
@@ -334,11 +343,13 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 				strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
 				return Plugin_Changed;
 			}
-		}else if(HasTrollMode( entity, Troll_VocalizeGag)) {
-			if(StrContains(sample, "player\\survivor\\voice") > -1) {
-				return Plugin_Stop;
-			}
 		}
+	}
+	return Plugin_Continue;
+}
+public Action OnVocalizationProcess(int client, const char[] vocalize, int initiator) {
+	if(HasTrollMode(client, Troll_VocalizeGag)) {
+		return Plugin_Stop;
 	}
 	return Plugin_Continue;
 }
