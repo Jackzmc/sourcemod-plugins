@@ -94,7 +94,7 @@ enum L4D2Infected
 	L4D2Infected_Witch = 7,
 	L4D2Infected_Tank = 8
 };
-int g_iTrollUsers[MAXPLAYERS+1], g_iAttackerTarget[MAXPLAYERS+1], autoPunished = -1, autoPunishMode;
+int g_iTrollUsers[MAXPLAYERS+1], g_iAttackerTarget[MAXPLAYERS+1], autoPunished = -1, autoPunishMode, lastButtonUser;
 bool g_bPendingItemGive[MAXPLAYERS+1];
 
 
@@ -117,7 +117,7 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 		case Troll_SlowDrain: {}
 		case Troll_TempHealthQuickDrain: {}
 		case Troll_VomitPlayer: {
-			ClientCommand(client, "sm_vomitplayer #%d", GetClientUserId(victim));
+			L4D_CTerrorPlayer_OnVomitedUpon(victim, victim);
 		}
 		
 		case Troll_Reset: {
@@ -219,7 +219,7 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 			PrintToServer("Troll Mode #%d not implemented (%s)", mode, TROLL_MODES_NAMES[mode]);
 		}
 	}
-	if(HasTrollMode(client, mode)) {
+	if(HasTrollMode(victim, mode)) {
 		ShowActivity(client, "deactivated troll \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
 	}else{
 		ShowActivity(client, "activated troll \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
