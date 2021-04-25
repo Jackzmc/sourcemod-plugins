@@ -28,6 +28,7 @@ Useful things:
 * [l4d2_population_control](#l4d2_population_control)
 * [l4d2_extrafinaletanks](#l4d2_extrafinaletanks)
 * [globalbans](#globalbans)
+* [l4d2_rollback](#l4d2_rollback)
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
@@ -251,3 +252,16 @@ This plugin will store bans in a database and read from it on connect. This allo
 It will automatically intercept any ban that calls OnBanIdentity or OnBanClient (so sm_ban will work normally)
 * **Convars:**
   * `sm_hKickOnDBFailure <0/1>` - Should the plugin kick players if it cannot connect to the database?
+
+### l4d2_rollback
+An idea that you can either manually or have events (friendly fire, new player joining) trigger saving all the player's states. Then if say, a troll comes and kills you and/or incaps your team, you can just quick restore to exactly the point you were at with the same items, health, etc. 
+
+Currently **in development.**
+
+Currently auto triggers:
+1. On any recent friendly fire  (only triggers once per 100 game ticks)
+2. Any new player joins (only triggers once per 100 game ticks)
+
+* **Commands:**
+  * `sm_sstate` - Initiates a manual save of all player's states 
+  * `sm_rstate <player(s)>` - Restores the selected player's state. @all for all
