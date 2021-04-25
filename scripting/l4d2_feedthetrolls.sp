@@ -73,6 +73,7 @@ public void OnPluginStart() {
 
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_death", Event_PlayerDeath);
+	HookEvent("triggered_car_alarm", Event_CarAlarm);
 	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 
 	AutoExecConfig(true, "l4d2_feedthetrolls");
@@ -120,7 +121,6 @@ public Action Event_WeaponReload(int weapon) {
 	return Plugin_Continue;
 }
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
-	PrintToChatAll("func_button");
 	if(client > 0 && client <= MaxClients) {
 		lastButtonUser = client;
 	}
@@ -131,6 +131,14 @@ public void Event_PanicEventCreate(Event event, const char[] name, bool dontBroa
 	if(client) {
 		lastButtonUser = client;
 	}
+}
+public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client) {
+		PrintToChatAll("%N has alerted the horde!", client);
+	}
+	//Ignore car alarms for autopunish
+	lastButtonUser = -1;
 }
 public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	// =========================
@@ -320,9 +328,12 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
 	if(lastButtonUser > -1 && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
 		PrintToConsoleAll("CRESCENDO STARTED BY %N", lastButtonUser);
-		float distance = GetFarthestClientDistance();
-		if(distance > AUTOPUNISH_FLOW_MIN_DISTANCE) {
-			NotifyAllAdmins("Autopunishing player %N for activation of event far from team (%f away)", lastButtonUser, distance);
+		#if defined DEBUG
+		PrintToChatAll("CRESCENDO STARTED BY %N", lastButtonUser);
+		#endif
+		
+		if(IsPlayerFarDistance(lastButtonUser, AUTOPUNISH_FLOW_MIN_DISTANCE)) {
+			NotifyAllAdmins("Autopunishing player %N for activation of event far from team", lastButtonUser);
 			if(hAutoPunish.IntValue & 2 == 2) 
 				ApplyModeToClient(0, lastButtonUser, Troll_SpecialMagnet, TrollMod_None);
 			if(hAutoPunish.IntValue & 1 == 1) 
@@ -396,8 +407,10 @@ public Action Command_ResetUser(int client, int args) {
 		for (int i = 0; i < target_count; i++)
 		{
 			if(IsClientConnected(target_list[i]) && IsClientInGame(target_list[i]) && IsPlayerAlive(target_list[i])) {
-				ResetClient(target_list[i], true);
-				ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
+				if(g_iTrollUsers[target_list[i]] > 0) {
+					ResetClient(target_list[i], true);
+					ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
+				}
 			}
 		}
 	}
@@ -678,8 +691,7 @@ void ThrowAllItems(int victim) {
 		
 	}
 }
-
-float GetFarthestClientDistance() {
+bool IsPlayerFarDistance(int client, float distance) {
 	int farthestClient = -1, secondClient = -1;
 	float highestFlow, secondHighestFlow;
 	for(int i = 1; i <= MaxClients; i++) {
@@ -706,11 +718,9 @@ float GetFarthestClientDistance() {
 		}
 	}
 	float difference = highestFlow - secondHighestFlow;
-	#if defined DEBUG
 	PrintToConsoleAll("Flow Check | Player=%N Flow=%f Delta=%f", farthestClient, highestFlow, difference);
 	PrintToConsoleAll("Flow Check | Player2=%N Flow2=%f", secondClient, secondHighestFlow);
-	#endif
-	return difference;
+	return client == farthestClient && difference > distance;
 }
 
 int GetAutoPunishMode() {
