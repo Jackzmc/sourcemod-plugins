@@ -39,9 +39,13 @@ enum struct PlayerState {
 
 	float position[3];
 	float angles[3];
+
+	char recordType[32];
+	int timeRecorded;
 }
 
 static PlayerState[MAXPLAYERS+1] playerStates;
+
 static bool isHealing[MAXPLAYERS+1]; //Is player healing (self, or other)
 static ConVar hMaxIncapCount, hDecayRate;
 
@@ -73,6 +77,7 @@ public void OnPluginStart() {
 	HookEvent("player_hurt", Event_PlayerHurt);
 
 	RegAdminCmd("sm_sstate", Command_SaveGlobalState, ADMFLAG_ROOT, "Saves all players state");
+	RegAdminCmd("sm_istate", Command_ViewStateInfo, ADMFLAG_ROOT, "Views the current state info");
 	RegAdminCmd("sm_rstate", Command_RestoreState, ADMFLAG_ROOT, "Restores a certain player's state");
 }
 
@@ -81,8 +86,19 @@ public void OnPluginStart() {
 // /////////////////////////////////////////////////////////////////////////////
 
 public Action Command_SaveGlobalState(int client, int args) {
-	RecordGlobalState();
-	ReplyToCommand(client, "Saved global state.");
+	RecordGlobalState("MANUAL");
+}
+public Action Command_ViewStateInfo(int client, int args) {
+	ReplyToCommand(client, "---== Recorded Player States ==---");
+	int index = 0;
+	int time = GetTime();
+
+	for(int i = 1; i <= MaxClients; i++) {
+		if(playerStates[i].timeRecorded > 0) {
+			int minutes = RoundToNearest((time - playerStates[i].timeRecorded) / 1000.0 / 60.0);
+			ReplyToCommand(client, "%d. %16.16N - %20s - %-3d min. ago", ++index, i, playerStates[i].recordType, minutes);
+		}
+	}
 }
 public Action Command_RestoreState(int client, int args) {
 	if(args < 1) {
@@ -124,11 +140,14 @@ public Action Command_RestoreState(int client, int args) {
 // /////////////////////////////////////////////////////////////////////////////
 
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
-	float time = GetGameTime();
-	if(time - lastSpawnTime >= LAST_PLAYER_JOIN_THRESHOLD) {
-		RecordGlobalState();
-		PrintToConsoleAll("[Rollback] Saving global state.");
-		lastSpawnTime = time;
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	//Ignore admins
+	if(!IsFakeClient(client) && GetClientTeam(client) == 2 && GetUserAdmin(client) == INVALID_ADMIN_ID) {
+		float time = GetGameTime();
+		if(time - lastSpawnTime >= LAST_PLAYER_JOIN_THRESHOLD) {
+			RecordGlobalState("JOIN");
+			lastSpawnTime = time;
+		}
 	}
 }
 
@@ -151,13 +170,11 @@ public Action Event_PlayerHurt(Event event, const char[] name, bool dontBroadcas
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		int attackerID = event.GetInt("attacker");
 		int damage = event.GetInt("dmg_health");
-		PrintToChatAll("PLAYER_HURT | V %N | A #%d | DMG %d", client, attackerID, damage);
 		if(client && GetClientTeam(client) == 2 && attackerID > 0 && damage > 0) {
 			int attacker = GetClientOfUserId(attackerID);
 			if(GetClientTeam(attacker) == 2) {
 				lastDamageTime = GetGameTime();
-				RecordGlobalState();
-				PrintToConsoleAll("[Rollback] Saving global state due to FF damage");
+				RecordGlobalState("FRIENDLY_FIRE");
 			}
 		}
 
@@ -176,7 +193,7 @@ public Action Event_HealStop(Event event, const char[] name, bool dontBroadcast)
 // /////////////////////////////////////////////////////////////////////////////
 // METHODS
 // /////////////////////////////////////////////////////////////////////////////
-void RecordGlobalState() {
+void RecordGlobalState(const char[] type) {
 	char item[32];
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
@@ -188,13 +205,15 @@ void RecordGlobalState() {
 
 			playerStates[i].permHealth = GetClientHealth(i);
 			playerStates[i].tempHealth = GetClientHealthBuffer(i);
-			
 
 			GetClientAbsOrigin(i, playerStates[i].position);
 			GetClientAbsAngles(i, playerStates[i].angles);
 
+			strcopy(playerStates[i].recordType, 32, type);
+			playerStates[i].timeRecorded = GetTime();
 		}
 	}
+	PrintToConsoleAll("[Rollback] Recorded all player states for: %s", type);
 }
 
 void RestoreState(int client) {
