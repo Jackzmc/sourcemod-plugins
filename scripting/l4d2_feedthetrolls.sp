@@ -66,10 +66,12 @@ public void OnPluginStart() {
 	hMagnetChance 	 	= CreateConVar("sm_ftt_magnet_chance", "1.0", "% of the time that the magnet will work on a player.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.5", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
 
+	//TODO: Add punish last button presser/crescendo starter
 	RegAdminCmd("sm_ftl", Command_ListTheTrolls, ADMFLAG_KICK, "Lists all the trolls currently ingame.");
 	RegAdminCmd("sm_ftm", Command_ListModes, ADMFLAG_KICK, "Lists all the troll modes and their description");
 	RegAdminCmd("sm_ftr", Command_ResetUser, ADMFLAG_KICK, "Resets user of any troll effects.");
 	RegAdminCmd("sm_fta", Command_ApplyUser, ADMFLAG_KICK, "Apply a troll mod to a player, or shows menu if no parameters.");
+	RegAdminCmd("sm_ftc", Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
 
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_death", Event_PlayerDeath);
@@ -332,20 +334,11 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 		PrintToChatAll("CRESCENDO STARTED BY %N", lastButtonUser);
 		#endif
 		
+		lastCrescendoUser = lastButtonUser;
 		if(IsPlayerFarDistance(lastButtonUser, AUTOPUNISH_FLOW_MIN_DISTANCE)) {
 			NotifyAllAdmins("Autopunishing player %N for activation of event far from team", lastButtonUser);
-			if(hAutoPunish.IntValue & 2 == 2) 
-				ApplyModeToClient(0, lastButtonUser, Troll_SpecialMagnet, TrollMod_None);
-			if(hAutoPunish.IntValue & 1 == 1) 
-				ApplyModeToClient(0, lastButtonUser, Troll_TankMagnet, TrollMod_None);
-			if(hAutoPunish.IntValue & 8 == 8)
-				ApplyModeToClient(0, lastButtonUser, Troll_VomitPlayer, TrollMod_None);
-			else if(hAutoPunish.IntValue & 4 == 4) 
-				ApplyModeToClient(0, lastButtonUser, Troll_Swarm, TrollMod_None);
-
-			if(hAutoPunishExpire.IntValue > 0) {
-				CreateTimer(60.0 * hAutoPunishExpire.FloatValue, Timer_ResetAutoPunish, GetClientOfUserId(lastButtonUser));
-			}
+			LogAction(0, "activated autopunish for crescendo activator %N (auto)", lastButtonUser);
+			ActivateAutoPunish(lastButtonUser);
 		}
 		lastButtonUser = -1;
 	}else if(numClients > 0 && entity > 0 && entity <= MaxClients) {
@@ -381,6 +374,17 @@ public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const cha
 // COMMANDS
 ///////////////////////////////////////////////////////////////////////////////
 
+public Action Command_FeedTheCrescendoTroll(int client, int args) {
+	if(lastCrescendoUser > -1) {
+		ActivateAutoPunish(lastCrescendoUser);
+		ReplyToCommand(client, "Activated auto punish on %N", lastCrescendoUser);
+		ShowActivity(client, "activated autopunish for crescendo activator %N",lastCrescendoUser);
+	}else{
+		ReplyToCommand(client, "No player could be found to autopunish.");
+	}
+	return Plugin_Handled;
+}
+
 public Action Command_ResetUser(int client, int args) {
 	if(args < 1) {
 		ReplyToCommand(client, "Usage: sm_ftr <user(s)>");
@@ -406,11 +410,9 @@ public Action Command_ResetUser(int client, int args) {
 		}
 		for (int i = 0; i < target_count; i++)
 		{
-			if(IsClientConnected(target_list[i]) && IsClientInGame(target_list[i]) && IsPlayerAlive(target_list[i])) {
-				if(g_iTrollUsers[target_list[i]] > 0) {
-					ResetClient(target_list[i], true);
-					ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
-				}
+			if(g_iTrollUsers[target_list[i]] > 0) {
+				ResetClient(target_list[i], true);
+				ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
 			}
 		}
 	}
