@@ -94,7 +94,7 @@ enum L4D2Infected
 	L4D2Infected_Witch = 7,
 	L4D2Infected_Tank = 8
 };
-int g_iTrollUsers[MAXPLAYERS+1], g_iAttackerTarget[MAXPLAYERS+1], autoPunished = -1, autoPunishMode, lastButtonUser;
+int g_iTrollUsers[MAXPLAYERS+1], g_iAttackerTarget[MAXPLAYERS+1], autoPunished = -1, autoPunishMode, lastButtonUser, lastCrescendoUser;
 bool g_bPendingItemGive[MAXPLAYERS+1];
 
 
@@ -253,4 +253,19 @@ void ResetClient(int victim, bool wipe = true) {
 	if(wpn > -1)
 		SDKUnhook(wpn, SDKHook_Reload, Event_WeaponReload);
 	SDKUnhook(victim, SDKHook_OnTakeDamage, Event_TakeDamage);
+}
+
+void ActivateAutoPunish(int client) {
+	if(hAutoPunish.IntValue & 2 == 2) 
+		ApplyModeToClient(0, lastButtonUser, Troll_SpecialMagnet, TrollMod_None);
+	if(hAutoPunish.IntValue & 1 == 1) 
+		ApplyModeToClient(0, lastButtonUser, Troll_TankMagnet, TrollMod_None);
+	if(hAutoPunish.IntValue & 8 == 8)
+		ApplyModeToClient(0, lastButtonUser, Troll_VomitPlayer, TrollMod_None);
+	else if(hAutoPunish.IntValue & 4 == 4) 
+		ApplyModeToClient(0, lastButtonUser, Troll_Swarm, TrollMod_None);
+
+	if(hAutoPunishExpire.IntValue > 0) {
+		CreateTimer(60.0 * hAutoPunishExpire.FloatValue, Timer_ResetAutoPunish, GetClientOfUserId(lastButtonUser));
+	}
 }
