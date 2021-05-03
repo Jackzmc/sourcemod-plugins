@@ -230,7 +230,7 @@ public void OnClientCookiesCached(int client) {
 	if(strlen(modelPref) > 0) {
 		int type;
 		if(StringToIntEx(modelPref, type) > 0) {
-			PrintToServer(">>> %N has cookie for: %s", client, survivor_models[type - 1]);
+			PrintToServer(">>> %N has cookie for: %s", client, survivor_models[type - 1][17]);
 			strcopy(g_Models[client], 64, survivor_models[type - 1]);
 			g_iPendingCookieModel[client] = type;
 		}
@@ -264,7 +264,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	//Switch players to L4D2 right before death.
 	if(StrEqual(currentMap, "c6m3_port") || StrEqual(currentMap, "c6m1_riverbank")) {
 		int client = GetClientOfUserId(event.GetInt("userid"));
-		if(client && GetClientTeam(client) == 2) {
+		if(client > 0 && GetClientTeam(client) == 2) {
 			SwapL4D1Survivor(client);
 		}
 	}
@@ -312,7 +312,10 @@ void RevertL4D1Survivor(int client) {
 }
 //Either use preferred model OR find the least-used.
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
-	int client = GetClientOfUserId(event.GetInt("userid"));
+	RequestFrame(Frame_CheckClient, event.GetInt("userid"));
+}
+public void Frame_CheckClient(int userid) {
+	int client = GetClientOfUserId(userid);
 	if(client > 0 && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
 		//todo: hCookiesEnabled.IntVal
 		if(++survivors > 4 && g_iPendingCookieModel[client] > 0) {
@@ -332,7 +335,6 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 			//RequestFrame(Frame_SetPlayerToLeastUsedModel, client);
 		}
 	}
-	
 }
 public void Frame_SetPlayerModel(int client) {
 	SetEntityModel(client, survivor_models[g_iPendingCookieModel[client] - 1]);
