@@ -98,6 +98,8 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
         executor = "CONSOLE";
     }
 
+    if(GetUserAdmin(client) != INVALID_ADMIN_ID) return Plugin_Stop; 
+
     GetClientAuthId(client, AuthId_Steam2, identity, sizeof(identity));
     GetClientIP(client, ip, sizeof(ip));
 
@@ -113,6 +115,7 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
     );
 
     g_db.Query(DB_OnBanQuery, query);
+    return Plugin_Continue;
 }
 
 public Action OnRemoveBan(const char[] identity, int flags, const char[] command, any source) {
@@ -141,7 +144,8 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
             results.FetchRow();
             char reason[128];
             DBResult result;
-            results.FetchString(1, reason, sizeof(reason), result);
+            results.FetchString(2, reason, sizeof(reason), result);
+            //TODO: Implement temp bans
             if(result == DBVal_Data)
                 KickClient(client, "You have been banned: %s", reason);
             else
