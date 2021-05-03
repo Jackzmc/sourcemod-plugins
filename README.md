@@ -29,6 +29,7 @@ Useful things:
 * [l4d2_extrafinaletanks](#l4d2_extrafinaletanks)
 * [globalbans](#globalbans)
 * [l4d2_rollback](#l4d2_rollback)
+* [l4d2_autorestart](#l4d2_autorestart)
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
@@ -265,4 +266,8 @@ Currently auto triggers:
 
 * **Commands:**
   * `sm_sstate` - Initiates a manual save of all player's states 
-  * `sm_rstate <player(s)>` - Restores the selected player's state. @all for all
+  * `sm_rstate <player(s)>` - Restores the selected player's state. @all for all 
+
+### l4d2_autorestart
+Plugin that automatically restarts server when the server is NOT hibernating, with bots around and no players.
+This fixes an issue with (shitty) custom maps that force sb_all_bot_game to 1 and disable hibernation
