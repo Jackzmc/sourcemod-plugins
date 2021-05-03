@@ -66,7 +66,39 @@ stock void ShowDelayedHintToAll(const char[] format, any ...) {
 	}
 	hintInt++;
 }
-stock int GetSurvivorId(const char str[16]) {
+
+stock int GetSurvivorId(const char str[16], bool isL4D1 = false) {
+	int possibleNumber = StringToInt(str, 10);
+	if(strlen(str) == 1) {
+		if(possibleNumber <= 7 && possibleNumber >= 0) {
+			return possibleNumber;
+		}
+	}else if(possibleNumber == 0) {
+		/*
+		L4D2:
+			0 - Nick, 4 - Bill, 5 - Zoey, 6 - Francis, 7 - Louis
+		L4D1:
+			0 - Bill, 1 - Zoey, 2 - Louis, 3 - Francis
+		*/
+		if(StrEqual(str, "nick", false)) return 0;
+		else if(StrEqual(str, "rochelle", false)) return 1;
+		else if(StrEqual(str, "coach", false)) return 2;
+		else if(StrEqual(str, "ellis", false)) return 3;
+		if(isL4D1) {
+			if(StrEqual(str, "bill", false)) return 0;
+			else if(StrEqual(str, "zoey", false)) return 1;
+			else if(StrEqual(str, "francis", false)) return 3;
+			else if(StrEqual(str, "louis", false)) return 2;
+		}else{
+			if(StrEqual(str, "bill", false)) return 4;
+			else if(StrEqual(str, "zoey", false)) return 5;
+			else if(StrEqual(str, "francis", false)) return 6;
+			else if(StrEqual(str, "louis", false)) return 7;
+		}
+	}
+	return -1;
+}
+stock int GetL4D2SurvivorId(const char str[16]) {
 	int possibleNumber = StringToInt(str, 10);
 	if(strlen(str) == 1) {
 		if(possibleNumber <= 7 && possibleNumber >= 0) {
@@ -77,10 +109,10 @@ stock int GetSurvivorId(const char str[16]) {
 		else if(StrEqual(str, "rochelle", false)) return 1;
 		else if(StrEqual(str, "coach", false)) return 2;
 		else if(StrEqual(str, "ellis", false)) return 3;
-		else if(StrEqual(str, "bill", false)) return 4;
+		else if(StrEqual(str, "bill", false)) return 0;
 		else if(StrEqual(str, "zoey", false)) return 5;
-		else if(StrEqual(str, "francis", false)) return 6;
-		else if(StrEqual(str, "louis", false)) return 7;
+		else if(StrEqual(str, "francis", false)) return 3;
+		else if(StrEqual(str, "louis", false)) return 2;
 	}
 	return -1;
 }

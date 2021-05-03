@@ -94,8 +94,10 @@ enum L4D2Infected
 	L4D2Infected_Witch = 7,
 	L4D2Infected_Tank = 8
 };
-int g_iTrollUsers[MAXPLAYERS+1], g_iAttackerTarget[MAXPLAYERS+1], autoPunished = -1, autoPunishMode, lastButtonUser, lastCrescendoUser;
-bool g_bPendingItemGive[MAXPLAYERS+1];
+int g_iTrollUsers[MAXPLAYERS+1], g_iAttackerTarget[MAXPLAYERS+1];
+int autoPunished = -1, autoPunishMode, lastButtonUser, lastCrescendoUser;
+bool g_bPendingItemGive[MAXPLAYERS+1], g_PendingBanTroll[MAXPLAYERS+1];
+GlobalForward g_PlayerMarkedForward;
 
 
 //Applies the selected trollMode to the victim.
@@ -148,9 +150,6 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 			TurnOffTrollMode(victim, Troll_UziRules);
 			TurnOffTrollMode(victim, Troll_PrimaryDisable);
 			SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
-		}
-		case Troll_DamageBoost: {
-			SDKHook(victim, SDKHook_OnTakeDamage, Event_TakeDamage);
 		}
 		case Troll_Clumsy: {
 			//TODO: Implement modifier code
@@ -222,7 +221,10 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 	if(HasTrollMode(victim, mode)) {
 		ShowActivity(client, "deactivated troll \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
 	}else{
-		ShowActivity(client, "activated troll \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
+		if(modifier == TrollMod_Repeat)
+			ShowActivity(client, "activated troll \"%s\" on repeat for %N. ", TROLL_MODES_NAMES[mode], victim);
+		else
+			ShowActivity(client, "activated troll \"%s\" for %N. ", TROLL_MODES_NAMES[mode], victim);
 	}
 	//If instant fire mod not provided (aka instead of no modifiers which equals both) OR repeat turned on, set bit:
 	if(modifier == TrollMod_Repeat || modifier == TrollMod_None) {
@@ -252,7 +254,6 @@ void ResetClient(int victim, bool wipe = true) {
 	int wpn = GetClientWeaponEntIndex(victim, 0);
 	if(wpn > -1)
 		SDKUnhook(wpn, SDKHook_Reload, Event_WeaponReload);
-	SDKUnhook(victim, SDKHook_OnTakeDamage, Event_TakeDamage);
 }
 
 void ActivateAutoPunish(int client) {
@@ -267,5 +268,28 @@ void ActivateAutoPunish(int client) {
 
 	if(hAutoPunishExpire.IntValue > 0) {
 		CreateTimer(60.0 * hAutoPunishExpire.FloatValue, Timer_ResetAutoPunish, GetClientOfUserId(lastButtonUser));
+	}
+}
+
+bool ToggleMarkPlayer(int client, int target) {
+	if(g_PendingBanTroll[target]) {
+		g_PendingBanTroll[target] = false;
+		ShowActivity(client, "unmarked %N as troll", target);
+		return true;
+	}else{
+		AdminId admin_client = GetUserAdmin(client);
+		AdminId admin_target = GetUserAdmin(target);
+		if(admin_client != INVALID_ADMIN_ID && admin_target == INVALID_ADMIN_ID ) {
+			Call_StartForward(g_PlayerMarkedForward);
+			Call_PushCell(client);
+			Call_PushCell(target);
+			Call_Finish();
+			g_PendingBanTroll[target] = true;
+			ShowActivity(client, "marked %N as troll", target);
+			return true;
+		}else{
+			ReplyToCommand(client, "cannot mark %N as troll as they are an admin.", target);
+			return false;
+		}
 	}
 }
