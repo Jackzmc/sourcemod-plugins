@@ -16,8 +16,6 @@
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
-//TODO: Detect if player activates crescendo from far away
-//Possibly cancel event, make poll for other users. if no one responds, activate troll mode/swarm or kick/ban depending on FF amount?
 
 
 public Plugin myinfo = 
@@ -59,6 +57,8 @@ public void OnPluginStart() {
 	LoadTranslations("common.phrases");
 	g_iAmmoTable = FindSendPropInfo("CTerrorPlayer", "m_iAmmo");
 
+	g_PlayerMarkedForward = new GlobalForward("FTT_OnClientMarked", ET_Ignore, Param_Cell, Param_Cell);
+
 	hThrowItemInterval = CreateConVar("sm_ftt_throw_interval", "30", "The interval in seconds to throw items. 0 to disable", FCVAR_NONE, true, 0.0);
 	hThrowItemInterval.AddChangeHook(Change_ThrowInterval);
 	hAutoPunish 		= CreateConVar("sm_ftt_autopunish_action", "0", "Setup automatic punishment of players. Add bits together\n0=Disabled, 1=Tank magnet, 2=Special magnet, 4=Swarm, 8=InstantVomit", FCVAR_NONE, true, 0.0);
@@ -71,6 +71,8 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_ftm", Command_ListModes, ADMFLAG_KICK, "Lists all the troll modes and their description");
 	RegAdminCmd("sm_ftr", Command_ResetUser, ADMFLAG_KICK, "Resets user of any troll effects.");
 	RegAdminCmd("sm_fta", Command_ApplyUser, ADMFLAG_KICK, "Apply a troll mod to a player, or shows menu if no parameters.");
+	RegAdminCmd("sm_ftt", Command_FeedTheTrollMenu, ADMFLAG_KICK, "Opens a list that shows all the commands");
+	RegAdminCmd("sm_mark", Command_MarkPendingTroll, ADMFLAG_KICK, "Marks a player as to be banned on disconnect");
 	RegAdminCmd("sm_ftc", Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
 
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
@@ -103,8 +105,17 @@ public void OnMapStart() {
 	PrecacheSound("player/footsteps/clown/concrete1.wav");
 	//CreateTimer(30.0, Timer_AutoPunishCheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
+public void OnClientPutInServer(int client) {
+	g_PendingBanTroll[client] = false;
+	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
+}
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(g_PendingBanTroll[client]) {
+		g_PendingBanTroll[client] = false;
+		if(!IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID)
+			BanClient(client, 0, BANFLAG_AUTO, "TrollMarked", "Banned", "ftt", 0);
+	}
 	g_iTrollUsers[client] = 0;
 	g_iAttackerTarget[client] = 0;
 }
@@ -142,6 +153,8 @@ public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
 	//Ignore car alarms for autopunish
 	lastButtonUser = -1;
 }
+//TODO: Add cvar to turn on/off targetting incapped
+//TODO: Auto Special Maagnet on Anti-rush
 public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	// =========================
 	// OVERRIDE VICTIM
@@ -322,10 +335,20 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	}
 	return Plugin_Continue;
 }
+
 public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
-	if(attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker) && HasTrollMode(attacker, Troll_DamageBoost)) {
-		damage * 2;
+	//Stop FF from marked:
+	if(attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
+		if(g_PendingBanTroll[attacker] && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
+			
+			return Plugin_Stop;
+		}
+		if(HasTrollMode(attacker, Troll_DamageBoost)) {
+			damage * 2;
+			return Plugin_Changed;
+		}
 	}
+	return Plugin_Continue;
 }
 public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
 	if(lastButtonUser > -1 && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
@@ -337,7 +360,7 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 		lastCrescendoUser = lastButtonUser;
 		if(IsPlayerFarDistance(lastButtonUser, AUTOPUNISH_FLOW_MIN_DISTANCE)) {
 			NotifyAllAdmins("Autopunishing player %N for activation of event far from team", lastButtonUser);
-			LogAction(0, "activated autopunish for crescendo activator %N (auto)", lastButtonUser);
+			ShowActivity(0, "activated autopunish for crescendo activator %N (auto)", lastButtonUser);
 			ActivateAutoPunish(lastButtonUser);
 		}
 		lastButtonUser = -1;
@@ -476,7 +499,7 @@ public Action Command_ListModes(int client, int args) {
 public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsPlayerAlive(i) && g_iTrollUsers[i] > 0) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && g_iTrollUsers[i] > 0) {
 			int modes = g_iTrollUsers[i], modeCount = 0;
 			char modeListArr[TROLL_MODE_COUNT][32];
 			for(int mode = 1; mode < TROLL_MODE_COUNT; mode++) {
@@ -498,9 +521,78 @@ public Action Command_ListTheTrolls(int client, int args) {
 	return Plugin_Handled;
 }
 
+public Action Command_MarkPendingTroll(int client, int args) {
+	if(args == 0) {
+		Menu menu = new Menu(ChooseMarkedTroll);
+		menu.SetTitle("Choose a troll to mark");
+		char userid[8], display[16];
+		for(int i = 1; i < MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+				AdminId admin = GetUserAdmin(i);
+				if(admin == INVALID_ADMIN_ID) {
+					Format(userid, sizeof(userid), "%d", GetClientUserId(i));
+					GetClientName(i, display, sizeof(display));
+					menu.AddItem(userid, display);
+				}else{
+					ReplyToCommand(client, "%N is an admin cannot be marked.", i);
+				}
+			}
+		}
+		menu.ExitButton = true;
+		menu.Display(client, 0);
+	} else {
+		char arg1[32];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		char target_name[MAX_TARGET_LENGTH];
+		int target_list[MAXPLAYERS], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			1,
+			COMMAND_FILTER_ALIVE, /* Only allow alive players */
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		int target = target_list[0];
+		if(IsClientConnected(target) && IsClientInGame(target) && GetClientTeam(target) == 2) {
+			ToggleMarkPlayer(client, target);
+		}else{
+			ReplyToCommand(client, "Player does not exist or is not a survivor.");
+		}
+	}
+	return Plugin_Handled;
+}
+
+public Action Command_FeedTheTrollMenu(int client, int args) {
+	ReplyToCommand(client, "sm_ftl - Lists all the active trolls on players");
+	ReplyToCommand(client, "sm_ftm - Lists all available troll modes & descriptions");
+	ReplyToCommand(client, "sm_ftr - Resets target users' of their trolls");
+	ReplyToCommand(client, "sm_fta - Applies a troll mode on targets");
+	ReplyToCommand(client, "sm_ftt - Opens this menu");
+	ReplyToCommand(client, "sm_ftc - Will apply a punishment to last crescendo activator");
+	ReplyToCommand(client, "sm_mark - Marks the user to be banned on disconnect, prevents their FF.");
+	return Plugin_Handled;
+}
 ///////////////////////////////////////////////////////////////////////////////
 // MENU HANDLER
 ///////////////////////////////////////////////////////////////////////////////
+
+public int ChooseMarkedTroll(Menu menu, MenuAction action, int activator, int param2) {
+	if (action == MenuAction_Select) {
+		char info[16];
+		menu.GetItem(param2, info, sizeof(info));
+		int target = GetClientOfUserId(StringToInt(info));
+		ToggleMarkPlayer(activator, target);
+	} else if (action == MenuAction_End)
+		delete menu;
+}
 
 public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int param2) {
 	/* If an option was selected, tell the client about the item. */
@@ -662,6 +754,10 @@ public Action Timer_ResetAutoPunish(Handle timer, int user) {
 			TurnOffTrollMode(client, Troll_TankMagnet);
 	}
 }
+
+// /////////////////////////////////////////////////////////////////////////////
+// NATIVES & FORWARDS
+// /////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 // METHODS
