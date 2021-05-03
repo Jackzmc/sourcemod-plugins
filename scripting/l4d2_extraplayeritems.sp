@@ -1,16 +1,17 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define DEBUG
+//#define DEBUG 0
 
 #define PLUGIN_VERSION "1.0"
 #define MAX_ENTITY_LIMIT 2000
 
 #include <sourcemod>
 #include <sdktools>
+#include <sdkhooks>
 #include <left4dhooks>
 #include <jutils>
-//#include <sdkhooks>
+//TODO: finale_start
 
 public Plugin myinfo = 
 {
@@ -23,6 +24,7 @@ public Plugin myinfo =
 
 static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers;
 static int extraKitsAmount, extraKitsStarted, isFailureRound, abmExtraCount;
+static int isBeingGivenKit[MAXPLAYERS+1];
 static bool isCheckpointReached, isLateLoaded, firstGiven;
 
 /*
@@ -171,6 +173,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	if(GetClientTeam(client) == 2) {
 		CreateTimer(0.5, Timer_GiveClientKit, user);
 	}
+	SDKHook(client, SDKHook_WeaponEquip, Event_Pickup);
 }
 
 
@@ -186,6 +189,11 @@ public void OnMapStart() {
 	}else if(!L4D_IsFirstMapInScenario()) {
 		//Re-set value incase it reset.
 		//hMinPlayers.IntValue = abmExtraCount;
+	}else if(L4D_IsMissionFinalMap()) {
+		//Add extra kits for finales
+		int extraKits = GetSurvivorsCount() - 4;
+		if(extraKits > 0) 
+			extraKitsAmount = extraKits;
 	}
 	if(!isLateLoaded) {
 		CreateTimer(30.0, Timer_AddExtraCounts);
@@ -200,15 +208,12 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 		isCheckpointReached = true;
 		int extraPlayers = GetSurvivorsCount() - 4;
 		if(extraPlayers > 0) {
-			#if defined DEBUG
-			PrintToConsoleAll("CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
-			#endif
+			
 			float averageTeamHP = GetAverageHP();
-			if(averageTeamHP <= 30) extraPlayers += extraPlayers; //if perm. health < 30, give an extra 4 on top of the extra
-			else if(averageTeamHP <= 50) ++extraPlayers; //if the team's average health is less than 50 (permament) then give another
+			if(averageTeamHP <= 30.0) extraPlayers += extraPlayers; //if perm. health < 30, give an extra 4 on top of the extra
+			else if(averageTeamHP <= 50.0) ++extraPlayers; //if the team's average health is less than 50 (permament) then give another
 			//Chance to get 1-2 extra kits (might need to be nerfed or restricted to > 50 HP)
-			if(GetRandomFloat() < 0.5) ++extraPlayers;
-			if(GetRandomFloat() < 0.2) ++extraPlayers;
+			if(GetRandomFloat() < 0.3) ++extraPlayers;
 
 
 			//If hAddExtraKits TRUE: Append to previous, FALSE: Overwrite
@@ -218,11 +223,10 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 				extraKitsAmount = extraPlayers;
 				
 			extraKitsStarted = extraKitsAmount;
+			PrintToConsoleAll("CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
 			PrintToServer(">>> Player entered saferoom. An extra %d kits will be provided", extraKitsAmount);
 		}
-    }else if(isCheckpointReached) {
-		//TODO: Auto give instead on spawn?
-	}
+    }
 }
 public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	if(!isFailureRound) isFailureRound = true;
@@ -238,6 +242,25 @@ public Action Event_MapTransition(Event event, const char[] name, bool dontBroad
 	abmExtraCount = GetRealSurvivorsCount();
 }
 
+public Action Event_Pickup(int client, int weapon) {
+	if(extraKitsAmount > 0) {
+		char name[32];
+		GetEntityClassname(weapon, name, sizeof(name));
+		if(StrEqual(name, "weapon_first_aid_kit", true)) {
+			if(isBeingGivenKit[client]) {
+				isBeingGivenKit[client] = false;
+				return Plugin_Continue;
+			}else{
+				isBeingGivenKit[client] = true;
+				//FIXME: Runs errors on map transitionining
+				UseExtraKit(client);
+				return Plugin_Stop;
+			}
+		}
+		
+	}
+	return Plugin_Continue;
+}
 
 public Action Event_HealFinished(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
