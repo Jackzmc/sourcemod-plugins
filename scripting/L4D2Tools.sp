@@ -40,8 +40,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
-	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2) {
-		SetFailState("This plugin is for L4D/L4D2 only.");	
+	if(g_Game != Engine_Left4Dead2) {
+		SetFailState("This plugin is for L4D2 only.");	
 	}
 	LoadTranslations("common.phrases");
 
@@ -157,12 +157,14 @@ public Action Command_SetClientModel(int client, int args) {
 		GetCmdArg(3, arg3, sizeof(arg3));
 
 		char modelPath[64];
-		int modelID = GetSurvivorId(arg2);
+		int modelID = GetSurvivorId(arg2, false);
 		if(modelID == -1) {
 			ReplyToCommand(client, "Invalid survivor type entered. Case-sensitive, full name required.");
 			return Plugin_Handled;
 		}
 		GetSurvivorModel(modelID, modelPath, sizeof(modelPath));
+		//Convert the l4d1 survivors to proper l4d1 ID if game is l4d1
+		if(isL4D1Survivors) modelID = GetSurvivorId(arg2, true);
 
 		char target_name[MAX_TARGET_LENGTH];
 		int target_list[MAXPLAYERS], target_count;
@@ -188,7 +190,6 @@ public Action Command_SetClientModel(int client, int args) {
 			if(IsClientConnected(target) && IsClientInGame(target) && IsPlayerAlive(target)) {
 				int team = GetClientTeam(target_list[i]);
 				if(team == 2 || team == 4) {
-					modelID = isL4D1Survivors ? modelID - 4 : modelID;
 					SetEntProp(target, Prop_Send, "m_survivorCharacter", modelID);
 					SetEntityModel(target, modelPath);
 					if (IsFakeClient(target)) {
