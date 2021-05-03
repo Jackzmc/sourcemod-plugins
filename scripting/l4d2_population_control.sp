@@ -26,8 +26,13 @@ static ConVar hPercentWorker;
 static ConVar hPercentRiot;
 static ConVar hPercentJimmy;
 static ConVar hPercentFallen;
+static ConVar hTotalZombies;
+static ConVar hZCommonLimit;
 
 static bool IsDoneLoading;
+
+static int iCurrentCommons;
+static int commonLimit;
 
 #define COMMON_MODELS_COUNT 6
 static char INFECTED_MODELS[COMMON_MODELS_COUNT][] = {
@@ -66,6 +71,13 @@ public void OnPluginStart() {
 	hPercentWorker = CreateConVar("l4d2_population_worker", "0.0", "The % chance that a common spawns as a worker zombie.\n0.0 = OFF, 1.0 = ALWAYS", FCVAR_NONE, true, 0.0, true, 1.0);
 	hPercentRiot   = CreateConVar("l4d2_population_riot", "0.0", "The % chance that a common spawns as a riot zombie.\n0.0 = OFF, 1.0 = ALWAYS", FCVAR_NONE, true, 0.0, true, 1.0);
 	hPercentJimmy  = CreateConVar("l4d2_population_jimmy", "0.0", "The % chance that a common spawns as a Jimmy Gibs Jr. zombie.\n0.0 = OFF, 1.0 = ALWAYS", FCVAR_NONE, true, 0.0, true, 1.0);
+	hTotalZombies  = CreateConVar("l4d2_population_common", "0.0", "The maximum amount of commons, anymore will be deleted.\n0 = Turn Off\n> 0: Fixed limit\n< 0: z_common_limit + absolute value", FCVAR_NONE);
+	hZCommonLimit  = FindConVar("z_common_limit");
+
+	hTotalZombies.AddChangeHook(CVAR_hTotalZombiesChanged);
+	CVAR_hTotalZombiesChanged(hTotalZombies, "0", "0");
+
+	HookEvent("infected_death", Event_InfectedDeath);
 
 	RegConsoleCmd("sm_population_list", Cmd_List, "Lists the current population percentages", FCVAR_NONE);
 	RegConsoleCmd("sm_populations", Cmd_List, "Lists the current population percentages", FCVAR_NONE);
@@ -83,10 +95,30 @@ public void OnMapStart() {
 }
 public void OnMapEnd() {
 	IsDoneLoading = false;
+	iCurrentCommons = 0;
+}
+
+public void CVAR_hTotalZombiesChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
+	if(hTotalZombies.IntValue > 0) {
+		commonLimit = hTotalZombies.IntValue;
+	}else if(hTotalZombies.IntValue < 0) {
+		commonLimit = hZCommonLimit.IntValue - hTotalZombies.IntValue;
+	}else {
+		commonLimit = 0;
+	}
 }
 
 public void OnEntityCreated(int entity, const char[] classname) {
 	if (StrEqual(classname, "infected") && IsDoneLoading) {
+		//If limiter turned on:
+		if(commonLimit != 0) {
+			if(iCurrentCommons > commonLimit) {
+				AcceptEntityInput(entity, "kill");
+				return;
+			}
+		}
+		++iCurrentCommons;
+
 		char m_ModelName[PLATFORM_MAX_PATH];
 		GetEntPropString(entity, Prop_Data, "m_ModelName", m_ModelName, sizeof(m_ModelName));
 		if(GetRandomFloat() <= hPercentTotal.FloatValue) {
@@ -106,6 +138,10 @@ public void OnEntityCreated(int entity, const char[] classname) {
 			}
 		}
 	}
+}
+
+public Action Event_InfectedDeath(Event event, const char[] name, bool dontBroadcast) {
+	--iCurrentCommons;
 }
 
 public Action Cmd_List(int client, int args) {
