@@ -33,9 +33,16 @@ public void OnPluginStart()
 	HookEvent("tank_killed", Event_TankKilled);
 	HookEvent("tank_spawn", Event_TankSpawn);
 
+	RegAdminCmd("sm_forcestage", Command_ForceStage, ADMFLAG_CHEATS);
+
 	#if defined DEBUG
 		CreateTimer(1.0, Timer_ShowFinale, _, TIMER_REPEAT);
 	#endif
+}
+
+public Action Command_ForceStage(int client, int args) {
+	L4D2_ForceNextStage();
+	return Plugin_Handled;
 }
 
 static int extraTankStage = 0;
