@@ -99,11 +99,21 @@ int autoPunished = -1, autoPunishMode, lastButtonUser, lastCrescendoUser;
 bool g_bPendingItemGive[MAXPLAYERS+1], g_PendingBanTroll[MAXPLAYERS+1];
 GlobalForward g_PlayerMarkedForward;
 
+//HANDLES
+Handle hThrowTimer;
+//CONVARS
+ConVar hVictimsList, hThrowItemInterval, hAutoPunish, hMagnetChance, hShoveFailChance, hAutoPunishExpire;
+//BOOLS
+bool lateLoaded; //Is plugin late loaded
+bool bChooseVictimAvailable = false; //For charge player feature, is it available?
+//INTEGERS
+int g_iAmmoTable; //Loads the ammo table to get ammo amounts
+int gChargerVictim = -1; //For charge player feature
 
 //Applies the selected trollMode to the victim.
 //Modifiers are as followed: 0 -> Both (fire instant, and timer), 1 -> Fire Once, 2 -> Start timer
 //TODO: change it to only modifier at once? at least for instant fire & repeat. Menu runs ApplyMode twice
-void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier modifier) {
+void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier modifier, bool silent = false) {
 	ResetClient(victim, false);
 	if(view_as<int>(mode) > TROLL_MODE_COUNT || view_as<int>(mode) < 0) {
 		ReplyToCommand(client, "Unknown troll mode ID '%d'. Pick a mode between 1 and %d", mode, TROLL_MODE_COUNT - 1);
@@ -218,13 +228,15 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 			PrintToServer("Troll Mode #%d not implemented (%s)", mode, TROLL_MODES_NAMES[mode]);
 		}
 	}
-	if(HasTrollMode(victim, mode)) {
-		ShowActivity(client, "deactivated troll \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
-	}else{
-		if(modifier == TrollMod_Repeat)
-			ShowActivity(client, "activated troll \"%s\" on repeat for %N. ", TROLL_MODES_NAMES[mode], victim);
-		else
-			ShowActivity(client, "activated troll \"%s\" for %N. ", TROLL_MODES_NAMES[mode], victim);
+	if(!silent) {
+		if(HasTrollMode(victim, mode)) {
+			ShowActivity(client, "deactivated troll \"%s\" on %N. ", TROLL_MODES_NAMES[mode], victim);
+		}else{
+			if(modifier == TrollMod_Repeat)
+				ShowActivity(client, "activated troll \"%s\" on repeat for %N. ", TROLL_MODES_NAMES[mode], victim);
+			else
+				ShowActivity(client, "activated troll \"%s\" for %N. ", TROLL_MODES_NAMES[mode], victim);
+		}
 	}
 	//If instant fire mod not provided (aka instead of no modifiers which equals both) OR repeat turned on, set bit:
 	if(modifier == TrollMod_Repeat || modifier == TrollMod_None) {

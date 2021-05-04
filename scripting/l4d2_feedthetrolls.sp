@@ -9,14 +9,13 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
-#include "jutils.inc"
-#include <multicolors>
+#include <jutils>
 #include <left4dhooks>
 #include <sceneprocessor>
+#include <feedthetrolls>
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
-
 
 public Plugin myinfo = 
 {
@@ -26,20 +25,6 @@ public Plugin myinfo =
 	version = PLUGIN_VERSION, 
 	url = ""
 };
-//HANDLES
-Handle hThrowTimer;
-//CONVARS
-ConVar hVictimsList, hThrowItemInterval, hAutoPunish, hMagnetChance, hShoveFailChance, hAutoPunishExpire;
-//BOOLS
-bool lateLoaded; //Is plugin late loaded
-bool bChooseVictimAvailable = false; //For charge player feature, is it available?
-//INTEGERS
-int g_iAmmoTable; //Loads the ammo table to get ammo amounts
-int gChargerVictim = -1; //For charge player feature
-
-
-#include "feedthetrolls.inc"
-
 
 //plugin start
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -47,7 +32,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		lateLoaded = true;
 	}
 } 
-
 
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
@@ -66,7 +50,6 @@ public void OnPluginStart() {
 	hMagnetChance 	 	= CreateConVar("sm_ftt_magnet_chance", "1.0", "% of the time that the magnet will work on a player.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.5", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
 
-	//TODO: Add punish last button presser/crescendo starter
 	RegAdminCmd("sm_ftl", Command_ListTheTrolls, ADMFLAG_KICK, "Lists all the trolls currently ingame.");
 	RegAdminCmd("sm_ftm", Command_ListModes, ADMFLAG_KICK, "Lists all the troll modes and their description");
 	RegAdminCmd("sm_ftr", Command_ResetUser, ADMFLAG_KICK, "Resets user of any troll effects.");
@@ -456,9 +439,12 @@ public Action Command_ApplyUser(int client, int args) {
 		menu.ExitButton = true;
 		menu.Display(client, 0);
 	}else{
-		char arg1[32], arg2[32];
+		char arg1[32], arg2[32], arg3[8];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		GetCmdArg(2, arg2, sizeof(arg2));
+		GetCmdArg(3, arg3, sizeof(arg3));
+
+		bool silent = StrEqual(arg3, "silent", "hide", "quiet");
 
 		int mode = StringToInt(arg2);
 		if(mode == 0) {
@@ -484,7 +470,7 @@ public Action Command_ApplyUser(int client, int args) {
 			for (int i = 0; i < target_count; i++)
 			{
 				if(IsClientConnected(target_list[i]) && IsClientInGame(target_list[i]) && GetClientTeam(target_list[i]) == 2)
-					ApplyModeToClient(client, target_list[i], view_as<trollMode>(mode), TrollMod_None);
+					ApplyModeToClient(client, target_list[i], view_as<trollMode>(mode), TrollMod_None, silent);
 			}
 		}
 	}
