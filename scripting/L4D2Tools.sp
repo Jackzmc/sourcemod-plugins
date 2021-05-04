@@ -319,7 +319,6 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 		if(StrContains(sceneFile, "scenes/mechanic/dlc1_c6m1_initialmeeting") > -1 || StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting07.vcd")) {
 			CancelScene(scene);
 		}else if(StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting13.vcd") && activator == 0) {
-			PrintToChatAll("activator = %d", activator);
 			CancelScene(scene);
 		}
 	}
@@ -360,7 +359,6 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 			}
 		}
 	}
-
 }
 
 public Action Timer_TPBots(Handle timer, int user) {
