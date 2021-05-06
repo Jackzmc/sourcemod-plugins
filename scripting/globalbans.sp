@@ -61,7 +61,7 @@ public void OnClientAuthorized(int client, const char[] auth) {
     if(!StrEqual(auth, "BOT", true)) {
         char query[128], ip[32];
         GetClientIP(client, ip, sizeof(ip));
-        Format(query, sizeof(query), "SELECT steamid, ip, reason, timestamp, time FROM bans WHERE `steamid` = '%s' OR ip = '?'", auth, ip);
+        Format(query, sizeof(query), "SELECT reason, steamid, case when `time` = 0 then 1 else TIMESTAMPDIFF(MINUTE,timestamp,CURRENT_TIMESTAMP()) > `time` end as IsCurrentlyBanned FROM bans WHERE `steamid` = '%s' OR ip = '?'", auth, ip);
         g_db.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
     }
 }
@@ -129,6 +129,8 @@ public Action OnRemoveBan(const char[] identity, int flags, const char[] command
 ///////////////////////////////////////////////////////////////////////////////
 // DB Callbacks
 ///////////////////////////////////////////////////////////////////////////////
+ [globalbans.smx] DB_OnConnectCheck returned error: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'Is' at line 1
+L 05/05/2021 - 19:07:07: [abm.smx] AUTH ID: STEAM_1:1:56736611, (Klayjub) ADDED TO QDB.
 
 public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] error, int user) {
     int client = GetClientOfUserId(user);
@@ -142,14 +144,23 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
         //No failure, check the data.
         if(results.RowCount > 0 && client) {
             results.FetchRow();
-            char reason[128];
+            char reason[128], isStillBanned[2];
             DBResult result;
-            results.FetchString(2, reason, sizeof(reason), result);
-            //TODO: Implement temp bans
-            if(result == DBVal_Data)
-                KickClient(client, "You have been banned: %s", reason);
-            else
-                KickClient(client, "You have been banned from this server.");
+            results.FetchString(0, reason, sizeof(reason), result);
+            results.FetchString(2, isStillBanned, sizeof(isStillBanned));
+            bool isBanned = StrEqual(isStillBanned, "1");
+            if(isBanned) {
+                if(result == DBVal_Data)
+                    KickClient(client, "You have been banned: %s", reason);
+                else
+                    KickClient(client, "You have been banned from this server.");
+            }else{
+                char steamid[32];
+                char query[128];
+                results.FetchString(1, steamid, sizeof(steamid));
+                Format(query, sizeof(query), "DELETE FROM `bans` WHERE steamid = '%s'", steamid);
+                g_db.Query(DB_OnRemoveBanQuery, query);
+            }
         }
     }
 }
