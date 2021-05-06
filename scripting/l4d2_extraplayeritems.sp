@@ -1,7 +1,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-//#define DEBUG 0
+#define DEBUG 0
 
 #define PLUGIN_VERSION "1.0"
 #define MAX_ENTITY_LIMIT 2000
@@ -12,6 +12,7 @@
 #include <left4dhooks>
 #include <jutils>
 //TODO: finale_start
+//TODO: On 3rd/4th kit pickup in area, add more
 
 public Plugin myinfo = 
 {
@@ -61,8 +62,8 @@ public void OnPluginStart() {
 
 	AutoExecConfig(true, "l4d2_extraplayeritems");
 
-	RegAdminCmd("sm_epi_setkits", Command_SetKitAmount, ADMFLAG_CHEATS, "Sets the amount of extra kits that will be provided");
 	#if defined DEBUG
+		RegAdminCmd("sm_epi_setkits", Command_SetKitAmount, ADMFLAG_CHEATS, "Sets the amount of extra kits that will be provided");
 		RegAdminCmd("sm_epi_kits", Command_GetKitAmount, ADMFLAG_CHEATS);
 		RegAdminCmd("sm_epi_items", Command_RunExtraItems, ADMFLAG_CHEATS);
 	#endif
@@ -73,7 +74,7 @@ public void OnPluginStart() {
 /////////////////////////////////////
 /// COMMANDS
 ////////////////////////////////////
-
+#if defined DEBUG
 public Action Command_SetKitAmount(int client, int args) {
 	char arg[32];
 	GetCmdArg(1, arg, sizeof(arg));
@@ -88,7 +89,6 @@ public Action Command_SetKitAmount(int client, int args) {
 	return Plugin_Handled;
 }
 
-#if defined DEBUG
 public Action Command_GetKitAmount(int client, int args) {
 	ReplyToCommand(client, "Extra kits available: %d (%d) | Survivors: %d", extraKitsAmount, extraKitsStarted, GetSurvivorsCount());
 	ReplyToCommand(client, "isCheckpointReached %b, isLateLoaded %b, firstGiven %b", isCheckpointReached, isLateLoaded, firstGiven);
@@ -342,10 +342,12 @@ stock int GetSurvivorsCount() {
 	return count;
 }
 
+//TODO: Count idle bots
 stock int GetRealSurvivorsCount() {
 	int count = 0;
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && !IsFakeClient(i)) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+			if(IsFakeClient(i) && GetEntProp(i, Prop_Send, "m_humanSpectatorUserID") == 0) continue;
 			++count;
 		}
 	}

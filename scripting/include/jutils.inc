@@ -517,3 +517,17 @@ stock bool IsValidAdmin(int client, const char[] flags) {
     }
     return false;
 }  
+
+stock void NotifyAllAdmins(const char[] format, any ...) {
+	char buffer[254];
+	VFormat(buffer, sizeof(buffer), format, 2);
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			AdminId admin = GetUserAdmin(i);
+			if(admin != INVALID_ADMIN_ID && admin.ImmunityLevel > 0) {
+				PrintToChat(i, "%s", buffer);
+			}
+		}
+	}
+	PrintToServer("%s", buffer);
+}
