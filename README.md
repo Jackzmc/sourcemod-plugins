@@ -30,6 +30,7 @@ Useful things:
 * [globalbans](#globalbans)
 * [l4d2_rollback](#l4d2_rollback)
 * [l4d2_autorestart](#l4d2_autorestart)
+* [l4d2_TKStopper](#l4d2_TKStopper)
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
@@ -271,3 +272,17 @@ Currently auto triggers:
 ### l4d2_autorestart
 Plugin that automatically restarts server when the server is NOT hibernating, with bots around and no players.
 This fixes an issue with (shitty) custom maps that force sb_all_bot_game to 1 and disable hibernation
+
+### l4d2_TKStopper
+Plugin that prevents team killers by checking multiple criterias. Default system is as:
+Any survivor that attacks another non-bot, idle or not idle player:
+  1. If done within first 2 minutes of joining OR during finale vehicle arrival is cancelled
+  2. If they do over threshold (default 70 HP), they are banned for 60 minutes
+  3. Lastly, if its just normal friendly fire and they are not an admin, its reversed to them at full damage, and to victim at 1/2
+Friendly fire counts are forgotten on map changes and after 30 seconds of last FF.
+
+* **Cvars:**
+  * `l4d2_tk_forgiveness_time <#>` - The minimum amount of seconds to pass (in seconds) where a player's previous accumulated FF is forgive. Default is 30s
+  * `l4d2_tk_bantime` - How long in minutes should a player be banned for? 0 for permanently. Default is 60
+  * `l4d2_tk_ban_ff_threshold` -  How much damage does a player need to do before being instantly banned. Default 70 HP
+  * `4d2_tk_ban_join_time` -  Upto how many minutes should any new player's FF be ignored. Default is 2 Minutes
