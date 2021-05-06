@@ -13,6 +13,7 @@
 #include <left4dhooks>
 #include <sceneprocessor>
 #include <feedthetrolls>
+#include <multicolors>
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
@@ -444,7 +445,7 @@ public Action Command_ApplyUser(int client, int args) {
 		GetCmdArg(2, arg2, sizeof(arg2));
 		GetCmdArg(3, arg3, sizeof(arg3));
 
-		bool silent = StrEqual(arg3, "silent", "hide", "quiet");
+		bool silent = StrEqual(arg3, "silent") || StrEqual(arg3, "quiet") || StrEqual(arg3, "mute");
 
 		int mode = StringToInt(arg2);
 		if(mode == 0) {
@@ -814,20 +815,6 @@ int GetAutoPunishMode() {
 	}else{
 		return number;
 	}
-}
-
-stock void NotifyAllAdmins(const char[] format, any ...) {
-	char buffer[254];
-	VFormat(buffer, sizeof(buffer), format, 2);
-	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i)) {
-			AdminId admin = GetUserAdmin(i);
-			if(admin != INVALID_ADMIN_ID && admin.ImmunityLevel > 0) {
-				PrintToChat(i, "%s", buffer);
-			}
-		}
-	}
-	PrintToServer("%s", buffer);
 }
 
 stock int GetPrimaryReserveAmmo(int client) {
