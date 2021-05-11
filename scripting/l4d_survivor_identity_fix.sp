@@ -74,7 +74,6 @@ public void OnPluginStart()
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && IsSurvivor(i))
 				GetClientModel(i, g_Models[i], 64);
-				//TODO: Convert ^ to ID
 		}
 	}
 
@@ -317,7 +316,6 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 public void Frame_CheckClient(int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0 && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
-		//todo: hCookiesEnabled.IntVal
 		if(++survivors > 4 && g_iPendingCookieModel[client] > 0) {
 			//A model is set: Fetched from cookie
 			
@@ -427,7 +425,7 @@ stock int GetLeastUsedSurvivor(int client) {
 			players++;
 		}
 	}
-	//TODO: set starting number to be map-based.
+	//TODO: set starting number to be character set based.
 	//int start = players > 4 
 	for(int id = 0; id < 8; ++id) {
 		if(count[id] == 0) {

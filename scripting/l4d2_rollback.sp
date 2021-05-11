@@ -225,9 +225,6 @@ public Action Event_ReviveBegin(Event event, const char[] name, bool dontBroadca
 public void FTT_OnClientMarked(int troll, int marker) {
 	RecordGlobalState("FTT_MARKED");
 }
-
-//TODO: hook revive_begin (non-admins only?)
-
 // /////////////////////////////////////////////////////////////////////////////
 // TIMERS
 // /////////////////////////////////////////////////////////////////////////////
@@ -238,7 +235,6 @@ public Action Timer_AutoRecord(Handle h) {
 // METHODS
 // /////////////////////////////////////////////////////////////////////////////
 void RecordGlobalState(const char[] type, int skipTime = 0) {
-	//TODO: Move playerStatesList[0][0-32] -> playerStatesList[1][0-32] -> playerStatesList[2][0-32]
 	int time = GetTime();
 	for(int i = MAXIMUM_STAGES_STORED - 2; i >= 0; i--) {
 		TransferArray(i, i+1);

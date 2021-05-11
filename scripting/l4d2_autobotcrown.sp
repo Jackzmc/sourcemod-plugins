@@ -159,7 +159,6 @@ public Action Timer_Active(Handle hdl) {
 		return Plugin_Stop;
 	}
 	//TODO: Also check if startled and cancel it immediately. 
-	//TODO: X amount of tries, then ignore.
 	if(AutoCrownBot > -1) {
 		int client = GetClientOfUserId(AutoCrownBot);
 		if(!IsValidEntity(AutoCrownTarget) || IsPlayerIncapped(client)) {
