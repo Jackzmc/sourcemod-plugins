@@ -253,7 +253,10 @@ Allows you to set the chances that a common spawns as a certain uncommon. The or
   * `l4d2_population_worker <0.0-1.0>` The chance that on a common spawn that the special will be a worker common.
   * `l4d2_population_riot   <0.0-1.0>` The chance that on a common spawn that the special will be a riot common.
   * `l4d2_population_jimmy  <0.0-1.0>` The chance that on a common spawn that the special will be a jimmy common
-  * `l4d2_population_common <#>` - The maximum amount of commons that can spawn. 0=z_common_limit, Value > 0: Exact limit, Value < 0: z_common_limit + |value|
+  * `l4d2_population_common <#>` - The maximum amount of commons that can spawn. 
+    * 0 will turn off, 
+    * value > 0 will enforce the exact value
+    * value < 0 will enforce z_common_limit + | value |
 * **Commands:**
   * `sm_populations` or `sm_population_list` - Lists all the cvar values
 
@@ -267,6 +270,8 @@ This plugin will automatically spawn an extra amount of tanks (determined by `l4
 ### globalbans
 This plugin will store bans in a database and read from it on connect. This allows you to easily have bans global between servers.
 It will automatically intercept any ban that calls OnBanIdentity or OnBanClient (so sm_ban will work normally)
+Note: All admin players are ignored
+
 * **Convars:**
   * `sm_hKickOnDBFailure <0/1>` - Should the plugin kick players if it cannot connect to the database?
 
@@ -280,8 +285,9 @@ Currently auto triggers:
 2. Any new player joins (only triggers once per 100 game ticks)
 
 * **Commands:**
-  * `sm_sstate` - Initiates a manual save of all player's states 
-  * `sm_rstate <player(s)>` - Restores the selected player's state. @all for all 
+  * `sm_save` - Initiates a manual save of all player's states 
+  * `sm_state` - Lists all the states
+  * `sm_restore <player(s)>` - Restores the selected player's state. @all for all 
 
 ### l4d2_autorestart
 Plugin that automatically restarts server when the server is NOT hibernating, with bots around and no players.
