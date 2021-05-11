@@ -3,6 +3,7 @@
 !scripting
 !scripting/include
 !gamedata/
+!data/
 template.config.js
 .*
 scripting/sm_give.sp
