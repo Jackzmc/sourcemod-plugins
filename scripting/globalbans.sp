@@ -59,9 +59,9 @@ bool ConnectDB() {
 
 public void OnClientAuthorized(int client, const char[] auth) {
     if(!StrEqual(auth, "BOT", true)) {
-        char query[128], ip[32];
+        char query[256], ip[32];
         GetClientIP(client, ip, sizeof(ip));
-        Format(query, sizeof(query), "SELECT reason, steamid, case when `time` = 0 then 1 else TIMESTAMPDIFF(MINUTE,timestamp,CURRENT_TIMESTAMP()) > `time` end as IsCurrentlyBanned FROM bans WHERE `steamid` = '%s' OR ip = '?'", auth, ip);
+        Format(query, sizeof(query), "SELECT `reason`, `steamid`, case when `time` = 0 then 1 else TIMESTAMPDIFF(MINUTE,timestamp,CURRENT_TIMESTAMP()) > `time` end as IsCurrentlyBanned FROM `bans` WHERE `steamid` = '%s' OR ip = '?'", auth, ip);
         g_db.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
     }
 }
@@ -129,8 +129,6 @@ public Action OnRemoveBan(const char[] identity, int flags, const char[] command
 ///////////////////////////////////////////////////////////////////////////////
 // DB Callbacks
 ///////////////////////////////////////////////////////////////////////////////
- [globalbans.smx] DB_OnConnectCheck returned error: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'Is' at line 1
-L 05/05/2021 - 19:07:07: [abm.smx] AUTH ID: STEAM_1:1:56736611, (Klayjub) ADDED TO QDB.
 
 public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] error, int user) {
     int client = GetClientOfUserId(user);
