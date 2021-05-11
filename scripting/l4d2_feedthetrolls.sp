@@ -353,18 +353,15 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 		}
 		lastButtonUser = -1;
 	}else if(numClients > 0 && entity > 0 && entity <= MaxClients) {
-		if(HasTrollMode(entity, Troll_Honk)) {
-			if(StrContains(sample, "survivor/voice") > -1) {
+		if(StrContains(sample, "survivor/voice") > -1) {
+			if(HasTrollMode(entity, Troll_Honk)) {
 				strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
 				return Plugin_Changed;
+			} else if(HasTrollMode(entity, Troll_VocalizeGag)) {
+				return Plugin_Stop;
 			}
 		}
-	}
-	return Plugin_Continue;
-}
-public Action OnVocalizationProcess(int client, const char[] vocalize, int initiator) {
-	if(HasTrollMode(client, Troll_VocalizeGag)) {
-		return Plugin_Stop;
+		
 	}
 	return Plugin_Continue;
 }
