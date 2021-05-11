@@ -348,7 +348,7 @@ public Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, floa
 		if(!attackerVisible) {
 			//Zombie is behind the bot, reduce damage taken and slowly kill zombie (1/10 of default hp per hit)
 			damage = damage / 2.0;
-			SDKHooks_TakeDamage(attacker, victim, victim, 6.0);
+			SDKHooks_TakeDamage(attacker, victim, victim, 10.0);
 			return Plugin_Changed;
 		}
 	}
