@@ -207,7 +207,10 @@ stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] m
 	}
 	SetClientName(bot_client_id, spawn_minigun ? "MinigunBot" : "HoldoutBot");
 	
+	SetEntProp(bot_client_id, Prop_Send, "m_fFlags", GetEntProp(bot_client_id, Prop_Send, "m_fFlags") | FL_FROZEN);
+	CreateTimer(0.1, Timer_Move, bot_user_id);
 	TeleportEntity(bot_client_id, vPos, NULL_VECTOR, NULL_VECTOR);
+	
 	SetEntityModel(bot_client_id, model); //set entity model to custom survivor model
 	return bot_user_id;
 }
@@ -247,10 +250,11 @@ void AvoidCharacter(int type, bool avoid) {
 	}
 }
 
-Action TimerMove(Handle timer, any client) {
+Action Timer_Move(Handle timer, any client) {
 	if((client = GetClientOfUserId(client))) {
 		//PrintToServer("client %d %N",client,client);
 		SetEntityMoveType(client, MOVETYPE_NONE);
+		SetEntProp(client, Prop_Send, "m_fFlags", GetEntProp(client, Prop_Send, "m_fFlags") | FL_FROZEN);
 		TeleportEntity(client, NULL_VECTOR, NULL_VECTOR, view_as<float>({ 0.0, 0.0, 0.0 }));
 	}
 }

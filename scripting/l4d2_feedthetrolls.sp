@@ -12,7 +12,7 @@
 #include <jutils>
 #include <left4dhooks>
 #include <sceneprocessor>
-#include <feedthetrolls>
+#include <ftt>
 #include <multicolors>
 
 #undef REQUIRE_PLUGIN
@@ -26,6 +26,9 @@ public Plugin myinfo =
 	version = PLUGIN_VERSION, 
 	url = ""
 };
+
+//TODO: Make bots target player. Possibly automatic . See https://i.jackz.me/2021/05/NVIDIA_Share_2021-05-05_19-36-51.png
+//TODO: Friendly trolling VS punishment trolling
 
 //plugin start
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -133,6 +136,7 @@ public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client) {
 		PrintToChatAll("%N has alerted the horde!", client);
+		FakeClientCommandEx(client, "sm_swarm #%d", client);
 	}
 	//Ignore car alarms for autopunish
 	lastButtonUser = -1;
