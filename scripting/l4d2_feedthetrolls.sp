@@ -42,6 +42,9 @@ public void OnPluginStart() {
 	if(g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
+
+	LoadTrolls();
+
 	LoadTranslations("common.phrases");
 	g_iAmmoTable = FindSendPropInfo("CTerrorPlayer", "m_iAmmo");
 
@@ -58,7 +61,8 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_ftm", Command_ListModes, ADMFLAG_KICK, "Lists all the troll modes and their description");
 	RegAdminCmd("sm_ftr", Command_ResetUser, ADMFLAG_KICK, "Resets user of any troll effects.");
 	RegAdminCmd("sm_fta", Command_ApplyUser, ADMFLAG_KICK, "Apply a troll mod to a player, or shows menu if no parameters.");
-	RegAdminCmd("sm_ftt", Command_FeedTheTrollMenu, ADMFLAG_KICK, "Opens a list that shows all the commands");
+	RegAdminCmd("sm_fth", Command_HelpMenu, ADMFLAG_KICK, "Opens a list that shows all the commands");
+	RegAdminCmd("sm_ftt", Command_ApplyTroll, ADMFLAG_KICK, "WIP replacement to sm_fta");
 	RegAdminCmd("sm_mark", Command_MarkPendingTroll, ADMFLAG_KICK, "Marks a player as to be banned on disconnect");
 	RegAdminCmd("sm_ftc", Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
 
@@ -426,6 +430,9 @@ public Action Command_ResetUser(int client, int args) {
 	}
 	return Plugin_Handled;
 }
+//TODO: Categorize trolls into menus (Constant, Repeat, On Demand?)
+//TODO: Add a 'punish crescendo activator' to categoriey main menu (sm_ftt)
+//TODO: Add SurvivorBot magnet
 public Action Command_ApplyUser(int client, int args) {
 	if(args < 2) {
 		Menu menu = new Menu(ChoosePlayerHandler);
@@ -558,7 +565,7 @@ public Action Command_MarkPendingTroll(int client, int args) {
 	return Plugin_Handled;
 }
 
-public Action Command_FeedTheTrollMenu(int client, int args) {
+public Action Command_HelpMenu(int client, int args) {
 	ReplyToCommand(client, "sm_ftl - Lists all the active trolls on players");
 	ReplyToCommand(client, "sm_ftm - Lists all available troll modes & descriptions");
 	ReplyToCommand(client, "sm_ftr - Resets target users' of their trolls");
@@ -566,6 +573,23 @@ public Action Command_FeedTheTrollMenu(int client, int args) {
 	ReplyToCommand(client, "sm_ftt - Opens this menu");
 	ReplyToCommand(client, "sm_ftc - Will apply a punishment to last crescendo activator");
 	ReplyToCommand(client, "sm_mark - Marks the user to be banned on disconnect, prevents their FF.");
+	return Plugin_Handled;
+}
+
+public Action Command_ApplyTroll(int client, int args) {
+	Menu menu = new Menu(Menu_ChoosePlayer);
+	menu.SetTitle("Choose a player to punish");
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+			char userid[8], display[16];
+			Format(userid, sizeof(userid), "%d", GetClientUserId(i));
+			GetClientName(i, display, sizeof(display));
+			menu.AddItem(userid, display);
+		}
+	}
+	menu.AddItem("s", "All Survivors");
+	menu.ExitButton = true;
+	menu.Display(client, 0);
 	return Plugin_Handled;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -651,6 +675,106 @@ public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 	} else if (action == MenuAction_End)	
 		delete menu;
 }
+
+///NEW FTT COMMAND MENU HANDLING:
+public int Menu_ChoosePlayer(Menu menu, MenuAction action, int activator, int item) {
+	if (action == MenuAction_Select) {
+		char info[16];
+		menu.GetItem(item, info, sizeof(info));
+		if(StrEqual(info, "s", true)) {
+			delete menu;
+			ReplyToCommand(activator, "Sorry, not implemented yet.");
+			return;
+		}
+		int targetUserid = StringToInt(info);
+		// TopMenu categoryMenu = new TopMenu(Menu_CategorySelector);
+		// categoryMenu.AddCategory("One Time Trolls", Menu_TrollSelector, "sm_fta", 0, info);
+		// categoryMenu.AddCategory("Constant Trolls", Menu_TrollSelector, "sm_fta", 0, info);
+		// categoryMenu.AddCategory("Repeat Trolls",   Menu_TrollSelector, "sm_fta", 0, info);
+
+		// categoryMenu.Display(activator, TopMenuPosition_Start);
+		
+		Menu categoryMenu = new Menu(Menu_ChooseCategory);
+		categoryMenu.SetTitle("Select a troll category");
+
+		char itemId[8];
+		Format(itemId, sizeof(itemId), "%d|s", targetUserid);
+		categoryMenu.AddItem(itemId, "One Time Trolls");
+		Format(itemId, sizeof(itemId), "%d|c", targetUserid);
+		categoryMenu.AddItem(itemId, "Constant Trolls");
+		Format(itemId, sizeof(itemId), "%d|r", targetUserid);
+		categoryMenu.AddItem(itemId, "Repeat Trolls");
+		categoryMenu.ExitButton = true;
+		categoryMenu.Display(activator, 0);
+	} else if (action == MenuAction_End)
+		delete menu;
+}
+
+public void Menu_CategorySelector(TopMenu topmenu, TopMenuAction action, TopMenuObject topobj_id, int param, char[] buffer, int maxlength) {
+	PrintToChatAll("param=%d", param);
+}
+
+public void Menu_TrollSelector(TopMenu topmenu, TopMenuAction action, TopMenuObject topobj_id, int param, char[] buffer, int maxlength) {
+	PrintToChatAll("param=%d", param);
+}
+
+public int Menu_ChooseCategory(Menu menu, MenuAction action, int activator, int item) {
+	if (action == MenuAction_Select) {
+		//Parse the item id
+		char info[16];
+		menu.GetItem(item, info, sizeof(info));
+		char str[3][8];
+		ExplodeString(info, "|", str, 3, 8, false);
+
+		int targetUserid = StringToInt(str[0]);
+		
+		//Check category type
+		trollType selectedType;
+		if(StrEqual(str[1], "s", true)) {
+			selectedType = Type_Single;
+		}else if(StrEqual(str[1], "r", true)) {
+			selectedType = Type_Repeat;
+		}else if(StrEqual(str[1], "c", true)) {
+			selectedType = Type_Constant;
+		}
+
+		Menu trollsMenu = new Menu(Menu_ChooseTroll);
+		trollsMenu.SetTitle("Select a troll");
+
+		char itemId[16];
+		for(int i = 0 ; i < trolls.Length; i++) {
+			Troll troll;
+			trolls.GetArray(i, troll, sizeof(troll));
+			if(troll.modifiers & view_as<int>(selectedType) == view_as<int>(selectedType)) {
+				Format(itemId, sizeof(itemId), "%d|%d|%d", targetUserid, i, selectedType);
+				trollsMenu.AddItem(itemId, troll.name);
+			}
+		}
+		trollsMenu.ExitButton = true;
+		trollsMenu.Display(activator, 0);
+	} else if (action == MenuAction_End)
+		delete menu;
+}
+
+public int Menu_ChooseTroll(Menu menu, MenuAction action, int activator, int item) {
+	if (action == MenuAction_Select) {
+		//Parse the item id
+		char info[16];
+		menu.GetItem(item, info, sizeof(info));
+		char str[3][8];
+		ExplodeString(info, "|", str, 3, 8, false);
+
+		int targetUserid = StringToInt(str[0]);
+		int trollIndex = StringToInt(str[1]);
+		int victim = GetClientOfUserId(targetUserid);
+		trollType type = view_as<trollType>(StringToInt(str[2]));
+
+		ApplyTroll(trollIndex, victim, activator, type);
+	} else if (action == MenuAction_End)
+		delete menu;
+}
+
+
 
 public void StopItemGive(int client) {
 	g_bPendingItemGive[client] = false;
