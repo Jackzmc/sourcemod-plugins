@@ -12,11 +12,6 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <jutils>
-
-/*TODO: Implement if player joins (non-admin) and instantly does over 50 HP of damage, STOP all damage, temp ban
-
-*/
-
 bool lateLoaded, IsFinaleEnding;
 int iJoinTime[MAXPLAYERS+1];
 float playerTotalDamageFF[MAXPLAYERS+1];
@@ -26,7 +21,7 @@ ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime;
 
 public Plugin myinfo = 
 {
-	name =  "__templateName__", 
+	name =  "TK Stopper", 
 	author = "jackzmc", 
 	description = "", 
 	version = PLUGIN_VERSION, 
@@ -47,12 +42,12 @@ public void OnPluginStart()
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
-	hForgivenessTime = CreateConVar("l4d2_tk_forgiveness_time", "30", "The minimum amount of time to pass (in seconds) where a player's previous accumulated FF is forgiven");
+	hForgivenessTime = CreateConVar("l4d2_tk_forgiveness_time", "15", "The minimum amount of time to pass (in seconds) where a player's previous accumulated FF is forgiven");
 	hBanTime = CreateConVar("l4d2_tk_bantime", "60", "How long in minutes should a player be banned for? 0 for permanently");
-	hThreshold = CreateConVar("l4d2_tk_ban_ff_threshold", "70.0", "How much damage does a player need to do before being instantly banned");
+	hThreshold = CreateConVar("l4d2_tk_ban_ff_threshold", "75.0", "How much damage does a player need to do before being instantly banned");
 	hJoinTime = CreateConVar("l4d2_tk_ban_join_time", "2", "Upto how many minutes should any new player be subjected to instant bans on any FF");
 
-	AutoExecConfig(true, "l4d2_tkstopper");
+	//AutoExecConfig(true, "l4d2_tkstopper");
 
 	HookEvent("finale_vehicle_ready", Event_FinaleVehicleReady);
 
@@ -81,6 +76,8 @@ public void OnClientPutInServer(int client) {
 public void OnClientDisconnect(int client) {
 	playerTotalDamageFF[client] = 0.0;
 }
+
+//TODO: Autopunish on troll instead of ban. Activate troll that does 0 damage from their guns & xswarm
 
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
 	if(damage > 0.0 && damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0 && GetClientTeam(victim) == 2 && GetClientTeam(attacker) == 2 && attacker != victim) {
