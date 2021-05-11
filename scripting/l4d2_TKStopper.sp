@@ -80,11 +80,11 @@ public void OnClientDisconnect(int client) {
 //TODO: Autopunish on troll instead of ban. Activate troll that does 0 damage from their guns & xswarm
 
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
-	if(damage > 0.0 && damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0 && GetClientTeam(victim) == 2 && GetClientTeam(attacker) == 2 && attacker != victim) {
+	if(damage > 0.0 && damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
+		if(GetClientTeam(victim) != 2 || GetClientTeam(attacker) != 2 || attacker == victim) return Plugin_Continue;
 		//Allow friendly firing BOTS that aren't idle players:
-		if(IsFakeClient(victim) && GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) {
-			return Plugin_Continue;
-		}
+		//if(IsFakeClient(victim) && !HasEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") || GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) return Plugin_Continue;
+
 		int time = GetTime();
 		if(time - lastFF[attacker] > hForgivenessTime.IntValue) {
 			playerTotalDamageFF[attacker] = 0.0;
@@ -92,20 +92,21 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		playerTotalDamageFF[attacker] += damage;
 		lastFF[attacker] = time;
 		if(GetUserAdmin(attacker) == INVALID_ADMIN_ID) {
-			if(playerTotalDamageFF[attacker] > hThreshold.IntValue) {
+			if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding) {
 				LogMessage("[NOTICE] Banning %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				NotifyAllAdmins("[Notice] Banning %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
-				BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
+				//BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
+				//KickClient(attacker, "Excessive FF");
 				return Plugin_Stop;
 			}
-
-			if(IsFinaleEnding || GetTime() - iJoinTime[attacker] <= hJoinTime.IntValue / 60000) {
+			//If the amount of MS is <= join time threshold * 60000 ms then cancel
+			if(GetTime() - iJoinTime[attacker] <= hJoinTime.IntValue * 60000) {
 				return Plugin_Stop;
-			}else{
-				SDKHooks_TakeDamage(attacker, attacker, attacker, damage / 3.0);
-				damage /= 2.0;
+			}else {
+				SDKHooks_TakeDamage(attacker, attacker, attacker, IsFinaleEnding ? damage * 2.0 : damage / 2.0);
+				damage = IsFinaleEnding ? 0.0 : damage / 2.0;
+				return Plugin_Changed;
 			}
-			return Plugin_Stop;
 		}
 	}
 	return Plugin_Continue;
