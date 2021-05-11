@@ -110,14 +110,7 @@ public void CVAR_hTotalZombiesChanged(ConVar convar, const char[] oldValue, cons
 
 public void OnEntityCreated(int entity, const char[] classname) {
 	if (StrEqual(classname, "infected") && IsDoneLoading) {
-		//If limiter turned on:
-		if(commonLimit != 0) {
-			if(iCurrentCommons > commonLimit) {
-				SDKHook(entity, SDKHook_SpawnPost, Hook_SpawnPost); 
-				return;
-			}
-		}
-		++iCurrentCommons;
+		SDKHook(entity, SDKHook_SpawnPost, Hook_SpawnPost);
 
 		char m_ModelName[PLATFORM_MAX_PATH];
 		GetEntPropString(entity, Prop_Data, "m_ModelName", m_ModelName, sizeof(m_ModelName));
@@ -141,7 +134,14 @@ public void OnEntityCreated(int entity, const char[] classname) {
 }
 
 public Action Hook_SpawnPost(int entity) {
-    AcceptEntityInput(entity, "Kill");
+	if(commonLimit != 0) {
+		if(iCurrentCommons >= commonLimit) {
+			AcceptEntityInput(entity, "Kill");
+			return Plugin_Continue;
+		}
+	}
+	++iCurrentCommons;
+	return Plugin_Continue;
 } 
 
 public Action Event_InfectedDeath(Event event, const char[] name, bool dontBroadcast) {
