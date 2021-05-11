@@ -21,7 +21,6 @@ static Handle hTakeOverBot, hGoAwayFromKeyboard;
 
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
 
-//TODO: Drop melee on death AND clear on respawn by defib.
 //TODO: Auto increase abm_minplayers based on highest player count
 
 public Plugin myinfo = {
@@ -84,6 +83,7 @@ public void OnPluginStart() {
 	for(int client = 1; client < MaxClients; client++) {
 		if(IsClientConnected(client) && IsClientInGame(client) && GetClientTeam(client) == 2) {
 			if(IsFakeClient(client)) {
+				SDKHook(client, SDKHook_OnTakeDamage, Event_OnTakeDamage);
 				SDKHook(client, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 			}
 		}
@@ -294,7 +294,6 @@ public Action VGUIMenu(UserMsg msg_id, Handle bf, const int[] players, int playe
 	BfReadString(bf, buffer, sizeof(buffer));
 	return StrEqual(buffer, "info") ? Plugin_Handled : Plugin_Continue;
 }  
-//TODO: Might have to actually check for the bot they control, or possibly the bot will call this itself.
 public void OnClientDisconnect(int client) {
 	if(IsClientConnected(client) && IsClientInGame(client) && botDropMeleeWeapon[client] > -1) {
 		float pos[3];
@@ -334,6 +333,24 @@ public Action Event_OnWeaponDrop(int client, int weapon) {
 		#endif
 		RequestFrame(Frame_HideEntity, weapon);
 		botDropMeleeWeapon[client] = weapon;
+	}
+	return Plugin_Continue;
+}
+public Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
+	if(attacker > MaxClients) {
+		char name[16];
+		GetEdictClassname(attacker, name, sizeof(name));
+		if(!StrEqual(name, "infected", true)) {
+			return Plugin_Continue;
+		}
+
+		bool attackerVisible = IsEntityInSightRange(victim, attacker, 130.0, 100.0);
+		if(!attackerVisible) {
+			//Zombie is behind the bot, reduce damage taken and slowly kill zombie (1/10 of default hp per hit)
+			damage = damage / 2.0;
+			SDKHooks_TakeDamage(attacker, victim, victim, 6.0);
+			return Plugin_Changed;
+		}
 	}
 	return Plugin_Continue;
 }
