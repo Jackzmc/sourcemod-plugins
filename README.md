@@ -136,10 +136,10 @@ A collection of small tools:
   * Notification of when someone picks up laser sights (only the first user, includes bots), 
   * Record time it takes for a finale or gauntlet run to be completed.
   * Record the amount of friendly fire damage done
-  * Set the survivor models of any survivor to another correctly.
-  * Chat Alert when a player activates a car alarm
+  * Set the survivor models of any survivor with updating [l4d_survivor_identity_fix](#l4d_survivor_identity_fix)
   * Automatically gives melee weapons that an idle bot dropped once no longer idle
   * Automatically make players go idle when ping spikes
+  * Slowly kill any bots attacking survivor bot's blind spots (Fixes bots stuck taking damage and brain dead)
 
 * **Convars:**
    * `sm_laser_use_notice <0/1>` - Enable notification of when a laser box was used first
@@ -148,6 +148,7 @@ A collection of small tools:
    * `sm_autoidle_ping_max <30.0...>` - "The highest ping a player can have until they will automatically go idle.\n0=OFF, Min is 30
 * **Commands:**
   * `sm_model <player> <character>` - Sets the survivor model of the target player(s). 'character' is name or ID of character.
+  * `sm_surv <player> <character>` - Sets the m_survivorCharacter prop only of the target player(s). 'character' is name or ID of character.
 
 ### l4d2_swarm
 This plugin is used to counter trolls and otherwise bad players. It simply uses the new script function RushVictim() to make all zombies in X radius attack Y target. It's that simple. 
@@ -217,12 +218,25 @@ Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Suppo
   * `l4d2_autocrown_modes_tog <default: 7>` - (Not implemented) - Turn on the plugin in these game modes. 0=All, 1=Coop, 2=Survival, 4=Versus, 8=Scavenge. Add numbers together
 
 ### l4d2_extraplayeritems
-A tool that can automatically provide items for > 5 player co-op games (or versus). When the second saferoom is entered, any time someone heals they will be given an extra kit afterwards until all extra kits are consumed. Extra kits are the same amount of extra palyers. When the level transitions, any players who do not have kits will receive one, and if there is still extra kits, on heal they will be given still.
+A well rounded tool that provides extra utilities to a 5+ co-op campaign. 
 
-Also features a part that will increase the item count on any item, kit, or weapon spawns at a random percentage that increases based on player count. This is controlled by the `l4d2_extraitem_chance` cvar.
+Features:
+* Automatically giving extra kits for each extra player in saferooms
+* Increasing item count for items randomly depending on player count
+* Fix same-models survivors having to fight over ammo pack usage
+* Automatically lock the exit saferoom door until a threshold of players or time has passed
 
 * **Convars:**
   * `l4d2_extraitem_chance` - The base chance (multiplied by player count) of an extra item being spawned. Default: 0.056
+  * `l4d2_extraitems_kitmode` - Decides how extra kits should be added. Default is 0
+    * 0 -> Overwrites previous extra kits
+    * 1 -> Adds onto previous extra kits
+  * `l4d2_extraitems_updateminplayers` - Should the plugin update abm's cvar min_players convar to the player count? (0 no, 1 yes)
+  * `l4d2_extraitems_doorunlock_percent` - The percent of players that need to be loaded in before saferoom door is opened.
+    * Default is 0.8, set to 0 to disable door locking
+  * `l4d2_extraitems_doorunlock_wait` - How many seconds after to unlock saferoom door. 0 to disable timer
+  * `l4d2_extraitems_doorunlock_open` - Controls when or if the door automatically opens after unlocked. Add bits together.
+    * 0 = Never, 1 = When timer expires, 2 = When all players loaded in
 
 ### l4d_survivor_identity_fix
 A fork of [Survivor Identity Fix plugin](https://forums.alliedmods.net/showthread.php?t=280539) that adds support for other plugins to update the model cache. This is used by [L4D2Tools](#L4D2Tools) to update the identity when someone changes their model with `sm_model`. It also will clear the memory of model when a player disconnects entirely or on a new map.
@@ -275,14 +289,16 @@ This fixes an issue with (shitty) custom maps that force sb_all_bot_game to 1 an
 
 ### l4d2_TKStopper
 Plugin that prevents team killers by checking multiple criterias. Default system is as:
-Any survivor that attacks another non-bot, idle or not idle player:
-  1. If done within first 2 minutes of joining OR during finale vehicle arrival is cancelled
-  2. If they do over threshold (default 70 HP), they are banned for 60 minutes
-  3. Lastly, if its just normal friendly fire and they are not an admin, its reversed to them at full damage, and to victim at 1/2
-Friendly fire counts are forgotten on map changes and after 30 seconds of last FF.
+Any survivor that attacks another survivor
+
+1. If within first 2 minutes of joining, no damage is dealt to either victim or attacker. This prevents the next person to join being punished.
+2. If during the finale vehicle arrival, they do 0x damage to victim and take 2x reverse friendly fire
+3. If neither #1 or #2, both the victim and the attacker take 1/2 the original damage
+
+During any of the above three conditions, if they deal (or attempt to deal) over 75 HP in 15 seconds they will be instantly banned for a set period of time (60 minutes). If they are for sure a team killer, it can be extended to a permanent ban.
 
 * **Cvars:**
-  * `l4d2_tk_forgiveness_time <#>` - The minimum amount of seconds to pass (in seconds) where a player's previous accumulated FF is forgive. Default is 30s
+  * `l4d2_tk_forgiveness_time <#>` - The minimum amount of seconds to pass (in seconds) where a player's previous accumulated FF is forgive. Default is 15s
   * `l4d2_tk_bantime` - How long in minutes should a player be banned for? 0 for permanently. Default is 60
-  * `l4d2_tk_ban_ff_threshold` -  How much damage does a player need to do before being instantly banned. Default 70 HP
+  * `l4d2_tk_ban_ff_threshold` -  How much damage does a player need to do before being instantly banned. Default 75 HP
   * `4d2_tk_ban_join_time` -  Upto how many minutes should any new player's FF be ignored. Default is 2 Minutes
