@@ -32,6 +32,12 @@ enum TrollModifier {
 	TrollMod_InstantFire = 1,
 	TrollMod_Repeat = 2
 }
+enum trollType {
+	Type_Constant = 1,
+	Type_Repeat = 2,
+	Type_Single = 4
+}
+
 char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
 	"Reset User", //0
 	"Slow Speed", //1
@@ -109,6 +115,170 @@ bool bChooseVictimAvailable = false; //For charge player feature, is it availabl
 //INTEGERS
 int g_iAmmoTable; //Loads the ammo table to get ammo amounts
 int gChargerVictim = -1; //For charge player feature
+
+enum struct Troll {
+	char name[64];
+	char id[16];
+	char description[128];
+
+	int modifiers;
+}
+
+ArrayList trolls; //<id, Troll>
+
+void LoadTrolls() {
+	trolls = new ArrayList(sizeof(Troll));
+	KeyValues kv = new KeyValues("Trolls");
+	char sPath[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, sPath, sizeof(sPath), "data/feedthetrolls.cfg");
+
+	if(!FileExists(sPath) || !kv.ImportFromFile(sPath)) {
+		delete kv;
+		SetFailState("Could not load list of trolls from data/feedthetrolls.cfg");
+	}
+
+	kv.GotoFirstSubKey();
+
+	char modifiers[8];
+	int loaded;
+	do {
+		Troll troll;
+
+		kv.GetSectionName(troll.name, sizeof(troll.name));
+		kv.GetString("description", troll.description, sizeof(troll.description), "<no description>");
+		kv.GetString("id", troll.id, sizeof(troll.id));
+		kv.GetString("modifiers", modifiers, sizeof(modifiers));
+		
+		if(troll.id[0] == '\0') strcopy(troll.id, sizeof(troll.id), troll.name);
+
+		//Parse the types of troll
+		for(int i = 0; i < strlen(modifiers); i++) {
+			if(modifiers[i] == 's') troll.modifiers |= view_as<int>(Type_Single);
+			else if(modifiers[i] == 'r') troll.modifiers |= view_as<int>(Type_Repeat);
+			else if(modifiers[i] == 'c') troll.modifiers |= view_as<int>(Type_Constant);
+		}
+		trolls.PushArray(troll);
+		++loaded;
+	} while (kv.GotoNextKey(false));
+	delete kv;
+
+	PrintToServer("[FTT] Loaded %d trolls successfully", loaded);
+}
+
+void ApplyTroll(int trollIndex, int victim, int activator, trollType modifier, bool silent = false) {
+	if(GetClientTeam(victim) == 1) {
+		//Victim is spectating, find its bot
+		victim = FindIdlePlayerBot(victim);
+	}
+
+	Troll troll;
+	trolls.GetArray(trollIndex, troll, sizeof(troll));
+
+	bool isActive = HasTroll(trollIndex, victim);
+
+	PrintToChatAll("a=%N v=%N active=%b | %s (%s)", activator, victim, isActive, troll.name, troll.id);
+	if(StrEqual(troll.id, "reset")) {
+		ResetClient(victim, true);
+		ShowActivity(activator, "reset troll effects for %N. ", victim);
+	} else if(StrEqual(troll.id, "slow", true))
+		SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", isActive ? 1.0 : 0.8);
+	else if(StrEqual(troll.id, "highergrav", true))
+		SetEntityGravity(victim,  isActive ? 1.3 : 0.8);
+	else if(StrEqual(troll.id, "half", true)) {
+		int current = GetPrimaryReserveAmmo(victim);
+		SetPrimaryReserveAmmo(victim, current / 2);
+	} else if(StrEqual(troll.id, "uzirules", true)) {
+		TurnOffTrollMode(victim, Troll_NoPickup);
+		TurnOffTrollMode(victim, Troll_PrimaryDisable);
+		SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+	} else if(StrEqual(troll.id, "disable", true)) {
+		TurnOffTrollMode(victim, Troll_UziRules);
+		TurnOffTrollMode(victim, Troll_NoPickup);
+		SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+	} else if(StrEqual(troll.id, "drain", true)) {
+		TurnOffTrollMode(victim, Troll_UziRules);
+		TurnOffTrollMode(victim, Troll_PrimaryDisable);
+		SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+	} else if(StrEqual(troll.id, "clumsy", true)) {
+		int wpn = GetClientSecondaryWeapon(victim);
+		bool hasMelee = DoesClientHaveMelee(victim);
+		if(hasMelee) {
+			float pos[3];
+			int clients[4];
+			GetClientAbsOrigin(victim, pos);
+			int clientCount = GetClientsInRange(pos, RangeType_Visibility, clients, sizeof(clients));
+			for(int i = 0; i < clientCount; i++) {
+				if(clients[i] != victim) {
+					float targPos[3];
+					GetClientAbsOrigin(clients[i], targPos);
+					SDKHooks_DropWeapon(victim, wpn, targPos);
+					CreateTimer(0.2, Timer_GivePistol);
+					return;
+				}
+			}
+			SDKHooks_DropWeapon(victim, wpn);
+		}
+	}else if(StrEqual(troll.id, "cametooearly", true)) {
+		ReplyToCommand(activator, "This troll mode is not implemented.");
+	} else if(StrEqual(troll.id, "killsoftly", true)) {
+		char wpn[32];
+		GetClientWeaponName(victim, 4, wpn, sizeof(wpn));
+		if(StrEqual(wpn, "weapon_adrenaline") || StrEqual(wpn, "weapon_pain_pills")) {
+			ClientCommand(victim, "slot5");
+			g_bPendingItemGive[victim] = true;
+		}else{
+			ReplyToCommand(activator, "User does not have pills or adrenaline");
+			return;
+		}
+		//TODO: Implement TrollMod_Repeat
+		return;
+	} else if(StrEqual(troll.id, "throwitall", true)) {
+		if(modifier == Type_Single)
+			ThrowAllItems(victim);
+		if(hThrowTimer == INVALID_HANDLE && modifier == Type_Repeat) {
+			hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
+		}
+	} else if(StrEqual(troll.id, "gunjam", true)) {
+		int wpn = GetClientWeaponEntIndex(victim, 0);
+		if(wpn > -1)
+			SDKHook(wpn, SDKHook_Reload, Event_WeaponReload);
+		else
+			ReplyToCommand(activator, "Victim does not have a primary weapon.");
+	} else if(StrEqual(troll.id, "swarm", true)) {
+		if(modifier == Type_Single) {
+			FakeClientCommandEx(activator, "sm_swarm #%d", victim);
+		}else if(modifier == Type_Repeat) {
+			FakeClientCommandEx(activator, "sm_swarmtoggle #%d", victim);
+		}else{
+			ReplyToCommand(activator, "Invalid modifier for mode.");
+			return;
+		}
+	} else if(StrEqual(troll.id, "vomit", true)) 
+		L4D_CTerrorPlayer_OnVomitedUpon(victim, victim);
+	else if(modifier != Type_Single) {
+		ReplyToCommand(activator, "Troll you attempted to apply does not exist.");
+		PrintToServer("Troll \"%s\" not implemented (%s)", troll.name, troll.id);
+		return;
+	}
+
+	if(modifier == Type_Constant || modifier == Type_Repeat) {
+		g_iTrollUsers[victim] ^= 1 << view_as<int>(trollIndex) -1;
+	}
+	if(!silent) {
+		if(isActive) {
+			ShowActivity(activator, "deactivated troll \"%s\" on %N. ", troll.name, victim);
+		}else{
+			if(modifier == Type_Repeat)
+				ShowActivity(activator, "activated troll \"%s\" on repeat for %N. ", troll.name, victim);
+			else
+				ShowActivity(activator, "activated troll \"%s\" for %N. ", troll.name, victim);
+		}
+	}
+}
+
+bool HasTroll(int trollIndex, int client) {
+	return ((g_iTrollUsers[client] >> view_as<int>(trollIndex) - 1) & 1) == 1;
+}
 
 //Applies the selected trollMode to the victim.
 //Modifiers are as followed: 0 -> Both (fire instant, and timer), 1 -> Fire Once, 2 -> Start timer
