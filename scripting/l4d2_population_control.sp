@@ -7,7 +7,7 @@
 
 #include <sourcemod>
 #include <sdktools>
-//#include <sdkhooks>
+#include <sdkhooks>
 
 public Plugin myinfo = 
 {
@@ -113,7 +113,7 @@ public void OnEntityCreated(int entity, const char[] classname) {
 		//If limiter turned on:
 		if(commonLimit != 0) {
 			if(iCurrentCommons > commonLimit) {
-				AcceptEntityInput(entity, "kill");
+				SDKHook(entity, SDKHook_SpawnPost, Hook_SpawnPost); 
 				return;
 			}
 		}
@@ -139,6 +139,10 @@ public void OnEntityCreated(int entity, const char[] classname) {
 		}
 	}
 }
+
+public Action Hook_SpawnPost(int entity) {
+    AcceptEntityInput(entity, "Kill");
+} 
 
 public Action Event_InfectedDeath(Event event, const char[] name, bool dontBroadcast) {
 	--iCurrentCommons;
