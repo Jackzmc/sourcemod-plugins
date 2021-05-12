@@ -84,6 +84,7 @@ public void OnPluginStart() {
 ///////////////////////////////////////////////////////////////////////////////
 
 public void OnPluginEnd() {
+	delete trollIds;
 	UnhookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 }
 public void OnMapEnd() {
@@ -486,8 +487,10 @@ public Action Command_ApplyUser(int client, int args) {
 	return Plugin_Handled;
 }
 public Action Command_ListModes(int client, int args) {
-	for(int mode = 0; mode < TROLL_MODE_COUNT; mode++) {
-		ReplyToCommand(client, "%d. %s - %s", mode, TROLL_MODES_NAMES[mode], TROLL_MODES_DESCRIPTIONS[mode]);
+	Troll troll;
+	for(int i = 0; i < trollIds.Length; i++) {
+		GetTrollByIndex(i, troll);
+		ReplyToCommand(client, "%d. %s - %s", i, troll.name, troll.description);
 	}
 	return Plugin_Handled;
 }
@@ -495,18 +498,19 @@ public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && g_iTrollUsers[i] > 0) {
-			int modes = g_iTrollUsers[i], modeCount = 0;
-			char modeListArr[TROLL_MODE_COUNT][32];
-			for(int mode = 1; mode < TROLL_MODE_COUNT; mode++) {
-				//If troll mode exists:
-				if(HasTrollMode(i, view_as<trollMode>(mode))) {
-					modeListArr[modeCount] = TROLL_MODES_NAMES[mode];
-					modeCount++;
+			int activateCount = 0;
+			char[][] modeNames = new char[trollIds.Length][TROLL_NAME_MAX_LENGTH];
+			Troll troll;
+			for(int j = 0; j < trollIds.Length; j++) {
+				GetTrollByIndex(i, troll);
+				if(troll.IsTrolled(i)) {
+					strcopy(modeNames[j], TROLL_NAME_MAX_LENGTH, troll.name);
+					activateCount++;
 				}
 			}
 			char modeList[255];
-			ImplodeStrings(modeListArr, modeCount, ", ", modeList, sizeof(modeList));
-			ReplyToCommand(client, "%N | %d | %s", i, modes, modeList);
+			ImplodeStrings(modeNames, activateCount, ", ", modeList, sizeof(modeList));
+			ReplyToCommand(client, "%N | %d | %s", i, modeList);
 			count++;
 		}
 	}
@@ -741,10 +745,11 @@ public int Menu_ChooseCategory(Menu menu, MenuAction action, int activator, int 
 		Menu trollsMenu = new Menu(Menu_ChooseTroll);
 		trollsMenu.SetTitle("Select a troll");
 
-		char itemId[16];
-		for(int i = 0 ; i < trolls.Length; i++) {
+		char itemId[16], key[TROLL_NAME_MAX_LENGTH];
+		for(int i = 0 ; i < trollIds.Length; i++) {
 			Troll troll;
-			trolls.GetArray(i, troll, sizeof(troll));
+			trollIds.GetKey(i, key, sizeof(key));
+			trolls.GetArray(key, troll, sizeof(troll));
 			if(troll.modifiers & view_as<int>(selectedType) == view_as<int>(selectedType)) {
 				Format(itemId, sizeof(itemId), "%d|%d|%d", targetUserid, i, selectedType);
 				trollsMenu.AddItem(itemId, troll.name);
@@ -769,7 +774,10 @@ public int Menu_ChooseTroll(Menu menu, MenuAction action, int activator, int ite
 		int victim = GetClientOfUserId(targetUserid);
 		trollType type = view_as<trollType>(StringToInt(str[2]));
 
-		ApplyTroll(trollIndex, victim, activator, type);
+		Troll troll;
+		GetTrollByIndex(trollIndex, troll);
+
+		ApplyTroll(troll, victim, activator, type);
 	} else if (action == MenuAction_End)
 		delete menu;
 }
