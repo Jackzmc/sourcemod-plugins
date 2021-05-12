@@ -33,9 +33,7 @@ public void OnPluginStart() {
 	HookUserMessage(GetUserMessageId("VotePass"), VotePassFail);
 	HookUserMessage(GetUserMessageId("VoteFail"), VotePassFail);
 
-	forceKickFFThreshold = CreateConVar("sm_votekick_force_threshold","20.0","The threshold of amount of FF to then automatically kick.\n0: Any attempted damage\n -1: No auto kick.\n>0: When FF count > this", FCVAR_NONE, true, -1.0);
-
-	//HookEvent("vote_started",Event_VoteStarted);
+	forceKickFFThreshold = CreateConVar("sm_votekick_force_threshold","30.0","The threshold of amount of FF to then automatically kick.\n0: Any attempted damage\n -1: No auto kick.\n>0: When FF count > this", FCVAR_NONE, true, -1.0);
 }
 
 public void OnClientPutInServer(int client) {
@@ -74,15 +72,16 @@ public Action VoteStart(int client, const char[] command, int argc) {
 				int target = GetClientOfUserId(StringToInt(option));
 				AdminId callerAdmin = GetUserAdmin(client);
 				AdminId targetAdmin = GetUserAdmin(target);
-				if (targetAdmin != INVALID_ADMIN_ID && callerAdmin != INVALID_ADMIN_ID && GetAdminImmunityLevel(targetAdmin) >= GetAdminImmunityLevel(callerAdmin)) {
-					PrintToChat(target, "%N attempted to vote kick you!", client);
+				if(callerAdmin != INVALID_ADMIN_ID && targetAdmin == INVALID_ADMIN_ID || GetAdminImmunityLevel(targetAdmin) < GetAdminImmunityLevel(callerAdmin)) {
+					PrintToChat(target, "%N has attempted to vote kick you.", client);
+					//possibly plugin_stop
 					return Plugin_Handled;
 				}
-				if(GetClientTeam(target)== 2) {
+				if(GetClientTeam(target) == 2) {
 					disableFFClient = target;
 					ffDamageCount = 0;
 				}
-				PrintToServer("KICK VOTE STARTED | Target=%N | Caller=%N", issue, target, client);
+				PrintToServer("VOTE KICK STARTED | Target=%N | Caller=%N", issue, target, client);
 				return Plugin_Continue;
 			}	
 			//Kick vote started
@@ -97,20 +96,14 @@ public Action VotePassFail(UserMsg msg_id, BfRead msg, const int[] players, int 
 }	
 
 public Action OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
-	if(disableFFClient == attacker) {
-		if(damage > 0.0) {
-			ffDamageCount++;
-		}
+	if(disableFFClient == attacker && damage > 0.0 && victim > 0 && victim <= MaxClients && GetClientTeam(victim) == 2) {
 		if(forceKickFFThreshold.IntValue > -1 && ffDamageCount > 0.0) {
 			//auto kick
-			if(forceKickFFThreshold.FloatValue == 0.0) {
-				KickClient(disableFFClient, "Kicked for excessive friendly fire");
-			}else if(ffDamageCount > forceKickFFThreshold.FloatValue) {
+			if(ffDamageCount > forceKickFFThreshold.FloatValue) {
 				KickClient(disableFFClient, "Kicked for excessive friendly fire");
 			}
 		}
-		damage = 0.0;
-		return Plugin_Handled;
+		return Plugin_Stop;
 	} 
 	return Plugin_Continue;
 }
