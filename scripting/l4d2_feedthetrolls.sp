@@ -29,6 +29,7 @@ public Plugin myinfo =
 
 //TODO: Make bots target player. Possibly automatic . See https://i.jackz.me/2021/05/NVIDIA_Share_2021-05-05_19-36-51.png
 //TODO: Friendly trolling VS punishment trolling
+//TODO: Trolls: Force take pills, Survivor Bot Magnet
 
 //plugin start
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
