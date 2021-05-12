@@ -108,6 +108,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 		if(!IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID)
 			BanClient(client, 0, BANFLAG_AUTO, "TrollMarked", "Banned", "ftt", 0);
 	}
+	ClearAllTrolls(client);
 	g_iTrollUsers[client] = 0;
 	g_iAttackerTarget[client] = 0;
 }
@@ -591,7 +592,7 @@ public Action Command_ApplyTroll(int client, int args) {
 			menu.AddItem(userid, display);
 		}
 	}
-	menu.AddItem("s", "All Survivors");
+	menu.AddItem("-1", "All Survivors");
 	menu.ExitButton = true;
 	menu.Display(client, 0);
 	return Plugin_Handled;
@@ -683,13 +684,8 @@ public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 ///NEW FTT COMMAND MENU HANDLING:
 public int Menu_ChoosePlayer(Menu menu, MenuAction action, int activator, int item) {
 	if (action == MenuAction_Select) {
-		char info[16];
+		char info[8];
 		menu.GetItem(item, info, sizeof(info));
-		if(StrEqual(info, "s", true)) {
-			delete menu;
-			ReplyToCommand(activator, "Sorry, not implemented yet.");
-			return;
-		}
 		int targetUserid = StringToInt(info);
 		// TopMenu categoryMenu = new TopMenu(Menu_CategorySelector);
 		// categoryMenu.AddCategory("One Time Trolls", Menu_TrollSelector, "sm_fta", 0, info);
@@ -771,13 +767,23 @@ public int Menu_ChooseTroll(Menu menu, MenuAction action, int activator, int ite
 
 		int targetUserid = StringToInt(str[0]);
 		int trollIndex = StringToInt(str[1]);
-		int victim = GetClientOfUserId(targetUserid);
 		trollType type = view_as<trollType>(StringToInt(str[2]));
 
 		Troll troll;
 		GetTrollByIndex(trollIndex, troll);
-
-		ApplyTroll(troll, victim, activator, type);
+		if(targetUserId < 0) {
+			for(int i = 1; i <= MaxClients; i++) {
+				if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+					ApplyTroll(troll, i, activator, type);
+				}
+			}
+		}else{
+			int victim = GetClientOfUserId(targetUserid);
+			if(victim > 0)
+				ApplyTroll(troll, victim, activator, type);
+			else
+				ReplyToCommand(activator, "That client is no longer valid.");
+		}
 	} else if (action == MenuAction_End)
 		delete menu;
 }
