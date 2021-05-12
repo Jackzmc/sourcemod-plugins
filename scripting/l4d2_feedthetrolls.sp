@@ -118,7 +118,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 }
 public Action Event_WeaponReload(int weapon) {
 	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwner");
-	if(HasTrollMode(client,Troll_GunJam)) {
+	if(HasTroll(client, Troll_GunJam)) {
 		float dec = GetRandomFloat(0.0, 1.0);
 		if(FloatCompare(dec, 0.50) == -1) { //10% chance gun jams
 			return Plugin_Stop;
@@ -166,7 +166,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	int closestClient = -1;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-			if(class == L4D2Infected_Tank && HasTrollMode(i, Troll_TankMagnet) || (class != L4D2Infected_Tank && HasTrollMode(i, Troll_SpecialMagnet))) {
+			if(class == L4D2Infected_Tank && HasTroll(i, Troll_TankMagnet) || (class != L4D2Infected_Tank && HasTroll(i, Troll_SpecialMagnet))) {
 				GetClientAbsOrigin(i, survPos);
 				float dist = GetVectorDistance(survPos, spPos, true);
 				if(closestClient == -1 || dist < closestDistance) {
@@ -185,13 +185,13 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	return Plugin_Continue;
 }
 public Action L4D2_OnEntityShoved(int client, int entity, int weapon, float vecDir[3], bool bIsHighPounce) {
-	if(client > 0 && client <= MaxClients && HasTrollMode(client, Troll_NoShove) && hShoveFailChance.FloatValue > GetRandomFloat()) {
+	if(client > 0 && client <= MaxClients && HasTroll(client, Troll_NoShove) && hShoveFailChance.FloatValue > GetRandomFloat()) {
 		return Plugin_Handled;
 	}
 	return Plugin_Continue;
 }
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
-	if(HasTrollMode(client, Troll_Honk)) {
+	if(HasTroll(client, Troll_Honk)) {
 		char strings[32][7];
 		int words = ExplodeString(sArgs, " ", strings, sizeof(strings), 5);
 		for(int i = 0; i < words; i++) {
@@ -204,8 +204,8 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		CPrintToChatAll("{blue}%N {default}:  %s", client, message);
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
-	}else if(HasTrollMode(client, Troll_iCantSpellNoMore)) {
-		int type = GetRandomInt(1, TROLL_MODE_COUNT + 8);
+	}else if(HasTroll(client, Troll_iCantSpellNoMore)) {
+		int type = GetRandomInt(1, trolls.Size + 8);
 		char letterSrc, replaceChar;
 		switch(type) {
 			case 1: {
@@ -282,7 +282,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	return Plugin_Continue;
 }
 public Action Event_ItemPickup(int client, int weapon) {
-	if(HasTrollMode(client,Troll_NoPickup)) {
+	if(HasTroll(client, Troll_NoPickup)) {
 		return Plugin_Stop;
 	}else{
 		char wpnName[64];
@@ -294,7 +294,7 @@ public Action Event_ItemPickup(int client, int weapon) {
 			|| StrContains(wpnName, "shotgun") > -1
 		) {
 			//If 4: Only UZI, if 5: Can't switch.
-			if(HasTrollMode(client,Troll_UziRules)) {
+			if(HasTroll(client, Troll_UziRules)) {
 				char currentWpn[32];
 				GetClientWeaponName(client, 0, currentWpn, sizeof(currentWpn));
 				if(StrEqual(wpnName, "weapon_smg", true)) {
@@ -308,7 +308,7 @@ public Action Event_ItemPickup(int client, int weapon) {
 					SetCommandFlags("give", flags|FCVAR_CHEAT);
 					return Plugin_Stop;
 				}
-			}else if(HasTrollMode(client,Troll_PrimaryDisable)) {
+			}else if(HasTroll(client, Troll_PrimaryDisable)) {
 				return Plugin_Stop;
 			}
 			return Plugin_Continue;
@@ -337,7 +337,7 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 			
 			return Plugin_Stop;
 		}
-		if(HasTrollMode(attacker, Troll_DamageBoost)) {
+		if(HasTroll(attacker, Troll_DamageBoost)) {
 			damage * 2;
 			return Plugin_Changed;
 		}
@@ -360,10 +360,10 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 		lastButtonUser = -1;
 	}else if(numClients > 0 && entity > 0 && entity <= MaxClients) {
 		if(StrContains(sample, "survivor/voice") > -1) {
-			if(HasTrollMode(entity, Troll_Honk)) {
+			if(HasTroll(entity, Troll_Honk)) {
 				strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
 				return Plugin_Changed;
-			} else if(HasTrollMode(entity, Troll_VocalizeGag)) {
+			} else if(HasTroll(entity, Troll_VocalizeGag)) {
 				return Plugin_Stop;
 			}
 		}
@@ -438,18 +438,7 @@ public Action Command_ResetUser(int client, int args) {
 //TODO: Add SurvivorBot magnet
 public Action Command_ApplyUser(int client, int args) {
 	if(args < 2) {
-		Menu menu = new Menu(ChoosePlayerHandler);
-		menu.SetTitle("Choose a player");
-		for(int i = 1; i < MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
-				char userid[8], display[16];
-				Format(userid, sizeof(userid), "%d", GetClientUserId(i));
-				GetClientName(i, display, sizeof(display));
-				menu.AddItem(userid, display);
-			}
-		}
-		menu.ExitButton = true;
-		menu.Display(client, 0);
+		ReplyToCommand(client, "Please use sm_ftt for the time being");
 	}else{
 		char arg1[32], arg2[32], arg3[8];
 		GetCmdArg(1, arg1, sizeof(arg1));
@@ -482,7 +471,8 @@ public Action Command_ApplyUser(int client, int args) {
 			for (int i = 0; i < target_count; i++)
 			{
 				if(IsClientConnected(target_list[i]) && IsClientInGame(target_list[i]) && GetClientTeam(target_list[i]) == 2)
-					ApplyModeToClient(client, target_list[i], view_as<trollMode>(mode), TrollMod_None, silent);
+					ApplyTrollByIndex(mode, target_list[i], client, Modifier_Auto, silent);
+					//TODO: Do a menu
 			}
 		}
 	}
@@ -524,7 +514,7 @@ public Action Command_ListTheTrolls(int client, int args) {
 
 public Action Command_MarkPendingTroll(int client, int args) {
 	if(args == 0) {
-		Menu menu = new Menu(ChooseMarkedTroll);
+		Menu menu = new Menu(Menu_ChooseMarkedTroll);
 		menu.SetTitle("Choose a troll to mark");
 		char userid[8], display[16];
 		for(int i = 1; i < MaxClients; i++) {
@@ -602,7 +592,7 @@ public Action Command_ApplyTroll(int client, int args) {
 // MENU HANDLER
 ///////////////////////////////////////////////////////////////////////////////
 
-public int ChooseMarkedTroll(Menu menu, MenuAction action, int activator, int param2) {
+public int Menu_ChooseMarkedTroll(Menu menu, MenuAction action, int activator, int param2) {
 	if (action == MenuAction_Select) {
 		char info[16];
 		menu.GetItem(param2, info, sizeof(info));
@@ -612,77 +602,6 @@ public int ChooseMarkedTroll(Menu menu, MenuAction action, int activator, int pa
 		delete menu;
 }
 
-public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int param2) {
-	/* If an option was selected, tell the client about the item. */
-    if (action == MenuAction_Select) {
-		char info[16];
-		menu.GetItem(param2, info, sizeof(info));
-		int userid = StringToInt(info);
-		
-		Menu trollMenu = new Menu(ChooseModeMenuHandler);
-		trollMenu.SetTitle("Choose a troll mode");
-		for(int i = 0; i < TROLL_MODE_COUNT; i++) {
-			char id[8];
-			Format(id, sizeof(id), "%d|%d", userid, i);
-			trollMenu.AddItem(id, TROLL_MODES_NAMES[i]);
-		}
-		trollMenu.ExitButton = true;
-		trollMenu.Display(param1, 0);
-    } else if (action == MenuAction_End)
-        delete menu;
-}
-public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
-    /* If an option was selected, tell the client about the item. */
-    if (action == MenuAction_Select) {
-		char info[16];
-		menu.GetItem(param2, info, sizeof(info));
-		char str[2][8];
-		ExplodeString(info, "|", str, 2, 8, false);
-		int userid = StringToInt(str[0]);
-		int client = GetClientOfUserId(userid);
-		trollMode mode = view_as<trollMode>(StringToInt(str[1]));
-		//If mode has an option to be single-time fired/continous/both, prompt:
-		if(mode == Troll_Clumsy 
-			|| mode ==Troll_ThrowItAll
-			|| mode == Troll_PrimaryDisable
-			|| mode == Troll_CameTooEarly
-			|| mode == Troll_Swarm
-		) {
-			Menu modiferMenu = new Menu(ChooseTrollModiferHandler); 
-			modiferMenu.SetTitle("Choose Troll Modifer Option");
-			char singleUse[16], multiUse[16], bothUse[16];
-			Format(singleUse, sizeof(singleUse), "%d|%d|1", userid, mode);
-			Format(multiUse,   sizeof(multiUse), "%d|%d|2", userid, mode);
-			Format(bothUse,     sizeof(bothUse), "%d|%d|3", userid, mode);
-			modiferMenu.AddItem(singleUse, "Activate once");
-			modiferMenu.AddItem(multiUse, "Activate Periodically");
-			modiferMenu.AddItem(bothUse, "Activate Periodically & Instantly");
-			modiferMenu.ExitButton = true;
-			modiferMenu.Display(param1, 0);
-		} else {
-			ApplyModeToClient(param1, client, mode, TrollMod_None);
-		}
-    } else if (action == MenuAction_End)
-        delete menu;
-}
-public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, int param2) {
-	if (action == MenuAction_Select) {
-		char info[16];
-		menu.GetItem(param2, info, sizeof(info));
-		char str[3][8];
-		ExplodeString(info, "|", str, 3, 8, false);
-		int client = GetClientOfUserId(StringToInt(str[0]));
-		trollMode mode = view_as<trollMode>(StringToInt(str[1]));
-		int modifier = StringToInt(str[2]);
-		if(modifier == 2 || modifier == 3)
-			ApplyModeToClient(param1, client, mode, TrollMod_Repeat);
-		else
-			ApplyModeToClient(param1, client, mode, TrollMod_InstantFire);
-	} else if (action == MenuAction_End)	
-		delete menu;
-}
-
-///NEW FTT COMMAND MENU HANDLING:
 public int Menu_ChoosePlayer(Menu menu, MenuAction action, int activator, int item) {
 	if (action == MenuAction_Select) {
 		char info[8];
@@ -732,13 +651,13 @@ public int Menu_ChooseCategory(Menu menu, MenuAction action, int activator, int 
 		int targetUserid = StringToInt(str[0]);
 		
 		//Check category type
-		trollType selectedType;
+		trollModifier selectedMod;
 		if(StrEqual(str[1], "s", true)) {
-			selectedType = Type_Single;
+			selectedMod = Modifier_Single;
 		}else if(StrEqual(str[1], "r", true)) {
-			selectedType = Type_Repeat;
+			selectedMod = Modifier_Repeat;
 		}else if(StrEqual(str[1], "c", true)) {
-			selectedType = Type_Constant;
+			selectedMod = Modifier_Constant;
 		}else if(StrEqual(str[1], "x", true)) {
 			int client = GetClientOfUserId(targetUserid);
 			ClearAllTrolls(client);
@@ -755,8 +674,8 @@ public int Menu_ChooseCategory(Menu menu, MenuAction action, int activator, int 
 			Troll troll;
 			trollIds.GetKey(i, key, sizeof(key));
 			trolls.GetArray(key, troll, sizeof(troll));
-			if(troll.modifiers & view_as<int>(selectedType) == view_as<int>(selectedType)) {
-				Format(itemId, sizeof(itemId), "%d|%d|%d", targetUserid, i, selectedType);
+			if(troll.modifiers & view_as<int>(selectedMod) == view_as<int>(selectedMod)) {
+				Format(itemId, sizeof(itemId), "%d|%d|%d", targetUserid, i, selectedMod);
 				trollsMenu.AddItem(itemId, troll.name);
 			}
 		}
@@ -776,20 +695,20 @@ public int Menu_ChooseTroll(Menu menu, MenuAction action, int activator, int ite
 
 		int targetUserid = StringToInt(str[0]);
 		int trollIndex = StringToInt(str[1]);
-		trollType type = view_as<trollType>(StringToInt(str[2]));
+		trollModifier modifier = view_as<trollModifier>(StringToInt(str[2]));
 
 		Troll troll;
 		GetTrollByIndex(trollIndex, troll);
 		if(targetUserid == -1) {
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
-					ApplyTroll(troll, i, activator, type);
+					ApplyTroll(troll, i, activator, modifier);
 				}
 			}
 		}else{
 			int victim = GetClientOfUserId(targetUserid);
 			if(victim > 0)
-				ApplyTroll(troll, victim, activator, type);
+				ApplyTroll(troll, victim, activator, modifier);
 			else
 				ReplyToCommand(activator, "That client is no longer valid.");
 		}
@@ -809,7 +728,7 @@ public void StopItemGive(int client) {
 public Action Timer_ThrowTimer(Handle timer) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) &&HasTrollMode(i,Troll_ThrowItAll)) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && HasTroll(i, Troll_ThrowItAll)) {
 			ThrowAllItems(i);
 			count++;
 		}
@@ -820,14 +739,14 @@ public Action Timer_Main(Handle timer) {
 	static int loop;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i)) {
-			if(HasTrollMode(i, Troll_SlowDrain)) {
+			if(HasTroll(i, Troll_SlowDrain)) {
 				if(loop % 4 == 0) {
 					int hp = GetClientHealth(i);
 					if(hp > 50) {
 						SetEntProp(i, Prop_Send, "m_iHealth", hp - 1); 
 					}
 				}
-			}else if(HasTrollMode(i, Troll_TempHealthQuickDrain)) {
+			}else if(HasTroll(i, Troll_TempHealthQuickDrain)) {
 				if(loop % 2 == 0) {
 					float bufferTime = GetEntPropFloat(i, Prop_Send, "m_healthBufferTime");
 					float buffer = GetEntPropFloat(i, Prop_Send, "m_healthBuffer");
@@ -884,9 +803,9 @@ public Action Timer_ResetAutoPunish(Handle timer, int user) {
 	int client = GetClientOfUserId(user);
 	if(client) {
 		if(hAutoPunish.IntValue & 2 == 2) 
-			TurnOffTrollMode(client, Troll_SpecialMagnet);
+			TurnOffTrollByIndex(client, Troll_SpecialMagnet);
 		if(hAutoPunish.IntValue & 1 == 1) 
-			TurnOffTrollMode(client, Troll_TankMagnet);
+			TurnOffTrollByIndex(client, Troll_TankMagnet);
 	}
 }
 
