@@ -12,6 +12,8 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <jutils>
+#include <left4dhooks>
+
 bool lateLoaded, IsFinaleEnding;
 int iJoinTime[MAXPLAYERS+1];
 float playerTotalDamageFF[MAXPLAYERS+1];
@@ -100,7 +102,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 				return Plugin_Stop;
 			}
 			//If the amount of MS is <= join time threshold * 60000 ms then cancel
-			if(GetTime() - iJoinTime[attacker] <= hJoinTime.IntValue * 60000) {
+			if(L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) || time - iJoinTime[attacker] <= hJoinTime.IntValue * 60000) {
 				return Plugin_Stop;
 			}else {
 				SDKHooks_TakeDamage(attacker, attacker, attacker, IsFinaleEnding ? damage * 2.0 : damage / 2.0);
