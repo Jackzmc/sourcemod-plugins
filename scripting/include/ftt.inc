@@ -1,6 +1,7 @@
 #define AUTOPUNISH_FLOW_MIN_DISTANCE 5000.0
 #define AUTOPUNISH_MODE_COUNT 3
 #define TROLL_MODE_COUNT 23
+#define TROLL_NAME_MAX_LENGTH 64
 //
 enum trollMode {
 	Troll_Reset = 0, //0
@@ -117,17 +118,27 @@ int g_iAmmoTable; //Loads the ammo table to get ammo amounts
 int gChargerVictim = -1; //For charge player feature
 
 enum struct Troll {
-	char name[64];
+	char name[TROLL_NAME_MAX_LENGTH];
 	char id[16];
 	char description[128];
 
 	int modifiers;
+	bool players[MAXPLAYERS+1];
+
+	bool IsTrolled(int client) {
+		return this.players[client];
+	}
+
+	void SetTrolled(int client, bool value) {
+		this.players[client] = value;
+	}
 }
 
-ArrayList trolls; //<id, Troll>
+StringMap trolls; //<id, Troll>
+StringMapSnapshot trollIds;
 
 void LoadTrolls() {
-	trolls = new ArrayList(sizeof(Troll));
+	trolls = new StringMap();
 	KeyValues kv = new KeyValues("Trolls");
 	char sPath[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, sPath, sizeof(sPath), "data/feedthetrolls.cfg");
@@ -157,28 +168,31 @@ void LoadTrolls() {
 			else if(modifiers[i] == 'r') troll.modifiers |= view_as<int>(Type_Repeat);
 			else if(modifiers[i] == 'c') troll.modifiers |= view_as<int>(Type_Constant);
 		}
-		trolls.PushArray(troll);
+		trolls.SetArray(troll.id, troll, sizeof(troll), true);
 		++loaded;
 	} while (kv.GotoNextKey(false));
 	delete kv;
-
+	trollIds = trolls.Snapshot();
 	PrintToServer("[FTT] Loaded %d trolls successfully", loaded);
 }
 
-void ApplyTroll(int trollIndex, int victim, int activator, trollType modifier, bool silent = false) {
+void GetTrollByIndex(int index, Troll troll) {
+	char key[TROLL_NAME_MAX_LENGTH];
+	trollIds.GetKey(index, key, sizeof(key));
+	trolls.GetArray(key, troll, sizeof(troll));
+}
+
+void ApplyTroll(Troll troll, int victim, int activator, trollType modifier, bool silent = false) {
 	if(GetClientTeam(victim) == 1) {
 		//Victim is spectating, find its bot
 		victim = FindIdlePlayerBot(victim);
 	}
 
-	Troll troll;
-	trolls.GetArray(trollIndex, troll, sizeof(troll));
+	bool isActive = troll.IsTrolled(victim);
 
-	bool isActive = HasTroll(trollIndex, victim);
-
-	PrintToChatAll("a=%N v=%N active=%b | %s (%s)", activator, victim, isActive, troll.name, troll.id);
 	if(StrEqual(troll.id, "reset")) {
 		ResetClient(victim, true);
+		ClearAllTrolls(victim);
 		ShowActivity(activator, "reset troll effects for %N. ", victim);
 	} else if(StrEqual(troll.id, "slow", true))
 		SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", isActive ? 1.0 : 0.8);
@@ -262,8 +276,9 @@ void ApplyTroll(int trollIndex, int victim, int activator, trollType modifier, b
 	}
 
 	if(modifier == Type_Constant || modifier == Type_Repeat) {
-		g_iTrollUsers[victim] ^= 1 << view_as<int>(trollIndex) -1;
+		troll.SetTrolled(victim, !isActive);
 	}
+
 	if(!silent) {
 		if(isActive) {
 			ShowActivity(activator, "deactivated troll \"%s\" on %N. ", troll.name, victim);
@@ -276,8 +291,12 @@ void ApplyTroll(int trollIndex, int victim, int activator, trollType modifier, b
 	}
 }
 
-bool HasTroll(int trollIndex, int client) {
-	return ((g_iTrollUsers[client] >> view_as<int>(trollIndex) - 1) & 1) == 1;
+void ClearAllTrolls(int client) {
+	Troll troll;
+	for(int i = 0; i < trollIds.Length; i++) {
+		GetTrollByIndex(i, troll);
+		troll.players[i] = false;
+	}
 }
 
 //Applies the selected trollMode to the victim.

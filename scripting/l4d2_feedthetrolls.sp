@@ -389,6 +389,7 @@ public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const cha
 ///////////////////////////////////////////////////////////////////////////////
 
 public Action Command_FeedTheCrescendoTroll(int client, int args) {
+	//TODO: Menu confirm prompt
 	if(lastCrescendoUser > -1) {
 		ActivateAutoPunish(lastCrescendoUser);
 		ReplyToCommand(client, "Activated auto punish on %N", lastCrescendoUser);
@@ -704,6 +705,8 @@ public int Menu_ChoosePlayer(Menu menu, MenuAction action, int activator, int it
 		categoryMenu.AddItem(itemId, "Constant Trolls");
 		Format(itemId, sizeof(itemId), "%d|r", targetUserid);
 		categoryMenu.AddItem(itemId, "Repeat Trolls");
+		Format(itemId, sizeof(itemId), "%d|x", targetUserid);
+		categoryMenu.AddItem(itemId, "Reset All Trolls");
 		categoryMenu.ExitButton = true;
 		categoryMenu.Display(activator, 0);
 	} else if (action == MenuAction_End)
@@ -736,6 +739,12 @@ public int Menu_ChooseCategory(Menu menu, MenuAction action, int activator, int 
 			selectedType = Type_Repeat;
 		}else if(StrEqual(str[1], "c", true)) {
 			selectedType = Type_Constant;
+		}else if(StrEqual(str[1], "x", true)) {
+			int client = GetClientOfUserId(targetUserid);
+			ClearAllTrolls(client);
+			ResetClient(client, true);
+			ShowActivity(activator, "reset troll effects for %N. ", client);
+			return;
 		}
 
 		Menu trollsMenu = new Menu(Menu_ChooseTroll);
@@ -771,7 +780,7 @@ public int Menu_ChooseTroll(Menu menu, MenuAction action, int activator, int ite
 
 		Troll troll;
 		GetTrollByIndex(trollIndex, troll);
-		if(targetUserId < 0) {
+		if(targetUserid == -1) {
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
 					ApplyTroll(troll, i, activator, type);
