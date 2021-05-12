@@ -14,7 +14,7 @@
 #include <jutils>
 #include <left4dhooks>
 
-bool lateLoaded, IsFinaleEnding;
+bool lateLoaded, IsFinaleEnding, isPlayerTroll[MAXPLAYERS+1];
 int iJoinTime[MAXPLAYERS+1];
 float playerTotalDamageFF[MAXPLAYERS+1];
 int lastFF[MAXPLAYERS+1];
@@ -52,6 +52,7 @@ public void OnPluginStart()
 	//AutoExecConfig(true, "l4d2_tkstopper");
 
 	HookEvent("finale_vehicle_ready", Event_FinaleVehicleReady);
+	HookEvent("player_disconnect", Event_PlayerDisconnect);
 
 	if(lateLoaded) {
 		for(int i = 1; i <= MaxClients; i++) {
@@ -79,6 +80,14 @@ public void OnClientDisconnect(int client) {
 	playerTotalDamageFF[client] = 0.0;
 }
 
+public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0 && isPlayerTroll[client]) {
+		BanClient(client, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
+	}
+	isPlayerTroll[client] = false;
+}
+
 //TODO: Autopunish on troll instead of ban. Activate troll that does 0 damage from their guns & xswarm
 
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
@@ -86,7 +95,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		if(GetClientTeam(victim) != 2 || GetClientTeam(attacker) != 2 || attacker == victim) return Plugin_Continue;
 		//Allow friendly firing BOTS that aren't idle players:
 		//if(IsFakeClient(victim) && !HasEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") || GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) return Plugin_Continue;
-
+		if(isPlayerTroll[attacker]) return Plugin_Stop;
 		int time = GetTime();
 		if(time - lastFF[attacker] > hForgivenessTime.IntValue) {
 			playerTotalDamageFF[attacker] = 0.0;
@@ -95,6 +104,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		lastFF[attacker] = time;
 		if(GetUserAdmin(attacker) == INVALID_ADMIN_ID) {
 			if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding) {
+				isPlayerTroll[attacker] = true;
 				LogMessage("[NOTICE] Banning %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				NotifyAllAdmins("[Notice] Banning %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				//BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
@@ -105,8 +115,8 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 			if(L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) || time - iJoinTime[attacker] <= hJoinTime.IntValue * 60000) {
 				return Plugin_Stop;
 			}else {
-				SDKHooks_TakeDamage(attacker, attacker, attacker, IsFinaleEnding ? damage * 2.0 : damage / 2.0);
-				damage = IsFinaleEnding ? 0.0 : damage / 2.0;
+				SDKHooks_TakeDamage(attacker, attacker, attacker, IsFinaleEnding ? damage * 2.0 : damage / 1.9);
+				damage = IsFinaleEnding ? 0.0 : damage / 2.1;
 				return Plugin_Changed;
 			}
 		}
