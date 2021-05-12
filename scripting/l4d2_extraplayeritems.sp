@@ -13,6 +13,7 @@
 #include <jutils>
 //TODO: On 3rd/4th kit pickup in area, add more
 //TODO: Add extra pills too, on pickup
+//TODO: Set ammo pack ammo to max primary
 
 #define L4D2_WEPUPGFLAG_NONE            (0 << 0)
 #define L4D2_WEPUPGFLAG_INCENDIARY      (1 << 0)
@@ -24,9 +25,9 @@
 
 public Plugin myinfo = 
 {
-	name =  "L4D2 Extra Player Items", 
+	name =  "L4D2 Extra Player Tools", 
 	author = "jackzmc", 
-	description = "Automatic system to give extra players kits, and provide extra items.", 
+	description = "Automatic system for management of 5+ player games. Provides extra kits, items, and more", 
 	version = PLUGIN_VERSION, 
 	url = ""
 };
@@ -51,7 +52,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
-	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2) {
+	if(g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
@@ -70,7 +71,7 @@ public void OnPluginStart() {
 	hUpdateMinPlayers		 = CreateConVar("l4d2_extraitems_updateminplayers", "1", "Should the plugin update abm's cvar min_players convar to the player count?\n 0 -> NO, 1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
 	hMinPlayersSaferoomDoor  = CreateConVar("l4d2_extraitems_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
 	hSaferoomDoorWaitSeconds = CreateConVar("l4d2_extraitems_doorunlock_wait", "35", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
-	hSaferoomDoorAutoOpen = CreateConVar("l4d2_extraitems_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
+	hSaferoomDoorAutoOpen 	 = CreateConVar("l4d2_extraitems_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
 	
 	if(hUpdateMinPlayers.BoolValue) {
 		hMinPlayers = FindConVar("abm_minplayers");
@@ -205,7 +206,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	int client = GetClientOfUserId(user);
 	if(GetClientTeam(client) == 2) {
 		if(!IsFakeClient(client)) {
-			if(firstSaferoomDoorEntity > 0 && playerstoWaitFor > 0 && ++playersLoadedIn / playerstoWaitFor >= hMinPlayersSaferoomDoor.FloatValue) {
+			if(firstSaferoomDoorEntity > 0 && playerstoWaitFor > 0 && ++playersLoadedIn / playerstoWaitFor > hMinPlayersSaferoomDoor.FloatValue) {
 				SetEntProp(firstSaferoomDoorEntity, Prop_Send, "m_bLocked", 0);
 				if(hSaferoomDoorAutoOpen.IntValue % 2 == 2) {
 					AcceptEntityInput(firstSaferoomDoorEntity, "Open");
@@ -355,6 +356,10 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 		GetEntityClassname(primaryWeapon, classname, sizeof(classname));
 		if(StrEqual(classname, "weapon_grenade_launcher", true)) ammo = 1;
 		else if(StrEqual(classname, "weapon_rifle_m60", true)) ammo = 150;
+		else {
+			int currentAmmo = GetEntProp(primaryWeapon, Prop_Send, "m_iClip1");
+			if(currentAmmo > ammo) ammo = currentAmmo;
+		}
 		SetEntProp(primaryWeapon, Prop_Send, "m_nUpgradedPrimaryAmmoLoaded", ammo);
 
 		clients.Push(activator);
