@@ -155,7 +155,7 @@ public Action Command_RestoreState(int client, int args) {
 // /////////////////////////////////////////////////////////////////////////////
 
 public void OnMapStart() {
-	CreateTimer(120.0, Timer_AutoRecord, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(180.0, Timer_AutoRecord, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public void OnClientPutInServer(int client) {
@@ -261,7 +261,7 @@ void RecordGlobalState(const char[] type, int skipTime = 0) {
 		}
 		playerStatesList[0][0].timeRecorded = time;
 	}
-	PrintToConsoleAll("[Rollback] Recorded all player states for: %s", type);
+	//PrintToConsoleAll("[Rollback] Recorded all player states for: %s", type);
 }
 
 void TransferArray(int oldIndex, int newIndex) {
