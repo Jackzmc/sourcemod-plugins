@@ -18,6 +18,7 @@ static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1];
 static bool isHighPingIdle[MAXPLAYERS+1], isL4D1Survivors;
 static Handle hTakeOverBot, hGoAwayFromKeyboard;
+static char lastSound[MAXPLAYERS+1][64];
 
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
 
@@ -94,9 +95,11 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_ROOT);
 	RegAdminCmd("sm_surv", Cmd_SetSurvivor, ADMFLAG_ROOT);
 	RegAdminCmd("sm_respawn_all", Command_RespawnAll, ADMFLAG_CHEATS, "Makes all dead players respawn in a closet");
+	RegAdminCmd("sm_playsound", Command_PlaySound, ADMFLAG_CHEATS, "Plays a gamesound for player");
+	RegAdminCmd("sm_stopsound", Command_StopSound, ADMFLAG_CHEATS, "Stops the last played gamesound for player");
 	RegConsoleCmd("sm_pmodels", Command_ListClientModels, "Lists all player's models");
 
-	CreateTimer(5.0, Timer_CheckPlayerPings, _, TIMER_REPEAT);
+	CreateTimer(8.0, Timer_CheckPlayerPings, _, TIMER_REPEAT);
 }
 
 public Action Timer_CheckPlayerPings(Handle timer) {
@@ -111,6 +114,7 @@ public Action Timer_CheckPlayerPings(Handle timer) {
 					if(iHighPingCount[i]++ > 2) {
 						PrintToChat(i, "Due to your high ping (%d ms) you have been moved to AFK.", ping);
 						PrintToChat(i, "You will be automatically switched back once your ping restores");
+						//PrintToChat(i, "Type /pingignore to disable this feature.");
 						SDKCall(hGoAwayFromKeyboard, i);
 						isHighPingIdle[i] = true;
 						iHighPingCount[i] = 0;
@@ -146,6 +150,83 @@ public Action Command_ListClientModels(int client, int args) {
 			ReplyToCommand(client, "%N's model: %s", i, model);
 		}
 	}
+}
+public Action Command_PlaySound(int client, int args) {
+	if(args < 2) {
+		ReplyToCommand(client, "Usage: sm_playsound <player> <soundpath>");
+	}else{
+		char arg1[32], arg2[64];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+
+		char target_name[MAX_TARGET_LENGTH];
+		int target_list[MAXPLAYERS], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+				arg1,
+				client,
+				target_list,
+				MAXPLAYERS,
+				COMMAND_FILTER_CONNECTED,
+				target_name,
+				sizeof(target_name),
+				tn_is_ml)) <= 0)
+		{
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		int target;
+		for (int i = 0; i < target_count; i++) {
+			target = target_list[i];
+			StopSound(target, 0, lastSound[target]);
+		}
+		PrecacheSound(arg2);
+		for (int i = 0; i < target_count; i++) {
+			target = target_list[i];
+			PrintToChatAll("playgamesound %s for %N", arg2, target);
+			if(IsClientConnected(target) && IsClientInGame(target)) {
+				strcopy(lastSound[target], 64, arg2);
+			}
+		}
+	}
+	return Plugin_Handled;
+}
+public Action Command_StopSound(int client, int args) {
+	if(args < 2) {
+		ReplyToCommand(client, "Usage: sm_stopsound <player> [soundpath or leave blank for previous]");
+	}else{
+		char arg1[32], arg2[64];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+
+		char target_name[MAX_TARGET_LENGTH];
+		int target_list[MAXPLAYERS], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+				arg1,
+				client,
+				target_list,
+				MAXPLAYERS,
+				COMMAND_FILTER_CONNECTED,
+				target_name,
+				sizeof(target_name),
+				tn_is_ml)) <= 0)
+		{
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		int target;
+		for (int i = 0; i < target_count; i++) {
+			target = target_list[i];
+			if(args < 2) 
+				StopSound(target, 0, lastSound[target]);
+			else
+				StopSound(target, 0, arg2);
+		}
+	}
+	return Plugin_Handled;
 }
 public Action Command_SetClientModel(int client, int args) {
 	if(args < 1) {
