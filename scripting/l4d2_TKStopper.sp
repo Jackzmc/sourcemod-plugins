@@ -19,7 +19,9 @@ int iJoinTime[MAXPLAYERS+1];
 float playerTotalDamageFF[MAXPLAYERS+1];
 int lastFF[MAXPLAYERS+1];
 
-ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime;
+ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime, hAction;
+
+//TODO: Toggle ban, kick, delayed ban, etc
 
 public Plugin myinfo = 
 {
@@ -48,6 +50,7 @@ public void OnPluginStart()
 	hBanTime = CreateConVar("l4d2_tk_bantime", "60", "How long in minutes should a player be banned for? 0 for permanently");
 	hThreshold = CreateConVar("l4d2_tk_ban_ff_threshold", "75.0", "How much damage does a player need to do before being instantly banned");
 	hJoinTime = CreateConVar("l4d2_tk_ban_join_time", "2", "Upto how many minutes should any new player be subjected to instant bans on any FF");
+	hAction = CreateConVar("l4d2_tk_action", "3", "How should the TK be punished?\n0 = No action (No message), 1 = Kick, 2 = Instant Ban, 3 = Ban on disconnect");
 
 	//AutoExecConfig(true, "l4d2_tkstopper");
 
@@ -104,11 +107,14 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		lastFF[attacker] = time;
 		if(GetUserAdmin(attacker) == INVALID_ADMIN_ID) {
 			if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding) {
-				isPlayerTroll[attacker] = true;
 				LogMessage("[NOTICE] Banning %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				NotifyAllAdmins("[Notice] Banning %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
-				//BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
-				//KickClient(attacker, "Excessive FF");
+				if(hAction.IntValue == 1) 
+					KickClient(attacker, "Excessive FF");
+				else if(hAction.IntValue == 2)
+					BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
+				else if(hAction.IntValue == 3)
+					isPlayerTroll[attacker] = true;
 				return Plugin_Stop;
 			}
 			//If the amount of MS is <= join time threshold * 60000 ms then cancel
