@@ -14,7 +14,7 @@
 #include <jutils>
 #include <left4dhooks>
 
-bool lateLoaded, IsFinaleEnding, isPlayerTroll[MAXPLAYERS+1];
+bool lateLoaded, IsFinaleEnding, isPlayerTroll[MAXPLAYERS+1], isImmune[MAXPLAYERS+1];
 int iJoinTime[MAXPLAYERS+1];
 float playerTotalDamageFF[MAXPLAYERS+1];
 int lastFF[MAXPLAYERS+1];
@@ -57,6 +57,8 @@ public void OnPluginStart()
 	HookEvent("finale_vehicle_ready", Event_FinaleVehicleReady);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 
+	RegAdminCmd("sm_ignore", Command_IgnorePlayer, ADMFLAG_KICK, "Makes a player immune for any anti trolling detection for a session");
+
 	if(lateLoaded) {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
@@ -95,37 +97,77 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
 	if(damage > 0.0 && damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
+		if(GetUserAdmin(attacker) != INVALID_ADMIN_ID || isImmune[attacker]) return Plugin_Continue;
 		if(GetClientTeam(victim) != 2 || GetClientTeam(attacker) != 2 || attacker == victim) return Plugin_Continue;
 		//Allow friendly firing BOTS that aren't idle players:
 		//if(IsFakeClient(victim) && !HasEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") || GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) return Plugin_Continue;
 		if(isPlayerTroll[attacker]) return Plugin_Stop;
+
 		int time = GetTime();
 		if(time - lastFF[attacker] > hForgivenessTime.IntValue) {
 			playerTotalDamageFF[attacker] = 0.0;
 		}
 		playerTotalDamageFF[attacker] += damage;
 		lastFF[attacker] = time;
-		if(GetUserAdmin(attacker) == INVALID_ADMIN_ID) {
-			if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding) {
+		
+		if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding) {
+			if(hAction.IntValue == 1) {
+				LogMessage("[NOTICE] Kicking %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				NotifyAllAdmins("[Notice] Kicking %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				KickClient(attacker, "Excessive FF");
+			} else if(hAction.IntValue == 2) {
 				LogMessage("[NOTICE] Banning %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				NotifyAllAdmins("[Notice] Banning %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
-				if(hAction.IntValue == 1) 
-					KickClient(attacker, "Excessive FF");
-				else if(hAction.IntValue == 2)
-					BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
-				else if(hAction.IntValue == 3)
-					isPlayerTroll[attacker] = true;
-				return Plugin_Stop;
+				BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
+			} else if(hAction.IntValue == 3) {
+				LogMessage("[NOTICE] %N will be banned for FF on disconnect (%f HP) for %d minutes. ", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				isPlayerTroll[attacker] = true;
 			}
-			//If the amount of MS is <= join time threshold * 60000 ms then cancel
-			if(L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) || time - iJoinTime[attacker] <= hJoinTime.IntValue * 60000) {
-				return Plugin_Stop;
-			}else {
-				SDKHooks_TakeDamage(attacker, attacker, attacker, IsFinaleEnding ? damage * 2.0 : damage / 1.9);
-				damage = IsFinaleEnding ? 0.0 : damage / 2.1;
-				return Plugin_Changed;
-			}
+			return Plugin_Stop;
+		}
+		//If the amount of MS is <= join time threshold * 60000 ms then cancel
+		if(L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) || time - iJoinTime[attacker] <= hJoinTime.IntValue * 60000) {
+			return Plugin_Stop;
+		}else {
+			SDKHooks_TakeDamage(attacker, attacker, attacker, IsFinaleEnding ? damage * 2.0 : damage / 1.9);
+			damage = IsFinaleEnding ? 0.0 : damage / 2.1;
+			return Plugin_Changed;
 		}
 	}
 	return Plugin_Continue;
+}
+
+public Action Command_IgnorePlayer(int client, int args) {
+	char arg1[32];
+	GetCmdArg(1, arg1, sizeof(arg1));
+
+	char target_name[MAX_TARGET_LENGTH];
+	int target_list[1], target_count;
+	bool tn_is_ml;
+
+	if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			MaxClients,
+			COMMAND_FILTER_ALIVE, 
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0)
+	{
+		ReplyToTargetError(client, target_count);
+		return Plugin_Handled;
+	}
+
+	for(int i = 0; i < target_count; i++) {
+		int target = target_list[i];
+		if(isImmune[target])
+			ReplyToCommand(client, "%N is no longer immune to teamkiller detection.", target);
+		else
+			ReplyToCommand(client, "%N is now immune to teamkiller detection for this session.", target);
+		isImmune[target] = !isImmune[target];
+	}
+
+	return Plugin_Handled;
 }
