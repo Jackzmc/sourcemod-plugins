@@ -305,7 +305,7 @@ public Action Event_MapTransition(Event event, const char[] name, bool dontBroad
 	playerstoWaitFor = GetSurvivorsCount();
 }
 public Action Event_Pickup(int client, int weapon) {
-
+	//TODO: Stop during transition
 	if(extraKitsAmount > 0) {
 		char name[32];
 		GetEntityClassname(weapon, name, sizeof(name));

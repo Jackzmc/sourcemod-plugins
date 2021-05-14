@@ -33,6 +33,9 @@ static int AutoCrownBot = -1, AutoCrownTarget, currentDifficulty, PathfindTries 
 static float CrownPos[3], CrownAng[3];
 static ConVar hValidDifficulties, hAllowedGamemodes;
 
+float TRACE_MIN_SIZE[3] = {0.0, 0.0, 0.0}, TRACE_MAX_SIZE[3] = {1.0, 1.0, 1.0};
+
+
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	if(late) lateLoaded = true;
 } 
@@ -243,11 +246,11 @@ public Action Timer_Scan(Handle hdl) {
 							GetEntPropVector(witchID, Prop_Send, "m_vecOrigin", witchPos);
 							if(GetVectorDistance(botPosition, witchPos) <= SCAN_RANGE) {
 								//GetEntPropVector(witchID, Prop_Send, "m_angRotation", witchAng);
-								//TODO: Implement a line-of-sight trace
 								#if defined DEBUG
 								PrintToServer("Found a valid witch in range of %N: %d", bot, witchID);
 								PrintToChatAll("Found a valid witch in range of %N: %d", bot, witchID);
 								#endif
+
 								L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(bot), witchPos[0], witchPos[1], witchPos[2]);
 								AutoCrownTarget = witchID;
 								AutoCrownBot = GetClientUserId(bot);

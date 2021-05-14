@@ -229,7 +229,7 @@ public void OnClientCookiesCached(int client) {
 	if(strlen(modelPref) > 0) {
 		int type;
 		if(StringToIntEx(modelPref, type) > 0) {
-			PrintToServer(">>> %N has cookie for: %s", client, survivor_models[type - 1][17]);
+			PrintToServer(">>> %N has cookie for: %s", client, survivor_models[type - 1][18]);
 			strcopy(g_Models[client], 64, survivor_models[type - 1]);
 			g_iPendingCookieModel[client] = type;
 		}
