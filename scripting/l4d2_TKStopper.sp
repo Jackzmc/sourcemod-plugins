@@ -121,7 +121,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 				BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
 			} else if(hAction.IntValue == 3) {
 				LogMessage("[NOTICE] %N will be banned for FF on disconnect (%f HP) for %d minutes. ", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
-				NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%f HP) for %d minutes. Use /ignore <player> to make them immune.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				isPlayerTroll[attacker] = true;
 			}
 			return Plugin_Stop;
@@ -167,6 +167,7 @@ public Action Command_IgnorePlayer(int client, int args) {
 		else
 			ReplyToCommand(client, "%N is now immune to teamkiller detection for this session.", target);
 		isImmune[target] = !isImmune[target];
+		isPlayerTroll[target] = false;
 	}
 
 	return Plugin_Handled;
