@@ -44,7 +44,7 @@ public Plugin myinfo =
 };
 
 static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen;
-static int extraKitsAmount = 4, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
+static int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
 static int isBeingGivenKit[MAXPLAYERS+1];
 static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound, isGameFrozen;
 static ArrayList ammoPacks;
@@ -277,6 +277,8 @@ public void Event_RoundFreezeEnd(Event event, const char[] name, bool dontBroadc
 	if(!isLateLoaded)
 		PopulateItems();
 	int client = FindFirstSurvivor();
+	if(client <= 0) return; //Ignore if no players
+
 	float survPos[3], doorPos[3];
 	GetClientAbsOrigin(client, survPos);
 	if(hMinPlayersSaferoomDoor.FloatValue > 0.0) {
@@ -428,9 +430,8 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 	Prioritize first aid kits somehow? Or split two groups: "utility" (throwables, kits, pill/shots), and "weapon" (all other spawns) 
 */
 public void PopulateItems() {
-	// int survivors = GetRealSurvivorsCount();
-	// if(survivors <= 4) return;
-	int survivors = 5;
+	int survivors = GetRealSurvivorsCount();
+	if(survivors <= 4) return;
 
 	float percentage = hExtraItemBasePercentage.FloatValue * survivors;
 	PrintToServer("Populating extra items based on player count (%d) | Percentage %f%%", survivors, percentage * 100);
