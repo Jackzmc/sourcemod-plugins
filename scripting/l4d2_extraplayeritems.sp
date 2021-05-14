@@ -13,7 +13,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define DEBUG 0
+//#define DEBUG 0
 
 #define PLUGIN_VERSION "1.0"
 #define MAX_ENTITY_LIMIT 2000
@@ -108,10 +108,6 @@ public void OnPluginStart() {
 	#endif
 
 
-}
-
-public Action Event_Debug(Event event, const char[] name, bool dontBroadcast) {
-	PrintToChatAll("EVENT | %s", name);
 }
 
 /////////////////////////////////////
@@ -557,13 +553,6 @@ stock bool UseExtraKit(int client) {
 		return true;
 	}
 	return false;
-}
-
-stock void GiveKit(int client) {
-	int flags = GetCommandFlags("give");
-	SetCommandFlags("give", flags & ~FCVAR_CHEAT);
-	FakeClientCommand(client, "give first_aid_kit");
-	SetCommandFlags("give", flags);
 }
 
 stock void PrintDebug(const char[] format, any ... ) {
