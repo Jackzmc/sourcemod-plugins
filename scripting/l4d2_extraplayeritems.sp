@@ -1,3 +1,15 @@
+/* 
+	Logic Flow:
+
+	Once a player reaches the saferoom, it will give at a minimum a kit for each extra player over 4.
+	There is a small chance of bonus kit, and will give bonus depending on average team health
+
+	Kits are provided when a player attempts to pickup a new kit, 
+	or when they load back in after map transition (and don't already have one)
+
+	Once a new map starts, all item spawners are checked and randomly their spawn count will be increased by 1.
+*/
+
 #pragma semicolon 1
 #pragma newdecls required
 
@@ -13,7 +25,6 @@
 #include <jutils>
 //TODO: On 3rd/4th kit pickup in area, add more
 //TODO: Add extra pills too, on pickup
-//TODO: Set ammo pack ammo to max primary
 
 #define L4D2_WEPUPGFLAG_NONE            (0 << 0)
 #define L4D2_WEPUPGFLAG_INCENDIARY      (1 << 0)
@@ -38,6 +49,7 @@ static int isBeingGivenKit[MAXPLAYERS+1];
 static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound;
 static ArrayList ammoPacks;
 static int g_iAmmoTable;
+
 
 /*
 on first start: Everyone has a kit, new comers also get a kit.
@@ -175,7 +187,7 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 
 public void Frame_GiveNewClientKit(int client) {
 	if(!DoesClientHaveKit(client) && GetRealSurvivorsCount() > 4) {
-		CheatCommand(client, "give", "first_aid_kit", "");
+		GiveKit(client);
 	}
 }
 public Action Timer_GiveClientKit(Handle hdl, int user) {
@@ -266,6 +278,7 @@ public void OnMapEnd() {
 	ammoPacks.Clear();
 }
 public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
+	//TODO: Possibly check client (as entity) if it is a kit, to check that the kit being picked up is in saferoom?
     if(!isCheckpointReached  && client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
 		isCheckpointReached = true;
 		int extraPlayers = GetSurvivorsCount() - 4;
@@ -294,28 +307,27 @@ public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 	if(!isFailureRound) isFailureRound = true;
 }
 public Action Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
+	#if defined DEBUG
+	PrintToServer("Map transition | %d Extra Kits", extraKitsAmount);
+	#endif
 	isCheckpointReached = false;
 	isLateLoaded = false;
-	//If any kits were consumed before map transition, decrease from reset-amount (for if a round fails)
-	#if defined DEBUG
-	PrintToServer("Map transition | Extra Kits Left %d | Starting Amount %d", extraKitsAmount, extraKitsStarted);
-	#endif
 	extraKitsStarted = extraKitsAmount;
 	abmExtraCount = GetRealSurvivorsCount();
 	playerstoWaitFor = GetSurvivorsCount();
 }
+//TODO: Stop during transition
+//TODO: Possibly hacky logic of on third different ent id picked up, in short timespan, detect as set of 4 (pills, kits) & give extra
 public Action Event_Pickup(int client, int weapon) {
-	//TODO: Stop during transition
-	if(extraKitsAmount > 0) {
-		char name[32];
-		GetEntityClassname(weapon, name, sizeof(name));
-		if(StrEqual(name, "weapon_first_aid_kit", true)) {
-			if(isBeingGivenKit[client]) {
-				isBeingGivenKit[client] = false;
-				return Plugin_Continue;
-			}else{
+	char name[32];
+	GetEntityClassname(weapon, name, sizeof(name));
+	if(StrEqual(name, "weapon_first_aid_kit", true)) {
+		if(isBeingGivenKit[client]) {
+			isBeingGivenKit[client] = false;
+			return Plugin_Continue;
+		}else{
+			if(UseExtraKit(client)) {
 				isBeingGivenKit[client] = true;
-				UseExtraKit(client);
 				return Plugin_Stop;
 			}
 		}
@@ -403,6 +415,8 @@ public Action Timer_AddExtraCounts(Handle hd) {
 				&& StrContains(classname, "zombie", true) == -1
 				&& StrContains(classname, "scavenge", true) == -1
 			) {
+				int newEnt = CreateEntityByName(classname);
+				DispatchSpawn(newEnt);
 				int count = GetEntProp(i, Prop_Data, "m_itemCount");
 				//Add extra kits (equal to player count) to any 4 set of kits.
 				if(count == 4 && StrEqual(classname, "weapon_first_aid_kit_spawn", true)) {
@@ -442,7 +456,7 @@ stock void GiveStartingKits() {
 				--skipLeft;
 				continue;
 			}else{
-				CheatCommand(i, "give", "first_aid_kit", "");
+				GiveKit(i);
 			}
 		}
 	}
@@ -488,13 +502,22 @@ stock bool DoesClientHaveKit(int client) {
 	return false;
 }
 
-stock void UseExtraKit(int client) {
+stock bool UseExtraKit(int client) {
 	if(extraKitsAmount > 0) {
-		CheatCommand(client, "give", "first_aid_kit", "");
+		GiveKit(client);
 		if(--extraKitsAmount <= 0) {
 			extraKitsAmount = 0;
 		}
+		return true;
 	}
+	return false;
+}
+
+stock void GiveKit(int client) {
+	int flags = GetCommandFlags("give");
+	SetCommandFlags("give", flags & ~FCVAR_CHEAT);
+	FakeClientCommand(client, "give kit");
+	SetCommandFlags("give", flags);
 }
 
 stock float GetAverageHP() {
