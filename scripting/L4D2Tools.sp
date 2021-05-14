@@ -155,9 +155,10 @@ public Action Command_PlaySound(int client, int args) {
 	if(args < 2) {
 		ReplyToCommand(client, "Usage: sm_playsound <player> <soundpath>");
 	}else{
-		char arg1[32], arg2[64];
+		char arg1[32], arg2[64], arg3[16];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		GetCmdArg(2, arg2, sizeof(arg2));
+		GetCmdArg(3, arg3, sizeof(arg3));
 
 		char target_name[MAX_TARGET_LENGTH];
 		int target_list[MAXPLAYERS], target_count;
@@ -181,12 +182,21 @@ public Action Command_PlaySound(int client, int args) {
 			target = target_list[i];
 			StopSound(target, 0, lastSound[target]);
 		}
-		PrecacheSound(arg2);
+		char precache[128];
+		Format(precache, sizeof(precache), "sound/%s", arg2);
+		bool result = PrecacheSound(arg2);
+		if(!result) {
+			ReplyToCommand(client, "Warn: Precache failed '%s'", precache);
+		}
 		for (int i = 0; i < target_count; i++) {
 			target = target_list[i];
-			PrintToChatAll("playgamesound %s for %N", arg2, target);
 			if(IsClientConnected(target) && IsClientInGame(target)) {
+				if(StrEqual(arg3, "direct"))
+					ClientCommand(target, "playgamesound %s", arg2);
+				else
+					EmitSoundToClient(target, arg2, target);
 				strcopy(lastSound[target], 64, arg2);
+				ReplyToCommand(client, "Playing '%s' to %N %s", arg2, target, arg3);
 			}
 		}
 	}
@@ -384,6 +394,9 @@ public void OnClientDisconnect(int client) {
 	}
 }
 public void OnMapStart() {
+	AddFileToDownloadsTable("sound/custom/mariokartmusic.mp3");
+	PrecacheSound("sound/custom/mariokartmusic.mp3");	
+	
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	char output[2];
