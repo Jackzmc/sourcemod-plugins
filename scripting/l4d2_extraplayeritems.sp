@@ -175,7 +175,7 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 
 public void Frame_GiveNewClientKit(int client) {
 	if(!DoesClientHaveKit(client) && GetRealSurvivorsCount() > 4) {
-		CheatCommand(client, "give", "first_aid_kit", "");
+		GiveKit(client);
 	}
 }
 public Action Timer_GiveClientKit(Handle hdl, int user) {
@@ -305,17 +305,15 @@ public Action Event_MapTransition(Event event, const char[] name, bool dontBroad
 	playerstoWaitFor = GetSurvivorsCount();
 }
 public Action Event_Pickup(int client, int weapon) {
-
-	if(extraKitsAmount > 0) {
-		char name[32];
-		GetEntityClassname(weapon, name, sizeof(name));
-		if(StrEqual(name, "weapon_first_aid_kit", true)) {
-			if(isBeingGivenKit[client]) {
-				isBeingGivenKit[client] = false;
-				return Plugin_Continue;
-			}else{
+	char name[32];
+	GetEntityClassname(weapon, name, sizeof(name));
+	if(StrEqual(name, "weapon_first_aid_kit", true)) {
+		if(isBeingGivenKit[client]) {
+			isBeingGivenKit[client] = false;
+			return Plugin_Continue;
+		}else{
+			if(UseExtraKit(client)) {
 				isBeingGivenKit[client] = true;
-				UseExtraKit(client);
 				return Plugin_Stop;
 			}
 		}
@@ -442,7 +440,7 @@ stock void GiveStartingKits() {
 				--skipLeft;
 				continue;
 			}else{
-				CheatCommand(i, "give", "first_aid_kit", "");
+				GiveKit(i);
 			}
 		}
 	}
@@ -488,13 +486,22 @@ stock bool DoesClientHaveKit(int client) {
 	return false;
 }
 
-stock void UseExtraKit(int client) {
+stock bool UseExtraKit(int client) {
 	if(extraKitsAmount > 0) {
-		CheatCommand(client, "give", "first_aid_kit", "");
+		GiveKit(client);
 		if(--extraKitsAmount <= 0) {
 			extraKitsAmount = 0;
 		}
+		return true;
 	}
+	return false;
+}
+
+stock void GiveKit(int client) {
+	int flags = GetCommandFlags(command);
+	SetCommandFlags(command, flags & ~FCVAR_CHEAT);
+	FakeClientCommand(client, "give kit");
+	SetCommandFlags(command, flags);
 }
 
 stock float GetAverageHP() {
