@@ -182,12 +182,7 @@ public Action Command_PlaySound(int client, int args) {
 			target = target_list[i];
 			StopSound(target, 0, lastSound[target]);
 		}
-		char precache[128];
-		Format(precache, sizeof(precache), "sound/%s", arg2);
-		bool result = PrecacheSound(arg2);
-		if(!result) {
-			ReplyToCommand(client, "Warn: Precache failed '%s'", precache);
-		}
+		PrecacheSound(arg2);
 		for (int i = 0; i < target_count; i++) {
 			target = target_list[i];
 			if(IsClientConnected(target) && IsClientInGame(target)) {
