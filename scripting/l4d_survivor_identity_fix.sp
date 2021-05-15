@@ -229,7 +229,7 @@ public void OnClientCookiesCached(int client) {
 	if(strlen(modelPref) > 0) {
 		int type;
 		if(StringToIntEx(modelPref, type) > 0) {
-			PrintToServer(">>> %N has cookie for: %s", client, survivor_models[type - 1][18]);
+			PrintToServer("%N has cookie for '%s'", client, survivor_models[type - 1][18]);
 			strcopy(g_Models[client], 64, survivor_models[type - 1]);
 			g_iPendingCookieModel[client] = type;
 		}
@@ -239,6 +239,8 @@ public void OnClientCookiesCached(int client) {
 //Prevent issues with L4D1 characters being TP'd and stuck in brain dead form
 
 public void OnMapStart() {
+	survivors = 0;
+
 	for(int i = 0; i < sizeof(survivor_models); i++) {
 		PrecacheModel(survivor_models[i], true);
 	}
@@ -341,7 +343,7 @@ public void Frame_SetPlayerModel(int client) {
 }
 public Action Timer_SetAllCookieModels(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && g_iPendingCookieModel[i] && GetClientTeam(i) == 2) {
+		if(IsClientConnected(i) && IsClientInGame(i) && g_iPendingCookieModel[i] && GetClientTeam(i) == 2) {
 			SetEntityModel(i, survivor_models[g_iPendingCookieModel[i] - 1]);
 			SetEntProp(i, Prop_Send, "m_survivorCharacter", g_iPendingCookieModel[i] - 1);
 		}

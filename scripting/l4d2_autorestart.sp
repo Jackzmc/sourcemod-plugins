@@ -38,7 +38,7 @@ public Action Timer_Check(Handle h) {
 	//     ServerCommand("quit");
 	//     return Plugin_Stop;
 	// }else 
-	if(IsServerEmptyAndNonHibernating()) {
+	if(IsServerEmpty()) {
 		//Server is stuck in non-hibernation with only bots, quit
 		LogAction(0, -1, "Detected server in hibernation with no players, restarting...");
 		ServerCommand("quit");
@@ -46,7 +46,7 @@ public Action Timer_Check(Handle h) {
 }
 
 //Returns true if there is a bot connected and there is no real players
-bool IsServerEmptyAndNonHibernating() {
+bool IsServerEmpty() {
 	bool hasClient;
 	for(int i = 1; i < MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {

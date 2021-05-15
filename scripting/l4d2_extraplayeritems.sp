@@ -10,26 +10,26 @@
 	Once a new map starts, all item spawners are checked and randomly their spawn count will be increased by 1.
 */
 
+//TODO: On 3rd/4th kit pickup in area, add more
+//TODO: Add extra pills too, on pickup
+
 #pragma semicolon 1
 #pragma newdecls required
 
 //#define DEBUG 0
 
 #define PLUGIN_VERSION "1.0"
-#define MAX_ENTITY_LIMIT 2000
 
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
 #include <left4dhooks>
 #include <jutils>
-//TODO: On 3rd/4th kit pickup in area, add more
-//TODO: Add extra pills too, on pickup
 
 #define L4D2_WEPUPGFLAG_NONE            (0 << 0)
 #define L4D2_WEPUPGFLAG_INCENDIARY      (1 << 0)
 #define L4D2_WEPUPGFLAG_EXPLOSIVE       (1 << 1)
-#define L4D2_WEPUPGFLAG_LASER (1 << 2)  
+#define L4D2_WEPUPGFLAG_LASER 			(1 << 2)  
 
 #define AMMOPACK_ENTID 0
 #define AMMOPACK_USERS 1
@@ -50,13 +50,6 @@ static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound, isGam
 static ArrayList ammoPacks;
 static int g_iAmmoTable;
 
-
-/*
-on first start: Everyone has a kit, new comers also get a kit.
-then when you reach the saferoom, extraKitsAmount is set to the amount of players minus 4. Ex: 5 players -> 1 extra kit
-Then on heal at the point, you get an extra kit. After a map transition when a player_spawn is fired, if they do not have a kit; give an extra kit if there is any.
-Any left over kits will be used on heals until depleted. 
-*/
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	if(late) isLateLoaded = true;
 } 
@@ -258,9 +251,7 @@ public void OnMapStart() {
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 
-	//Lock the saferoom door until 80% loaded in: //&& abmExtraCount > 4
 	playersLoadedIn = 0;
-
 }
 
 public void OnMapEnd() {
@@ -359,9 +350,6 @@ public Action Event_Pickup(int client, int weapon) {
 		if(UseExtraKit(client)) {
 			return Plugin_Stop;
 		}
-		/*else i*/
-		//FIXME: For some fucking reason this shit crashes server in end saferoom now.
-		//Literally, it should be impossible for it to do a stack crash, as this should have a LIMITED AMOUNT!!
 	}
 	return Plugin_Continue;
 }
@@ -382,6 +370,7 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 	if(IsValidEdict(primaryWeapon) && HasEntProp(primaryWeapon, Prop_Send, "m_upgradeBitVec")) {
 		int index = ammoPacks.FindValue(entity, AMMOPACK_ENTID);
 		if(index == -1) return Plugin_Continue;
+
 		ArrayList clients = ammoPacks.Get(index, AMMOPACK_USERS);
 		if(clients.FindValue(activator) > -1) {
 			ClientCommand(activator, "play ui/menu_invalid.wav");
@@ -389,7 +378,7 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 		}
 
 		char classname[32];
-		int upgradeBits = GetEntProp(primaryWeapon, Prop_Send, "m_upgradeBitVec"), ammo = 40;
+		int upgradeBits = GetEntProp(primaryWeapon, Prop_Send, "m_upgradeBitVec"), ammo = 10;
 
 		//Get the new flag bits
 		GetEntityClassname(entity, classname, sizeof(classname));
@@ -405,6 +394,7 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 			int currentAmmo = GetEntProp(primaryWeapon, Prop_Send, "m_iClip1");
 			if(currentAmmo > ammo) ammo = currentAmmo;
 		}
+
 		SetEntProp(primaryWeapon, Prop_Send, "m_nUpgradedPrimaryAmmoLoaded", ammo);
 
 		clients.Push(activator);
@@ -441,6 +431,7 @@ public void PopulateItems() {
 	PrintToConsoleAll("Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
 	char classname[32];
 	int affected = 0;
+
 	for(int i = MaxClients + 1; i < 2048; i++) {
 		if(IsValidEntity(i)) {
 			GetEntityClassname(i, classname, sizeof(classname));
@@ -575,13 +566,4 @@ stock float GetAverageHP() {
 		}
 	}
 	return float(totalHP) / float(clients);
-}
-
-void SetUsedBySurvivor(int client, int entity) {
-	int usedMask = GetEntProp(entity, Prop_Send, "m_iUsedBySurvivorsMask");
-	bool bAlreadyUsed = !(usedMask & (1 << client - 1));
-	if (bAlreadyUsed) return;
-
-	int newMask = usedMask | (1 << client - 1);
-	SetEntProp(entity, Prop_Send, "m_iUsedBySurvivorsMask", newMask);
 }
