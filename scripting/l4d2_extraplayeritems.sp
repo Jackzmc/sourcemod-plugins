@@ -188,7 +188,8 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 
 public void Frame_GiveNewClientKit(int client) {
 	if(!DoesClientHaveKit(client) && GetRealSurvivorsCount() > 4) {
-		GivePlayerItem(client, "weapon_first_aid_kit");
+		int item = GivePlayerItem(client, "weapon_first_aid_kit");
+		EquipPlayerWeapon(client, item);
 	}
 }
 public Action Timer_GiveClientKit(Handle hdl, int user) {
@@ -354,11 +355,13 @@ public Action Event_Pickup(int client, int weapon) {
 	char name[32];
 	GetEntityClassname(weapon, name, sizeof(name));
 	if(StrEqual(name, "weapon_first_aid_kit", true)) {
-		if(isBeingGivenKit[client]) {
-			isBeingGivenKit[client] = false;
-		}else if(UseExtraKit(client)) {
+		if(isBeingGivenKit[client]) return Plugin_Continue;
+		if(UseExtraKit(client)) {
 			return Plugin_Stop;
 		}
+		/*else i*/
+		//FIXME: For some fucking reason this shit crashes server in end saferoom now.
+		//Literally, it should be impossible for it to do a stack crash, as this should have a LIMITED AMOUNT!!
 	}
 	return Plugin_Continue;
 }
@@ -434,8 +437,8 @@ public void PopulateItems() {
 	if(survivors <= 4) return;
 
 	float percentage = hExtraItemBasePercentage.FloatValue * survivors;
-	PrintToServer("Populating extra items based on player count (%d) | Percentage %f%%", survivors, percentage * 100);
-	PrintToConsoleAll("Populating extra items based on player count (%d) | Percentage %f%%", survivors, percentage * 100);
+	PrintToServer("Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
+	PrintToConsoleAll("Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
 	char classname[32];
 	int affected = 0;
 	for(int i = MaxClients + 1; i < 2048; i++) {
@@ -496,7 +499,8 @@ stock void GiveStartingKits() {
 				--skipLeft;
 				continue;
 			}else{
-				GivePlayerItem(i, "weapon_first_aid_kit");
+				int item = GivePlayerItem(i, "weapon_first_aid_kit");
+				EquipPlayerWeapon(i, item);
 			}
 		}
 	}
@@ -541,12 +545,13 @@ stock bool DoesClientHaveKit(int client) {
 	}
 	return false;
 }
-
+//TODO: fix bs
 stock bool UseExtraKit(int client) {
 	if(extraKitsAmount > 0) {
 		isBeingGivenKit[client] = true;
 		int ent = GivePlayerItem(client, "weapon_first_aid_kit");
 		EquipPlayerWeapon(client, ent);
+		isBeingGivenKit[client] = false;
 		PrintDebug("Used extra kit #%d - ent %d", extraKitsAmount, ent);
 		if(--extraKitsAmount <= 0) {
 			extraKitsAmount = 0;
