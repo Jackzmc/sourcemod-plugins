@@ -296,26 +296,26 @@ stock bool GiveClientWeapon(int client, const char[] wpnName, bool lasers) {
 }
 stock int GetNearestEntity(int client, char[] classname)
 {
-    int nearestEntity = -1;
-    float clientVecOrigin[3], entityVecOrigin[3];
-    
-    //Get the distance between the first entity and client
-    float distance, nearestDistance = -1.0;
-    
-    //Find all the entity and compare the distances
-    int entity = -1;
-    while ((entity = FindEntityByClassname(entity, classname)) != -1)
-    {
-        GetEntPropVector(entity, Prop_Data, "m_vecOrigin", entityVecOrigin);
-        distance = GetVectorDistance(clientVecOrigin, entityVecOrigin, true);
-        
-        if (distance < nearestDistance || nearestDistance == -1.0)
-        {
-            nearestEntity = entity;
-            nearestDistance = distance;
-        }
-    }
-    return nearestEntity;
+	int nearestEntity = -1;
+	float clientVecOrigin[3], entityVecOrigin[3];
+	
+	//Get the distance between the first entity and client
+	float distance, nearestDistance = -1.0;
+	
+	//Find all the entity and compare the distances
+	int entity = -1;
+	while ((entity = FindEntityByClassname(entity, classname)) != -1)
+	{
+		GetEntPropVector(entity, Prop_Data, "m_vecOrigin", entityVecOrigin);
+		distance = GetVectorDistance(clientVecOrigin, entityVecOrigin, true);
+		
+		if (distance < nearestDistance || nearestDistance == -1.0)
+		{
+			nearestEntity = entity;
+			nearestDistance = distance;
+		}
+	}
+	return nearestEntity;
 }  
 
 stock bool IsValidPlayer(int i) {
@@ -502,20 +502,20 @@ stock bool IsEntityInSightRange(int client, int target, float angle = 90.0, floa
 	else return false;
 }
 stock void PrintToAdmins(const char[] message, const char[] flags) {
-    for (int x = 1; x <= MaxClients; x++){
-        if (IsValidClient(x) && IsValidAdmin(x, flags)) {
-            PrintToChat(x, message);
-        }
-    }
+	for (int x = 1; x <= MaxClients; x++){
+		if (IsValidClient(x) && IsValidAdmin(x, flags)) {
+			PrintToChat(x, message);
+		}
+	}
 } 
 stock bool IsValidAdmin(int client, const char[] flags) {
-    int ibFlags = ReadFlagString(flags);
-    if ((GetUserFlagBits(client) & ibFlags) == ibFlags) {
-        return true;
-    }else if (GetUserFlagBits(client) & ADMFLAG_ROOT) {
-        return true;
-    }
-    return false;
+	int ibFlags = ReadFlagString(flags);
+	if ((GetUserFlagBits(client) & ibFlags) == ibFlags) {
+		return true;
+	}else if (GetUserFlagBits(client) & ADMFLAG_ROOT) {
+		return true;
+	}
+	return false;
 }  
 
 stock void NotifyAllAdmins(const char[] format, any ...) {
@@ -530,4 +530,54 @@ stock void NotifyAllAdmins(const char[] format, any ...) {
 		}
 	}
 	PrintToServer("%s", buffer);
+}
+
+stock float GetNearestEntityDistance(int originEntity, char[] classname) {
+	float compareVec[3], entityVecOrigin[3];
+	GetEntPropVector(originEntity, Prop_Send, "m_vecOrigin", compareVec);
+	
+	//Get the distance between the first entity and client
+	float distance, nearestDistance = -1.0;
+	
+	int entity = -1, closest;
+	while ((entity = FindEntityByClassname(entity, classname)) != -1)
+	{
+		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", entityVecOrigin);
+		distance = GetVectorDistance(compareVec, entityVecOrigin);
+		PrintDebug(DEBUG_SPAWNLOGIC, "Comparing %s (id %d) (%.2f,%.2f,%.2f) distance to entity %d (%.2f,%.2f,%.2f) is %.4f", classname, entity, entityVecOrigin[0], entityVecOrigin[1], entityVecOrigin[2], originEntity, compareVec[0], compareVec[1], compareVec[2], distance);
+		
+		if (distance < nearestDistance || nearestDistance == -1.0)
+		{
+			nearestDistance = distance;
+			closest = entity;
+		}
+	}
+	return closest > 0 ? nearestDistance : -1.0;
+} 
+
+stock int FindNearestEntityInRange(int originEntity, char[] classname, float range) {
+	float compareVec[3], entityVecOrigin[3];
+	GetEntPropVector(originEntity, Prop_Send, "m_vecOrigin", compareVec);
+	
+	//Get the distance between the first entity and client
+	float distance, nearestDistance = -1.0;
+	
+	int entity = -1, closest = -1;
+	while ((entity = FindEntityByClassname(entity, classname)) != -1) {
+		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", entityVecOrigin);
+		distance = GetVectorDistance(compareVec, entityVecOrigin);
+		
+		if (distance <= range && (distance < nearestDistance || nearestDistance == -1.0)) {
+			PrintDebug(DEBUG_SPAWNLOGIC, "Comparing %s (id %d) (%.2f,%.2f,%.2f) distance to entity %d (%.2f,%.2f,%.2f) is %.4f", classname, entity, entityVecOrigin[0], entityVecOrigin[1], entityVecOrigin[2], originEntity, compareVec[0], compareVec[1], compareVec[2], distance);
+			nearestDistance = distance;
+			closest = entity;
+		}
+	}
+	return closest;
+} 
+
+stock void MakeEntityGlow(int entity, const int color[3], float distance = 1500.0) {
+	SetEntProp(entity, Prop_Send, "m_iGlowType", 3);
+	SetEntProp(entity, Prop_Send, "m_nGlowRange", distance);
+	SetEntProp(entity, Prop_Send, "m_glowColorOverride", color[0] + (color[1] * 256) + (color[2] * 65536));
 }
