@@ -53,6 +53,7 @@ public void OnPluginStart() {
 	hAutoPunish 		= CreateConVar("sm_ftt_autopunish_action", "0", "Setup automatic punishment of players. Add bits together\n0=Disabled, 1=Tank magnet, 2=Special magnet, 4=Swarm, 8=InstantVomit", FCVAR_NONE, true, 0.0);
 	hAutoPunishExpire 	= CreateConVar("sm_ftt_autopunish_expire", "0", "How many minutes of gametime until autopunish is turned off? 0 for never.", FCVAR_NONE, true, 0.0);
 	hMagnetChance 	 	= CreateConVar("sm_ftt_magnet_chance", "1.0", "% of the time that the magnet will work on a player.", FCVAR_NONE, true, 0.0, true, 1.0);
+	hMagnetTargetMode   = CreateConVar("sm_ftt_magnet_targetting", "1", "How does the specials target players. Add bits together\n0= Target until Dead, 1=Specials ignore incapped, 2=Tank ignores incapped");
 	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.5", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	RegAdminCmd("sm_ftl", Command_ListTheTrolls, ADMFLAG_KICK, "Lists all the trolls currently ingame.");
@@ -127,6 +128,7 @@ public Action Event_ButtonPress(const char[] output, int entity, int client, flo
 	}
 	return Plugin_Continue;
 }
+
 public void Event_PanicEventCreate(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client) {
@@ -151,9 +153,14 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	if(hMagnetChance.FloatValue < GetRandomFloat()) return Plugin_Continue;
 	L4D2Infected class = view_as<L4D2Infected>(GetEntProp(attacker, Prop_Send, "m_zombieClass"));
 	int existingTarget = GetClientOfUserId(g_iAttackerTarget[attacker]);
-	if(existingTarget > 0 && IsPlayerAlive(existingTarget)) {
-		curTarget = existingTarget;
-		return Plugin_Changed;
+	if(existingTarget > 0 && IsPlayerAlive(existingTarget) && (hMagnetTargetMode.IntValue & 1 != 1 || !IsPlayerIncapped(existingTarget)) {
+		if(class == L4D2Infected_Tank && (hMagnetTargetMode.IntValue % 2 != 2 || !IsPlayerIncapped(existingTarget))) {
+			curTarget = existingTarget;
+			return Plugin_Changed;
+		}else if(hMagnetTargetMode.IntValue & 1 != 1 || !IsPlayerIncapped(existingTarget)) {
+			curTarget = existingTarget;
+			return Plugin_Changed;
+		}
 	}
 
 	float closestDistance, survPos[3], spPos[3];
@@ -161,6 +168,11 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	int closestClient = -1;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			//Ignore incapped players if turned on:
+			if(IsPlayerIncapped(i)) {
+				if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2 == 2) || hMagnetTargetMode.IntValue & 1 == 1 ) continue;
+			}
+			
 			if(class == L4D2Infected_Tank && HasTrollMode(i, Troll_TankMagnet) || (class != L4D2Infected_Tank && HasTrollMode(i, Troll_SpecialMagnet))) {
 				GetClientAbsOrigin(i, survPos);
 				float dist = GetVectorDistance(survPos, spPos, true);
@@ -359,7 +371,7 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 				strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
 				return Plugin_Changed;
 			} else if(HasTrollMode(entity, Troll_VocalizeGag)) {
-				return Plugin_Stop;
+				return Plugin_Handled;
 			}
 		}
 		

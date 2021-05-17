@@ -102,7 +102,7 @@ GlobalForward g_PlayerMarkedForward;
 //HANDLES
 Handle hThrowTimer;
 //CONVARS
-ConVar hVictimsList, hThrowItemInterval, hAutoPunish, hMagnetChance, hShoveFailChance, hAutoPunishExpire;
+ConVar hVictimsList, hThrowItemInterval, hAutoPunish, hMagnetChance, hShoveFailChance, hAutoPunishExpire, hMagnetTargetMode;
 //BOOLS
 bool lateLoaded; //Is plugin late loaded
 bool bChooseVictimAvailable = false; //For charge player feature, is it available?
@@ -321,4 +321,7 @@ stock int FindIdlePlayerBot(int client) {
 		}
 	}
 	return client;
+}
+stock bool IsPlayerIncapped(int client) {
+	return GetEntProp(client, Prop_Send, "m_isIncapacitated") == 1;
 }
