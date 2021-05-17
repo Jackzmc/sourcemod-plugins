@@ -31,6 +31,7 @@ Useful things:
 * [l4d2_rollback](#l4d2_rollback)
 * [l4d2_autorestart](#l4d2_autorestart)
 * [l4d2_TKStopper](#l4d2_TKStopper)
+* [l4d2_crescendo_control](#l4d2_crescendo_control)
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
@@ -311,3 +312,15 @@ During any of the above three conditions, if they deal (or attempt to deal) over
   * `l4d2_tk_bantime` - How long in minutes should a player be banned for? 0 for permanently. Default is 60
   * `l4d2_tk_ban_ff_threshold` -  How much damage does a player need to do before being instantly banned. Default 75 HP
   * `4d2_tk_ban_join_time` -  Upto how many minutes should any new player's FF be ignored. Default is 2 Minutes
+
+
+### l4d2_crescendo_control
+This plugin prevents the activation of buttons ahead of the team. It will prevent players from starting crescendos (and some small other activities as a side effect) until a certain threshold of the team has reached the area.
+
+_This plugin is currently in **development.**_ Current implementation may be lacking.
+
+(For technical information look at https://jackz.me/l4d2/admin/#plugins under 'Crescendo Stopper')
+
+* **Cvars:**
+  * `l4d2_crescendo_percent`
+  * `l4d2_crescendo_range`
