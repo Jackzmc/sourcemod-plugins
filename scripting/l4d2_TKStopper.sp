@@ -97,7 +97,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
 	if(damage > 0.0 && damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
-		if(GetUserAdmin(attacker) != INVALID_ADMIN_ID || isImmune[attacker]) return Plugin_Continue;
+		if(GetUserAdmin(attacker) != INVALID_ADMIN_ID || isImmune[attacker] || IsFakeClient(attacker)) return Plugin_Continue;
 		if(GetClientTeam(victim) != 2 || GetClientTeam(attacker) != 2 || attacker == victim) return Plugin_Continue;
 		//Allow friendly firing BOTS that aren't idle players:
 		//if(IsFakeClient(victim) && !HasEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") || GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) return Plugin_Continue;
@@ -124,11 +124,13 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 				NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%f HP) for %d minutes. Use /ignore <player> to make them immune.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				isPlayerTroll[attacker] = true;
 			}
-			return Plugin_Stop;
+			damage = 0.0;
+			return Plugin_Handled;
 		}
 		//If the amount of MS is <= join time threshold * 60000 ms then cancel
 		if(L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) || time - iJoinTime[attacker] <= hJoinTime.IntValue * 60000) {
-			return Plugin_Stop;
+			damage = 0.0;
+			return Plugin_Handled;
 		}else {
 			SDKHooks_TakeDamage(attacker, attacker, attacker, IsFinaleEnding ? damage * 2.0 : damage / 1.9);
 			damage = IsFinaleEnding ? 0.0 : damage / 2.1;
