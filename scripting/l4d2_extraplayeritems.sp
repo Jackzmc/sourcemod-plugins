@@ -8,6 +8,8 @@
 	or when they load back in after map transition (and don't already have one)
 
 	Once a new map starts, all item spawners are checked and randomly their spawn count will be increased by 1.
+	Also on map start, cabinets will be populated with extra items dependent on player count
+		extraitems = (playerCount) * (cabinetAmount/4) - cabinetAmount
 */
 
 //TODO: On 3rd/4th kit pickup in area, add more
@@ -16,7 +18,15 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-//#define DEBUG 0
+#define DEBUG_INFO 0
+#define DEBUG_GENERIC 1
+#define DEBUG_SPAWNLOGIC 2
+#define DEBUG_ANY 3
+
+//Set the debug level
+#define DEBUG_LEVEL DEBUG_GENERIC
+//Sets abmExtraCount to this value if set
+//#define DEBUG_FORCE_PLAYERS 5
 
 #define PLUGIN_VERSION "1.0"
 
@@ -46,9 +56,17 @@ public Plugin myinfo =
 static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen;
 static int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
 static int isBeingGivenKit[MAXPLAYERS+1];
-static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound, isGameFrozen;
+static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound;
 static ArrayList ammoPacks;
 static int g_iAmmoTable;
+
+#define CABINET_ITEM_BLOCKS 4
+enum struct Cabinet {
+	int id;
+	int items[CABINET_ITEM_BLOCKS];
+}
+
+static Cabinet cabinets[10]; //Store 10 cabinets
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	if(late) isLateLoaded = true;
@@ -58,16 +76,14 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
 	if(g_Game != Engine_Left4Dead2) {
-		SetFailState("This plugin is for L4D/L4D2 only.");	
+		SetFailState("This plugin is for L4D2 only.");	
 	}
 
-	//Create an array list that contains <int entityID, ArrayList clients>
-	ammoPacks = new ArrayList(2); 
+	ammoPacks = new ArrayList(2); //<int entityID, ArrayList clients>
 	
 	HookEvent("player_spawn", 		Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 	HookEvent("round_end", 			Event_RoundEnd);
-	//HookEvent("heal_success", 		Event_HealFinished);
 	HookEvent("map_transition", 	Event_MapTransition);
 	HookEvent("game_start", 		Event_GameStart);
 	HookEvent("round_freeze_end",   Event_RoundFreezeEnd);
@@ -81,7 +97,7 @@ public void OnPluginStart() {
 	
 	if(hUpdateMinPlayers.BoolValue) {
 		hMinPlayers = FindConVar("abm_minplayers");
-		if(hMinPlayers != null) PrintToServer("Found convar abm_minplayers");
+		if(hMinPlayers != null) PrintDebug(DEBUG_INFO, "Found convar abm_minplayers");
 	}
 
 	if(isLateLoaded) {
@@ -91,22 +107,24 @@ public void OnPluginStart() {
 		}
 	}
 
+	#if defined DEBUG_FORCE_PLAYERS 
+	abmExtraCount = DEBUG_FORCE_PLAYERS;
+	#endif
+
 	AutoExecConfig(true, "l4d2_extraplayeritems");
 
-	#if defined DEBUG
+	#if defined DEBUG_LEVEL
 		RegAdminCmd("sm_epi_setkits", Command_SetKitAmount, ADMFLAG_CHEATS, "Sets the amount of extra kits that will be provided");
 		RegAdminCmd("sm_epi_lock", Command_ToggleDoorLocks, ADMFLAG_CHEATS, "Toggle all toggle's lock state");
 		RegAdminCmd("sm_epi_kits", Command_GetKitAmount, ADMFLAG_CHEATS);
 		RegAdminCmd("sm_epi_items", Command_RunExtraItems, ADMFLAG_CHEATS);
 	#endif
-
-
 }
 
 /////////////////////////////////////
 /// COMMANDS
 ////////////////////////////////////
-#if defined DEBUG
+#if defined DEBUG_LEVEL
 public Action Command_SetKitAmount(int client, int args) {
 	char arg[32];
 	GetCmdArg(1, arg, sizeof(arg));
@@ -158,9 +176,9 @@ public Action Event_GameStart(Event event, const char[] name, bool dontBroadcast
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) { 
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(GetClientTeam(client) == 2 && !IsFakeClient(client)) {
-		if(L4D_IsFirstMapInScenario()) {
+		if(L4D_IsFirstMapInScenario() && !firstGiven) {
 			//Check if all clients are ready, and survivor count is > 4. 
-			if(AreAllClientsReady() && !firstGiven) {
+			if(AreAllClientsReady()) {
 				abmExtraCount = GetRealSurvivorsCount();
 				if(abmExtraCount > 4) {
 					firstGiven = true;
@@ -170,8 +188,6 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 					}
 					CreateTimer(1.0, Timer_GiveKits);
 				}
-			}else if(firstGiven) {
-				RequestFrame(Frame_GiveNewClientKit, client);
 			}
 		}else {
 			RequestFrame(Frame_GiveNewClientKit, client);
@@ -198,7 +214,7 @@ public Action Timer_UpdateMinPlayers(Handle hdl) {
 		if(newPlayerCount > 4 && hMinPlayers.IntValue < newPlayerCount && newPlayerCount < 18) {
 			abmExtraCount = newPlayerCount;
 			#if defined DEBUG
-			PrintToServer("update abm_minplayers -> %d", abmExtraCount);
+			PrintDebug(DEBUG_GENERIC, "update abm_minplayers -> %d", abmExtraCount);
 			#endif
 			hMinPlayers.IntValue = abmExtraCount;
 		}
@@ -207,7 +223,7 @@ public Action Timer_UpdateMinPlayers(Handle hdl) {
 
 public Action Timer_GiveKits(Handle timer) { GiveStartingKits(); }
 
-//Provide extra kits when a player spawns (aka after a map transition)
+//Provide extra kits when a player spawns (ahttps://www.youtube.com/watch?v=P1IcaBn3ejka after a map transition)
 public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int user = event.GetInt("userid");
 	int client = GetClientOfUserId(user);
@@ -222,9 +238,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	}
 }
 
-
 public void OnMapStart() {
-	isGameFrozen = true;
 	//If previous round was a failure, restore the amount of kits that were left directly after map transition
 	if(isFailureRound) {
 		extraKitsAmount = extraKitsStarted;
@@ -247,6 +261,25 @@ public void OnMapStart() {
 	if(!isLateLoaded) {
 		isLateLoaded = false;
 	}
+
+	//Lock the beginning door
+	if(hMinPlayersSaferoomDoor.FloatValue > 0.0) {
+		int entity = -1;
+		while ((entity = FindEntityByClassname(entity, "prop_door_rotating_checkpoint")) != -1 && entity > MaxClients) {
+			bool isLocked = GetEntProp(entity, Prop_Send, "m_bLocked") == 1;
+			if(isLocked) {
+				firstSaferoomDoorEntity = entity;
+				AcceptEntityInput(firstSaferoomDoorEntity, "Close");
+				AcceptEntityInput(firstSaferoomDoorEntity, "Lock");
+				AcceptEntityInput(firstSaferoomDoorEntity, "ForceClosed");
+				SDKHook(firstSaferoomDoorEntity, SDKHook_Use, Hook_Use);
+				CreateTimer(hSaferoomDoorWaitSeconds.FloatValue, Timer_OpenSaferoomDoor, _, TIMER_FLAG_NO_MAPCHANGE);
+				break;
+			}
+		}
+		
+	}
+
 	//Hook the end saferoom as event
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
@@ -254,65 +287,38 @@ public void OnMapStart() {
 	playersLoadedIn = 0;
 }
 
+
 public void OnMapEnd() {
 	for(int i = 0; i < ammoPacks.Length; i++) {
 		ArrayList clients = ammoPacks.Get(i, AMMOPACK_USERS);
 		delete clients;
 	}
+	for(int i = 0; i < sizeof(cabinets); i++) {
+		cabinets[i].id = 0;
+		for(int b = 0; b < CABINET_ITEM_BLOCKS; b++) {
+			cabinets[i].items[b] = 0;
+		}
+	}
 	ammoPacks.Clear();
 	playersLoadedIn = 0;
-	isGameFrozen = true;
 }
 
 public void Event_RoundFreezeEnd(Event event, const char[] name, bool dontBroadcast) {
-	isGameFrozen = false;
-	if(!isLateLoaded)
-		PopulateItems();
-	int client = FindFirstSurvivor();
-	if(client <= 0) return; //Ignore if no players
-
-	float survPos[3], doorPos[3];
-	GetClientAbsOrigin(client, survPos);
-	if(hMinPlayersSaferoomDoor.FloatValue > 0.0) {
-		int entity = -1;
-		float smallestDistance = -1.0;
-		while ((entity = FindEntityByClassname(entity, "prop_door_rotating_checkpoint")) != -1 && entity > MaxClients) {
-			GetEntPropVector(entity, Prop_Send, "m_vecOrigin", doorPos);
-			float distance = GetVectorDistance(survPos, doorPos);
-			if(distance < smallestDistance || smallestDistance == -1.0) {
-				smallestDistance = distance;
-				firstSaferoomDoorEntity = entity;
-			}
-		}
-		AcceptEntityInput(firstSaferoomDoorEntity, "Close");
-		AcceptEntityInput(firstSaferoomDoorEntity, "Lock");
-		AcceptEntityInput(firstSaferoomDoorEntity, "ForceClosed");
-		SDKHook(firstSaferoomDoorEntity, SDKHook_Use, Hook_Use);
-		CreateTimer(hSaferoomDoorWaitSeconds.FloatValue, Timer_OpenSaferoomDoor, _, TIMER_FLAG_NO_MAPCHANGE);
-	}
-}
-
-
-public Action Hook_Use(int entity, int activator, int caller, UseType type, float value) {
-	SetEntProp(entity, Prop_Send, "m_bLocked", 1);
-	AcceptEntityInput(entity, "Close");
-	ClientCommand(activator, "play ui/menu_invalid.wav");
-	PrintHintText(activator, "Waiting for players");
-	return Plugin_Handled;
+	PopulateItems();	
 }
 
 public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
 	//TODO: Possibly check client (as entity) if it is a kit, to check that the kit being picked up is in saferoom?
     if(!isCheckpointReached  && client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
 		isCheckpointReached = true;
-		int extraPlayers = GetSurvivorsCount() - 4;
-		if(extraPlayers > 0) {
-			
+		abmExtraCount = GetSurvivorsCount();
+		if(abmExtraCount > 4) {
+			int extraPlayers = abmExtraCount - 4;
 			float averageTeamHP = GetAverageHP();
 			if(averageTeamHP <= 30.0) extraPlayers += extraPlayers; //if perm. health < 30, give an extra 4 on top of the extra
 			else if(averageTeamHP <= 50.0) extraPlayers = (extraPlayers / 2); //if the team's average health is less than 50 (permament) then give another
 			//Chance to get 1-2 extra kits (might need to be nerfed or restricted to > 50 HP)
-			if(GetRandomFloat() < 0.3) ++extraPlayers;
+			if(GetRandomFloat() < 0.3 && averageTeamHP <= 80.0) ++extraPlayers;
 
 
 			//If hAddExtraKits TRUE: Append to previous, FALSE: Overwrite
@@ -323,13 +329,15 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 				
 			extraKitsStarted = extraKitsAmount;
 			PrintToConsoleAll("CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
-			PrintToServer(">>> Player entered saferoom. An extra %d kits will be provided", extraKitsAmount);
+			PrintToServer("Player entered saferoom. Providing %d extra kits", extraKitsAmount);
 		}
     }
 }
+
 public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	if(!isFailureRound) isFailureRound = true;
 }
+
 public Action Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
 	#if defined DEBUG
 	PrintToServer("Map transition | %d Extra Kits", extraKitsAmount);
@@ -347,20 +355,53 @@ public Action Event_Pickup(int client, int weapon) {
 	GetEntityClassname(weapon, name, sizeof(name));
 	if(StrEqual(name, "weapon_first_aid_kit", true)) {
 		if(isBeingGivenKit[client]) return Plugin_Continue;
-		if(UseExtraKit(client)) {
-			return Plugin_Stop;
+		if((L4D_IsInFirstCheckpoint(client) || L4D_IsInLastCheckpoint(client)) && UseExtraKit(client)) {
+			return Plugin_Handled;
 		}
 	}
 	return Plugin_Continue;
 }
 
 public void OnEntityCreated(int entity, const char[] classname) {
-	static float spawnPos[3];
-	if (StrEqual(classname, "upgrade_ammo_explosive") || StrEqual(classname, "upgrade_ammo_incendiary")) {
+	if(StrEqual(classname, "weapon_pain_pills_spawn") || StrEqual(classname, "weapon_first_aid_kit_spawn")) {
+		SDKHook(entity, SDKHook_SpawnPost, Hook_CabinetItemSpawn);
+	}else if(StrEqual(classname, "prop_health_cabinet", true)) {
+		SDKHook(entity, SDKHook_SpawnPost, Hook_CabinetSpawn);
+	}else if (StrEqual(classname, "upgrade_ammo_explosive") || StrEqual(classname, "upgrade_ammo_incendiary")) {
 		int index = ammoPacks.Push(entity);
 		ammoPacks.Set(index, new ArrayList(1), AMMOPACK_USERS);
 		SDKHook(entity, SDKHook_Use, OnUpgradePackUse);
 	}
+}
+
+//TODO: Implement extra kit amount to this
+//TODO: Possibly check ammo pack and kit (relv. distance). Would fire on Last Stand 2nd .
+public Action Hook_CabinetItemSpawn(int entity) {
+	int cabinet = FindNearestEntityInRange(entity, "prop_health_cabinet", 60.0);
+	if(cabinet > 0) {
+		int ci = FindCabinetIndex(cabinet);
+		//Check for any open block
+		for(int block = 0; block < CABINET_ITEM_BLOCKS; block++) {
+			int cabEnt = cabinets[ci].items[block];
+			PrintDebug(DEBUG_ANY, "cabinet %d spawner %d block %d: %d", cabinet, entity, block, cabEnt);
+			if(cabEnt <= 0) {
+				cabinets[ci].items[block] = entity;
+				PrintDebug(DEBUG_SPAWNLOGIC, "Adding spawner %d for cabinet %d block %d", entity, cabinet, block);
+				break;
+			}
+		}
+		//If Cabinet is full, spawner can not be a part of cabinet and is ignored. 
+	}
+}
+
+public Action Hook_CabinetSpawn(int entity) {
+	for(int i = 0; i < sizeof(cabinets); i++) {
+		if(cabinets[i].id == 0) {
+			cabinets[i].id = entity;
+			break;
+		}
+	}
+	PrintDebug(DEBUG_SPAWNLOGIC, "Adding cabinet %d", entity);
 }
 
 public Action OnUpgradePackUse(int entity, int activator, int caller, UseType type, float value) {
@@ -410,6 +451,14 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 	return Plugin_Continue;
 }
 
+public Action Hook_Use(int entity, int activator, int caller, UseType type, float value) {
+	SetEntProp(entity, Prop_Send, "m_bLocked", 1);
+	AcceptEntityInput(entity, "Close");
+	ClientCommand(activator, "play ui/menu_invalid.wav");
+	PrintHintText(activator, "Waiting for players");
+	return Plugin_Handled;
+}
+
 /////////////////////////////////////
 /// TIMERS
 ////////////////////////////////////
@@ -426,12 +475,14 @@ public void PopulateItems() {
 	int survivors = GetRealSurvivorsCount();
 	if(survivors <= 4) return;
 
+	//Generic Logic
 	float percentage = hExtraItemBasePercentage.FloatValue * survivors;
 	PrintToServer("Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
 	PrintToConsoleAll("Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
-	char classname[32];
+	static char classname[32];
 	int affected = 0;
 
+	//TODO: Possibly convert to method of FindEntityByClassname
 	for(int i = MaxClients + 1; i < 2048; i++) {
 		if(IsValidEntity(i)) {
 			GetEntityClassname(i, classname, sizeof(classname));
@@ -440,22 +491,44 @@ public void PopulateItems() {
 				&& StrContains(classname, "scavenge", true) == -1
 			) {
 				int count = GetEntProp(i, Prop_Data, "m_itemCount");
-				//Add extra kits (equal to player count) to any 4 set of kits.
-				if(count == 4 && StrEqual(classname, "weapon_first_aid_kit_spawn", true)) {
-					SetEntProp(i, Prop_Data, "m_itemCount", survivors);
-					++affected;
-				}else if(count > 0 && GetRandomFloat() < percentage) {
+				if(count > 0 && GetRandomFloat() < percentage) {
 					SetEntProp(i, Prop_Data, "m_itemCount", ++count);
 					++affected;
 				}
 			}
 		}
 	}
-	PrintToServer("Incremented counts for %d items", affected);
+	PrintDebug(DEBUG_SPAWNLOGIC, "Incremented counts for %d items", affected);
+
+
+	//Cabinet logic
+	PrintDebug(DEBUG_SPAWNLOGIC, "Populating cabinets with extra items");
+	int spawner, count;
+	for(int i = 0; i < sizeof(cabinets); i++) {
+		if(cabinets[i].id == 0) break;
+		int spawnCount = GetEntProp(cabinets[i].id, Prop_Data, "m_pillCount");
+		int extraAmount = RoundToCeil(float(abmExtraCount) * (float(spawnCount)/4.0) - spawnCount);
+		bool hasASpawner;
+		while(extraAmount > 0) {
+			//FIXME: spawner is sometimes invalid entity. Ref needed?
+			for(int block = 0; block < CABINET_ITEM_BLOCKS; block++) {
+				spawner = cabinets[i].items[block];
+				if(spawner > 0) {
+					hasASpawner = true;
+					count = GetEntProp(spawner, Prop_Data, "m_itemCount") + 1;
+					SetEntProp(spawner, Prop_Data, "m_itemCount", count);
+					if(--extraAmount == 0) break;
+				}
+			}
+			//Incase cabinet is empty
+			if(!hasASpawner) break;
+		}
+	}
 }
 
 public Action Timer_OpenSaferoomDoor(Handle h) {
-	UnlockDoor(firstSaferoomDoorEntity, 1);
+	if(firstSaferoomDoorEntity > 0)
+		UnlockDoor(firstSaferoomDoorEntity, 1);
 }
 
 void UnlockDoor(int entity, int flag) {
@@ -465,6 +538,13 @@ void UnlockDoor(int entity, int flag) {
 		AcceptEntityInput(entity, "Open");
 	}
 	firstSaferoomDoorEntity = -1;
+}
+
+int FindCabinetIndex(int cabinetId) {
+	for(int i = 0; i < sizeof(cabinets); i++) {
+		if(cabinets[i].id == cabinetId) return i;
+	}
+	return -1;
 }
 
 /////////////////////////////////////
@@ -498,6 +578,9 @@ stock void GiveStartingKits() {
 }
 
 stock int GetSurvivorsCount() {
+	#if defined DEBUG_FORCE_PLAYERS
+	return DEBUG_FORCE_PLAYERS;
+	#endif
 	int count = 0;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
@@ -508,6 +591,9 @@ stock int GetSurvivorsCount() {
 }
 
 stock int GetRealSurvivorsCount() {
+	#if defined DEBUG_FORCE_PLAYERS
+	return DEBUG_FORCE_PLAYERS;
+	#endif
 	int count = 0;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
@@ -543,7 +629,6 @@ stock bool UseExtraKit(int client) {
 		int ent = GivePlayerItem(client, "weapon_first_aid_kit");
 		EquipPlayerWeapon(client, ent);
 		isBeingGivenKit[client] = false;
-		PrintDebug("Used extra kit #%d - ent %d", extraKitsAmount, ent);
 		if(--extraKitsAmount <= 0) {
 			extraKitsAmount = 0;
 		}
@@ -552,10 +637,15 @@ stock bool UseExtraKit(int client) {
 	return false;
 }
 
-stock void PrintDebug(const char[] format, any ... ) {
-    char buffer[256];
-    VFormat(buffer, sizeof(buffer), format, 2);
-    PrintToServer(buffer);
+stock void PrintDebug(int level, const char[] format, any ... ) {
+	#if defined DEBUG_LEVEL
+	if(level <= DEBUG_LEVEL) {
+		char buffer[256];
+		VFormat(buffer, sizeof(buffer), format, 3);
+		PrintToServer("[Debug] %s", buffer);
+		PrintToConsoleAll("[Debug] %s", buffer);
+	}
+	#endif
 }
 stock float GetAverageHP() {
 	int totalHP, clients;
