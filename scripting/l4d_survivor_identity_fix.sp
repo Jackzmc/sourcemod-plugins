@@ -229,7 +229,7 @@ public void OnClientCookiesCached(int client) {
 	if(strlen(modelPref) > 0) {
 		int type;
 		if(StringToIntEx(modelPref, type) > 0) {
-			PrintToServer("%N has cookie for '%s'", client, survivor_models[type - 1][18]);
+			PrintToServer("%N has cookie for '%s'", client, survivor_models[type - 1][17]);
 			strcopy(g_Models[client], 64, survivor_models[type - 1]);
 			g_iPendingCookieModel[client] = type;
 		}
@@ -237,7 +237,6 @@ public void OnClientCookiesCached(int client) {
 }
 
 //Prevent issues with L4D1 characters being TP'd and stuck in brain dead form
-
 public void OnMapStart() {
 	survivors = 0;
 
