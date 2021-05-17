@@ -93,7 +93,9 @@ Latest version now has support for multiple tanks, the bots might not avoid them
 Inspired by the 200IQBots_FlyYouFools. Bots avoid witch if its over 40% anger when close, or a little bigger range at 60% or more. Not recommended to use, normal behavior seems fine.
 
 ### L4D2FFKickProtection
-Simple plugin that prevents a player that is being vote-kicked from doing any ff damage to teammates. 
+Simple plugin that prevents a player that is being vote-kicked from doing any ff damage to teammates.
+It also prevents vote kicking of admins and will notify admins of the attempt.
+
 * **Convars:**
   * `sm_votekick_force_threshold <#>` - The threshold of damage where the offending player is just immediately kicked. 0 -> Any attempted damage, -1 -> No auto kick.
 
@@ -311,7 +313,7 @@ During any of the above three conditions, if they deal (or attempt to deal) over
   * `l4d2_tk_forgiveness_time <#>` - The minimum amount of seconds to pass (in seconds) where a player's previous accumulated FF is forgive. Default is 15s
   * `l4d2_tk_bantime` - How long in minutes should a player be banned for? 0 for permanently. Default is 60
   * `l4d2_tk_ban_ff_threshold` -  How much damage does a player need to do before being instantly banned. Default 75 HP
-  * `4d2_tk_ban_join_time` -  Upto how many minutes should any new player's FF be ignored. Default is 2 Minutes
+  * `l4d2_tk_ban_join_time` -  Upto how many minutes should any new player's FF be ignored. Default is 2 Minutes
 
 
 ### l4d2_crescendo_control

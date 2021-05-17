@@ -72,9 +72,8 @@ public Action VoteStart(int client, const char[] command, int argc) {
 				int target = GetClientOfUserId(StringToInt(option));
 				AdminId callerAdmin = GetUserAdmin(client);
 				AdminId targetAdmin = GetUserAdmin(target);
-				if(callerAdmin != INVALID_ADMIN_ID && targetAdmin == INVALID_ADMIN_ID || GetAdminImmunityLevel(targetAdmin) < GetAdminImmunityLevel(callerAdmin)) {
+				if(callerAdmin == INVALID_ADMIN_ID && targetAdmin != INVALID_ADMIN_ID) {
 					PrintToChat(target, "%N has attempted to vote kick you.", client);
-					//possibly plugin_stop
 					return Plugin_Handled;
 				}
 				if(GetClientTeam(target) == 2) {
