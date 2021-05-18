@@ -92,7 +92,7 @@ public void OnPluginStart() {
 	hAddExtraKits 			 = CreateConVar("l4d2_extraitems_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits, 1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
 	hUpdateMinPlayers		 = CreateConVar("l4d2_extraitems_updateminplayers", "1", "Should the plugin update abm's cvar min_players convar to the player count?\n 0 -> NO, 1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
 	hMinPlayersSaferoomDoor  = CreateConVar("l4d2_extraitems_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
-	hSaferoomDoorWaitSeconds = CreateConVar("l4d2_extraitems_doorunlock_wait", "35", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
+	hSaferoomDoorWaitSeconds = CreateConVar("l4d2_extraitems_doorunlock_wait", "55", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
 	hSaferoomDoorAutoOpen 	 = CreateConVar("l4d2_extraitems_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
 	
 	if(hUpdateMinPlayers.BoolValue) {
@@ -532,6 +532,7 @@ public Action Timer_OpenSaferoomDoor(Handle h) {
 }
 
 void UnlockDoor(int entity, int flag) {
+	PrintDebug(DEBUG_GENERIC, "Door unlocked, flag %d", flag);
 	SetEntProp(entity, Prop_Send, "m_bLocked", 0);
 	SDKUnhook(entity, SDKHook_Use, Hook_Use);
 	if(hSaferoomDoorAutoOpen.IntValue % flag == flag) {
@@ -597,7 +598,7 @@ stock int GetRealSurvivorsCount() {
 	int count = 0;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-			if(IsFakeClient(i) && GetEntProp(i, Prop_Send, "m_humanSpectatorUserID") == 0) continue;
+			if(IsFakeClient(i) && HasEntProp(i, Prop_Send, "m_humanSpectatorUserID") && GetEntProp(i, Prop_Send, "m_humanSpectatorUserID") == 0) continue;
 			++count;
 		}
 	}
