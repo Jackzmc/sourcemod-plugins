@@ -164,10 +164,11 @@ public Action Command_IgnorePlayer(int client, int args) {
 
 	for(int i = 0; i < target_count; i++) {
 		int target = target_list[i];
-		if(isImmune[target])
-			ReplyToCommand(client, "%N is no longer immune to teamkiller detection.", target);
-		else
-			ReplyToCommand(client, "%N is now immune to teamkiller detection for this session.", target);
+		if(isImmune[target]) {
+			ShowActivity2(client, "[FTT] ", "%N has re-enabled teamkiller detection for %N", client, target);
+		} else {
+			ShowActivity2(client, "[FTT] ", "%N has ignored teamkiller detection for %N", client, target);
+		}
 		isImmune[target] = !isImmune[target];
 		isPlayerTroll[target] = false;
 	}
