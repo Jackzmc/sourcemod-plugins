@@ -157,5 +157,6 @@ public Action Cmd_List(int client, int args) {
 	ReplyToCommand(client, "%.1f%% Worker Commons", hPercentWorker.FloatValue * 100);
 	ReplyToCommand(client, "%.1f%% Riot Commons", hPercentRiot.FloatValue * 100);
 	ReplyToCommand(client, "%.1f%% Jimmy Gibs", hPercentJimmy.FloatValue * 100);
+	ReplyToCommand(client, "%d total commons allowed", commonLimit);
 	return Plugin_Handled;
 }
