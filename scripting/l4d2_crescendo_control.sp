@@ -60,15 +60,11 @@ public Action Event_ButtonPress(const char[] output, int entity, int client, flo
 		float activatorFlow = L4D2Direct_GetFlowDistance(client);
 		
 		if(!IsActivationAllowed(activatorFlow, 1500.0)) {
-			PrintDebug("WOULD DENY BUTTON FOR %N", client);
-			PrintDebug("WOULD DENY BUTTON FOR %N", client);
-			PrintDebug("WOULD DENY BUTTON FOR %N", client);
-
-			/*ClientCommand(client, "play ui/menu_invalid.wav");
+			ClientCommand(client, "play ui/menu_invalid.wav");
 			PrintToChat(client, "Please wait for players to catch up.");
 			AcceptEntityInput(entity, "Lock");
 			RequestFrame(Frame_ResetButton, entity);
-			return Plugin_Handled;*/
+			return Plugin_Handled;
 		}
 		lastButtonPressTime = GetGameTime();
 	}
