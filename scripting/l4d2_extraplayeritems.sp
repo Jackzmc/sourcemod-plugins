@@ -34,6 +34,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <left4dhooks>
+#include <l4d_info_editor>
 #include <jutils>
 
 #define L4D2_WEPUPGFLAG_NONE            (0 << 0)
@@ -60,6 +61,8 @@ static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound;
 static ArrayList ammoPacks;
 static int g_iAmmoTable;
 
+static StringMap weaponMaxClipSizes;
+
 #define CABINET_ITEM_BLOCKS 4
 enum struct Cabinet {
 	int id;
@@ -79,6 +82,7 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
 
+	weaponMaxClipSizes = new StringMap();
 	ammoPacks = new ArrayList(2); //<int entityID, ArrayList clients>
 	
 	HookEvent("player_spawn", 		Event_PlayerSpawn);
@@ -164,6 +168,15 @@ public Action Command_RunExtraItems(int client, int args) {
 /// EVENTS
 ////////////////////////////////////
 
+public void OnGetWeaponsInfo(int pThis, const char[] classname) {
+	char clipsize[8];
+	InfoEditor_GetString(pThis, "clip_size", clipsize, sizeof(clipsize));
+
+	int maxClipSize = StringToInt(clipsize);
+	if(maxClipSize > 0) 
+		weaponMaxClipSizes.SetValue(classname, maxClipSize);
+}
+
 //Called on the first spawn in a mission. 
 public Action Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
 	firstGiven = false;
@@ -193,6 +206,17 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 			RequestFrame(Frame_GiveNewClientKit, client);
 		}
 	}
+}
+
+public  Action L4D_OnMobRushStart() {
+	PrintToChatAll("MOB RUSH");
+}
+
+public Action L4D_OnIsTeamFull(int team, bool &full) {
+	if(team == 2 && full) {
+		full = false;
+		return Plugin_Continue;
+	} 
 }
 
 public void Frame_GiveNewClientKit(int client) {
@@ -419,7 +443,7 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 		}
 
 		char classname[32];
-		int upgradeBits = GetEntProp(primaryWeapon, Prop_Send, "m_upgradeBitVec"), ammo = 10;
+		int upgradeBits = GetEntProp(primaryWeapon, Prop_Send, "m_upgradeBitVec"), ammo;
 
 		//Get the new flag bits
 		GetEntityClassname(entity, classname, sizeof(classname));
@@ -428,12 +452,14 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 		if(upgradeBits & L4D2_WEPUPGFLAG_LASER == L4D2_WEPUPGFLAG_LASER) newFlags |= L4D2_WEPUPGFLAG_LASER; 
 		SetEntProp(primaryWeapon, Prop_Send, "m_upgradeBitVec", newFlags);
 
-		GetEntityClassname(primaryWeapon, classname, sizeof(classname));
-		if(StrEqual(classname, "weapon_grenade_launcher", true)) ammo = 1;
-		else if(StrEqual(classname, "weapon_rifle_m60", true)) ammo = 150;
-		else {
-			int currentAmmo = GetEntProp(primaryWeapon, Prop_Send, "m_iClip1");
-			if(currentAmmo > ammo) ammo = currentAmmo;
+		if(!weaponMaxClipSizes.GetValue(classname, ammo)) {
+			GetEntityClassname(primaryWeapon, classname, sizeof(classname));
+			if(StrEqual(classname, "weapon_grenade_launcher", true)) ammo = 1;
+			else if(StrEqual(classname, "weapon_rifle_m60", true)) ammo = 150;
+			else {
+				int currentAmmo = GetEntProp(primaryWeapon, Prop_Send, "m_iClip1");
+				if(currentAmmo > 10) ammo = 10;
+			}
 		}
 
 		SetEntProp(primaryWeapon, Prop_Send, "m_nUpgradedPrimaryAmmoLoaded", ammo);
