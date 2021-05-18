@@ -285,14 +285,18 @@ public Action Command_SetClientModel(int client, int args) {
 					}
 					UpdatePlayerIdentity(target, view_as<Character>(modelID), keepModel);
 
-					int weapon = GetPlayerWeaponSlot(target, 0);
-					if( weapon != -1 ) {
-						DataPack pack = new DataPack();
-						pack.WriteCell(GetClientUserId(target));
-						pack.WriteCell(EntIndexToEntRef(weapon)); // Save last held weapon to switch back
+					DataPack pack = new DataPack();
+					pack.WriteCell(GetClientUserId(target));
+					for(int slot = 0; slot <= 1; slot++) {
+						int weapon = GetPlayerWeaponSlot(target, slot);
+						if( weapon > 0 ) {
+							SDKHooks_DropWeapon(target, weapon, NULL_VECTOR);
+							pack.WriteCell(EntIndexToEntRef(weapon)); // Save last held weapon to switch back
 
-						CreateTimer(0.2, Timer_RequipWeapon, pack);
+						}
 					}
+					CreateTimer(0.1, Timer_RequipWeapon, pack);
+
 				}
 			}
 		}
