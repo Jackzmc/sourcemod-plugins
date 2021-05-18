@@ -32,6 +32,8 @@ public Plugin myinfo = {
 	url = ""
 };
 
+//TODO: Fix ladder issue (click to tp to safe area?)
+
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
     MarkNativeAsOptional("IdentityFix_SetPlayerModel");
@@ -97,6 +99,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_respawn_all", Command_RespawnAll, ADMFLAG_CHEATS, "Makes all dead players respawn in a closet");
 	RegAdminCmd("sm_playsound", Command_PlaySound, ADMFLAG_CHEATS, "Plays a gamesound for player");
 	RegAdminCmd("sm_stopsound", Command_StopSound, ADMFLAG_CHEATS, "Stops the last played gamesound for player");
+	RegAdminCmd("sm_swap", Command_SwapPlayer, ADMFLAG_CHEATS, "Swarms two player's locations");
 	RegConsoleCmd("sm_pmodels", Command_ListClientModels, "Lists all player's models");
 
 	CreateTimer(8.0, Timer_CheckPlayerPings, _, TIMER_REPEAT);
@@ -141,6 +144,61 @@ public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 public Action Command_RespawnAll(int client, int args) {
 	L4D_CreateRescuableSurvivors();
 }
+public Action Command_SwapPlayer(int client, int args) {
+	if(args < 1) {
+		ReplyToCommand(client, "Usage: sm_swap <player> [player or yourself]");
+	}else{
+		char arg1[64], arg2[64];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+
+		char target_name[MAX_TARGET_LENGTH];
+		int target_list[MAXPLAYERS], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+				arg1,
+				client,
+				target_list,
+				1,
+				COMMAND_FILTER_CONNECTED,
+				target_name,
+				sizeof(target_name),
+				tn_is_ml)) <= 0)
+		{
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		int target = target_list[0];
+		int target2 = client;
+		if(args == 2) {
+			if ((target_count = ProcessTargetString(
+					arg2,
+					client,
+					target_list,
+					1,
+					COMMAND_FILTER_CONNECTED,
+					target_name,
+					sizeof(target_name),
+					tn_is_ml)) <= 0)
+			{
+				/* This function replies to the admin with a failure message */
+				ReplyToTargetError(client, target_count);
+			}
+			target2 = target_list[0];
+		}
+		float pos1[3], pos2[3];
+		float ang1[3], ang2[3];
+		GetClientAbsOrigin(target, pos1);
+		GetClientAbsOrigin(target2, pos2);
+		GetClientAbsAngles(target, ang1);
+		GetClientAbsAngles(target2, ang2);
+		TeleportEntity(target, pos2, ang2, NULL_VECTOR);
+		TeleportEntity(target2, pos1, ang1, NULL_VECTOR);
+	}
+	return Plugin_Handled;
+}
+
 //TODO: Implement idle bot support
 public Action Command_ListClientModels(int client, int args) {
 	char model[64];
