@@ -87,7 +87,7 @@ public Action Command_SpawnSpecial(int client, int args) {
 	if (args < 1) {
 		ReplyToCommand(client, "[SM] Usage: sm_spawnspecial <hunter|smoker|boomer|spitter|charger|jockey|mob|tank|witch> [amount] - Requests a special to spawn via director", arg1);
 	} else {
-		if(amount <= 0 || amount >= MaxClients) {
+		if(amount <= 0 || amount > MaxClients && !StrEqual(arg1, "common")) {
 			ReplyToCommand(client, "[SM] Amount specified is out of range of 1 to %d", MaxClients);
 		}else if (executioner <= 0) {
 			ReplyToCommand(client, "[SM] Cannot spawn a %s as there are no players online.", arg1);
@@ -126,7 +126,7 @@ public Action Command_SpawnSpecialForceLocal(int client, int args) {
 	if(amount == 0) amount = 1;
 	if (args < 1) {
 		ReplyToCommand(client, "[SM] Usage: sm_forcecursor <hunter|smoker|boomer|spitter|charger|jockey|mob|tank|witch> [amount] - Requests a special to spawn at cursor", arg1);
-	} else if(amount <= 0 || amount >= MaxClients) {
+	} else if(amount <= 0 || amount > MaxClients && !StrEqual(arg1, "common")) {
 		ReplyToCommand(client, "[SM] Amount specified is out of range of 1 to %d", MaxClients);
 	}else {
 		if(StrEqual(arg1,"panic",false)) {
@@ -161,7 +161,7 @@ public Action Command_SpawnSpecialForce(int client, int args) {
 		ReplyToCommand(client, "[SM] Usage: sm_forcespecial <hunter|smoker|boomer|spitter|charger|jockey|mob|tank|witch> - Requests a special to spawn via director", arg1);
 	} else if (executioner <= 0) {
 		ReplyToCommand(client, "[SM] Cannot spawn a %s as there are no players online.", arg1);
-	} else if(amount <= 0 || amount >= MaxClients) {
+	} else if(amount <= 0 || amount > MaxClients && !StrEqual(arg1, "common")) {
 		ReplyToCommand(client, "[SM] Amount specified is out of range of 1 to %d", MaxClients);
 	}else {
 		if(StrEqual(arg1,"panic",false)) {
