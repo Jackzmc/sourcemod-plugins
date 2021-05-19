@@ -125,6 +125,11 @@ public void OnPluginStart() {
 	#endif
 }
 
+public void OnPluginEnd() {
+	delete weaponMaxClipSizes;
+	delete ammoPacks;
+}
+
 /////////////////////////////////////
 /// COMMANDS
 ////////////////////////////////////
@@ -199,17 +204,35 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 					if(hUpdateMinPlayers.BoolValue && hMinPlayers != null) {
 						hMinPlayers.IntValue = abmExtraCount;
 					}
+					PopulateItems();	
 					CreateTimer(1.0, Timer_GiveKits);
 				}
 			}
-		}else {
+		} else {
 			RequestFrame(Frame_GiveNewClientKit, client);
 		}
 	}
 }
-
-public  Action L4D_OnMobRushStart() {
-	PrintToChatAll("MOB RUSH");
+//TODO: First map wait for all, on contunation wait for checkpoint
+//Provide extra kits when a player spawns (ahttps://www.youtube.com/watch?v=P1IcaBn3ejka after a map transition)
+public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
+	int user = event.GetInt("userid");
+	int client = GetClientOfUserId(user);
+	if(GetClientTeam(client) == 2) {
+		if(!IsFakeClient(client)) {
+			if(!L4D_IsFirstMapInScenario()) {
+				++playersLoadedIn;
+				if(playerstoWaitFor > 0) {
+					float percentIn = playersLoadedIn / playerstoWaitFor;
+					if(firstSaferoomDoorEntity > 0 && percentIn > hMinPlayersSaferoomDoor.FloatValue) {
+						UnlockDoor(firstSaferoomDoorEntity, 2);
+					}
+				}
+			}
+		}
+		CreateTimer(0.5, Timer_GiveClientKit, user);
+		SDKHook(client, SDKHook_WeaponEquip, Event_Pickup);
+	}
 }
 
 public Action L4D_OnIsTeamFull(int team, bool &full) {
@@ -246,21 +269,6 @@ public Action Timer_UpdateMinPlayers(Handle hdl) {
 }
 
 public Action Timer_GiveKits(Handle timer) { GiveStartingKits(); }
-
-//Provide extra kits when a player spawns (ahttps://www.youtube.com/watch?v=P1IcaBn3ejka after a map transition)
-public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
-	int user = event.GetInt("userid");
-	int client = GetClientOfUserId(user);
-	if(GetClientTeam(client) == 2) {
-		if(!IsFakeClient(client)) {
-			if(firstSaferoomDoorEntity > 0 && playerstoWaitFor > 0 && ++playersLoadedIn / playerstoWaitFor > hMinPlayersSaferoomDoor.FloatValue) {
-				UnlockDoor(firstSaferoomDoorEntity, 2);
-			}
-		}
-		CreateTimer(0.5, Timer_GiveClientKit, user);
-		SDKHook(client, SDKHook_WeaponEquip, Event_Pickup);
-	}
-}
 
 public void OnMapStart() {
 	//If previous round was a failure, restore the amount of kits that were left directly after map transition
@@ -328,6 +336,9 @@ public void OnMapEnd() {
 }
 
 public void Event_RoundFreezeEnd(Event event, const char[] name, bool dontBroadcast) {
+	CreateTimer(50.0, Timer_Populate);
+}
+public Action Timer_Populate(Handle h) {
 	PopulateItems();	
 }
 
@@ -395,6 +406,7 @@ public void OnEntityCreated(int entity, const char[] classname) {
 		int index = ammoPacks.Push(entity);
 		ammoPacks.Set(index, new ArrayList(1), AMMOPACK_USERS);
 		SDKHook(entity, SDKHook_Use, OnUpgradePackUse);
+		//TODO: Timer to reset clients
 	}
 }
 
@@ -451,9 +463,9 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 		int newFlags = StrEqual(classname, "upgrade_ammo_explosive") ? L4D2_WEPUPGFLAG_EXPLOSIVE : L4D2_WEPUPGFLAG_INCENDIARY;
 		if(upgradeBits & L4D2_WEPUPGFLAG_LASER == L4D2_WEPUPGFLAG_LASER) newFlags |= L4D2_WEPUPGFLAG_LASER; 
 		SetEntProp(primaryWeapon, Prop_Send, "m_upgradeBitVec", newFlags);
+		GetEntityClassname(primaryWeapon, classname, sizeof(classname));
 
 		if(!weaponMaxClipSizes.GetValue(classname, ammo)) {
-			GetEntityClassname(primaryWeapon, classname, sizeof(classname));
 			if(StrEqual(classname, "weapon_grenade_launcher", true)) ammo = 1;
 			else if(StrEqual(classname, "weapon_rifle_m60", true)) ammo = 150;
 			else {
@@ -463,7 +475,6 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 		}
 
 		SetEntProp(primaryWeapon, Prop_Send, "m_nUpgradedPrimaryAmmoLoaded", ammo);
-
 		clients.Push(activator);
 		ClientCommand(activator, "play player/orch_hit_csharp_short.wav");
 
@@ -565,6 +576,7 @@ void UnlockDoor(int entity, int flag) {
 		AcceptEntityInput(entity, "Open");
 	}
 	firstSaferoomDoorEntity = -1;
+	PopulateItems();
 }
 
 int FindCabinetIndex(int cabinetId) {
