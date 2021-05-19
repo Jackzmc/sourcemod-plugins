@@ -136,10 +136,11 @@ public void Event_PanicEventCreate(Event event, const char[] name, bool dontBroa
 	}
 }
 public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
-	int client = GetClientOfUserId(event.GetInt("userid"));
+	int user = event.GetInt("userid");
+	int client = GetClientOfUserId(user;
 	if(client) {
 		PrintToChatAll("%N has alerted the horde!", client);
-		FakeClientCommandEx(client, "sm_swarm #%d", client);
+		L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", user, 15000);
 	}
 	//Ignore car alarms for autopunish
 	lastButtonUser = -1;
@@ -704,6 +705,8 @@ public Action Timer_Main(Handle timer) {
 						SetEntPropFloat(i, Prop_Send, "m_healthBufferTime", bufferTime - 7.0); 
 					}
 				}
+			}else if(HasTrollMode(i, Troll_Swarm)) {
+				L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", GetClientUserId(i), 15000);
 			}
 		}
 	}

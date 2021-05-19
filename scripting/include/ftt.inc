@@ -215,9 +215,9 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 		}
 		case Troll_Swarm: {
 			if(modifier == TrollMod_InstantFire) {
-				FakeClientCommandEx(client, "sm_swarm #%d", victim);
+				L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", victim, 15000);
 			}else if(modifier == TrollMod_Repeat) {
-				FakeClientCommandEx(client, "sm_swarmtoggle #%d", victim);
+				
 			}else{
 				ReplyToCommand(client, "Invalid modifier for mode.");
 				return;

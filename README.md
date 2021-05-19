@@ -188,7 +188,7 @@ Troll Modes: (updated 4/20/2021)
 11. **ThrowItAll** - Makes a player throw all their items at any nearby players. Runs on the interval set by sm_ftt_throw_interval.
 12. **GunJam** - On reload, small chance their gun gets jammed - Can't reload.
 13. **NoPickup** - Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop
-14. **Swarm** - Swarms a player with zombies. Requires my [swarm plugin](#l4d2_swarm)
+14. **Swarm** - Swarms a player with zombies.
 15. **Honk** – Replaces player's chat messages with honk
 16. **Special Magnet** – Attracts ALL specials to the closest alive trolled target with this troll enabled
 17. **Tank Magnet** – Attracts ALL tanks to the closest alive trolled target with this troll enabled
