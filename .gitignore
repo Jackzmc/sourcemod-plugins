@@ -13,3 +13,4 @@ scripting/cancer.sp
 plugins/sm_give.smx
 plugins/l4d2_stats_recorder.smx
 scripting/l4d2_stats_recorder.sp
+scripting/include/smlib.inc
