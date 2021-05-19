@@ -96,7 +96,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 //TODO: Autopunish on troll instead of ban. Activate troll that does 0 damage from their guns & xswarm
 
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
-	if(damage > 0.0 && damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
+	if(damage > 0.0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
 		if(GetUserAdmin(attacker) != INVALID_ADMIN_ID || isImmune[attacker] || IsFakeClient(attacker)) return Plugin_Continue;
 		if(GetClientTeam(victim) != 2 || GetClientTeam(attacker) != 2 || attacker == victim) return Plugin_Continue;
 		//Allow friendly firing BOTS that aren't idle players:
@@ -110,7 +110,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		playerTotalDamageFF[attacker] += damage;
 		lastFF[attacker] = time;
 		
-		if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding) {
+		if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding && damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0) {
 			if(hAction.IntValue == 1) {
 				LogMessage("[NOTICE] Kicking %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				NotifyAllAdmins("[Notice] Kicking %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
