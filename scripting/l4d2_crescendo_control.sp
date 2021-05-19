@@ -15,7 +15,7 @@
 static ConVar hPercent, hRange;
 static bool panicStarted;
 static float lastButtonPressTime;
-static int flowRate[MAXPLAYERS+1];
+static float flowRate[MAXPLAYERS+1];
 
 public Plugin myinfo = 
 {
@@ -49,12 +49,12 @@ public void OnMapStart() {
 public void OnMapEnd() {
 	panicStarted = false;
 	for(int i = 1; i <= MaxClients; i++) {
-		flowRate[i] = 0;
+		flowRate[i] = 0.0;
 	}
 }
 
 public void OnClientDisconnect(int client) {
-	flowRate[client] = 0;
+	flowRate[client] = 0.0;
 }
 
 public Action Timer_GetFlows(Handle h) {
@@ -80,6 +80,8 @@ public Action Event_ButtonPress(const char[] output, int entity, int client, flo
 		static float pos[3];
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
 		float activatorFlow = L4D2Direct_GetFlowDistance(client);
+
+		PrintToConsoleAll("[CC] Button Press by %N", client);
 		
 		if(!IsActivationAllowed(activatorFlow, 1500.0)) {
 			ClientCommand(client, "play ui/menu_invalid.wav");
