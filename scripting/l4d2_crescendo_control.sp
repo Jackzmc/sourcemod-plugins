@@ -15,6 +15,7 @@
 static ConVar hPercent, hRange;
 static bool panicStarted;
 static float lastButtonPressTime;
+static int flowRate[MAXPLAYERS+1];
 
 public Plugin myinfo = 
 {
@@ -42,12 +43,33 @@ public void OnPluginStart()
 
 public void OnMapStart() {
 	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
+	CreateTimer(0.2, Timer_GetFlows, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public void OnMapEnd() {
 	panicStarted = false;
+	for(int i = 1; i <= MaxClients; i++) {
+		flowRate[i] = 0;
+	}
 }
 
+public void OnClientDisconnect(int client) {
+	flowRate[client] = 0;
+}
+
+public Action Timer_GetFlows(Handle h) {
+	static float flow;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			flow = L4D2Direct_GetFlowDistance(i);
+			if(flow > flowRate[i]) {
+				flowRate[i] = flow;
+			}
+		}
+	}
+}
+
+//TODO: Cache flow rate every few frames
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
 	if(client > 0 && client <= MaxClients) {
 		if(panicStarted) {
@@ -90,11 +112,10 @@ stock bool IsActivationAllowed(float flowmax, float threshold) {
 	float totalFlow;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-			float flow = L4D2Direct_GetFlowDistance(i);
-			if(flow < flowmax - threshold) {
-				PrintDebug("Adding %N of flow %f to average", i, flow);
+			if(flowRate[i] < flowmax - threshold) {
+				PrintDebug("Adding %N of flow %f to average", i, flowRate[i]);
 				farSurvivors++;
-				totalFlow += flow;
+				totalFlow += flowRate[i];
 			}
 			totalSurvivors++;
 		}
@@ -116,40 +137,13 @@ stock float GetAverageFlowBehind(float flowmax) {
 	float totalFlow;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-			float flow = L4D2Direct_GetFlowDistance(i);
 			survivors++;
-			totalFlow += flow;
+			totalFlow += flowRate[i];
 		}
 	}
 	return totalFlow / survivors;
 }
 
-//TODO: Improve logic to get "average" flow minimum
-stock float GetLowestFlow() {
-	int lowestClient;
-	float lowest = -1.0, secondLowest = -1.0;
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-			float flow = L4D2Direct_GetFlowDistance(i);
-			if(flow < lowest || lowest == -1) {
-				lowestClient = i;
-				secondLowest = lowest;
-				lowest = flow;
-			}
-		}
-	}
-
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && lowestClient != i) {
-			float flow = L4D2Direct_GetFlowDistance(i);
-			if(flow < secondLowest || secondLowest == -1) {
-				secondLowest = flow;
-			}
-		}
-	}
-	PrintDebug("Lowest flow: %f | 2nd lowest: %f", lowest, secondLowest);
-	return lowest;
-}
 
 stock void PrintDebug(const char[] format, any ... ) {
 	#if defined DEBUG
