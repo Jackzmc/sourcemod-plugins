@@ -35,7 +35,7 @@ public void OnPluginStart()
 	}
 
 	hPercent = CreateConVar("l4d2_crescendo_percent", "0.75", "The percent of players needed to be in range for crescendo to start", FCVAR_NONE);
-	hRange = CreateConVar("l4d2_crescendo_range", "150.0", "How many units away something range brain no work", FCVAR_NONE);
+	hRange = CreateConVar("l4d2_crescendo_range", "200.0", "How many units away something range brain no work", FCVAR_NONE);
 
 	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 	//dhook setup
