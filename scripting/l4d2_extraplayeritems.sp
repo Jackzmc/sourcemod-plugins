@@ -59,7 +59,6 @@ static int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEn
 static int isBeingGivenKit[MAXPLAYERS+1];
 static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound;
 static ArrayList ammoPacks;
-static int g_iAmmoTable;
 
 static StringMap weaponMaxClipSizes;
 
@@ -221,12 +220,16 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	if(GetClientTeam(client) == 2) {
 		if(!IsFakeClient(client)) {
 			if(!L4D_IsFirstMapInScenario()) {
-				++playersLoadedIn;
+				if(++playersLoadedIn == 1) {
+					CreateTimer(hSaferoomDoorWaitSeconds.FloatValue, Timer_OpenSaferoomDoor, _, TIMER_FLAG_NO_MAPCHANGE);
+				} 
 				if(playerstoWaitFor > 0) {
-					float percentIn = playersLoadedIn / playerstoWaitFor;
+					float percentIn = float(playersLoadedIn) / float(playerstoWaitFor);
 					if(firstSaferoomDoorEntity > 0 && percentIn > hMinPlayersSaferoomDoor.FloatValue) {
 						UnlockDoor(firstSaferoomDoorEntity, 2);
 					}
+				}else{
+					UnlockDoor(firstSaferoomDoorEntity, 2);
 				}
 			}
 		}
@@ -240,6 +243,7 @@ public Action L4D_OnIsTeamFull(int team, bool &full) {
 		full = false;
 		return Plugin_Continue;
 	} 
+	return Plugin_Continue;
 }
 
 public void Frame_GiveNewClientKit(int client) {
@@ -305,7 +309,6 @@ public void OnMapStart() {
 				AcceptEntityInput(firstSaferoomDoorEntity, "Lock");
 				AcceptEntityInput(firstSaferoomDoorEntity, "ForceClosed");
 				SDKHook(firstSaferoomDoorEntity, SDKHook_Use, Hook_Use);
-				CreateTimer(hSaferoomDoorWaitSeconds.FloatValue, Timer_OpenSaferoomDoor, _, TIMER_FLAG_NO_MAPCHANGE);
 				break;
 			}
 		}
@@ -383,7 +386,6 @@ public Action Event_MapTransition(Event event, const char[] name, bool dontBroad
 	abmExtraCount = GetRealSurvivorsCount();
 	playerstoWaitFor = GetSurvivorsCount();
 }
-//TODO: Stop during transition
 //TODO: Possibly hacky logic of on third different ent id picked up, in short timespan, detect as set of 4 (pills, kits) & give extra
 public Action Event_Pickup(int client, int weapon) {
 	char name[32];
@@ -405,13 +407,18 @@ public void OnEntityCreated(int entity, const char[] classname) {
 	}else if (StrEqual(classname, "upgrade_ammo_explosive") || StrEqual(classname, "upgrade_ammo_incendiary")) {
 		int index = ammoPacks.Push(entity);
 		ammoPacks.Set(index, new ArrayList(1), AMMOPACK_USERS);
+		CreateTimer(60.0, Timer_ResetAmmoPack, entity);
 		SDKHook(entity, SDKHook_Use, OnUpgradePackUse);
 		//TODO: Timer to reset clients
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Hooks
+///////////////////////////////////////////////////////////////////////////////
+
 //TODO: Implement extra kit amount to this
-//TODO: Possibly check ammo pack and kit (relv. distance). Would fire on Last Stand 2nd .
+//TODO: Possibly check ammo stash and kit (relv. distance). Would fire on Last Stand 2nd .
 public Action Hook_CabinetItemSpawn(int entity) {
 	int cabinet = FindNearestEntityInRange(entity, "prop_health_cabinet", 60.0);
 	if(cabinet > 0) {
@@ -508,6 +515,46 @@ public Action Hook_Use(int entity, int activator, int caller, UseType type, floa
 	
 	Prioritize first aid kits somehow? Or split two groups: "utility" (throwables, kits, pill/shots), and "weapon" (all other spawns) 
 */
+
+public Action Timer_ResetAmmoPack(Handle h, int entity) {
+	if(IsValidEntity(entity)) {
+		int index = ammoPacks.FindValue(entity, AMMOPACK_ENTID);
+		if(index == -1) return Plugin_Continue;
+
+		ArrayList clients = ammoPacks.Get(index, AMMOPACK_USERS);
+		clients.Clear();
+	}
+	return Plugin_Continue;
+}
+
+public Action Timer_OpenSaferoomDoor(Handle h) {
+	if(firstSaferoomDoorEntity > 0)
+		UnlockDoor(firstSaferoomDoorEntity, 1);
+	return Plugin_Continue;
+}
+
+void UnlockDoor(int entity, int flag) {
+	PrintDebug(DEBUG_GENERIC, "Door unlocked, flag %d", flag);
+	SetEntProp(entity, Prop_Send, "m_bLocked", 0);
+	SDKUnhook(entity, SDKHook_Use, Hook_Use);
+	if(hSaferoomDoorAutoOpen.IntValue % flag == flag) {
+		AcceptEntityInput(entity, "Open");
+	}
+	firstSaferoomDoorEntity = -1;
+	PopulateItems();
+}
+
+int FindCabinetIndex(int cabinetId) {
+	for(int i = 0; i < sizeof(cabinets); i++) {
+		if(cabinets[i].id == cabinetId) return i;
+	}
+	return -1;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Methods
+///////////////////////////////////////////////////////////////////////////////
+
 public void PopulateItems() {
 	int survivors = GetRealSurvivorsCount();
 	if(survivors <= 4) return;
@@ -561,29 +608,6 @@ public void PopulateItems() {
 			if(!hasASpawner) break;
 		}
 	}
-}
-
-public Action Timer_OpenSaferoomDoor(Handle h) {
-	if(firstSaferoomDoorEntity > 0)
-		UnlockDoor(firstSaferoomDoorEntity, 1);
-}
-
-void UnlockDoor(int entity, int flag) {
-	PrintDebug(DEBUG_GENERIC, "Door unlocked, flag %d", flag);
-	SetEntProp(entity, Prop_Send, "m_bLocked", 0);
-	SDKUnhook(entity, SDKHook_Use, Hook_Use);
-	if(hSaferoomDoorAutoOpen.IntValue % flag == flag) {
-		AcceptEntityInput(entity, "Open");
-	}
-	firstSaferoomDoorEntity = -1;
-	PopulateItems();
-}
-
-int FindCabinetIndex(int cabinetId) {
-	for(int i = 0; i < sizeof(cabinets); i++) {
-		if(cabinets[i].id == cabinetId) return i;
-	}
-	return -1;
 }
 
 /////////////////////////////////////
