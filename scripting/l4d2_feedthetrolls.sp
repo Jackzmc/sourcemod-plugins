@@ -67,6 +67,7 @@ public void OnPluginStart() {
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_death", Event_PlayerDeath);
 	HookEvent("triggered_car_alarm", Event_CarAlarm);
+	
 	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 
 	AutoExecConfig(true, "l4d2_feedthetrolls");
@@ -88,6 +89,9 @@ public void OnMapEnd() {
 	UnhookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 }
 public void OnMapStart() {
+	AddFileToDownloadsTable("sound/custom/meow1.mp3");
+	PrecacheSound("sound/custom/meow1.mp3");	
+
 	lastButtonUser = -1;
 	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 	CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
@@ -137,7 +141,7 @@ public void Event_PanicEventCreate(Event event, const char[] name, bool dontBroa
 }
 public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
 	int user = event.GetInt("userid");
-	int client = GetClientOfUserId(user;
+	int client = GetClientOfUserId(user);
 	if(client) {
 		PrintToChatAll("%N has alerted the horde!", client);
 		L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", user, 15000);
@@ -154,7 +158,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	if(hMagnetChance.FloatValue < GetRandomFloat()) return Plugin_Continue;
 	L4D2Infected class = view_as<L4D2Infected>(GetEntProp(attacker, Prop_Send, "m_zombieClass"));
 	int existingTarget = GetClientOfUserId(g_iAttackerTarget[attacker]);
-	if(existingTarget > 0 && IsPlayerAlive(existingTarget) && (hMagnetTargetMode.IntValue & 1 != 1 || !IsPlayerIncapped(existingTarget)) {
+	if(existingTarget > 0 && IsPlayerAlive(existingTarget) && (hMagnetTargetMode.IntValue & 1 != 1 || !IsPlayerIncapped(existingTarget))) {
 		if(class == L4D2Infected_Tank && (hMagnetTargetMode.IntValue % 2 != 2 || !IsPlayerIncapped(existingTarget))) {
 			curTarget = existingTarget;
 			return Plugin_Changed;
@@ -373,6 +377,9 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 				return Plugin_Changed;
 			} else if(HasTrollMode(entity, Troll_VocalizeGag)) {
 				return Plugin_Handled;
+			} else if(HasTrollMode(entity, Troll_Meow)) {
+				strcopy(sample, sizeof(sample), "custom/meow1.mp3");
+				return Plugin_Changed;
 			}
 		}
 		

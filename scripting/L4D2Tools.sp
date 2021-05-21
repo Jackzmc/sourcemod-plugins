@@ -243,7 +243,7 @@ public Action Command_PlaySound(int client, int args) {
 		PrecacheSound(arg2);
 		for (int i = 0; i < target_count; i++) {
 			target = target_list[i];
-			if(IsClientConnected(target) && IsClientInGame(target)) {
+			if(IsClientConnected(target) && IsClientInGame(target) && !IsFakeClient(target)) {
 				if(StrEqual(arg3, "direct"))
 					ClientCommand(target, "playgamesound %s", arg2);
 				else
@@ -283,10 +283,12 @@ public Action Command_StopSound(int client, int args) {
 		int target;
 		for (int i = 0; i < target_count; i++) {
 			target = target_list[i];
-			if(args < 2) 
-				StopSound(target, 0, lastSound[target]);
-			else
-				StopSound(target, 0, arg2);
+			if(IsClientConnected(target) && IsClientInGame(target) && !IsFakeClient(target)) {
+				if(args < 2) 
+					StopSound(target, 0, lastSound[target]);
+				else
+					StopSound(target, 0, arg2);
+			}
 		}
 	}
 	return Plugin_Handled;
@@ -451,7 +453,6 @@ public void OnClientDisconnect(int client) {
 	}
 }
 public void OnMapStart() {
-	AddFileToDownloadsTable("sound/custom/mariokartmusic.mp3");
 	PrecacheSound("sound/custom/mariokartmusic.mp3");	
 	
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);

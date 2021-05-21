@@ -1,6 +1,6 @@
 #define AUTOPUNISH_FLOW_MIN_DISTANCE 5000.0
 #define AUTOPUNISH_MODE_COUNT 3
-#define TROLL_MODE_COUNT 23
+#define TROLL_MODE_COUNT 24
 //
 enum trollMode {
 	Troll_Reset = 0, //0
@@ -25,8 +25,10 @@ enum trollMode {
 	Troll_DamageBoost, //19
 	Troll_TempHealthQuickDrain, //20
 	Troll_VomitPlayer, //21
-	Troll_VocalizeGag
+	Troll_VocalizeGag,
+	Troll_Meow
 }
+//TODO: Troll_Cat - play custom sounds
 enum TrollModifier {
 	TrollMod_None = 0,
 	TrollMod_InstantFire = 1,
@@ -55,7 +57,8 @@ char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
 	"Damage Boost",
 	"Temp Quick Drain",
 	"Vomit Player",
-	"Vocalize Gag"
+	"Vocalize Gag",
+	"Meow"
 };
 char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Resets the user, removes all troll effects", //0
@@ -80,8 +83,10 @@ char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Makes a player take more damage than normal",
 	"Makes a player's temporarily health drain very quickly",
 	"Shortcut to sm_vomitplayer. vomits the player.",
-	"Prevents player from sending any vocalizations (even automatic)"
+	"Prevents player from sending any vocalizations (even automatic)",
+	"Makes the player meow"
 };
+
 enum L4D2Infected
 {
 	L4D2Infected_None = 0,
@@ -134,6 +139,7 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 		case Troll_NoShove: {}
 		case Troll_SlowDrain: {}
 		case Troll_TempHealthQuickDrain: {}
+		case Troll_Meow: {}
 		case Troll_VomitPlayer: {
 			L4D_CTerrorPlayer_OnVomitedUpon(victim, victim);
 		}
