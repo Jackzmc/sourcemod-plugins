@@ -14,7 +14,7 @@
 #include <jutils>
 #include <left4dhooks>
 
-bool lateLoaded, IsFinaleEnding, isPlayerTroll[MAXPLAYERS+1], isImmune[MAXPLAYERS+1];
+bool lateLoaded, IsFinaleEnding, isPlayerTroll[MAXPLAYERS+1], isImmune[MAXPLAYERS+1], isUnderAttack[MAXPLAYERS+1];
 int iJoinTime[MAXPLAYERS+1];
 float playerTotalDamageFF[MAXPLAYERS+1];
 int lastFF[MAXPLAYERS+1];
@@ -57,6 +57,21 @@ public void OnPluginStart()
 	HookEvent("finale_vehicle_ready", Event_FinaleVehicleReady);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 
+	HookEvent("charger_carry_start", Event_ChargerCarry);
+	HookEvent("charger_carry_end", Event_ChargerCarry);
+
+	HookEvent("lunge_pounce", Event_HunterPounce);
+	HookEvent("pounce_end", Event_HunterPounce);
+	HookEvent("pounce_stopped", Event_HunterPounce);
+
+	HookEvent("choke_start", Event_SmokerChoke);
+	HookEvent("choke_end", Event_SmokerChoke);
+	HookEvent("choke_stopped", Event_SmokerChoke);
+
+	HookEvent("jockey_ride", Event_JockeyRide);
+	HookEvent("jockey_ride_end", Event_JockeyRide);
+
+
 	RegAdminCmd("sm_ignore", Command_IgnorePlayer, ADMFLAG_KICK, "Makes a player immune for any anti trolling detection for a session");
 
 	if(lateLoaded) {
@@ -68,6 +83,54 @@ public void OnPluginStart()
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Special Infected Events 
+///////////////////////////////////////////////////////////////////////////////
+public Action Event_ChargerCarry(Event event, const char[] name, bool dontBroadcast) {
+	int victim = GetClientOfUserId(event.GetInt("victim"));
+	if(victim) {
+		if(StrEqual(name, "charger_carry_start")) {
+			isUnderAttack[victim] = true;
+		}else{
+			isUnderAttack[victim] = false;
+		}
+	}
+}
+
+public Action Event_HunterPounce(Event event, const char[] name, bool dontBroadcast) {
+	int victim = GetClientOfUserId(event.GetInt("victim"));
+	if(victim) {
+		if(StrEqual(name, "lunge_pounce")) {
+			isUnderAttack[victim] = true;
+		}else{
+			isUnderAttack[victim] = false;
+		}
+	}
+}
+
+public Action Event_SmokerChoke(Event event, const char[] name, bool dontBroadcast) {
+	int victim = GetClientOfUserId(event.GetInt("victim"));
+	if(victim) {
+		if(StrEqual(name, "choke_start")) {
+			isUnderAttack[victim] = true;
+		}else{
+			isUnderAttack[victim] = false;
+		}
+	}
+}
+public Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcast) {
+	int victim = GetClientOfUserId(event.GetInt("victim"));
+	if(victim) {
+		if(StrEqual(name, "jockey_ride")) {
+			isUnderAttack[victim] = true;
+		}else{
+			isUnderAttack[victim] = false;
+		}
+	}
+}
+///////////////////////////////////////////////////////////////////////////////
+// Misc events
+///////////////////////////////////////////////////////////////////////////////
 public void Event_FinaleVehicleReady(Event event, const char[] name, bool dontBroadcast) {
 	IsFinaleEnding = true;
 }
@@ -83,6 +146,7 @@ public void OnClientPutInServer(int client) {
 
 public void OnClientDisconnect(int client) {
 	playerTotalDamageFF[client] = 0.0;
+	isUnderAttack[client] = false;
 }
 
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
@@ -93,6 +157,8 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 	isPlayerTroll[client] = false;
 }
 
+
+
 //TODO: Autopunish on troll instead of ban. Activate troll that does 0 damage from their guns & xswarm
 
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
@@ -102,6 +168,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		//Allow friendly firing BOTS that aren't idle players:
 		//if(IsFakeClient(victim) && !HasEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") || GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) return Plugin_Continue;
 		if(isPlayerTroll[attacker]) return Plugin_Stop;
+		if(isUnderAttack[victim]) return Plugin_Continue;
 
 		int time = GetTime();
 		if(time - lastFF[attacker] > hForgivenessTime.IntValue) {
