@@ -170,6 +170,8 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		if(isPlayerTroll[attacker]) return Plugin_Stop;
 		if(isUnderAttack[victim]) return Plugin_Continue;
 
+		bool isDamageDirect = damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0;
+
 		int time = GetTime();
 		if(time - lastFF[attacker] > hForgivenessTime.IntValue) {
 			playerTotalDamageFF[attacker] = 0.0;
@@ -177,7 +179,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		playerTotalDamageFF[attacker] += damage;
 		lastFF[attacker] = time;
 		
-		if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding && damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0) {
+		if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding && isDamageDirect) {
 			if(hAction.IntValue == 1) {
 				LogMessage("[NOTICE] Kicking %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				NotifyAllAdmins("[Notice] Kicking %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
@@ -198,9 +200,13 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		if(L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) || time - iJoinTime[attacker] <= hJoinTime.IntValue * 60000) {
 			damage = 0.0;
 			return Plugin_Handled;
-		}else {
-			SDKHooks_TakeDamage(attacker, attacker, attacker, IsFinaleEnding ? damage * 2.0 : damage / 1.9);
-			damage = IsFinaleEnding ? 0.0 : damage / 2.1;
+		}else if(IsFinaleEnding) {
+			SDKHooks_TakeDamage(attacker, attacker, attacker, damage * 2.0);
+			damage = 0.0;
+			return Plugin_Changed;
+		}else if(!isDamageDirect) {
+			SDKHooks_TakeDamage(attacker, attacker, attacker, damage / 1.9);
+			damage /= 2.1;
 			return Plugin_Changed;
 		}
 	}
