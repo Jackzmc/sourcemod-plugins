@@ -206,6 +206,8 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 					PopulateItems();	
 					CreateTimer(1.0, Timer_GiveKits);
 				}
+				if(firstSaferoomDoorEntity > 0)
+					UnlockDoor(firstSaferoomDoorEntity, 2);
 			}
 		} else {
 			RequestFrame(Frame_GiveNewClientKit, client);
