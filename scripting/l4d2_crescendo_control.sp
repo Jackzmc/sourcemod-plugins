@@ -122,15 +122,14 @@ stock bool IsActivationAllowed(float flowmax, float threshold) {
 			totalSurvivors++;
 		}
 	}
-	PrintDebug("%d far/%d total", farSurvivors, totalSurvivors);
 	if(farSurvivors == 0) return true;
 	float average = totalFlow / farSurvivors;
-	PrintDebug("average %f - difference %f", average, flowmax - average);
+	float percentFar = float(farSurvivors) / float(totalSurvivors);
+	
+	PrintDebug("average %f - difference %f - % far %f%% ", average, flowmax - average, percentFar);
 	//If the average is in the range, allow
 	if(flowmax - average <= threshold) return true;
 	//If not, check the ratio of players
-	float percentFar = float(farSurvivors) / float(totalSurvivors);
-	PrintDebug("Percentage of far players: %f%% | Average %f", percentFar, average);
 	return percentFar <= 0.30;
 }
 
