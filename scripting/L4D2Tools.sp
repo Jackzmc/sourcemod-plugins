@@ -22,8 +22,6 @@ static char lastSound[MAXPLAYERS+1][64];
 
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
 
-//TODO: Auto increase abm_minplayers based on highest player count
-
 public Plugin myinfo = {
 	name = "L4D2 Misc Tools",
 	author = "Includes: Notice on laser use, Timer for gauntlet runs",

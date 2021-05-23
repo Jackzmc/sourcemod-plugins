@@ -28,7 +28,6 @@ enum trollMode {
 	Troll_VocalizeGag,
 	Troll_Meow
 }
-//TODO: Troll_Cat - play custom sounds
 enum TrollModifier {
 	TrollMod_None = 0,
 	TrollMod_InstantFire = 1,
@@ -117,7 +116,6 @@ int gChargerVictim = -1; //For charge player feature
 
 //Applies the selected trollMode to the victim.
 //Modifiers are as followed: 0 -> Both (fire instant, and timer), 1 -> Fire Once, 2 -> Start timer
-//TODO: change it to only modifier at once? at least for instant fire & repeat. Menu runs ApplyMode twice
 void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier modifier, bool silent = false) {
 	ResetClient(victim, false);
 	if(view_as<int>(mode) > TROLL_MODE_COUNT || view_as<int>(mode) < 0) {

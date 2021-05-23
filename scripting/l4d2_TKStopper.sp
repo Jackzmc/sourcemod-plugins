@@ -21,8 +21,6 @@ int lastFF[MAXPLAYERS+1];
 
 ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime, hAction;
 
-//TODO: Toggle ban, kick, delayed ban, etc
-
 public Plugin myinfo = 
 {
 	name =  "TK Stopper", 
@@ -156,10 +154,6 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 	}
 	isPlayerTroll[client] = false;
 }
-
-
-
-//TODO: Autopunish on troll instead of ban. Activate troll that does 0 damage from their guns & xswarm
 
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
 	if(damage > 0.0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {

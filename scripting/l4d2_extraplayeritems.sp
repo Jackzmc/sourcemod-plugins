@@ -214,8 +214,6 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 		}
 	}
 }
-//TODO: First map wait for all, on contunation wait for checkpoint
-//Provide extra kits when a player spawns (ahttps://www.youtube.com/watch?v=P1IcaBn3ejka after a map transition)
 public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int user = event.GetInt("userid");
 	int client = GetClientOfUserId(user);
@@ -348,7 +346,6 @@ public Action Timer_Populate(Handle h) {
 }
 
 public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
-	//TODO: Possibly check client (as entity) if it is a kit, to check that the kit being picked up is in saferoom?
     if(!isCheckpointReached  && client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
 		isCheckpointReached = true;
 		abmExtraCount = GetSurvivorsCount();
@@ -409,9 +406,7 @@ public void OnEntityCreated(int entity, const char[] classname) {
 	}else if (StrEqual(classname, "upgrade_ammo_explosive") || StrEqual(classname, "upgrade_ammo_incendiary")) {
 		int index = ammoPacks.Push(entity);
 		ammoPacks.Set(index, new ArrayList(1), AMMOPACK_USERS);
-		CreateTimer(60.0, Timer_ResetAmmoPack, entity);
 		SDKHook(entity, SDKHook_Use, OnUpgradePackUse);
-		//TODO: Timer to reset clients
 	}
 }
 
@@ -481,6 +476,10 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 				int currentAmmo = GetEntProp(primaryWeapon, Prop_Send, "m_iClip1");
 				if(currentAmmo > 10) ammo = 10;
 			}
+		}
+		//Reset after minute after first pickup
+		if(clients.Length == 0) {
+			CreateTimer(60.0, Timer_ResetAmmoPack, entity);
 		}
 
 		SetEntProp(primaryWeapon, Prop_Send, "m_nUpgradedPrimaryAmmoLoaded", ammo);
@@ -568,7 +567,6 @@ public void PopulateItems() {
 	static char classname[32];
 	int affected = 0;
 
-	//TODO: Possibly convert to method of FindEntityByClassname
 	for(int i = MaxClients + 1; i < 2048; i++) {
 		if(IsValidEntity(i)) {
 			GetEntityClassname(i, classname, sizeof(classname));
@@ -687,7 +685,7 @@ stock bool DoesClientHaveKit(int client) {
 	}
 	return false;
 }
-//TODO: fix bs
+
 stock bool UseExtraKit(int client) {
 	if(extraKitsAmount > 0) {
 		isBeingGivenKit[client] = true;

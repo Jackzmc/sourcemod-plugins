@@ -69,7 +69,6 @@ public Action Timer_GetFlows(Handle h) {
 	}
 }
 
-//TODO: Cache flow rate every few frames
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
 	if(client > 0 && client <= MaxClients) {
 		if(panicStarted) {

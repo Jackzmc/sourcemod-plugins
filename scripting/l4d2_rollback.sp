@@ -325,7 +325,7 @@ void RestoreState(int client, int index = 0) {
 
 void ResetStates(int client) {
 	for(int stage = 0; stage < MAXIMUM_STAGES_STORED; stage++) {
-		playerStatesList[stage][client].incapState = 0;//TODO: get incap state
+		playerStatesList[stage][client].incapState = 0;
 		playerStatesList[stage][client].pillSlotItem[0] = '\0';
 		playerStatesList[stage][client].kitSlotItem[0] = '\0';
 		playerStatesList[stage][client].permHealth = 0;

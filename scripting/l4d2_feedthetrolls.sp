@@ -149,8 +149,6 @@ public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
 	//Ignore car alarms for autopunish
 	lastButtonUser = -1;
 }
-//TODO: Add cvar to turn on/off targetting incapped
-//TODO: Auto Special Maagnet on Anti-rush
 public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	// =========================
 	// OVERRIDE VICTIM
