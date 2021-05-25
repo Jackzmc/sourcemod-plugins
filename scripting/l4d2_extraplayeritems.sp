@@ -206,7 +206,7 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 					PopulateItems();	
 					CreateTimer(1.0, Timer_GiveKits);
 				}
-				if(firstSaferoomDoorEntity > 0)
+				if(firstSaferoomDoorEntity > 0 && IsValidEntity(firstSaferoomDoorEntity))
 					UnlockDoor(firstSaferoomDoorEntity, 2);
 			}
 		} else {
