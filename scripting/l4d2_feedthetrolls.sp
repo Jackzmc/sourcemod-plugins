@@ -102,13 +102,20 @@ public void OnClientPutInServer(int client) {
 	g_PendingBanTroll[client] = false;
 	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
 }
+public void OnClientAuthorized(int client, const char[] auth) {
+	if(!IsFakeClient(client)) {
+		strcopy(steamids[client], 64, auth);
+	}
+}
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(g_PendingBanTroll[client]) {
 		g_PendingBanTroll[client] = false;
-		if(!IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID)
-			BanClient(client, 0, BANFLAG_AUTO, "TrollMarked", "Banned", "ftt", 0);
+		if(!IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID) {
+			BanIdentity(steamids[client], 0, BANFLAG_AUTHID, "TrollMarked", "ftt", 0);
+		}
 	}
+	steamids[client][0] = '\0';
 	g_iTrollUsers[client] = 0;
 	g_iAttackerTarget[client] = 0;
 }
