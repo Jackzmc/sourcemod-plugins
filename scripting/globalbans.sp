@@ -61,7 +61,7 @@ public void OnClientAuthorized(int client, const char[] auth) {
     if(!StrEqual(auth, "BOT", true)) {
         char query[256], ip[32];
         GetClientIP(client, ip, sizeof(ip));
-        Format(query, sizeof(query), "SELECT `reason`, `steamid`, `expires` FROM `bans` WHERE `steamid` = '%s' OR ip = '?'", auth, ip);
+        Format(query, sizeof(query), "SELECT `reason`, `steamid`, `expired` FROM `bans` WHERE `steamid` = '%s' OR ip = '?'", auth, ip);
         g_db.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
     }
 }
@@ -154,18 +154,16 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
         //No failure, check the data.
         if(results.RowCount > 0 && client) {
             results.FetchRow();
-            char reason[128], expiresDate[64], steamid[32];
-            DBResult result;
+            char reason[128], steamid[64];
+            DBResult reasonResult;
             results.FetchString(1, steamid, sizeof(steamid));
+            bool expired = results.FetchInt(2) == 1;
             if(results.IsFieldNull(2)) {
                 DeleteBan(steamid);
             }else{
-                results.FetchString(0, reason, sizeof(reason), result);
-                results.FetchString(2, expiresDate, sizeof(expiresDate));
-
-                int expires = StringToInt(expiresDate);
-                if(expires <= GetTime() && expires > 0) {
-                    if(result == DBVal_Data)
+                results.FetchString(0, reason, sizeof(reason), reasonResult);
+                if(!expired) {
+                    if(reasonResult == DBVal_Data)
                         KickClient(client, "You have been banned: %s", reason);
                     else
                         KickClient(client, "You have been banned from this server.");
