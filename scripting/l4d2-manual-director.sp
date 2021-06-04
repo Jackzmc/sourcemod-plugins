@@ -133,10 +133,12 @@ public Action Command_SpawnSpecialForceLocal(int client, int args) {
 			CheatCommand(client, "director_force_panic_event", "", "");
 		}else{
 			for(int i = 0; i < amount; i++) {
-				int bot = CreateFakeClient("ManualDirectorBot");
-				if (bot != 0) {
-					ChangeClientTeam(bot, 3);
-					CreateTimer(0.1, kickbot, bot);
+				if(!StrEqual(arg1, "common")) {
+					int bot = CreateFakeClient("ManualDirectorBot");
+					if (bot != 0) {
+						ChangeClientTeam(bot, 3);
+						CreateTimer(0.1, kickbot, bot);
+					}
 				}
 				CheatCommand(client, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1,"");
 			}
@@ -168,10 +170,12 @@ public Action Command_SpawnSpecialForce(int client, int args) {
 			CheatCommand(executioner, "director_force_panic_event", "", "");
 		}else{
 			for(int i = 0; i < amount; i++) {
-				int bot = CreateFakeClient("ManualDirectorBot");
-				if (bot != 0) {
-					ChangeClientTeam(bot, 3);
-					CreateTimer(0.1, kickbot, bot);
+				if(!StrEqual(arg1, "common")) {
+					int bot = CreateFakeClient("ManualDirectorBot");
+					if (bot != 0) {
+						ChangeClientTeam(bot, 3);
+						CreateTimer(0.1, kickbot, bot);
+					}
 				}
 				CheatCommand(executioner, g_bMdIsL4D2 ? "z_spawn_old" : "z_spawn", arg1, "auto");
 			}
