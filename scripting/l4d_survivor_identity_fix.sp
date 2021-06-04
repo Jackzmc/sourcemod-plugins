@@ -13,9 +13,12 @@
 #include <sdktools>
 #include <dhooks>
 #include <clientprefs>
+#include <left4dhooks>
 
 #define TEAM_SURVIVOR 2
 #define TEAM_PASSING 4
+
+#define DEBUG 1
 
 
 #define GAMEDATA "l4d_survivor_identity_fix"
@@ -30,14 +33,35 @@ static int g_iPendingCookieModel[MAXPLAYERS+1];
 Handle hConf = null;
 static Handle hDHookSetModel = null, hModelPrefCookie;
 static ConVar hCookiesEnabled;
-static bool isLateLoad, cookieModelsSet;
+static bool isLateLoad, cookieModelsSet, isL4D1Survivors;
 static int survivors;
 static bool IsTemporarilyL4D2[MAXPLAYERS]; //Use index 0 to state if its activated
 static char currentMap[16];
 
+static Menu chooseMenu;
+
+// ------------------------------------------------------------------------
+//  Models & survivor names so bots can be renamed
+// ------------------------------------------------------------------------
+char survivor_names[8][] = { "Nick", "Rochelle", "Coach", "Ellis", "Bill", "Zoey", "Francis", "Louis"};
+char survivor_models[8][] =
+{
+	"models/survivors/survivor_gambler.mdl",
+	"models/survivors/survivor_producer.mdl",
+	"models/survivors/survivor_coach.mdl",
+	"models/survivors/survivor_mechanic.mdl",
+	"models/survivors/survivor_namvet.mdl",
+	"models/survivors/survivor_teenangst.mdl",
+	"models/survivors/survivor_biker.mdl",
+	"models/survivors/survivor_manager.mdl"
+};
 
 
-//TODO: Setup cookies
+/*TODO: Setup cookie preference setting:
+Need to make sure if l4d1 that cookie preference correctly setting? 
+Probably if 'rochelle' && l4d1 -> rochelle model, zoey survivorType, or just leave as invalid roch
+
+*/
 
 public Plugin myinfo =
 {
@@ -77,7 +101,17 @@ public void OnPluginStart()
 		}
 	}
 
+	chooseMenu = new Menu(Menu_ChooseSurvivor);
+	chooseMenu.SetTitle("Select survivor preference");
+	chooseMenu.AddItem("c", "Clear Prefence");
+	char info[2];
+	for(int i = 0; i < sizeof(survivor_names); i++) {
+		Format(info, sizeof(info), "%d", (i+1));
+		chooseMenu.AddItem(info, survivor_names[i]);
+	}
+
 	hModelPrefCookie = RegClientCookie("survivor_model", "Survivor model preference", CookieAccess_Public);
+	RegConsoleCmd("sm_survivor", Cmd_SetSurvivor, "Sets your preferred survivor");
 }
 
 // ------------------------------------------------------------------------
@@ -103,22 +137,6 @@ public MRESReturn SetModel(int client, Handle hParams)
 		strcopy(g_Models[client], 128, model);
 	}
 }
-
-// ------------------------------------------------------------------------
-//  Models & survivor names so bots can be renamed
-// ------------------------------------------------------------------------
-char survivor_names[8][] = { "Nick", "Rochelle", "Coach", "Ellis", "Bill", "Zoey", "Francis", "Louis"};
-char survivor_models[8][] =
-{
-	"models/survivors/survivor_gambler.mdl",
-	"models/survivors/survivor_producer.mdl",
-	"models/survivors/survivor_coach.mdl",
-	"models/survivors/survivor_mechanic.mdl",
-	"models/survivors/survivor_namvet.mdl",
-	"models/survivors/survivor_teenangst.mdl",
-	"models/survivors/survivor_biker.mdl",
-	"models/survivors/survivor_manager.mdl"
-};
 
 // --------------------------------------
 // Bot replaced by player
@@ -210,6 +228,20 @@ void GetGamedata()
 	}
 	PrepDHooks();
 }
+
+void PrepDHooks()
+{
+	if (hConf == null)
+	{
+		SetFailState("Error: Gamedata not found");
+	}
+	
+	hDHookSetModel = DHookCreateDetour(Address_Null, CallConv_THISCALL, ReturnType_Void, ThisPointer_CBaseEntity);
+	DHookSetFromConf(hDHookSetModel, hConf, SDKConf_Signature, NAME_SetModel);
+	DHookAddParam(hDHookSetModel, HookParamType_CharPtr);
+	DHookEnableDetour(hDHookSetModel, false, SetModel_Pre);
+	DHookEnableDetour(hDHookSetModel, true, SetModel);
+}
 //Reset the list of models on a new game -> no players.
 
 public void Event_NewGame(Event event, const char[] name, bool dontBroadcast) {
@@ -227,17 +259,28 @@ public void OnClientCookiesCached(int client) {
 	char modelPref[2];
 	GetClientCookie(client, hModelPrefCookie, modelPref, sizeof(modelPref));
 	if(strlen(modelPref) > 0) {
+		//'type' starts at 1, 5 being other l4d1 survivors for l4d2
 		int type;
 		if(StringToIntEx(modelPref, type) > 0) {
-			PrintToServer("%N has cookie for '%s'", client, survivor_models[type - 1][17]);
-			strcopy(g_Models[client], 64, survivor_models[type - 1]);
-			g_iPendingCookieModel[client] = type;
+			PrintToServer("%N has cookie for %s", client, survivor_models[type - 1][17]);
+			if(isL4D1Survivors && type > 4) {
+				strcopy(g_Models[client], 64, survivor_models[type - 5]);
+				g_iPendingCookieModel[client] = type - 4;
+			}
+			
 		}
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Cookies & Map Fixes
+///////////////////////////////////////////////////////////////////////////////
 //Prevent issues with L4D1 characters being TP'd and stuck in brain dead form
 public void OnMapStart() {
+	char output[2];
+	L4D2_GetVScriptOutput("Director.GetSurvivorSet()", output, sizeof(output));
+	isL4D1Survivors = StringToInt(output) == 1;
+
 	survivors = 0;
 
 	for(int i = 0; i < sizeof(survivor_models); i++) {
@@ -250,6 +293,50 @@ public void OnMapStart() {
 	}
 
 }
+//Either use preferred model OR find the least-used.
+public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
+	RequestFrame(Frame_CheckClient, event.GetInt("userid"));
+}
+public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	g_Models[client][0] = '\0';
+	if(!IsFakeClient(client) && survivors > 0)
+		survivors--;
+}
+public void Frame_CheckClient(int userid) {
+	int client = GetClientOfUserId(userid);
+	if(client > 0 && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
+		int survivorThreshold = hCookiesEnabled.IntValue == 1 ? 4 : 0;
+		if(++survivors > survivorThreshold && g_iPendingCookieModel[client] > 0) {
+			//A model is set: Fetched from cookie
+			if(!cookieModelsSet) {
+				cookieModelsSet = true;
+				CreateTimer(0.2, Timer_SetAllCookieModels);
+			}else {
+				RequestFrame(Frame_SetPlayerModel, client);
+			}
+		}else{
+			//Model was not set: Use least-used survivor.
+			
+			//RequestFrame(Frame_SetPlayerToLeastUsedModel, client);
+		}
+	}
+}
+public void Frame_SetPlayerModel(int client) {
+	SetEntityModel(client, survivor_models[g_iPendingCookieModel[client] - 1]);
+	SetEntProp(client, Prop_Send, "m_survivorCharacter", g_iPendingCookieModel[client] - 1);
+	g_iPendingCookieModel[client] = 0;
+}
+public Action Timer_SetAllCookieModels(Handle h) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && g_iPendingCookieModel[i] && GetClientTeam(i) == 2) {
+			SetEntityModel(i, survivor_models[g_iPendingCookieModel[i] - 1]);
+			SetEntProp(i, Prop_Send, "m_survivorCharacter", g_iPendingCookieModel[i] - 1);
+		}
+		g_iPendingCookieModel[i] = 0;
+	}
+}
+
 public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(StrEqual(currentMap, "c6m1_riverbank") && GetClientTeam(client) == 2) {
@@ -310,70 +397,57 @@ void RevertL4D1Survivor(int client) {
 		SetEntProp(client, Prop_Send, "m_survivorCharacter", playerType + 4);
 	}
 }
-//Either use preferred model OR find the least-used.
-public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
-	RequestFrame(Frame_CheckClient, event.GetInt("userid"));
-}
-public void Frame_CheckClient(int userid) {
-	int client = GetClientOfUserId(userid);
-	if(client > 0 && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
-		if(++survivors > 4 && g_iPendingCookieModel[client] > 0) {
-			//A model is set: Fetched from cookie
-			
-			if(!cookieModelsSet) {
-				cookieModelsSet = true;
-				CreateTimer(0.2, Timer_SetAllCookieModels);
-				PrintToServer("Over 4 clients, setting models for all users based on cookie.");
-			}else {
-				PrintToServer("Client joined with model cookie | client %N | cookie %d", client, g_iPendingCookieModel[client]);
-				RequestFrame(Frame_SetPlayerModel, client);
-			}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Commands
+///////////////////////////////////////////////////////////////////////////////
+
+public Action Cmd_SetSurvivor(int client, int args) {
+	if(args > 0) {
+		char arg1[16];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		if(arg1[0] == 'c') {
+			SetClientCookie(client, hModelPrefCookie, "");
+			ReplyToCommand(client, "Your survivor preference has been reset");
+			return Plugin_Handled;
+		}
+		int number;
+		if(StringToIntEx(arg1, number) > 0 && number >= 0 && number < 8) {
+			SetClientCookie(client, hModelPrefCookie, arg1);
+			ReplyToCommand(client, "Your survivor preference set to %s", survivor_names[number]);
+			return Plugin_Handled;
 		}else{
-			//Model was not set: Use least-used survivor.
-			
-			//RequestFrame(Frame_SetPlayerToLeastUsedModel, client);
+			int type = GetSurvivorId(arg1, false);
+			if(type > -1) {
+				strcopy(g_Models[client], 64, survivor_models[type]);
+				if(isL4D1Survivors) type = GetSurvivorId(arg1, true);
+				SetEntProp(client, Prop_Send, "m_survivorCharacter", type);
+			}
 		}
 	}
-}
-public void Frame_SetPlayerModel(int client) {
-	SetEntityModel(client, survivor_models[g_iPendingCookieModel[client] - 1]);
-	SetEntProp(client, Prop_Send, "m_survivorCharacter", g_iPendingCookieModel[client] - 1);
-	g_iPendingCookieModel[client] = 0;
-}
-public Action Timer_SetAllCookieModels(Handle h) {
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && g_iPendingCookieModel[i] && GetClientTeam(i) == 2) {
-			SetEntityModel(i, survivor_models[g_iPendingCookieModel[i] - 1]);
-			SetEntProp(i, Prop_Send, "m_survivorCharacter", g_iPendingCookieModel[i] - 1);
-		}
-		g_iPendingCookieModel[i] = 0;
-	}
-}
-public void Frame_SetPlayerToLeastUsedModel(int client) {
-	int type = GetLeastUsedSurvivor(client) ;
-	SetEntityModel(client, survivor_models[type]);
-	SetEntProp(client, Prop_Send, "m_survivorCharacter", type);
-	strcopy(g_Models[client], 64, survivor_models[type]);
-}
-public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
-	int client = GetClientOfUserId(event.GetInt("userid"));
-	g_Models[client][0] = '\0';
-	survivors--;
+	chooseMenu.Display(client, 0);
+	return Plugin_Handled;
 }
 
-void PrepDHooks()
-{
-	if (hConf == null)
-	{
-		SetFailState("Error: Gamedata not found");
+int Menu_ChooseSurvivor(Menu menu, MenuAction action, int activator, int item) {
+	char info[2];
+	menu.GetItem(item, info, sizeof(info));
+	if(info[0] == 'c') {
+		SetClientCookie(activator, hModelPrefCookie, "");
+		ReplyToCommand(activator, "Your survivor preference has been reset");
+	}else{
+		/*strcopy(g_Models[client], 64, survivor_models[type]);
+		if(isL4D1Survivors) type = GetSurvivorId(arg1, true);
+		SetEntProp(client, Prop_Send, "m_survivorCharacter", type);*/
+		SetClientCookie(activator, hModelPrefCookie, info);
+		ReplyToCommand(activator, "Your survivor preference set to %s", survivor_names[StringToInt(info) - 1]);
 	}
-	
-	hDHookSetModel = DHookCreateDetour(Address_Null, CallConv_THISCALL, ReturnType_Void, ThisPointer_CBaseEntity);
-	DHookSetFromConf(hDHookSetModel, hConf, SDKConf_Signature, NAME_SetModel);
-	DHookAddParam(hDHookSetModel, HookParamType_CharPtr);
-	DHookEnableDetour(hDHookSetModel, false, SetModel_Pre);
-	DHookEnableDetour(hDHookSetModel, true, SetModel);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Methods
+///////////////////////////////////////////////////////////////////////////////
 
 bool IsValidClient(int client, bool replaycheck = true)
 {
@@ -417,44 +491,34 @@ public int Native_SetPlayerModel(Handle plugin, int numParams) {
 	}
 }
 
-stock int GetLeastUsedSurvivor(int client) {
-	//TODO: Only work if > 5
-	int count[8], lowestID, players;
-	for(int i = 1; i <= MaxClients; ++i) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && i != client) {
-			count[GetSurvivorType(g_Models[i])]++;
-			players++;
+stock int GetSurvivorId(const char str[16], bool isL4D1 = false) {
+	int possibleNumber = StringToInt(str, 10);
+	if(strlen(str) == 1) {
+		if(possibleNumber <= 7 && possibleNumber >= 0) {
+			return possibleNumber;
+		}
+	}else if(possibleNumber == 0) {
+		/*
+		L4D2:
+			0 - Nick, 4 - Bill, 5 - Zoey, 6 - Francis, 7 - Louis
+		L4D1:
+			0 - Bill, 1 - Zoey, 2 - Louis, 3 - Francis
+		*/
+		if(StrEqual(str, "nick", false)) return 0;
+		else if(StrEqual(str, "rochelle", false)) return 1;
+		else if(StrEqual(str, "coach", false)) return 2;
+		else if(StrEqual(str, "ellis", false)) return 3;
+		if(isL4D1) {
+			if(StrEqual(str, "bill", false)) return 0;
+			else if(StrEqual(str, "zoey", false)) return 1;
+			else if(StrEqual(str, "francis", false)) return 3;
+			else if(StrEqual(str, "louis", false)) return 2;
+		}else{
+			if(StrEqual(str, "bill", false)) return 4;
+			else if(StrEqual(str, "zoey", false)) return 5;
+			else if(StrEqual(str, "francis", false)) return 6;
+			else if(StrEqual(str, "louis", false)) return 7;
 		}
 	}
-	//TODO: set starting number to be character set based.
-	//int start = players > 4 
-	for(int id = 0; id < 8; ++id) {
-		if(count[id] == 0) {
-			return id;
-		}else if(count[id] < count[lowestID]) {
-			lowestID = id;
-		}
-	}
-	return lowestID;
-}
-stock int GetSurvivorType(const char[] modelName) {
-	if(StrContains(modelName,"biker",false) > -1) {
-		return 6;
-	}else if(StrContains(modelName,"teenangst",false) > -1) {
-		return 5;
-	}else if(StrContains(modelName,"namvet",false) > -1) {
-		return 4;
-	}else if(StrContains(modelName,"manager",false) > -1) {
-		return 7;
-	}else if(StrContains(modelName,"coach",false) > -1) {
-		return 2;
-	}else if(StrContains(modelName,"producer",false) > -1) {
-		return 1;
-	}else if(StrContains(modelName,"gambler",false) > -1) {
-		return 0;
-	}else if(StrContains(modelName,"mechanic",false) > -1) {
-		return 3;
-	}else{
-		return false;
-	}
+	return -1;
 }
