@@ -12,7 +12,8 @@
 #include <left4dhooks>
 //#include <sdkhooks>
 
-static ConVar hPercent, hRange;
+static ConVar hPercent, hRange, hEnabled;
+static char gamemode[32];
 static bool panicStarted;
 static float lastButtonPressTime;
 static float flowRate[MAXPLAYERS+1];
@@ -34,16 +35,28 @@ public void OnPluginStart()
 		SetFailState("This plugin is for L4D2 only.");	
 	}
 
+	hEnabled = CreateConVar("l4d2_crescendo_control", "1", "Should plugin be active?", FCVAR_NONE, true, 0.0, true, 1.0);
 	hPercent = CreateConVar("l4d2_crescendo_percent", "0.75", "The percent of players needed to be in range for crescendo to start", FCVAR_NONE);
 	hRange = CreateConVar("l4d2_crescendo_range", "200.0", "How many units away something range brain no work", FCVAR_NONE);
+
+	ConVar hGamemode = FindConVar("mp_gamemode"); 
+	hGamemode.GetString(gamemode, sizeof(gamemode));
+	hGamemode.AddChangeHook(Event_GamemodeChange);
 
 	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 	//dhook setup
 }
 
+public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
+	cvar.GetString(gamemode, sizeof(gamemode));
+}
+
+
 public void OnMapStart() {
-	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
-	CreateTimer(0.2, Timer_GetFlows, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	if(!StrEqual(gamemode, "tankrun")) {
+		HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
+		CreateTimer(0.3, Timer_GetFlows, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	}
 }
 
 public void OnMapEnd() {
@@ -70,7 +83,7 @@ public Action Timer_GetFlows(Handle h) {
 }
 
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
-	if(client > 0 && client <= MaxClients) {
+	if(hEnabled.BoolValue && client > 0 && client <= MaxClients) {
 		if(panicStarted) {
 			panicStarted = false;
 			return Plugin_Continue;
@@ -107,6 +120,11 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 public void Frame_ResetButton(int entity) {
 	AcceptEntityInput(entity, "Unlock");
 }
+
+
+//  5 far/8 total
+// [Debug] average 4222.518066 - difference 2262.424316
+// [Debug] Percentage of far players: 0.625000% | Average 4222.518066
 
 stock bool IsActivationAllowed(float flowmax, float threshold) {
 	int farSurvivors, totalSurvivors;
