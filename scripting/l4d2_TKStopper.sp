@@ -15,7 +15,7 @@
 #include <left4dhooks>
 
 bool lateLoaded, IsFinaleEnding, isPlayerTroll[MAXPLAYERS+1], isImmune[MAXPLAYERS+1], isUnderAttack[MAXPLAYERS+1];
-int iJoinTime[MAXPLAYERS+1];
+int iJoinTime[MAXPLAYERS+1], iIdleStartTime[MAXPLAYERS+1];
 float playerTotalDamageFF[MAXPLAYERS+1];
 int lastFF[MAXPLAYERS+1];
 
@@ -68,6 +68,9 @@ public void OnPluginStart()
 
 	HookEvent("jockey_ride", Event_JockeyRide);
 	HookEvent("jockey_ride_end", Event_JockeyRide);
+
+	HookEvent("player_bot_replace", Event_PlayerToBot);
+	HookEvent("bot_player_replace", Event_BotToPlayer);
 
 
 	RegAdminCmd("sm_ignore", Command_IgnorePlayer, ADMFLAG_KICK, "Makes a player immune for any anti trolling detection for a session");
@@ -125,6 +128,22 @@ public Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcas
 			isUnderAttack[victim] = false;
 		}
 	}
+}
+///////////////////////////////////////////////////////////////////////////////
+// IDLE 
+///////////////////////////////////////////////////////////////////////////////
+public Action Event_BotToPlayer(Handle event, const char[] name, bool dontBroadcast) {
+	int player = GetClientOfUserId(GetEventInt(event, "player"));
+
+	if (!IsValidClient(player) || (GetClientTeam(player) != 2 && GetClientTeam(player) != 3) || IsFakeClient(player)) return;  // ignore fake players (side product of creating bots)
+
+	if(GetTime() - iIdleStartTime[player] >= 60000) {
+		iJoinTime[player] = GetTime();
+	}
+}
+public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast) {
+	int player = GetClientOfUserId(GetEventInt(event, "player"));
+	iIdleStartTime[player] = GetTime(); 
 }
 ///////////////////////////////////////////////////////////////////////////////
 // Misc events
@@ -231,12 +250,16 @@ public Action Command_IgnorePlayer(int client, int args) {
 
 	for(int i = 0; i < target_count; i++) {
 		int target = target_list[i];
-		if(isImmune[target]) {
-			ShowActivity2(client, "[FTT] ", "%N has re-enabled teamkiller detection for %N", client, target);
-		} else {
-			ShowActivity2(client, "[FTT] ", "%N has ignored teamkiller detection for %N", client, target);
+		if(GetUserAdmin(target) != INVALID_ADMIN_ID) {
+			ReplyToCommand(client, "%N is an admin and is already immune.");
+		}else{
+			if(isImmune[target]) {
+				ShowActivity2(client, "[FTT] ", "%N has re-enabled teamkiller detection for %N", client, target);
+			} else {
+				ShowActivity2(client, "[FTT] ", "%N has ignored teamkiller detection for %N", client, target);
+			}
+			isImmune[target] = !isImmune[target];
 		}
-		isImmune[target] = !isImmune[target];
 		isPlayerTroll[target] = false;
 	}
 
