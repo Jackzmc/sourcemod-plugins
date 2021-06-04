@@ -102,6 +102,7 @@ int g_iTrollUsers[MAXPLAYERS+1], g_iAttackerTarget[MAXPLAYERS+1];
 int autoPunished = -1, autoPunishMode, lastButtonUser, lastCrescendoUser;
 bool g_bPendingItemGive[MAXPLAYERS+1], g_PendingBanTroll[MAXPLAYERS+1];
 GlobalForward g_PlayerMarkedForward;
+char steamids[MAXPLAYERS+1][64];
 
 //HANDLES
 Handle hThrowTimer;
