@@ -228,7 +228,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 					if(firstSaferoomDoorEntity > 0 && percentIn > hMinPlayersSaferoomDoor.FloatValue) {
 						UnlockDoor(firstSaferoomDoorEntity, 2);
 					}
-				}else{
+				}else if(firstSaferoomDoorEntity > 0) {
 					UnlockDoor(firstSaferoomDoorEntity, 2);
 				}
 			}
@@ -481,7 +481,9 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 		if(clients.Length == 0) {
 			CreateTimer(60.0, Timer_ResetAmmoPack, entity);
 		}
-
+		if(GetEntProp(primaryWeapon, Prop_Send, "m_iClip1") < ammo) {
+			SetEntProp(primaryWeapon, Prop_Send, "m_iClip1", ammo);
+		}
 		SetEntProp(primaryWeapon, Prop_Send, "m_nUpgradedPrimaryAmmoLoaded", ammo);
 		clients.Push(activator);
 		ClientCommand(activator, "play player/orch_hit_csharp_short.wav");
