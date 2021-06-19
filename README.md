@@ -32,6 +32,7 @@ Useful things:
 * [l4d2_autorestart](#l4d2_autorestart)
 * [l4d2_TKStopper](#l4d2_TKStopper)
 * [l4d2_crescendo_control](#l4d2_crescendo_control)
+* [l4d2_vocalize_control](#l4d2_vocalize_control)
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
@@ -326,3 +327,9 @@ _This plugin is currently in **development.**_ Current implementation may be lac
 * **Cvars:**
   * `l4d2_crescendo_percent`
   * `l4d2_crescendo_range`
+
+### l4d2_vocalize_control
+A very small plugin that simply allows a player to mute another player's vocalizations only for them.
+
+* **Commands:**
+  * `sm_vgag <player(s)>` - Vocalize gag or ungags selected player(s)
