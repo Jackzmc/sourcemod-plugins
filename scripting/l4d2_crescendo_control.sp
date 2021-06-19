@@ -84,6 +84,9 @@ public Action Timer_GetFlows(Handle h) {
 
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
 	if(hEnabled.BoolValue && client > 0 && client <= MaxClients) {
+		AdminId admin = GetUserAdmin(client);
+		if(admin != INVALID_ADMIN_ID && admin.HasFlag(Admin_Custom1)) return Plugin_Continue;
+
 		if(panicStarted) {
 			panicStarted = false;
 			return Plugin_Continue;
