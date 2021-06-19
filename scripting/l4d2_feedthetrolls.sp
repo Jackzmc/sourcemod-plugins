@@ -376,7 +376,7 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 		}
 		lastButtonUser = -1;
 	}else if(numClients > 0 && entity > 0 && entity <= MaxClients) {
-		if(StrContains(sample, "survivor/voice") > -1) {
+		if(StrContains(sample, "survivor\\voice") > -1) {
 			if(HasTrollMode(entity, Troll_Honk)) {
 				strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
 				return Plugin_Changed;
