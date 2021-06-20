@@ -45,6 +45,15 @@
 #define AMMOPACK_ENTID 0
 #define AMMOPACK_USERS 1
 
+#define TANK_CLASS_ID 8
+
+/* 5+ Tank Improvement 
+Every X amount of L4D2_OnChooseVictim() calls,
+if a player has done < Y amount since last call
+Add to a list
+Find the closest player in that list & target
+*/
+
 public Plugin myinfo = 
 {
 	name =  "L4D2 Extra Player Tools", 
@@ -84,12 +93,14 @@ public void OnPluginStart() {
 	weaponMaxClipSizes = new StringMap();
 	ammoPacks = new ArrayList(2); //<int entityID, ArrayList clients>
 	
+	HookEvent("player_hurt", 		Event_PlayerHurt);
 	HookEvent("player_spawn", 		Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 	HookEvent("round_end", 			Event_RoundEnd);
 	HookEvent("map_transition", 	Event_MapTransition);
 	HookEvent("game_start", 		Event_GameStart);
 	HookEvent("round_freeze_end",   Event_RoundFreezeEnd);
+	HookEvent("tank_spawn", 		Event_TankSpawn);
 
 	hExtraItemBasePercentage = CreateConVar("l4d2_extraitem_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hAddExtraKits 			 = CreateConVar("l4d2_extraitems_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits, 1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -206,8 +217,9 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 					PopulateItems();	
 					CreateTimer(1.0, Timer_GiveKits);
 				}
-				if(firstSaferoomDoorEntity > 0 && IsValidEntity(firstSaferoomDoorEntity))
+				if(firstSaferoomDoorEntity > 0 && IsValidEntity(firstSaferoomDoorEntity)) {
 					UnlockDoor(firstSaferoomDoorEntity, 2);
+				}
 			}
 		} else {
 			RequestFrame(Frame_GiveNewClientKit, client);
@@ -222,7 +234,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 			if(!L4D_IsFirstMapInScenario()) {
 				if(++playersLoadedIn == 1) {
 					CreateTimer(hSaferoomDoorWaitSeconds.FloatValue, Timer_OpenSaferoomDoor, _, TIMER_FLAG_NO_MAPCHANGE);
-				} 
+				}
 				if(playerstoWaitFor > 0) {
 					float percentIn = float(playersLoadedIn) / float(playerstoWaitFor);
 					if(firstSaferoomDoorEntity > 0 && percentIn > hMinPlayersSaferoomDoor.FloatValue) {
@@ -383,7 +395,7 @@ public Action Event_MapTransition(Event event, const char[] name, bool dontBroad
 	isLateLoaded = false;
 	extraKitsStarted = extraKitsAmount;
 	abmExtraCount = GetRealSurvivorsCount();
-	playerstoWaitFor = GetSurvivorsCount();
+	playerstoWaitFor = GetRealSurvivorsCount();
 }
 //TODO: Possibly hacky logic of on third different ent id picked up, in short timespan, detect as set of 4 (pills, kits) & give extra
 public Action Event_Pickup(int client, int weapon) {
@@ -407,6 +419,79 @@ public void OnEntityCreated(int entity, const char[] classname) {
 		int index = ammoPacks.Push(entity);
 		ammoPacks.Set(index, new ArrayList(1), AMMOPACK_USERS);
 		SDKHook(entity, SDKHook_Use, OnUpgradePackUse);
+	}
+}
+
+int tankChooseVictimTicks[MAXPLAYERS+1]; //Per tank
+int totalTankDamage[MAXPLAYERS+1]; //Per survivor
+
+public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
+	if(abmExtraCount <= 4) return Plugin_Continue;
+	int class = GetEntProp(attacker, Prop_Send, "m_zombieClass");
+	if(class != TANK_CLASS_ID) return Plugin_Continue;
+
+	//Find a new victim
+	if(++tankChooseVictimTicks[attacker] > 200) {
+		tankChooseVictimTicks[attacker] = 0;
+		ArrayList clients = new ArrayList(2);
+		float tankPos[3], clientPos[3];
+		GetClientAbsOrigin(attacker, tankPos);
+
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+				//If a player does less than 50 damage, and has health add them to list
+				if(totalTankDamage[i] < 100 && GetClientHealth(i) > 40) {
+					GetClientAbsOrigin(i, clientPos);
+					float dist = GetVectorDistance(clientPos, tankPos);
+					if(dist <= 5000) {
+						PrintDebug(DEBUG_ANY, "Adding player %N to possible victim list. Dist=%f, Dmg=%d", i, dist, totalTankDamage[i]);
+						int index = clients.Push(i);
+						clients.Set(index, dist, 1);
+					}
+				}
+			}
+		}
+
+		if(clients.Length == 0) return Plugin_Continue;
+
+		clients.SortCustom(Sort_TankTargetter);
+		/*curTarget = clients.Get(0);*/
+		PrintDebug(DEBUG_ANY, "Player Selected to target: %N", curTarget);
+		//TODO: Possibly clear totalTankDamage
+		delete clients;
+		//return Plugin_Changed;
+	}
+	return Plugin_Continue;
+}
+
+int Sort_TankTargetter(int index1, int index2, Handle array, Handle hndl) {
+	int client1 = GetArrayCell(array, index1);
+	int client2 =GetArrayCell(array, index2);
+	float distance1 = GetArrayCell(array, index2, 1);
+	float distance2 = GetArrayCell(array, index2, 2);
+	/*500 units away, 0 damage vs 600 units away, 0 damage
+		-> target closest 500
+	  500 units away, 10 damage, vs 600 units away 0 damage
+	  500 - 10 = 450 vs 600
+	*/
+	return (totalTankDamage[client1] + RoundFloat(distance1)) - (totalTankDamage[client2] + RoundFloat(distance2));
+}
+
+public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) {
+	int victim = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	int dmg = event.GetInt("dmg_health");
+	if(dmg > 0 && attacker > 0 && victim > 0 && IsFakeClient(victim) && GetEntProp(victim, Prop_Send, "m_zombieClass") == TANK_CLASS_ID) {
+		if(GetClientTeam(victim) == 3 && GetClientTeam(attacker) == 2) {
+			totalTankDamage[victim] += dmg;
+		}
+	}
+}
+
+public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
+	int tank = GetClientOfUserId(GetEventInt(event, "userid"));
+	if(tank > 0 && IsFakeClient(tank)) { 
+		tankChooseVictimTicks[tank] = -20;
 	}
 }
 
@@ -503,6 +588,7 @@ public Action Hook_Use(int entity, int activator, int caller, UseType type, floa
 	AcceptEntityInput(entity, "Close");
 	ClientCommand(activator, "play ui/menu_invalid.wav");
 	PrintHintText(activator, "Waiting for players");
+	float percentIn = float(playersLoadedIn) / float(playerstoWaitFor);
 	return Plugin_Handled;
 }
 
