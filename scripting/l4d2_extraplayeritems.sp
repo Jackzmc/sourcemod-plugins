@@ -693,9 +693,9 @@ public Action Timer_UpdateHud(Handle h) {
 	if(hEPIHudState.IntValue == 0 || abmExtraCount <= threshold) {
 		L4D2_RunScript("ModeHUD <- { Fields = { } }; HUDSetLayout(ModeHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
 		updateHudTimer = null;
-		return Plugin_Handled;
+		return Plugin_Stop;
 	}
-	char players[512];
+	char players[1024];
 	char data[32];
 	char prefix[16];
 	for(int i = 1; i <= MaxClients; i++) { 
@@ -726,6 +726,10 @@ public Action Timer_UpdateHud(Handle h) {
 		}
 	}
 	// Format(buffer, sizeof(buffer), "ModeHUD <- {     Fields =      {         player =          {             slot = g_ModeScript.HUD_FAR_LEFT,             dataval = \"%s\",             flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_NOBG,             name = \"player1\"          }     } }; HUDSetLayout( ModeHUD ); HUDPlace( g_ModeScript.HUD_MID_BOX , 0.75 , 0.6 , 0.25 , 0.1 ); g_ModeScript", players);
+	if(players[strlen(players) - 2] != 't') {
+		PrintToServer("Disabling timer, buffer size too small");
+		return Plugin_Stop;
+	}
 	L4D2_RunScript("ModeHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG, name = \"players\" } } }; HUDSetLayout( ModeHUD ); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript", players);
 	return Plugin_Continue;
 }
