@@ -60,7 +60,6 @@ enum struct PlayerItems {
 	char usable[2];
 	char consumable[2];
 }
-
 PlayerItems items[MAXPLAYERS+1];
 
 public Plugin myinfo = 
@@ -80,6 +79,8 @@ static ArrayList ammoPacks;
 static Handle updateHudTimer;
 
 static StringMap weaponMaxClipSizes;
+
+static char HUD_SCRIPT[] = "ExtraPlayerHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG } } }; HUDSetLayout( ExtraPlayerHUD ); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.78, 0.3, 0.3 ); g_ModeScript";
 
 #define CABINET_ITEM_BLOCKS 4
 enum struct Cabinet {
@@ -106,7 +107,10 @@ public void OnPluginStart() {
 	HookEvent("player_hurt", 		Event_PlayerHurt);
 	HookEvent("player_spawn", 		Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
+	//Tracking player items:
 	HookEvent("item_pickup",		Event_ItemPickup);
+	HookEvent("weapon_drop",		Event_ItemPickup);
+
 	HookEvent("round_end", 			Event_RoundEnd);
 	HookEvent("map_transition", 	Event_MapTransition);
 	HookEvent("game_start", 		Event_GameStart);
@@ -264,6 +268,7 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 			}
 		} else {
 			RequestFrame(Frame_GiveNewClientKit, client);
+			CreateTimer(1.2, Timer_UpdateMinPlayers);
 		}
 	}
 }
@@ -691,13 +696,13 @@ void UnlockDoor(int entity, int flag) {
 public Action Timer_UpdateHud(Handle h) {
 	int threshold = hEPIHudState.IntValue == 1 ? 4 : 0;
 	if(hEPIHudState.IntValue == 0 || abmExtraCount <= threshold) {
-		L4D2_RunScript("ModeHUD <- { Fields = { } }; HUDSetLayout(ModeHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
+		L4D2_RunScript("ExtraPlayerHUD <- { Fields = { } }; HUDSetLayout(ExtraPlayerHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.77, 0.25, 0.2); g_ModeScript");
 		updateHudTimer = null;
 		return Plugin_Stop;
 	}
-	char players[1024];
+	char players[512];
 	char data[32];
-	char prefix[16];
+	char prefix[32];
 	for(int i = 1; i <= MaxClients; i++) { 
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			data[0] = '\0';
@@ -706,31 +711,27 @@ public Action Timer_UpdateHud(Handle h) {
 			if(IsFakeClient(i) && HasEntProp(i, Prop_Send, "m_humanSpectatorUserID")) {
 				int client = GetClientOfUserId(GetEntProp(i, Prop_Send, "m_humanSpectatorUserID"));
 				if(client > 0) {
-					i = client;
-					Format(prefix, sizeof(prefix), "[IDLE] ");
+					Format(prefix, sizeof(prefix), "[IDLE] %N", client);
+				}else{
+					Format(prefix, sizeof(prefix), "%N: ", i);
 				}
+			}else{
+				Format(prefix, sizeof(prefix), "%N: ", i);
 			}
-			Format(prefix, sizeof(prefix), "%s%N: ", prefix, i);
 			//TOOD: Move to bool instead of ent prop
 			if(!IsPlayerAlive(i)) 
 				Format(data, sizeof(data), "Dead");
 			else if(GetEntProp(i, Prop_Send, "m_bIsOnThirdStrike") == 1) 
-				Format(data, sizeof(data), "%d HP (b&&w)", health);
+				Format(data, sizeof(data), "%d HP b&&w %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
 			else if(GetEntProp(i, Prop_Send, "m_isIncapacitated") == 1) {
-				Format(data, sizeof(data), "%d HP (incapped)", health);
+				Format(data, sizeof(data), "%d HP (down)", health);
 			}else{
-				Format(data, sizeof(data), "%d HP", health);
+				Format(data, sizeof(data), "%d HP %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
 			}
-			
-			Format(players, sizeof(players), "%s\\n%s%s [%s/%s/%s]", players, prefix, data, items[i].throwable, items[i].usable, items[i].consumable);
+			Format(players, sizeof(players), "%s%s%s\\n", players, prefix, data);
 		}
 	}
-	// Format(buffer, sizeof(buffer), "ModeHUD <- {     Fields =      {         player =          {             slot = g_ModeScript.HUD_FAR_LEFT,             dataval = \"%s\",             flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_NOBG,             name = \"player1\"          }     } }; HUDSetLayout( ModeHUD ); HUDPlace( g_ModeScript.HUD_MID_BOX , 0.75 , 0.6 , 0.25 , 0.1 ); g_ModeScript", players);
-	if(players[strlen(players) - 2] != 't') {
-		PrintToServer("Disabling timer, buffer size too small");
-		return Plugin_Stop;
-	}
-	L4D2_RunScript("ModeHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG, name = \"players\" } } }; HUDSetLayout( ModeHUD ); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript", players);
+	RunVScriptLong(HUD_SCRIPT, players);
 	return Plugin_Continue;
 }
 
@@ -744,8 +745,8 @@ public void PopulateItems() {
 
 	//Generic Logic
 	float percentage = hExtraItemBasePercentage.FloatValue * survivors;
-	PrintToServer("Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
-	PrintToConsoleAll("Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
+	PrintToServer("[EPI] Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
+	PrintToConsoleAll("[EPI] Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
 	static char classname[32];
 	int affected = 0;
 
@@ -973,15 +974,30 @@ void GetPlayerInventory(int client) {
 	items[client].throwable[0] = CharToUpper(item[7]);
 	items[client].throwable[1] = '\0';
 
-	GetClientWeaponName(client, 3, item, sizeof(item));
-	
-	items[client].usable[0] = CharToUpper(item[7]);
-	items[client].usable[1] = '\0';
+	if(GetClientWeaponName(client, 3, item, sizeof(item))) {
+		items[client].usable[0] = CharToUpper(item[7]);
+		items[client].usable[1] = '\0';
+	}
 
-	GetClientWeaponName(client, 4, item, sizeof(item));
-	char c = CharToUpper(item[7]);
-	if(items[client].usable[0] != c) {
-		items[client].consumable[0] = c;
+	if(GetClientWeaponName(client, 4, item, sizeof(item))) {
+		items[client].consumable[0] = CharToUpper(item[7]);
 		items[client].consumable[1] = '\0';
 	}
+}
+
+stock void RunVScriptLong(const char[] sCode, any ...) {
+	static int iScriptLogic = INVALID_ENT_REFERENCE;
+	if(iScriptLogic == INVALID_ENT_REFERENCE || !IsValidEntity(iScriptLogic)) {
+		iScriptLogic = EntIndexToEntRef(CreateEntityByName("logic_script"));
+		if(iScriptLogic == INVALID_ENT_REFERENCE|| !IsValidEntity(iScriptLogic))
+			SetFailState("Could not create 'logic_script'");
+		
+		DispatchSpawn(iScriptLogic);
+	}
+	
+	static char sBuffer[1024];
+	VFormat(sBuffer, sizeof(sBuffer), sCode, 2);
+	
+	SetVariantString(sBuffer);
+	AcceptEntityInput(iScriptLogic, "RunScriptCode");
 }
