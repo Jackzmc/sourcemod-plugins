@@ -134,8 +134,13 @@ void SetHUDText(hudPosition position, const char[] format, any ...) {
     L4D2_RunScript(huds[view_as<int>(position)], sBuffer);
 }
 
-void ClearHUD(hudPosition position) {
+bool IsHUDSetup(hudPosition position) {
+    return huds[view_as<int>(position)][0] != '\0';
+}
+
+void DeleteHUD(hudPosition position) {
     L4D2_RunVScript("SMHud%d <- { Fields = { } }; HUDSetLayout(SMHud%d); HUDPlace( g_ModeScript.HUD_%s, 0.0, 0.0, 0.0, 0.0 ); g_ModeScript", view_as<int>(position), view_as<int>(position), hudPositions[positions]);
+    huds[view_as<int>(position)][0] = '\0';
 }
 
 void GetHUDFormatString(hudPosition position, char[] buffer, int buffersize) {
