@@ -120,6 +120,9 @@ public void OnPluginStart() {
 	hSaferoomDoorWaitSeconds = CreateConVar("l4d2_extraitems_doorunlock_wait", "55", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
 	hSaferoomDoorAutoOpen 	 = CreateConVar("l4d2_extraitems_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
 	hEPIHudState 			 = CreateConVar("l4d2_extraitems_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 2.0);
+	
+	hEPIHudState.AddChangeHook(Cvar_HudStateChange);
+	
 	if(hUpdateMinPlayers.BoolValue) {
 		hMinPlayers = FindConVar("abm_minplayers");
 		if(hMinPlayers != null) PrintDebug(DEBUG_INFO, "Found convar abm_minplayers");
@@ -133,6 +136,7 @@ public void OnPluginStart() {
 			}
 		}
 		int count = GetRealSurvivorsCount();
+		abmExtraCount = count;
 		int threshold = hEPIHudState.IntValue == 1 ? 5 : 0;
 		if(hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
 			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
@@ -158,6 +162,23 @@ public void OnPluginEnd() {
 	delete weaponMaxClipSizes;
 	delete ammoPacks;
 	L4D2_RunScript("ModeHUD <- { Fields = { } }; HUDSetLayout(ModeHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// CVAR HOOKS 
+///////////////////////////////////////////////////////////////////////////////
+public void Cvar_HudStateChange(ConVar convar, const char[] oldValue, const char[] newValue) {
+	if(convar.IntValue == 0 && updateHudTimer != null) {
+		CloseHandle(updateHudTimer);
+		updateHudTimer = null;
+	}else {
+		int count = GetRealSurvivorsCount();
+		int threshold = hEPIHudState.IntValue == 1 ? 5 : 0;
+		if(convar.IntValue > 0 && count > threshold && updateHudTimer == null) {
+			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
+		}
+	}
+	
 }
 
 /////////////////////////////////////
