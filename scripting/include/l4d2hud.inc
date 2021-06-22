@@ -1,3 +1,7 @@
+//Sourcemod Wrapper around the L4D2 EMS Hud System
+//Created by https://github.com/Jackzmc
+//See it here: https://github.com/Jackzmc/sourcemod-plugins/blob/master/scripting/include/l4d2hud.inc
+
 enum hudPosition {
     HUD_POSITION_FAR_LEFT, 
     HUD_POSITION_FAR_RIGHT,

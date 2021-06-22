@@ -241,6 +241,8 @@ Features:
   * `l4d2_extraitems_doorunlock_wait` - How many seconds after to unlock saferoom door. 0 to disable timer
   * `l4d2_extraitems_doorunlock_open` - Controls when or if the door automatically opens after unlocked. Add bits together.
     * 0 = Never, 1 = When timer expires, 2 = When all players loaded in
+  * `l4d2_extraitems_hudstate` - Controls when the extra player hud shows.
+    * 0 = Never, 1 = When 5+ players, 2 = Always on
 
 ### l4d_survivor_identity_fix
 A fork of [Survivor Identity Fix plugin](https://forums.alliedmods.net/showthread.php?t=280539) that adds support for other plugins to update the model cache. This is used by [L4D2Tools](#L4D2Tools) to update the identity when someone changes their model with `sm_model`. It also will clear the memory of model when a player disconnects entirely or on a new map.
