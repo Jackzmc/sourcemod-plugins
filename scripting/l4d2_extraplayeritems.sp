@@ -25,6 +25,7 @@
 
 //Set the debug level
 #define DEBUG_LEVEL DEBUG_GENERIC
+#define EXTRA_PLAYER_HUD_UPDATE_INTERVAL 0.8
 //Sets abmExtraCount to this value if set
 //#define DEBUG_FORCE_PLAYERS 5
 
@@ -54,6 +55,14 @@ Add to a list
 Find the closest player in that list & target
 */
 
+enum struct PlayerItems {
+	char throwable[2];
+	char usable[2];
+	char consumable[2];
+}
+
+PlayerItems items[MAXPLAYERS+1];
+
 public Plugin myinfo = 
 {
 	name =  "L4D2 Extra Player Tools", 
@@ -63,11 +72,12 @@ public Plugin myinfo =
 	url = ""
 };
 
-static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen;
+static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState;
 static int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
 static int isBeingGivenKit[MAXPLAYERS+1];
 static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound;
 static ArrayList ammoPacks;
+static Handle updateHudTimer;
 
 static StringMap weaponMaxClipSizes;
 
@@ -96,6 +106,7 @@ public void OnPluginStart() {
 	HookEvent("player_hurt", 		Event_PlayerHurt);
 	HookEvent("player_spawn", 		Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
+	HookEvent("item_pickup",		Event_ItemPickup);
 	HookEvent("round_end", 			Event_RoundEnd);
 	HookEvent("map_transition", 	Event_MapTransition);
 	HookEvent("game_start", 		Event_GameStart);
@@ -104,11 +115,11 @@ public void OnPluginStart() {
 
 	hExtraItemBasePercentage = CreateConVar("l4d2_extraitem_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hAddExtraKits 			 = CreateConVar("l4d2_extraitems_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits, 1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
-	hUpdateMinPlayers		 = CreateConVar("l4d2_extraitems_updateminplayers", "1", "Should the plugin update abm's cvar min_players convar to the player count?\n 0 -> NO, 1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
+	hUpdateMinPlayers		 = CreateConVar("l4d2_extraitems_updateminplayers", "1", "Should the plugin update abm\'s cvar min_players convar to the player count?\n 0 -> NO, 1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
 	hMinPlayersSaferoomDoor  = CreateConVar("l4d2_extraitems_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
 	hSaferoomDoorWaitSeconds = CreateConVar("l4d2_extraitems_doorunlock_wait", "55", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
 	hSaferoomDoorAutoOpen 	 = CreateConVar("l4d2_extraitems_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
-	
+	hEPIHudState 			 = CreateConVar("l4d2_extraitems_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 2.0);
 	if(hUpdateMinPlayers.BoolValue) {
 		hMinPlayers = FindConVar("abm_minplayers");
 		if(hMinPlayers != null) PrintDebug(DEBUG_INFO, "Found convar abm_minplayers");
@@ -116,8 +127,15 @@ public void OnPluginStart() {
 
 	if(isLateLoaded) {
 		for(int i = 1; i <= MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2)
+			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+				GetPlayerInventory(i);
 				SDKHook(i, SDKHook_WeaponEquip, Event_Pickup);
+			}
+		}
+		int count = GetRealSurvivorsCount();
+		int threshold = hEPIHudState.IntValue == 1 ? 5 : 0;
+		if(hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
+			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
 		}
 	}
 
@@ -129,15 +147,17 @@ public void OnPluginStart() {
 
 	#if defined DEBUG_LEVEL
 		RegAdminCmd("sm_epi_setkits", Command_SetKitAmount, ADMFLAG_CHEATS, "Sets the amount of extra kits that will be provided");
-		RegAdminCmd("sm_epi_lock", Command_ToggleDoorLocks, ADMFLAG_CHEATS, "Toggle all toggle's lock state");
+		RegAdminCmd("sm_epi_lock", Command_ToggleDoorLocks, ADMFLAG_CHEATS, "Toggle all toggle\'s lock state");
 		RegAdminCmd("sm_epi_kits", Command_GetKitAmount, ADMFLAG_CHEATS);
 		RegAdminCmd("sm_epi_items", Command_RunExtraItems, ADMFLAG_CHEATS);
 	#endif
+
 }
 
 public void OnPluginEnd() {
 	delete weaponMaxClipSizes;
 	delete ammoPacks;
+	L4D2_RunScript("ModeHUD <- { Fields = { } }; HUDSetLayout(ModeHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
 }
 
 /////////////////////////////////////
@@ -248,7 +268,21 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 		CreateTimer(0.5, Timer_GiveClientKit, user);
 		SDKHook(client, SDKHook_WeaponEquip, Event_Pickup);
 	}
+	int count = GetRealSurvivorsCount();
+	int threshold = hEPIHudState.IntValue == 1 ? 5 : 0;
+	if(hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
+		updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
+	}
+	GetPlayerInventory(client);
 }
+
+public Action Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0) {
+		GetPlayerInventory(client);
+	}
+}
+
 
 public Action L4D_OnIsTeamFull(int team, bool &full) {
 	if(team == 2 && full) {
@@ -279,6 +313,7 @@ public Action Timer_UpdateMinPlayers(Handle hdl) {
 			#if defined DEBUG
 			PrintDebug(DEBUG_GENERIC, "update abm_minplayers -> %d", abmExtraCount);
 			#endif
+			//Create the extra player hud
 			hMinPlayers.IntValue = abmExtraCount;
 		}
 	}
@@ -588,7 +623,6 @@ public Action Hook_Use(int entity, int activator, int caller, UseType type, floa
 	AcceptEntityInput(entity, "Close");
 	ClientCommand(activator, "play ui/menu_invalid.wav");
 	PrintHintText(activator, "Waiting for players");
-	float percentIn = float(playersLoadedIn) / float(playerstoWaitFor);
 	return Plugin_Handled;
 }
 
@@ -633,11 +667,46 @@ void UnlockDoor(int entity, int flag) {
 	PopulateItems();
 }
 
-int FindCabinetIndex(int cabinetId) {
-	for(int i = 0; i < sizeof(cabinets); i++) {
-		if(cabinets[i].id == cabinetId) return i;
+public Action Timer_UpdateHud(Handle h) {
+	int threshold = hEPIHudState.IntValue == 1 ? 4 : 0;
+	if(hEPIHudState.IntValue == 0 || abmExtraCount <= threshold) {
+		L4D2_RunScript("ModeHUD <- { Fields = { } }; HUDSetLayout(ModeHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
+		updateHudTimer = null;
+		return Plugin_Handled;
 	}
-	return -1;
+	char players[512];
+	char data[32];
+	char prefix[16];
+	for(int i = 1; i <= MaxClients; i++) { 
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+			data[0] = '\0';
+			prefix[0] = '\0';
+			int health = GetClientRealHealth(i);
+			if(IsFakeClient(i) && HasEntProp(i, Prop_Send, "m_humanSpectatorUserID")) {
+				int client = GetClientOfUserId(GetEntProp(i, Prop_Send, "m_humanSpectatorUserID"));
+				if(client > 0) {
+					i = client;
+					Format(prefix, sizeof(prefix), "[IDLE] ");
+				}
+			}
+			Format(prefix, sizeof(prefix), "%s%N: ", prefix, i);
+			//TOOD: Move to bool instead of ent prop
+			if(!IsPlayerAlive(i)) 
+				Format(data, sizeof(data), "Dead");
+			else if(GetEntProp(i, Prop_Send, "m_bIsOnThirdStrike") == 1) 
+				Format(data, sizeof(data), "%d HP (b&&w)", health);
+			else if(GetEntProp(i, Prop_Send, "m_isIncapacitated") == 1) {
+				Format(data, sizeof(data), "%d HP (incapped)", health);
+			}else{
+				Format(data, sizeof(data), "%d HP", health);
+			}
+			
+			Format(players, sizeof(players), "%s\\n%s%s [%s/%s/%s]", players, prefix, data, items[i].throwable, items[i].usable, items[i].consumable);
+		}
+	}
+	// Format(buffer, sizeof(buffer), "ModeHUD <- {     Fields =      {         player =          {             slot = g_ModeScript.HUD_FAR_LEFT,             dataval = \"%s\",             flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_NOBG,             name = \"player1\"          }     } }; HUDSetLayout( ModeHUD ); HUDPlace( g_ModeScript.HUD_MID_BOX , 0.75 , 0.6 , 0.25 , 0.1 ); g_ModeScript", players);
+	L4D2_RunScript("ModeHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG, name = \"players\" } } }; HUDSetLayout( ModeHUD ); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript", players);
+	return Plugin_Continue;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -807,4 +876,87 @@ stock float GetAverageHP() {
 		}
 	}
 	return float(totalHP) / float(clients);
+}
+
+stock int GetClientRealHealth(int client) {
+    //First filter -> Must be a valid client, successfully in-game and not an spectator (The dont have health).
+    if(!client
+    || !IsValidEntity(client)
+    || !IsClientInGame(client)
+    || !IsPlayerAlive(client)
+    || IsClientObserver(client))
+    {
+        return -1;
+    }
+    
+    //If the client is not on the survivors team, then just return the normal client health.
+    if(GetClientTeam(client) != 2)
+    {
+        return GetClientHealth(client);
+    }
+    
+    //First, we get the amount of temporal health the client has
+    float buffer = GetEntPropFloat(client, Prop_Send, "m_healthBuffer");
+    
+    //We declare the permanent and temporal health variables
+    float TempHealth;
+    int PermHealth = GetClientHealth(client);
+    
+    //In case the buffer is 0 or less, we set the temporal health as 0, because the client has not used any pills or adrenaline yet
+    if(buffer <= 0.0)
+    {
+        TempHealth = 0.0;
+    }
+    
+    //In case it is higher than 0, we proceed to calculate the temporl health
+    else
+    {
+        //This is the difference between the time we used the temporal item, and the current time
+        float difference = GetGameTime() - GetEntPropFloat(client, Prop_Send, "m_healthBufferTime");
+        
+        //We get the decay rate from this convar (Note: Adrenaline uses this value)
+        float decay = GetConVarFloat(FindConVar("pain_pills_decay_rate"));
+        
+        //This is a constant we create to determine the amount of health. This is the amount of time it has to pass
+        //before 1 Temporal HP is consumed.
+        float constant = 1.0/decay;
+        
+        //Then we do the calcs
+        TempHealth = buffer - (difference / constant);
+    }
+    
+    //If the temporal health resulted less than 0, then it is just 0.
+    if(TempHealth < 0.0)
+    {
+        TempHealth = 0.0;
+    }
+    
+    //Return the value
+    return RoundToFloor(PermHealth + TempHealth);
+}  
+
+int FindCabinetIndex(int cabinetId) {
+	for(int i = 0; i < sizeof(cabinets); i++) {
+		if(cabinets[i].id == cabinetId) return i;
+	}
+	return -1;
+}
+
+void GetPlayerInventory(int client) {
+	char item[16];
+	GetClientWeaponName(client, 2, item, sizeof(item));
+	items[client].throwable[0] = CharToUpper(item[7]);
+	items[client].throwable[1] = '\0';
+
+	GetClientWeaponName(client, 3, item, sizeof(item));
+	
+	items[client].usable[0] = CharToUpper(item[7]);
+	items[client].usable[1] = '\0';
+
+	GetClientWeaponName(client, 4, item, sizeof(item));
+	char c = CharToUpper(item[7]);
+	if(items[client].usable[0] != c) {
+		items[client].consumable[0] = c;
+		items[client].consumable[1] = '\0';
+	}
 }
