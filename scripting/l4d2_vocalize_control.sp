@@ -34,7 +34,7 @@ public void OnPluginStart()
 
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 
-	RegConsoleCmd("sm_vgag", Cmd_Gag, "Gags a player\'s vocalizations locally");
+	RegConsoleCmd("sm_vgag", Cmd_VGag, "Gags a player\'s vocalizations locally");
 	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 }
 
@@ -53,7 +53,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 	}
 }
 
-public Action Cmd_Gag(int client, int args) {
+public Action Cmd_VGag(int client, int args) {
     if(args < 1) {
 		ReplyToCommand(client, "Usage: sm_vgag <player>");
 	} else {
@@ -81,10 +81,10 @@ public Action Cmd_Gag(int client, int args) {
             int playerIndex = gaggedPlayers[client].FindValue(target_list[i]);
             if(playerIndex > -1) {
                 gaggedPlayers[client].Erase(playerIndex);
-                ReplyToCommand(client, "locally vocalize ungagged %s", target_name[i]);
+                ReplyToCommand(client, "Locally vocalize ungagged %s", target_name[i]);
             }else{
                 gaggedPlayers[client].Push(target_list[i]);
-                ReplyToCommand(client, "locally vocalize gagged %s", target_name[i]);
+                ReplyToCommand(client, "Locally vocalize gagged %s", target_name[i]);
             }
 		}
 	}

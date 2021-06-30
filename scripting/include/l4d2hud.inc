@@ -147,6 +147,59 @@ void GetHUDFormatString(hudPosition position, char[] buffer, int buffersize) {
     strcopy(buffer, buffersize, huds[view_as<int>(position)]);
 }
 
+#define MAX_MESSAGES 6
+#define MESSAGE_DURATION 40
+#define MAX_MESSAGE_LENGTH 64
+#define MESSAGE_UPDATE_INTERVAL 0.8
+//This is hard coded into engine:
+#define MAX_HUD_LENGTH 1023
+
+hudPosition MSG_HUD_POS; 
+
+char messages[MAX_MESSAGES][MAX_MESSAGE_LENGTH];
+char lastMsgFull[];
+int msgExpiresTime;
+Handle msgTimer;
+
+void SetupMessageHud(hudPosition position) {
+    MSG_HUD_POS = position;
+    SetupHUD(MSG_HUD_POS, HUD_FLAG_ALIGN_LEFT | HUD_FLAG_NOBG | HUD_FLAG_TEAM_SURVIVORS, 0.0, 0.0, 1.0, 1.0);
+    msgTimer = CreateTimer(MESSAGE_UPDATE_INTERVAL, Timer_ProcessMessages, _, TIMER_REPEAT);
+}
+
+void CloseMessageHud() {
+    if(msgTimer != null)
+        CloseHandle(msgTimer);
+    ClearMessages();
+}
+//TODO: Replace repeat timer, just use one-time delay, only add one
+//Internally process and print all messages
+void Timer_ProcessMessages(Handle h) {
+    if(GetGameTime() > msgExpiresTime) {
+        messages.Erase(0);
+        msgExpiresTime = GetGameTime() + MESSAGE_DURATION;
+    }
+    char buffer[MAX_HUD_LENGTH];
+    for(int i = 0; i < messages.Length; i++) {
+        ImplodeStrings(messages, MAX_MESSAGES, "\\n", buffer, sizeof(buffer));
+    }
+    SetHUDText(MSG_HUD_POS, buffer);
+}
+
+//Adds a message to the message queue
+void AddMessageToHud(const char msg[MAX_MESSAGE_LENGTH]) {
+    for(int i = 1; i < MAX_MESSAGES - 1; i++) {
+        strcopy(messages[i], MAX_MESSAGE_LENGTH, messages[i+1]);
+    }
+    strcopy(messages[MAX_MESSAGES-1], MAX_MESSAGE_LENGTH, msg);
+}
+//Clears all messages
+void ClearMessageHud() {
+    for(int i = 0; i < MAX_MESSAGES; i++) {
+        messages[i][0] = '\0';
+    }
+}
+
 stock void L4D2_RunVScript(const char[] sCode, any ...) {
 	static int iScriptLogic = INVALID_ENT_REFERENCE;
 	if(iScriptLogic == INVALID_ENT_REFERENCE || !IsValidEntity(iScriptLogic)) {
