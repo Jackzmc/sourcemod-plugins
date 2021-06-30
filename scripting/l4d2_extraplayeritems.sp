@@ -165,7 +165,6 @@ public void OnPluginStart() {
 public void OnPluginEnd() {
 	delete weaponMaxClipSizes;
 	delete ammoPacks;
-	L4D2_RunScript("ModeHUD <- { Fields = { } }; HUDSetLayout(ModeHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -409,6 +408,7 @@ public void OnMapEnd() {
 	}
 	ammoPacks.Clear();
 	playersLoadedIn = 0;
+	L4D2_RunScript("ModeHUD <- { Fields = { } }; HUDSetLayout(ModeHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
 }
 
 public void Event_RoundFreezeEnd(Event event, const char[] name, bool dontBroadcast) {
@@ -528,8 +528,8 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 int Sort_TankTargetter(int index1, int index2, Handle array, Handle hndl) {
 	int client1 = GetArrayCell(array, index1);
 	int client2 =GetArrayCell(array, index2);
-	float distance1 = GetArrayCell(array, index2, 1);
-	float distance2 = GetArrayCell(array, index2, 2);
+	float distance1 = GetArrayCell(array, index2, 0);
+	float distance2 = GetArrayCell(array, index2, 1);
 	/*500 units away, 0 damage vs 600 units away, 0 damage
 		-> target closest 500
 	  500 units away, 10 damage, vs 600 units away 0 damage
@@ -702,7 +702,7 @@ public Action Timer_UpdateHud(Handle h) {
 	}
 	char players[512];
 	char data[32];
-	char prefix[32];
+	char prefix[16];
 	for(int i = 1; i <= MaxClients; i++) { 
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			data[0] = '\0';
@@ -711,24 +711,24 @@ public Action Timer_UpdateHud(Handle h) {
 			if(IsFakeClient(i) && HasEntProp(i, Prop_Send, "m_humanSpectatorUserID")) {
 				int client = GetClientOfUserId(GetEntProp(i, Prop_Send, "m_humanSpectatorUserID"));
 				if(client > 0) {
-					Format(prefix, sizeof(prefix), "[IDLE] %N", client);
+					Format(prefix, 13, "IDLE %N", client);
 				}else{
-					Format(prefix, sizeof(prefix), "%N: ", i);
+					Format(prefix, 8, "%N", i);
 				}
 			}else{
-				Format(prefix, sizeof(prefix), "%N: ", i);
+				Format(prefix, 8, "%N", i);
 			}
 			//TOOD: Move to bool instead of ent prop
 			if(!IsPlayerAlive(i)) 
 				Format(data, sizeof(data), "Dead");
 			else if(GetEntProp(i, Prop_Send, "m_bIsOnThirdStrike") == 1) 
-				Format(data, sizeof(data), "%d HP b&&w %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
+				Format(data, sizeof(data), "+%d b&&w %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
 			else if(GetEntProp(i, Prop_Send, "m_isIncapacitated") == 1) {
-				Format(data, sizeof(data), "%d HP (down)", health);
+				Format(data, sizeof(data), "+%d (down)", health);
 			}else{
-				Format(data, sizeof(data), "%d HP %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
+				Format(data, sizeof(data), "+%d %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
 			}
-			Format(players, sizeof(players), "%s%s%s\\n", players, prefix, data);
+			Format(players, sizeof(players), "%s%s %s\\n", players, prefix, data);
 		}
 	}
 	RunVScriptLong(HUD_SCRIPT, players);
