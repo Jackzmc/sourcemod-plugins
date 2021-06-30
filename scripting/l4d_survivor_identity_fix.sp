@@ -299,9 +299,11 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 }
 public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	g_Models[client][0] = '\0';
-	if(!IsFakeClient(client) && survivors > 0)
-		survivors--;
+	if(client > 0) {
+		g_Models[client][0] = '\0';
+		if(!IsFakeClient(client) && survivors > 0)
+			survivors--;
+	}
 }
 public void Frame_CheckClient(int userid) {
 	int client = GetClientOfUserId(userid);
