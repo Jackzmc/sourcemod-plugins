@@ -1,6 +1,6 @@
 #define AUTOPUNISH_FLOW_MIN_DISTANCE 5000.0
 #define AUTOPUNISH_MODE_COUNT 3
-#define TROLL_MODE_COUNT 24
+#define TROLL_MODE_COUNT 25
 //
 enum trollMode {
 	Troll_Reset = 0, //0
@@ -26,7 +26,8 @@ enum trollMode {
 	Troll_TempHealthQuickDrain, //20
 	Troll_VomitPlayer, //21
 	Troll_VocalizeGag,
-	Troll_Meow
+	Troll_Meow,
+	Troll_WitchMagnet
 }
 enum TrollModifier {
 	TrollMod_None = 0,
@@ -57,7 +58,8 @@ char TROLL_MODES_NAMES[TROLL_MODE_COUNT][32] = {
 	"Temp Quick Drain",
 	"Vomit Player",
 	"Vocalize Gag",
-	"Meow"
+	"Meow",
+	"Witch Magnet"
 };
 char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Resets the user, removes all troll effects", //0
@@ -83,7 +85,8 @@ char TROLL_MODES_DESCRIPTIONS[TROLL_MODE_COUNT][128] = {
 	"Makes a player's temporarily health drain very quickly",
 	"Shortcut to sm_vomitplayer. vomits the player.",
 	"Prevents player from sending any vocalizations (even automatic)",
-	"Makes the player meow"
+	"Makes the player meow",
+	"All witches when startled will target any player with this troll"
 };
 
 enum L4D2Infected
@@ -103,11 +106,12 @@ int autoPunished = -1, autoPunishMode, lastButtonUser, lastCrescendoUser;
 bool g_bPendingItemGive[MAXPLAYERS+1], g_PendingBanTroll[MAXPLAYERS+1];
 GlobalForward g_PlayerMarkedForward;
 char steamids[MAXPLAYERS+1][64];
+Handle g_hWitchAttack;
 
 //HANDLES
 Handle hThrowTimer;
 //CONVARS
-ConVar hVictimsList, hThrowItemInterval, hAutoPunish, hMagnetChance, hShoveFailChance, hAutoPunishExpire, hMagnetTargetMode;
+ConVar hVictimsList, hThrowItemInterval, hAutoPunish, hMagnetChance, hShoveFailChance, hAutoPunishExpire, hMagnetTargetMode, hWitchTargetIncapp;
 //BOOLS
 bool lateLoaded; //Is plugin late loaded
 bool bChooseVictimAvailable = false; //For charge player feature, is it available?
@@ -134,6 +138,7 @@ void ApplyModeToClient(int client, int victim, trollMode mode, TrollModifier mod
 		case Troll_iCantSpellNoMore: {}
 		case Troll_Honk: {}
 		case Troll_TankMagnet: {}
+		case Troll_WitchMagnet: {}
 		case Troll_SpecialMagnet: {}
 		case Troll_NoShove: {}
 		case Troll_SlowDrain: {}
@@ -292,6 +297,17 @@ void ActivateAutoPunish(int client) {
 	if(hAutoPunishExpire.IntValue > 0) {
 		CreateTimer(60.0 * hAutoPunishExpire.FloatValue, Timer_ResetAutoPunish, GetClientOfUserId(lastButtonUser));
 	}
+}
+
+void SetWitchTarget(int witch, int target) {
+	Behavior behavior = Behavior(witch, WITCH_QUERY);
+	BehaviorAction action = behavior.CurrentAction.Last;
+	
+	BehaviorAction newaction = view_as<BehaviorAction>(AllocateMemory(18556));
+	SDKCall(g_hWitchAttack, newaction, target);
+	
+	IActionResult result; result.Init(CHANGE_TO, newaction);
+	result.ToAction(action);
 }
 
 bool ToggleMarkPlayer(int client, int target) {
