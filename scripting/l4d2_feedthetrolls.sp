@@ -12,6 +12,7 @@
 #include <jutils>
 #include <left4dhooks>
 #include <sceneprocessor>
+#include <l4d2_behavior>
 #include <ftt>
 #include <multicolors>
 
@@ -48,6 +49,15 @@ public void OnPluginStart() {
 
 	g_PlayerMarkedForward = new GlobalForward("FTT_OnClientMarked", ET_Ignore, Param_Cell, Param_Cell);
 
+	GameData data = new GameData("l4d2_behavior");
+	
+	StartPrepSDKCall(SDKCall_Raw);
+	PrepSDKCall_SetFromConf(data, SDKConf_Signature, "WitchAttack::WitchAttack");
+	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL | VDECODE_FLAG_ALLOWWORLD);
+	g_hWitchAttack = EndPrepSDKCall();
+	
+	delete data;
+
 	hThrowItemInterval = CreateConVar("sm_ftt_throw_interval", "30", "The interval in seconds to throw items. 0 to disable", FCVAR_NONE, true, 0.0);
 	hThrowItemInterval.AddChangeHook(Change_ThrowInterval);
 	hAutoPunish 		= CreateConVar("sm_ftt_autopunish_action", "0", "Setup automatic punishment of players. Add bits together\n0=Disabled, 1=Tank magnet, 2=Special magnet, 4=Swarm, 8=InstantVomit", FCVAR_NONE, true, 0.0);
@@ -55,6 +65,7 @@ public void OnPluginStart() {
 	hMagnetChance 	 	= CreateConVar("sm_ftt_magnet_chance", "1.0", "% of the time that the magnet will work on a player.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hMagnetTargetMode   = CreateConVar("sm_ftt_magnet_targetting", "1", "How does the specials target players. Add bits together\n0= Target until Dead, 1=Specials ignore incapped, 2=Tank ignores incapped");
 	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.5", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
+	hWitchTargetIncapp  = CreateConVar("sm_ftt_witch_target_incapped", "1", "Should the witch target witch magnet victims who are incapped?\n 0 = No, 1 = Yes", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	RegAdminCmd("sm_ftl", Command_ListTheTrolls, ADMFLAG_KICK, "Lists all the trolls currently ingame.");
 	RegAdminCmd("sm_ftm", Command_ListModes, ADMFLAG_KICK, "Lists all the troll modes and their description");
@@ -63,10 +74,12 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_ftt", Command_FeedTheTrollMenu, ADMFLAG_KICK, "Opens a list that shows all the commands");
 	RegAdminCmd("sm_mark", Command_MarkPendingTroll, ADMFLAG_KICK, "Marks a player as to be banned on disconnect");
 	RegAdminCmd("sm_ftc", Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
+	RegAdminCmd("sm_witch_attack", Command_WitchAttack, ADMFLAG_CHEATS, "Makes all witches target a player");
 
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_death", Event_PlayerDeath);
 	HookEvent("triggered_car_alarm", Event_CarAlarm);
+	HookEvent("witch_harasser_set", Event_WitchVictimSet);
 	
 	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 
@@ -361,6 +374,7 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 	}
 	return Plugin_Continue;
 }
+
 public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
 	if(lastButtonUser > -1 && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
 		PrintToConsoleAll("CRESCENDO STARTED BY %N", lastButtonUser);
@@ -391,6 +405,48 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 	}
 	return Plugin_Continue;
 }
+
+public Action Event_WitchVictimSet(Event event, const char[] name, bool dontBroadcast) {
+	int witch = event.GetInt("witchid");
+	float closestDistance, survPos[3], witchPos[3];
+	GetEntPropVector(witch, Prop_Send, "m_vecOrigin", witchPos); 
+	int closestClient = -1;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			//Ignore incapped players if hWitchIgnoreIncapp turned on:
+			if(IsPlayerIncapped(i) && !hWitchTargetIncapp.BoolValue) {
+				continue;
+			}
+			
+			if(HasTrollMode(i, Troll_WitchMagnet)) {
+				GetClientAbsOrigin(i, survPos);
+				float dist = GetVectorDistance(survPos, witchPos, true);
+				if(closestClient == -1 || dist < closestDistance) {
+					closestDistance = dist;
+					closestClient = i;
+				}
+			}
+		}
+	}
+	
+	if(closestClient > 0) {
+		DataPack pack;
+		CreateDataTimer(0.1, Timer_NextWitchSet, pack);
+		pack.WriteCell(GetClientUserId(closestClient));
+		pack.WriteCell(witch);
+		CreateDataTimer(0.2, Timer_NextWitchSet, pack);
+		pack.WriteCell(GetClientUserId(closestClient));
+		pack.WriteCell(witch);
+	}
+}
+
+public Action Timer_NextWitchSet(Handle timer, DataPack pack) {
+	pack.Reset();
+	int client = GetClientOfUserId(pack.ReadCell());
+	int witch = pack.ReadCell();
+	SetWitchTarget(witch, client);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // CVAR CHANGES
 ///////////////////////////////////////////////////////////////////////////////
@@ -407,6 +463,46 @@ public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const cha
 ///////////////////////////////////////////////////////////////////////////////
 // COMMANDS
 ///////////////////////////////////////////////////////////////////////////////
+
+public Action Command_WitchAttack(int client, int args) {
+	if(args < 1) {
+		ReplyToCommand(client, "Usage: sm_witch_attack <user>");
+	} else {
+		char arg1[32];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		char target_name[MAX_TARGET_LENGTH];
+		int target_list[MAXPLAYERS], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			1,
+			COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_MULTI, /* Only allow alive players */
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+
+		int target = target_list[0];
+		if(GetClientTeam(target) == 2) {
+			int witch = INVALID_ENT_REFERENCE;
+			while ((witch = FindEntityByClassname(witch, "witch")) != INVALID_ENT_REFERENCE) {
+				SetWitchTarget(witch, target);
+
+				ShowActivity(client, "all witches target %s", target_name);
+			}
+		}else{
+			ReplyToTargetError(client, target_count);
+		}
+	}
+
+	return Plugin_Handled;
+}
 
 public Action Command_FeedTheCrescendoTroll(int client, int args) {
 	if(lastCrescendoUser > -1) {
@@ -429,21 +525,21 @@ public Action Command_ResetUser(int client, int args) {
 		int target_list[MAXPLAYERS], target_count;
 		bool tn_is_ml;
 		if ((target_count = ProcessTargetString(
-				arg1,
-				client,
-				target_list,
-				MAXPLAYERS,
-				COMMAND_FILTER_ALIVE, /* Only allow alive players */
-				target_name,
-				sizeof(target_name),
-				tn_is_ml)) <= 0)
-		{
+			arg1,
+			client,
+			target_list,
+			MAXPLAYERS,
+			COMMAND_FILTER_CONNECTED, /* Only allow alive players */
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		) {
 			/* This function replies to the admin with a failure message */
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		for (int i = 0; i < target_count; i++)
-		{
+
+		for (int i = 0; i < target_count; i++) {
 			if(g_iTrollUsers[target_list[i]] > 0) {
 				ResetClient(target_list[i], true);
 				ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
@@ -482,22 +578,22 @@ public Action Command_ApplyUser(int client, int args) {
 			int target_list[MAXPLAYERS], target_count;
 			bool tn_is_ml;
 			if ((target_count = ProcessTargetString(
-					arg1,
-					client,
-					target_list,
-					MAXPLAYERS,
-					COMMAND_FILTER_ALIVE, /* Only allow alive players */
-					target_name,
-					sizeof(target_name),
-					tn_is_ml)) <= 0)
-			{
+				arg1,
+				client,
+				target_list,
+				MAXPLAYERS,
+				0, 
+				target_name,
+				sizeof(target_name),
+				tn_is_ml)) <= 0
+			) {
 				/* This function replies to the admin with a failure message */
 				ReplyToTargetError(client, target_count);
 				return Plugin_Handled;
 			}
-			for (int i = 0; i < target_count; i++)
-			{
-				if(IsClientConnected(target_list[i]) && IsClientInGame(target_list[i]) && GetClientTeam(target_list[i]) == 2)
+			
+			for (int i = 0; i < target_count; i++) {
+				if(IsClientInGame(target_list[i]) && GetClientTeam(target_list[i]) == 2)
 					ApplyModeToClient(client, target_list[i], view_as<trollMode>(mode), TrollMod_None, silent);
 			}
 		}
@@ -512,10 +608,11 @@ public Action Command_ListModes(int client, int args) {
 }
 public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
+	char modeListArr[TROLL_MODE_COUNT][32];
+	char modeList[255];
 	for(int i = 1; i < MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && g_iTrollUsers[i] > 0) {
-			int modes = g_iTrollUsers[i], modeCount = 0;
-			char modeListArr[TROLL_MODE_COUNT][32];
+			int modeCount = 0;
 			for(int mode = 1; mode < TROLL_MODE_COUNT; mode++) {
 				//If troll mode exists:
 				if(HasTrollMode(i, view_as<trollMode>(mode))) {
@@ -523,9 +620,8 @@ public Action Command_ListTheTrolls(int client, int args) {
 					modeCount++;
 				}
 			}
-			char modeList[255];
 			ImplodeStrings(modeListArr, modeCount, ", ", modeList, sizeof(modeList));
-			ReplyToCommand(client, "%N | %d | %s", i, modes, modeList);
+			ReplyToCommand(client, "%N | %s", i, modeList);
 			count++;
 		}
 	}
@@ -565,7 +661,7 @@ public Action Command_MarkPendingTroll(int client, int args) {
 			client,
 			target_list,
 			1,
-			COMMAND_FILTER_ALIVE, /* Only allow alive players */
+			COMMAND_FILTER_NO_MULTI , /* Only allow alive players */
 			target_name,
 			sizeof(target_name),
 			tn_is_ml)) <= 0
@@ -575,7 +671,7 @@ public Action Command_MarkPendingTroll(int client, int args) {
 			return Plugin_Handled;
 		}
 		int target = target_list[0];
-		if(IsClientConnected(target) && IsClientInGame(target) && GetClientTeam(target) == 2) {
+		if(GetClientTeam(target) == 2) {
 			ToggleMarkPlayer(client, target);
 		}else{
 			ReplyToCommand(client, "Player does not exist or is not a survivor.");
