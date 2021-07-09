@@ -408,7 +408,7 @@ public void OnMapEnd() {
 	}
 	ammoPacks.Clear();
 	playersLoadedIn = 0;
-	L4D2_RunScript("ModeHUD <- { Fields = { } }; HUDSetLayout(ModeHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
+	L4D2_RunScript("ExtraPlayerHUD  <- { Fields = { } }; HUDSetLayout(ModeHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
 }
 
 public void Event_RoundFreezeEnd(Event event, const char[] name, bool dontBroadcast) {
@@ -756,6 +756,7 @@ public void PopulateItems() {
 			if(StrContains(classname, "_spawn", true) > -1 
 				&& StrContains(classname, "zombie", true) == -1
 				&& StrContains(classname, "scavenge", true) == -1
+				&& HasEntProp(i, Prop_Data, "m_itemCount")
 			) {
 				int count = GetEntProp(i, Prop_Data, "m_itemCount");
 				if(count > 0 && GetRandomFloat() < percentage) {
