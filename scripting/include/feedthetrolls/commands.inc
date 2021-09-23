@@ -261,7 +261,6 @@ public Action Command_ListModes(int client, int args) {
 
 public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
-	//TODO: Update
 	char[][] modeListArr = new char[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
 	static char modeList[255];
 	for(int i = 1; i < MaxClients; i++) {

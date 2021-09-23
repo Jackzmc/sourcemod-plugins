@@ -213,14 +213,13 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		CPrintToChatAll("{blue}%N {default}:  %s", client, newMessage);
 		return Plugin_Handled;
 	}else if(IsTrollActive(client, "NoProfanity")) {
-		//TODO: Check all replacement words, if none were replaced then do full word
-		//TODO: Lowercase .getstring
 		static char strings[32][MAX_PHRASE_LENGTH];
 		ArrayList phrases;
 		bool foundWord = false;
 		int words = ExplodeString(sArgs, " ", strings, 32, MAX_PHRASE_LENGTH);
 		for(int i = 0; i < words; i++) {
-			if(REPLACEMENT_PHRASES.GetValue(strings[i], phrases) && phrases.Length > 0) {
+			//TODO: Check for valid working
+			if((phrases = GetPhrasesArray(strings[i])) && phrases.Length > 0) {
 				foundWord = true;
 				int c = phrases.GetString(GetRandomInt(0, phrases.Length - 1), strings[i], MAX_PHRASE_LENGTH);
 				PrintToServer("replacement: %s (%d)", strings[i], c);

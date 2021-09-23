@@ -23,7 +23,7 @@ enum struct Troll {
     }
 
     bool HasMod(trollModifier mod) {
-        return ((this.flags >> view_as<int>(mod)) & 1) == view_as<int>(mod);
+        return ((this.flags >> (view_as<int>(mod)) - 1) & 1) == 1;
     }
 
     // Gets the default modifier to use
@@ -53,7 +53,7 @@ void ResetClient(int victim, bool wipe = true) {
 
 int SetupTroll(const char[] name, const char description[128], int flags) {
     if(flags == 0) {
-        ThrowError("Troll has no flags defined.");
+        ThrowError("Troll \"%s\" has no flags defined.", name);
         return -1;
     }
     static int i = 0;
@@ -117,7 +117,7 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
             ShowActivity(victim, "deactivated troll \"%s\" on %N. ", troll.name, victim);
         } else {
             if(modifier == TrollMod_Constant)
-				ShowActivity(victim, "activated troll \"%s\" on repeat for %N. ", troll.name, victim);
+				ShowActivity(victim, "activated constant troll \"%s\" for %N. ", troll.name, victim);
 			else
 				ShowActivity(victim, "activated troll \"%s\" for %N. ", troll.name, victim);
         }
@@ -246,7 +246,7 @@ void SetupTrolls() {
     SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant);
     SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
     SetupTroll("Vomit Player", "Shortcut to sm_vomitplayer. vomits the player.", TrollMod_Instant);
-    SetupTroll("ThrowItAll", "Player throws all their items at nearby player, periodically", TrollMod_Instant | TrollMod_Constant);
+    SetupTroll("Throw It All", "Player throws all their items at nearby player, periodically", TrollMod_Instant | TrollMod_Constant);
     SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
     SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
     SetupTroll("Swarm", "Swarms a player with zombies. Requires swarm plugin", TrollMod_Instant);
@@ -254,18 +254,18 @@ void SetupTrolls() {
     SetupTroll("Slow Speed", "Sets player speed to 0.8x of normal speed", TrollMod_Constant);
     SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
     SetupTroll("Half Primary Ammo", "Cuts their primary reserve ammo in half", TrollMod_Instant);
-    SetupTroll("PrimaryDisable", "Player cannot pickup any weapons, only melee/pistols", TrollMod_Constant);
+    SetupTroll("Primary Disable", "Player cannot pickup any weapons, only melee/pistols", TrollMod_Constant);
     SetupTroll("Clusmy", "Player drops axe periodically or on demand", TrollMod_Instant | TrollMod_Constant);
     SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Instant);
     SetupTroll("KillMeSoftly", "Make player eat or waste pills whenever possible", TrollMod_Instant | TrollMod_Constant);
-    SetupTroll("GunJam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
-    SetupTroll("NoPickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", TrollMod_Constant);
+    SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
+    SetupTroll("No Pickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", TrollMod_Constant);
     SetupTroll("Honk", "Honk", TrollMod_Constant);
     SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
     SetupTroll("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant);
     SetupTroll("Temp Health Quick Drain", "Makes a player's temporarily health drain very quickly", TrollMod_Constant);
     SetupTroll("Slow Drain", "Will make the player slowly lose health over time", TrollMod_Constant);
     SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
-    SetupTroll("Meow", "Makes the player meow", false);
+    SetupTroll("Meow", "Makes the player meow", TrollMod_Constant);
     //INFO: UP MAX_TROLLS when adding new trolls!
 }

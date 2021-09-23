@@ -16,8 +16,6 @@
 #include <ftt>
 #include <multicolors>
 
-#undef REQUIRE_PLUGIN
-#include <adminmenu>
 
 public Plugin myinfo = 
 {
@@ -32,7 +30,6 @@ public Plugin myinfo =
 //TODO: Friendly trolling VS punishment trolling
 //TODO: Trolls: Force take pills, Survivor Bot Magnet
 
-//plugin start
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	if(late) {
 		lateLoaded = true;

@@ -66,13 +66,13 @@ public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int par
 		trollMenu.SetTitle("Choose a troll mode");
 		//TODO: Update
 		static char id[8];
-		static char name[MAX_TROLL_NAME_LENGTH];
+		static Troll troll;
 		for(int i = 0; i <= MAX_TROLLS; i++) {
-			GetTrollID(i, name);
+			GetTrollByKeyIndex(i, troll);
 			// int trollIndex = GetTrollByKeyIndex(i, troll);
 			// Pass key index
 			Format(id, sizeof(id), "%d|%d", userid, i);
-			trollMenu.AddItem(id, name);
+			trollMenu.AddItem(id, troll.name);
 		}
 		trollMenu.ExitButton = true;
 		trollMenu.Display(param1, 0);

@@ -68,7 +68,6 @@ stock bool IsPlayerIncapped(int client) {
 #define MAX_PHRASES_PER_WORD 8
 #define MAX_PHRASE_LENGTH 191
 StringMap REPLACEMENT_PHRASES; 
-//TODO: Load from cfg
 /* Example:
 exWord 
 {
@@ -96,6 +95,7 @@ void LoadPhrases() {
 	static char buffer[4];
 	do {
 		kv.GetSectionName(word, sizeof(word));
+		StringToLower(word);
 		phrases.Clear();
 		for(;;) {
 			IntToString(++i, buffer, sizeof(buffer));
@@ -107,4 +107,15 @@ void LoadPhrases() {
 		REPLACEMENT_PHRASES.SetValue(word, phrases.Clone(), true);
 	} while (kv.GotoNextKey(false));
 	delete kv;
+}
+
+ArrayList GetPhrasesArray(const char[] key) {
+	int len = strlen(key);
+	char[] keyLower = new char[len];
+	for(int i = 0; i < len; i++) {
+		keyLower[i] = CharToLower(key[i]);
+	}
+	ArrayList phrases;
+	REPLACEMENT_PHRASES.GetValue(keyLower, phrases);
+	return phrases;
 }
