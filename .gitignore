@@ -2,6 +2,7 @@
 !plugins
 !scripting
 !scripting/include
+!scripting/include/feedthetrolls
 !gamedata/
 template.config.js
 .*
@@ -14,3 +15,17 @@ plugins/sm_give.smx
 plugins/l4d2_stats_recorder.smx
 scripting/l4d2_stats_recorder.sp
 scripting/include/smlib.inc
+scripting/l4d2_custom.sp
+plugins/l4d2_custom.smx
+plugins/disable_cameras.smx
+plugins/l4d_esfp.smx
+plugins/customstatus.smx
+plugins/l4d_mini_gun_flamethrower.smx
+scripting/l4d_mini_gun_flamethrower.sp
+scripting/l4d_esfp.sp
+scripting/customstatus.sp
+plugins/ssh.smx
+scripting/include/ssh.inc
+scripting/ssh.sp
+scripting/l4d2_witch_force_attack_cmd.sp
+.gitignore
