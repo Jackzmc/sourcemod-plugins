@@ -1,0 +1,372 @@
+public void OnPluginEnd() {
+	UnhookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
+}
+public void OnMapEnd() {
+	UnhookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
+}
+public void OnMapStart() {
+	AddFileToDownloadsTable("sound/custom/meow1.mp3");
+	PrecacheSound("custom/meow1.mp3");	
+
+	lastButtonUser = -1;
+	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
+	CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	PrecacheSound("player/footsteps/clown/concrete1.wav");
+	//CreateTimer(30.0, Timer_AutoPunishCheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+}
+public void OnClientPutInServer(int client) {
+	g_PendingBanTroll[client] = false;
+	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
+}
+public void OnClientAuthorized(int client, const char[] auth) {
+	if(!IsFakeClient(client)) {
+		strcopy(steamids[client], 64, auth);
+	}
+}
+public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(g_PendingBanTroll[client]) {
+		g_PendingBanTroll[client] = false;
+		if(!IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID) {
+			BanIdentity(steamids[client], 0, BANFLAG_AUTHID, "TrollMarked", "ftt", 0);
+		}
+	}
+	steamids[client][0] = '\0';
+	ActiveTrolls[client] = 0;
+	g_iAttackerTarget[client] = 0;
+}
+public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	g_iAttackerTarget[client] = 0;
+}
+public Action Event_WeaponReload(int weapon) {
+	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwner");
+	if(IsTrollActive(client, "GunJam")) {
+		float dec = GetRandomFloat(0.0, 1.0);
+		if(FloatCompare(dec, 0.50) == -1) { //10% chance gun jams
+			return Plugin_Stop;
+		}
+	}
+	return Plugin_Continue;
+}
+public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
+	if(client > 0 && client <= MaxClients) {
+		lastButtonUser = client;
+	}
+	return Plugin_Continue;
+}
+
+public void Event_PanicEventCreate(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client) {
+		lastButtonUser = client;
+	}
+}
+public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
+	int user = event.GetInt("userid");
+	int client = GetClientOfUserId(user);
+	if(client) {
+		PrintToChatAll("%N has alerted the horde!", client);
+		L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", user, 15000);
+	}
+	//Ignore car alarms for autopunish
+	lastButtonUser = -1;
+}
+public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
+	// =========================
+	// OVERRIDE VICTIM
+	// =========================
+	if(hMagnetChance.FloatValue < GetRandomFloat()) return Plugin_Continue;
+	L4D2Infected class = view_as<L4D2Infected>(GetEntProp(attacker, Prop_Send, "m_zombieClass"));
+	int existingTarget = GetClientOfUserId(g_iAttackerTarget[attacker]);
+	if(existingTarget > 0 && IsPlayerAlive(existingTarget) && (hMagnetTargetMode.IntValue & 1 != 1 || !IsPlayerIncapped(existingTarget))) {
+		if(class == L4D2Infected_Tank && (hMagnetTargetMode.IntValue % 2 != 2 || !IsPlayerIncapped(existingTarget))) {
+			curTarget = existingTarget;
+			return Plugin_Changed;
+		}else if(hMagnetTargetMode.IntValue & 1 != 1 || !IsPlayerIncapped(existingTarget)) {
+			curTarget = existingTarget;
+			return Plugin_Changed;
+		}
+	}
+
+	float closestDistance, survPos[3], spPos[3];
+	GetClientAbsOrigin(attacker, spPos); 
+	int closestClient = -1;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			//Ignore incapped players if turned on:
+			if(IsPlayerIncapped(i)) {
+				if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2 == 2) || hMagnetTargetMode.IntValue & 1 == 1 ) continue;
+			}
+			
+			if(class == L4D2Infected_Tank && IsTrollActive(i, "TankMagnet") || (class != L4D2Infected_Tank && IsTrollActive(i, "SpecialMagnet"))) {
+				GetClientAbsOrigin(i, survPos);
+				float dist = GetVectorDistance(survPos, spPos, true);
+				if(closestClient == -1 || dist < closestDistance) {
+					closestDistance = dist;
+					closestClient = i;
+				}
+			}
+		}
+	}
+	
+	if(closestClient > 0) {
+		g_iAttackerTarget[attacker] = GetClientUserId(closestClient);
+		curTarget = closestClient;
+		return Plugin_Changed;
+	}
+	return Plugin_Continue;
+}
+public Action L4D2_OnEntityShoved(int client, int entity, int weapon, float vecDir[3], bool bIsHighPounce) {
+	if(client > 0 && client <= MaxClients && IsTrollActive(client, "NoShove") && hShoveFailChance.FloatValue > GetRandomFloat()) {
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
+}
+public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
+	if(sArgs[0] == '@') return Plugin_Continue;
+	if(IsTrollActive(client, "Honk")) {
+		static char strings[32][7];
+		int words = ExplodeString(sArgs, " ", strings, sizeof(strings), 5);
+		for(int i = 0; i < words; i++) {
+			if(GetRandomFloat() <= 0.8) strings[i] = "honk";
+			else strings[i] = "squeak";
+		}
+		int length = 7 * words;
+		char[] message = new char[length];
+		ImplodeStrings(strings, 32, " ", message, length);
+		CPrintToChatAll("{blue}%N {default}:  %s", client, message);
+		PrintToServer("%N: %s", client, sArgs);
+		return Plugin_Handled;
+	}else if(IsTrollActive(client, "iCantSpellNoMore")) {
+		int type = GetRandomInt(1, trollKV.Size + 8);
+		char letterSrc, replaceChar;
+		switch(type) {
+			case 1: {
+				letterSrc = 'e';
+				replaceChar = 'b';
+			}
+			case 2: {
+				letterSrc = 't';
+				replaceChar = 'e';
+			}
+			case 3: {
+				letterSrc = 'i';
+				replaceChar = 'e';
+			}
+			case 4: {
+				letterSrc = 'a';
+				replaceChar = 's';
+			}
+			case 5: {
+				letterSrc = 'u';
+				replaceChar = 'i';
+			}
+			case 6: {
+				letterSrc = '.';
+				replaceChar = '/';
+			}
+			case 7: {
+				letterSrc = 'm';
+				replaceChar = 'n';
+			}
+			case 8: {
+				letterSrc = 'n';
+				replaceChar = 'm';
+			}
+			case 9: {
+				letterSrc = 'l';
+				replaceChar = 'b';
+			}
+			case 10: {
+				letterSrc = 'l';
+				replaceChar = 'b';
+			}
+			case 11: {
+				letterSrc = 'h';
+				replaceChar = 'j';
+			}
+			case 12: {
+				letterSrc = 'o';
+				replaceChar = 'i';
+			}
+			case 13: {
+				letterSrc = 'e';
+				replaceChar = 'r';
+			}
+
+			default:
+				return Plugin_Continue;
+		}
+		int strLength = strlen(sArgs);
+		char[] newMessage = new char[strLength + 20];
+		int n = 0;
+		while (sArgs[n] != '\0') {
+			if(sArgs[n] == letterSrc) {
+				newMessage[n] = replaceChar;
+			}else{
+				newMessage[n] = sArgs[n];
+			}
+			n++;
+		}  
+		PrintToServer("%N: %s", client, sArgs);
+		CPrintToChatAll("{blue}%N {default}:  %s", client, newMessage);
+		return Plugin_Handled;
+	}else if(IsTrollActive(client, "NoProfanity")) {
+		//TODO: Check all replacement words, if none were replaced then do full word
+		//TODO: Lowercase .getstring
+		static char strings[32][MAX_PHRASE_LENGTH];
+		ArrayList phrases;
+		bool foundWord = false;
+		int words = ExplodeString(sArgs, " ", strings, 32, MAX_PHRASE_LENGTH);
+		for(int i = 0; i < words; i++) {
+			if(REPLACEMENT_PHRASES.GetValue(strings[i], phrases) && phrases.Length > 0) {
+				foundWord = true;
+				int c = phrases.GetString(GetRandomInt(0, phrases.Length - 1), strings[i], MAX_PHRASE_LENGTH);
+				PrintToServer("replacement: %s (%d)", strings[i], c);
+			}
+		}
+		int length = MAX_PHRASE_LENGTH * words;
+		char[] message = new char[length];
+		if(foundWord) {
+			ImplodeStrings(strings, 32, " ", message, length);
+		} else {
+			REPLACEMENT_PHRASES.GetValue("_Full Message Phrases", phrases);
+			phrases.GetString(GetRandomInt(0, phrases.Length - 1), message, MAX_PHRASE_LENGTH);
+		}
+		CPrintToChatAll("{blue}%N {default}:  %s", client, message);
+		PrintToServer("%N: %s", client, sArgs);
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
+}
+
+public Action Event_ItemPickup(int client, int weapon) {
+	if(IsTrollActive(client, "NoPickup")) {
+		return Plugin_Stop;
+	}else{
+		static char wpnName[64];
+		GetEdictClassname(weapon, wpnName, sizeof(wpnName));
+		if(StrContains(wpnName, "rifle") > -1 
+			|| StrContains(wpnName, "smg") > -1 
+			|| StrContains(wpnName, "weapon_grenade_launcher") > -1 
+			|| StrContains(wpnName, "sniper") > -1
+			|| StrContains(wpnName, "shotgun") > -1
+		) {
+			//If 4: Only UZI, if 5: Can't switch.
+			if(IsTrollActive(client, "UziRules")) {
+				static char currentWpn[32];
+				GetClientWeaponName(client, 0, currentWpn, sizeof(currentWpn));
+				if(StrEqual(wpnName, "weapon_smg", true)) {
+					return Plugin_Continue;
+				} else if(StrEqual(currentWpn, "weapon_smg", true)) {
+					return Plugin_Stop;
+				}else{
+					int flags = GetCommandFlags("give");
+					SetCommandFlags("give", flags & ~FCVAR_CHEAT);
+					FakeClientCommand(client, "give smg");
+					SetCommandFlags("give", flags);
+					return Plugin_Stop;
+				}
+			}else if(IsTrollActive(client, "PrimaryDisable")) {
+				return Plugin_Stop;
+			}
+			return Plugin_Continue;
+		}else{
+			return Plugin_Continue;
+		}
+	}
+}
+
+public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
+	if(g_bPendingItemGive[client] && !(buttons & IN_ATTACK2)) {
+		int target = GetClientAimTarget(client, true);
+		if(target > -1) {
+			buttons |= IN_ATTACK2;
+			RequestFrame(StopItemGive, client);
+			return Plugin_Changed;
+		}
+		return Plugin_Continue;
+	}
+	return Plugin_Continue;
+}
+
+public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
+	//Stop FF from marked:
+	if(attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
+		if(g_PendingBanTroll[attacker] && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
+			
+			return Plugin_Stop;
+		}
+		if(IsTrollActive(attacker, "DamageBoost")) {
+			damage * 2;
+			return Plugin_Changed;
+		}
+	}
+	return Plugin_Continue;
+}
+
+public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
+	if(lastButtonUser > -1 && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
+		PrintToConsoleAll("CRESCENDO STARTED BY %N", lastButtonUser);
+		#if defined DEBUG
+		PrintToChatAll("CRESCENDO STARTED BY %N", lastButtonUser);
+		#endif
+		
+		lastCrescendoUser = lastButtonUser;
+		if(IsPlayerFarDistance(lastButtonUser, AUTOPUNISH_FLOW_MIN_DISTANCE)) {
+			NotifyAllAdmins("Autopunishing player %N for activation of event far from team", lastButtonUser);
+			ShowActivity(0, "activated autopunish for crescendo activator %N (auto)", lastButtonUser);
+			ActivateAutoPunish(lastButtonUser);
+		}
+		lastButtonUser = -1;
+	}else if(numClients > 0 && entity > 0 && entity <= MaxClients) {
+		if(StrContains(sample, "survivor\\voice") > -1) {
+			if(IsTrollActive(entity, "Honk")) {
+				strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
+				return Plugin_Changed;
+			} else if(IsTrollActive(entity, "VocalizeGag")) {
+				return Plugin_Handled;
+			} else if(IsTrollActive(entity, "Meow")) {
+				strcopy(sample, sizeof(sample), "custom/meow1.mp3");
+				return Plugin_Changed;
+			}
+		}
+		
+	}
+	return Plugin_Continue;
+}
+
+public Action Event_WitchVictimSet(Event event, const char[] name, bool dontBroadcast) {
+	int witch = event.GetInt("witchid");
+	float closestDistance, survPos[3], witchPos[3];
+	GetEntPropVector(witch, Prop_Send, "m_vecOrigin", witchPos); 
+	int closestClient = -1;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			//Ignore incapped players if hWitchIgnoreIncapp turned on:
+			if(IsPlayerIncapped(i) && !hWitchTargetIncapp.BoolValue) {
+				continue;
+			}
+			
+			if(IsTrollActive(i, "WitchMagnet")) {
+				GetClientAbsOrigin(i, survPos);
+				float dist = GetVectorDistance(survPos, witchPos, true);
+				if(closestClient == -1 || dist < closestDistance) {
+					closestDistance = dist;
+					closestClient = i;
+				}
+			}
+		}
+	}
+	
+	if(closestClient > 0) {
+		DataPack pack;
+		CreateDataTimer(0.1, Timer_NextWitchSet, pack);
+		pack.WriteCell(GetClientUserId(closestClient));
+		pack.WriteCell(witch);
+		CreateDataTimer(0.2, Timer_NextWitchSet, pack);
+		pack.WriteCell(GetClientUserId(closestClient));
+		pack.WriteCell(witch);
+	}
+}

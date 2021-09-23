@@ -4,20 +4,33 @@
 //#define DEBUG 1
 
 enum TrollModifier {
-	TrollMod_None = 0,
-	TrollMod_InstantFire = 1,
-	TrollMod_Repeat = 2
+	TrollMod_Instant = 1,
+	TrollMod_Constant = 2
 }
+
 
 enum struct Troll {
     char name[32];
     char description[128];
 
     bool runsOnce;
+    int flags;
 
     void GetID(char[] name, int length) {
         strcopy(name, length, this.name);
         ReplaceString(name, MAX_TROLL_NAME_LENGTH, " ", "", false);
+    }
+
+    bool HasMod(TrollMod mod) {
+        return ((this.flags >> view_as<int>(mod)) & 1) == view_as<int>(mod);
+    }
+
+    // Gets the default modifier to use
+    TrollModifier GetDefaultMod() {
+        // If the flags is equal to the 2^n flag, then it must be the only flag:
+        if(this.flags == TrollMod_Instant) return TrollMod_Instant;
+        else if(this.flags == TrollMod_Constant) return TrollMod_Constant;
+        else return -1;
     }
 }
 
@@ -27,11 +40,21 @@ int ActiveTrolls[MAXPLAYERS+1];
 StringMap trollKV;
 char trollIds[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
 
-int SetupTroll(const char[] name, const char description[128], bool hasMods) {
+void ResetClient(int victim, bool wipe = true) {
+	if(wipe) ActiveTrolls[victim] = 0;
+	SetEntityGravity(victim, 1.0);
+	SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
+	SDKUnhook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+	int wpn = GetClientWeaponEntIndex(victim, 0);
+	if(wpn > -1)
+		SDKUnhook(wpn, SDKHook_Reload, Event_WeaponReload);
+}
+
+int SetupTroll(const char[] name, const char description[128], int flags) {
     static int i = 0;
     strcopy(Trolls[i].name, MAX_TROLL_NAME_LENGTH, name);
     strcopy(Trolls[i].description, 128, description);
-    Trolls[i].runsOnce = !hasMods;
+    Trolls[i].flags = flags;
     static char key[MAX_TROLL_NAME_LENGTH];
     strcopy(key, MAX_TROLL_NAME_LENGTH, name);
     ReplaceString(key, MAX_TROLL_NAME_LENGTH, " ", "", false);
@@ -207,31 +230,31 @@ void DisableTroll(int client, const char[] troll) {
 
 void SetupTrolls() {
     trollKV = new StringMap();
-    SetupTroll("Reset Troll", "Resets the user, removes all troll effects", false);
-    SetupTroll("Special Magnet", "Attracts ALL specials to any alive target with this troll enabled", false);
-    SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", false);
-    SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", false);
-    SetupTroll("Vomit Player", "Shortcut to sm_vomitplayer. vomits the player.", false);
-    SetupTroll("ThrowItAll", "Player throws all their items at nearby player, periodically", true);
-    SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", false);
-    SetupTroll("No Profanity", "Replaces some words with random phrases", false);
-    SetupTroll("Swarm", "Swarms a player with zombies. Requires swarm plugin", false);
-    SetupTroll("UziRules", "Picking up a weapon gives them a UZI instead", false);
-    SetupTroll("Slow Speed", "Sets player speed to 0.8x of normal speed", false);
-    SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", false);
-    SetupTroll("Half Primary Ammo", "Cuts their primary reserve ammo in half", false);
-    SetupTroll("PrimaryDisable", "Player cannot pickup any weapons, only melee/pistols", true);
-    SetupTroll("Clusmy", "Player drops axe periodically or on demand", true);
-    SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", false);
-    SetupTroll("KillMeSoftly", "Make player eat or waste pills whenever possible", false);
-    SetupTroll("GunJam", "On reload, small chance their gun gets jammed - Can't reload.", false);
-    SetupTroll("NoPickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", true);
-    SetupTroll("Honk", "Honk", false);
-    SetupTroll("No Shove", "Prevents a player from shoving", false);
-    SetupTroll("Damage Boost", "Makes a player take more damage than normal", false);
-    SetupTroll("Temp Health Quick Drain", "Makes a player's temporarily health drain very quickly", false);
-    SetupTroll("Slow Drain", "Will make the player slowly lose health over time", false);
-    SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", true);
+    SetupTroll("Reset Troll", "Resets the user, removes all troll effects", TrollMod_Instant);
+    SetupTroll("Special Magnet", "Attracts ALL specials to any alive target with this troll enabled", TrollMod_Constant);
+    SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant);
+    SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
+    SetupTroll("Vomit Player", "Shortcut to sm_vomitplayer. vomits the player.", TrollMod_Instant);
+    SetupTroll("ThrowItAll", "Player throws all their items at nearby player, periodically", TrollMod_Instant | TrollMod_Constant);
+    SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
+    SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
+    SetupTroll("Swarm", "Swarms a player with zombies. Requires swarm plugin", TrollMod_Instant);
+    SetupTroll("UziRules", "Picking up a weapon gives them a UZI instead", TrollMod_Constant);
+    SetupTroll("Slow Speed", "Sets player speed to 0.8x of normal speed", TrollMod_Constant);
+    SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
+    SetupTroll("Half Primary Ammo", "Cuts their primary reserve ammo in half", TrollMod_Instant);
+    SetupTroll("PrimaryDisable", "Player cannot pickup any weapons, only melee/pistols", TrollMod_Constant);
+    SetupTroll("Clusmy", "Player drops axe periodically or on demand", TrollMod_Instant | TrollMod_Constant);
+    SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Instant);
+    SetupTroll("KillMeSoftly", "Make player eat or waste pills whenever possible", TrollMod_Instant | TrollMod_Constant);
+    SetupTroll("GunJam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
+    SetupTroll("NoPickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", TrollMod_Constant);
+    SetupTroll("Honk", "Honk", TrollMod_Constant);
+    SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
+    SetupTroll("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant);
+    SetupTroll("Temp Health Quick Drain", "Makes a player's temporarily health drain very quickly", TrollMod_Constant);
+    SetupTroll("Slow Drain", "Will make the player slowly lose health over time", TrollMod_Constant);
+    SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
     SetupTroll("Meow", "Makes the player meow", false);
     //INFO: UP MAX_TROLLS when adding new trolls!
 }
