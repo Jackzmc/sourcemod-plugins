@@ -198,6 +198,12 @@ bool IsTrollActive(int client, const char[] troll) {
     return false; //errors instead but compiler no like
 }
 
+void EnableTroll(int client, const char[] troll) {
+    if(!IsTrollActive(client, troll)) {
+        ToggleTroll(client, troll);
+    } 
+}
+
 void DisableTroll(int client, const char[] troll) {
     if(IsTrollActive(client, troll)) {
         ToggleTroll(client, troll);

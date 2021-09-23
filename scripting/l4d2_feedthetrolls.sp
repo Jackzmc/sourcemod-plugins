@@ -396,12 +396,11 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 }
 
 public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
-	//Stop FF from marked:
 	if(attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
-		if(g_PendingBanTroll[attacker] && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
-			
+		//Stop FF from marked:
+		if(g_PendingBanTroll[attacker] && GetClientTeam(attacker) == GetClientTeam(victim)) 
 			return Plugin_Stop;
-		}
+		
 		if(IsTrollActive(attacker, "DamageBoost")) {
 			damage * 2;
 			return Plugin_Changed;
@@ -867,7 +866,7 @@ public int Insta_PlayerHandler(Menu menu, MenuAction action, int client, int par
 
 		Menu spMenu = new Menu(Insta_SpecialHandler);
 		spMenu.SetTitle("Choose a Insta-Special™");
-		for(int i = 1; i <= 6; i++) {
+		for(int i = 0; i <= sizeof(SPECIAL_NAMES); i++) {
 			static char id[8];
 			Format(id, sizeof(id), "%d|%d|%d", userid, instaMode, i);
 			spMenu.AddItem(id, SPECIAL_NAMES[i-1]);
