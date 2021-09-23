@@ -33,3 +33,7 @@ float ZERO_VECTOR[3] = {0.0, 0.0, 0.0};
 #include <feedthetrolls/base>
 #include <feedthetrolls/specials>
 #include <feedthetrolls/misc>
+#include <feedthetrolls/commands>
+#include <feedthetrolls/events>
+#include <feedthetrolls/timers>
+#include <feedthetrolls/menus>
