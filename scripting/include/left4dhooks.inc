@@ -75,6 +75,7 @@ public void __pl_l4dh_SetNTVOptional()
 	MarkNativeAsOptional("AnimGetActivity");
 	MarkNativeAsOptional("AnimGetFromActivity");
 
+	MarkNativeAsOptional("L4D_GetGameModeType");
 	MarkNativeAsOptional("L4D_Deafen");
 	MarkNativeAsOptional("L4D_Dissolve");
 	MarkNativeAsOptional("L4D_OnITExpired");
@@ -295,6 +296,20 @@ public void __pl_l4dh_SetNTVOptional()
 	MarkNativeAsOptional("L4D2_HideScoreboard");
 }
 #endif
+
+
+
+
+
+// For the game mode native and forward.
+enum
+{
+	GAMEMODE_UNKNOWN	= 0,
+	GAMEMODE_COOP		= 1,
+	GAMEMODE_VERSUS		= 2,
+	GAMEMODE_SURVIVAL	= 4,
+	GAMEMODE_SCAVENGE	= 8
+}
 
 
 
@@ -5021,6 +5036,15 @@ forward void L4D2_OnWaterMove(int client);
 // FORWARDS - Silvers
 // ====================================================================================================
 /**
+ * @brief Returns the current game mode type when it changes. 0=Unknown or error. 1=Coop. 2=Survival. 4=Versus. 8=Scavenge (L4D2).
+ * @remarks You can use the "GAMEMODE_*" enums provided above to match the mode.
+ * @remarks Only triggers when the server starts and after when the game mode changes.
+ *
+ * @return	Current game mode.
+ */
+forward Action L4D_OnGameModeChange(int gamemode);
+
+/**
  * @brief Called whenever ZombieManager::GetRandomPZSpawnPosition is invoked
  * @remarks Attempts to find a valid position to spawn Special Infected
  *
@@ -5070,6 +5094,14 @@ native bool L4D2_ExecVScriptCode(char[] code);
 */
 // L4D2 only.
 native bool L4D2_GetVScriptOutput(char[] code, char[] buffer, int maxlength);
+
+/**
+ * @brief Returns the current game mode type. 0=Unknown or error. 1=Coop. 2=Survival. 4=Versus. 8=Scavenge (L4D2).
+ * @remarks You can use the "GAMEMODE_*" enums provided above to match the mode.
+ *
+ * @return	Current game mode.
+ */
+native int L4D_GetGameModeType();
 
 /**
  * @brief Deafens a player with a high pitch ringing sound for a few seconds.
@@ -6002,7 +6034,7 @@ native float L4D2_ITimerGetElapsedTime(L4D2IntervalTimer timer);
 /*
  * 2020 Update1: Use the "Info Editor" plugin by Silvers to edit the weapon scripts and increase clip size.
  * 2020 Update2: Now works in Left4DHooks. Glitchy animation bug when reloading an already full weapon.
- * Fix plugin coming soon. Maybe full plugin to modify maximum clip size with all fixes handled.
+ * 2021 Update3: Fix plugin for modified ammo clips found here: https://forums.alliedmods.net/showthread.php?t=327105
 
 A note regarding Clipsize: Any nonstandard value will NOT be in effect at weapon pickup, which means the client
 has to reload once to achieve the modified value. To fix this, add a weapon pickup hook in your plugin (eg "player_use")
@@ -6246,7 +6278,6 @@ enum IntervalTimer
  * @return			The current number of tanks in play.
  * @error			Director address not found.
  */
-// L4D2 only.
 native int L4D2Direct_GetTankCount();
 
 /**
@@ -6273,7 +6304,6 @@ native void L4D2Direct_SetPendingMobCount(int count);
  *
  * @return				CountdownTimer reference to the timer, or CTimer_Null on lookup failure.
  */
-// L4D2 only.
 native CountdownTimer L4D2Direct_GetMobSpawnTimer();
 
 /**
@@ -6734,6 +6764,7 @@ native void L4D2Direct_DoAnimationEvent(int client, int event);
  * @param client		Client id whose health bonus is to be returned.
  * @return				Int value of the survivors health bonus.
 */
+// L4D1 only.
 native int L4DDirect_GetSurvivorHealthBonus(int client);
 
 /**
@@ -6758,6 +6789,7 @@ native void L4DDirect_SetSurvivorHealthBonus(int client, int health, bool recomp
  * @return					False on error otherwise true
  * @error					SDK call preparation failed
  */
+// L4D1 only.
 native void L4DDirect_RecomputeTeamScores();
 
 
