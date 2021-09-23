@@ -49,6 +49,10 @@ public void OnPluginStart() {
 
 	g_PlayerMarkedForward = new GlobalForward("FTT_OnClientMarked", ET_Ignore, Param_Cell, Param_Cell);
 
+	REPLACEMENT_PHRASES = new StringMap();
+	LoadPhrases();
+	SetupTrolls();
+
 	GameData data = new GameData("l4d2_behavior");
 	
 	StartPrepSDKCall(SDKCall_Raw);
@@ -75,6 +79,9 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_mark", Command_MarkPendingTroll, ADMFLAG_KICK, "Marks a player as to be banned on disconnect");
 	RegAdminCmd("sm_ftc", Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
 	RegAdminCmd("sm_witch_attack", Command_WitchAttack, ADMFLAG_CHEATS, "Makes all witches target a player");
+	RegAdminCmd("sm_insta", Command_InstaSpecial, ADMFLAG_KICK, "Spawns a special that targets them, close to them.");
+	RegAdminCmd("sm_instaface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
+	RegAdminCmd("sm_inface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
 
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_death", Event_PlayerDeath);
@@ -103,7 +110,7 @@ public void OnMapEnd() {
 }
 public void OnMapStart() {
 	AddFileToDownloadsTable("sound/custom/meow1.mp3");
-	PrecacheSound("sound/custom/meow1.mp3");	
+	PrecacheSound("custom/meow1.mp3");	
 
 	lastButtonUser = -1;
 	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
@@ -129,7 +136,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 		}
 	}
 	steamids[client][0] = '\0';
-	g_iTrollUsers[client] = 0;
+	ActiveTrolls[client] = 0;
 	g_iAttackerTarget[client] = 0;
 }
 public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
@@ -138,7 +145,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 }
 public Action Event_WeaponReload(int weapon) {
 	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwner");
-	if(HasTrollMode(client,Troll_GunJam)) {
+	if(IsTrollActive(client, "GunJam")) {
 		float dec = GetRandomFloat(0.0, 1.0);
 		if(FloatCompare(dec, 0.50) == -1) { //10% chance gun jams
 			return Plugin_Stop;
@@ -196,7 +203,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 				if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2 == 2) || hMagnetTargetMode.IntValue & 1 == 1 ) continue;
 			}
 			
-			if(class == L4D2Infected_Tank && HasTrollMode(i, Troll_TankMagnet) || (class != L4D2Infected_Tank && HasTrollMode(i, Troll_SpecialMagnet))) {
+			if(class == L4D2Infected_Tank && IsTrollActive(i, "TankMagnet") || (class != L4D2Infected_Tank && IsTrollActive(i, "SpecialMagnet"))) {
 				GetClientAbsOrigin(i, survPos);
 				float dist = GetVectorDistance(survPos, spPos, true);
 				if(closestClient == -1 || dist < closestDistance) {
@@ -215,14 +222,15 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	return Plugin_Continue;
 }
 public Action L4D2_OnEntityShoved(int client, int entity, int weapon, float vecDir[3], bool bIsHighPounce) {
-	if(client > 0 && client <= MaxClients && HasTrollMode(client, Troll_NoShove) && hShoveFailChance.FloatValue > GetRandomFloat()) {
+	if(client > 0 && client <= MaxClients && IsTrollActive(client, "NoShove") && hShoveFailChance.FloatValue > GetRandomFloat()) {
 		return Plugin_Handled;
 	}
 	return Plugin_Continue;
 }
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
-	if(HasTrollMode(client, Troll_Honk)) {
-		char strings[32][7];
+	if(sArgs[0] == '@') return Plugin_Continue;
+	if(IsTrollActive(client, "Honk")) {
+		static char strings[32][7];
 		int words = ExplodeString(sArgs, " ", strings, sizeof(strings), 5);
 		for(int i = 0; i < words; i++) {
 			if(GetRandomFloat() <= 0.8) strings[i] = "honk";
@@ -234,8 +242,8 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		CPrintToChatAll("{blue}%N {default}:  %s", client, message);
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
-	}else if(HasTrollMode(client, Troll_iCantSpellNoMore)) {
-		int type = GetRandomInt(1, TROLL_MODE_COUNT + 8);
+	}else if(IsTrollActive(client, "iCantSpellNoMore")) {
+		int type = GetRandomInt(1, trollKV.Size + 8);
 		char letterSrc, replaceChar;
 		switch(type) {
 			case 1: {
@@ -308,14 +316,40 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		PrintToServer("%N: %s", client, sArgs);
 		CPrintToChatAll("{blue}%N {default}:  %s", client, newMessage);
 		return Plugin_Handled;
+	}else if(IsTrollActive(client, "NoProfanity")) {
+		//TODO: Check all replacement words, if none were replaced then do full word
+		//TODO: Lowercase .getstring
+		static char strings[32][MAX_PHRASE_LENGTH];
+		ArrayList phrases;
+		bool foundWord = false;
+		int words = ExplodeString(sArgs, " ", strings, 32, MAX_PHRASE_LENGTH);
+		for(int i = 0; i < words; i++) {
+			if(REPLACEMENT_PHRASES.GetValue(strings[i], phrases) && phrases.Length > 0) {
+				foundWord = true;
+				int c = phrases.GetString(GetRandomInt(0, phrases.Length - 1), strings[i], MAX_PHRASE_LENGTH);
+				PrintToServer("replacement: %s (%d)", strings[i], c);
+			}
+		}
+		int length = MAX_PHRASE_LENGTH * words;
+		char[] message = new char[length];
+		if(foundWord) {
+			ImplodeStrings(strings, 32, " ", message, length);
+		} else {
+			REPLACEMENT_PHRASES.GetValue("_Full Message Phrases", phrases);
+			phrases.GetString(GetRandomInt(0, phrases.Length - 1), message, MAX_PHRASE_LENGTH);
+		}
+		CPrintToChatAll("{blue}%N {default}:  %s", client, message);
+		PrintToServer("%N: %s", client, sArgs);
+		return Plugin_Handled;
 	}
 	return Plugin_Continue;
 }
+
 public Action Event_ItemPickup(int client, int weapon) {
-	if(HasTrollMode(client,Troll_NoPickup)) {
+	if(IsTrollActive(client, "NoPickup")) {
 		return Plugin_Stop;
 	}else{
-		char wpnName[64];
+		static char wpnName[64];
 		GetEdictClassname(weapon, wpnName, sizeof(wpnName));
 		if(StrContains(wpnName, "rifle") > -1 
 			|| StrContains(wpnName, "smg") > -1 
@@ -324,8 +358,8 @@ public Action Event_ItemPickup(int client, int weapon) {
 			|| StrContains(wpnName, "shotgun") > -1
 		) {
 			//If 4: Only UZI, if 5: Can't switch.
-			if(HasTrollMode(client,Troll_UziRules)) {
-				char currentWpn[32];
+			if(IsTrollActive(client, "UziRules")) {
+				static char currentWpn[32];
 				GetClientWeaponName(client, 0, currentWpn, sizeof(currentWpn));
 				if(StrEqual(wpnName, "weapon_smg", true)) {
 					return Plugin_Continue;
@@ -335,10 +369,10 @@ public Action Event_ItemPickup(int client, int weapon) {
 					int flags = GetCommandFlags("give");
 					SetCommandFlags("give", flags & ~FCVAR_CHEAT);
 					FakeClientCommand(client, "give smg");
-					SetCommandFlags("give", flags|FCVAR_CHEAT);
+					SetCommandFlags("give", flags);
 					return Plugin_Stop;
 				}
-			}else if(HasTrollMode(client,Troll_PrimaryDisable)) {
+			}else if(IsTrollActive(client, "PrimaryDisable")) {
 				return Plugin_Stop;
 			}
 			return Plugin_Continue;
@@ -347,6 +381,7 @@ public Action Event_ItemPickup(int client, int weapon) {
 		}
 	}
 }
+
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	if(g_bPendingItemGive[client] && !(buttons & IN_ATTACK2)) {
 		int target = GetClientAimTarget(client, true);
@@ -367,7 +402,7 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 			
 			return Plugin_Stop;
 		}
-		if(HasTrollMode(attacker, Troll_DamageBoost)) {
+		if(IsTrollActive(attacker, "DamageBoost")) {
 			damage * 2;
 			return Plugin_Changed;
 		}
@@ -391,12 +426,12 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 		lastButtonUser = -1;
 	}else if(numClients > 0 && entity > 0 && entity <= MaxClients) {
 		if(StrContains(sample, "survivor\\voice") > -1) {
-			if(HasTrollMode(entity, Troll_Honk)) {
+			if(IsTrollActive(entity, "Honk")) {
 				strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
 				return Plugin_Changed;
-			} else if(HasTrollMode(entity, Troll_VocalizeGag)) {
+			} else if(IsTrollActive(entity, "VocalizeGag")) {
 				return Plugin_Handled;
-			} else if(HasTrollMode(entity, Troll_Meow)) {
+			} else if(IsTrollActive(entity, "Meow")) {
 				strcopy(sample, sizeof(sample), "custom/meow1.mp3");
 				return Plugin_Changed;
 			}
@@ -418,7 +453,7 @@ public Action Event_WitchVictimSet(Event event, const char[] name, bool dontBroa
 				continue;
 			}
 			
-			if(HasTrollMode(i, Troll_WitchMagnet)) {
+			if(IsTrollActive(i, "WitchMagnet")) {
 				GetClientAbsOrigin(i, survPos);
 				float dist = GetVectorDistance(survPos, witchPos, true);
 				if(closestClient == -1 || dist < closestDistance) {
@@ -463,6 +498,121 @@ public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const cha
 ///////////////////////////////////////////////////////////////////////////////
 // COMMANDS
 ///////////////////////////////////////////////////////////////////////////////
+
+public Action Command_InstaSpecial(int client, int args) {
+	if(args < 1) {
+		Menu menu = new Menu(Insta_PlayerHandler);
+		menu.SetTitle("Choose a player");
+		for(int i = 1; i < MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+				static char userid[8], display[16];
+				Format(userid, sizeof(userid), "%d|0", GetClientUserId(i));
+				GetClientName(i, display, sizeof(display));
+				menu.AddItem(userid, display);
+			}
+		}
+		menu.ExitButton = true;
+		menu.Display(client, 0);
+	} else {
+		char arg1[32], arg2[32] = "jockey";
+		GetCmdArg(1, arg1, sizeof(arg1));
+		if(args >= 2) {
+			GetCmdArg(2, arg2, sizeof(arg2));
+		}
+		char target_name[MAX_TARGET_LENGTH];
+		int target_list[MAXPLAYERS], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			MaxClients,
+			COMMAND_FILTER_ALIVE,
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		int specialType = GetSpecialType(arg2);
+		static float pos[3];
+		if(specialType == -1) {
+			ReplyToCommand(client, "Unknown special \"%s\"", arg2);
+			return Plugin_Handled;
+		}
+		for (int i = 0; i < target_count; i++) {
+			int target = target_list[i];
+			if(GetClientTeam(target) == 2) {
+				SpawnSpecialNear(target, specialType);
+			}else{
+				ReplyToTargetError(client, target_count);
+			}
+		}
+		ShowActivity(client, "spawned Insta-%s™ near %s", arg2, target_name);
+	}
+
+
+	return Plugin_Handled;
+}
+
+public Action Command_InstaSpecialFace(int client, int args) {
+	if(args < 1) {
+		Menu menu = new Menu(Insta_PlayerHandler);
+		menu.SetTitle("Choose a player");
+		for(int i = 1; i < MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+				static char userid[8], display[16];
+				Format(userid, sizeof(userid), "%d|1", GetClientUserId(i));
+				GetClientName(i, display, sizeof(display));
+				menu.AddItem(userid, display);
+			}
+		}
+		menu.ExitButton = true;
+		menu.Display(client, 0);
+	} else {
+		char arg1[32], arg2[32] = "jockey";
+		GetCmdArg(1, arg1, sizeof(arg1));
+		if(args >= 2) {
+			GetCmdArg(2, arg2, sizeof(arg2));
+		}
+		char target_name[MAX_TARGET_LENGTH];
+		int target_list[MAXPLAYERS], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			MaxClients,
+			COMMAND_FILTER_ALIVE,
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		int specialType = GetSpecialType(arg2);
+		static float pos[3];
+		if(specialType == -1) {
+			ReplyToCommand(client, "Unknown special \"%s\"", arg2);
+			return Plugin_Handled;
+		}
+		for (int i = 0; i < target_count; i++) {
+			int target = target_list[i];
+			if(GetClientTeam(target) == 2) {
+				SpawnSpecialInFace(target, specialType);
+			}else{
+				ReplyToTargetError(client, target_count);
+			}
+		}
+		ShowActivity(client, "spawned Insta-%s™ on %s", arg2, target_name);
+	}
+	return Plugin_Handled;
+}
+
 
 public Action Command_WitchAttack(int client, int args) {
 	if(args < 1) {
@@ -540,7 +690,7 @@ public Action Command_ResetUser(int client, int args) {
 		}
 
 		for (int i = 0; i < target_count; i++) {
-			if(g_iTrollUsers[target_list[i]] > 0) {
+			if(ActiveTrolls[target_list[i]] > 0) {
 				ResetClient(target_list[i], true);
 				ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
 			}
@@ -548,13 +698,14 @@ public Action Command_ResetUser(int client, int args) {
 	}
 	return Plugin_Handled;
 }
+
 public Action Command_ApplyUser(int client, int args) {
 	if(args < 2) {
 		Menu menu = new Menu(ChoosePlayerHandler);
 		menu.SetTitle("Choose a player");
 		for(int i = 1; i < MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
-				char userid[8], display[16];
+				static char userid[8], display[16];
 				Format(userid, sizeof(userid), "%d", GetClientUserId(i));
 				GetClientName(i, display, sizeof(display));
 				menu.AddItem(userid, display);
@@ -569,10 +720,9 @@ public Action Command_ApplyUser(int client, int args) {
 		GetCmdArg(3, arg3, sizeof(arg3));
 
 		bool silent = StrEqual(arg3, "silent") || StrEqual(arg3, "quiet") || StrEqual(arg3, "mute");
-
-		int mode = StringToInt(arg2);
-		if(mode == 0) {
-			ReplyToCommand(client, "Not a valid mode. Must be greater than 0. Usage: sm_fta <player> <mode>. Use sm_ftr <player> to reset.");
+		static char name[MAX_TROLL_NAME_LENGTH];
+		if(!GetTrollID(StringToInt(arg2), name)) {
+			ReplyToCommand(client, "Not a valid mode. Must be greater than 0. Usage: sm_fta [player] [mode]. Use sm_ftr <player> to reset.");
 		}else{
 			char target_name[MAX_TARGET_LENGTH];
 			int target_list[MAXPLAYERS], target_count;
@@ -591,35 +741,43 @@ public Action Command_ApplyUser(int client, int args) {
 				ReplyToTargetError(client, target_count);
 				return Plugin_Handled;
 			}
-			
+
 			for (int i = 0; i < target_count; i++) {
 				if(IsClientInGame(target_list[i]) && GetClientTeam(target_list[i]) == 2)
-					ApplyModeToClient(client, target_list[i], view_as<trollMode>(mode), TrollMod_None, silent);
+					ApplyTroll(target_list[i], name, client,TrollMod_None, silent);
 			}
 		}
 	}
 	return Plugin_Handled;
 }
+
 public Action Command_ListModes(int client, int args) {
-	for(int mode = 0; mode < TROLL_MODE_COUNT; mode++) {
-		ReplyToCommand(client, "%d. %s - %s", mode, TROLL_MODES_NAMES[mode], TROLL_MODES_DESCRIPTIONS[mode]);
+	static char name[MAX_TROLL_NAME_LENGTH];
+	static Troll troll;
+	for(int i = 0; i <= MAX_TROLLS; i++) {
+		GetTrollByKeyIndex(i, troll);
+		ReplyToCommand(client, "%d. %s - %s", i, troll.name, troll.description);
 	}
 	return Plugin_Handled;
 }
+
 public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
-	char modeListArr[TROLL_MODE_COUNT][32];
-	char modeList[255];
+	//TODO: Update
+	char[][] modeListArr = new char[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
+	static char modeList[255];
 	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && g_iTrollUsers[i] > 0) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && ActiveTrolls[i] > 0) {
 			int modeCount = 0;
-			for(int mode = 1; mode < TROLL_MODE_COUNT; mode++) {
-				//If troll mode exists:
-				if(HasTrollMode(i, view_as<trollMode>(mode))) {
-					modeListArr[modeCount] = TROLL_MODES_NAMES[mode];
+			static char name[MAX_TROLL_NAME_LENGTH];
+			for(int j = 1; j <= MAX_TROLLS; j++) {
+				GetTrollID(j, name);
+				if(IsTrollActive(i, name)) {
+					strcopy(modeListArr[modeCount], MAX_TROLL_NAME_LENGTH, name);
 					modeCount++;
 				}
 			}
+
 			ImplodeStrings(modeListArr, modeCount, ", ", modeList, sizeof(modeList));
 			ReplyToCommand(client, "%N | %s", i, modeList);
 			count++;
@@ -635,7 +793,7 @@ public Action Command_MarkPendingTroll(int client, int args) {
 	if(args == 0) {
 		Menu menu = new Menu(ChooseMarkedTroll);
 		menu.SetTitle("Choose a troll to mark");
-		char userid[8], display[16];
+		static char userid[8], display[16];
 		for(int i = 1; i < MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
 				AdminId admin = GetUserAdmin(i);
@@ -690,13 +848,61 @@ public Action Command_FeedTheTrollMenu(int client, int args) {
 	ReplyToCommand(client, "sm_mark - Marks the user to be banned on disconnect, prevents their FF.");
 	return Plugin_Handled;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 // MENU HANDLER
 ///////////////////////////////////////////////////////////////////////////////
 
+public int Insta_PlayerHandler(Menu menu, MenuAction action, int client, int param2) {
+	/* If an option was selected, tell the client about the item. */
+	if (action == MenuAction_Select) {
+		static char info[16];
+		menu.GetItem(param2, info, sizeof(info));
+
+		static char str[2][8];
+		ExplodeString(info, "|", str, 2, 8, false);
+
+		int userid = StringToInt(str[0]);
+		int instaMode = StringToInt(str[1]);
+
+		Menu spMenu = new Menu(Insta_SpecialHandler);
+		spMenu.SetTitle("Choose a Insta-Special™");
+		for(int i = 1; i <= 6; i++) {
+			static char id[8];
+			Format(id, sizeof(id), "%d|%d|%d", userid, instaMode, i);
+			spMenu.AddItem(id, SPECIAL_NAMES[i-1]);
+		}
+		spMenu.ExitButton = true;
+		spMenu.Display(client, 0);
+	} else if (action == MenuAction_End)
+		delete menu;
+}
+
+public int Insta_SpecialHandler(Menu menu, MenuAction action, int client, int param2) {
+	/* If an option was selected, tell the client about the item. */
+	if (action == MenuAction_Select) {
+		static char info[16];
+		menu.GetItem(param2, info, sizeof(info));
+		static char str[3][8];
+		ExplodeString(info, "|", str, 3, 8, false);
+		int target = GetClientOfUserId(StringToInt(str[0]));
+		bool inFace = StrEqual(str[1], "1");
+		int special = StringToInt(str[2]);
+		if(inFace) {
+			SpawnSpecialInFace(target, special);
+			ShowActivity(client, "spawned Insta-%s™ near %N", SPECIAL_NAMES[special-1], target);
+		} else {
+			SpawnSpecialNear(target, special);
+			ShowActivity(client, "spawned Insta-%s™ near %N", SPECIAL_NAMES[special-1], target);
+		}
+	} else if (action == MenuAction_End)
+		delete menu;
+}
+
+
 public int ChooseMarkedTroll(Menu menu, MenuAction action, int activator, int param2) {
 	if (action == MenuAction_Select) {
-		char info[16];
+		static char info[16];
 		menu.GetItem(param2, info, sizeof(info));
 		int target = GetClientOfUserId(StringToInt(info));
 		ToggleMarkPlayer(activator, target);
@@ -706,70 +912,80 @@ public int ChooseMarkedTroll(Menu menu, MenuAction action, int activator, int pa
 
 public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int param2) {
 	/* If an option was selected, tell the client about the item. */
-    if (action == MenuAction_Select) {
-		char info[16];
+	if (action == MenuAction_Select) {
+		static char info[16];
 		menu.GetItem(param2, info, sizeof(info));
 		int userid = StringToInt(info);
 		
 		Menu trollMenu = new Menu(ChooseModeMenuHandler);
 		trollMenu.SetTitle("Choose a troll mode");
-		for(int i = 0; i < TROLL_MODE_COUNT; i++) {
-			char id[8];
+		//TODO: Update
+		static char id[8];
+		static char name[MAX_TROLL_NAME_LENGTH];
+		for(int i = 0; i <= MAX_TROLLS; i++) {
+			GetTrollID(i, name);
+			// int trollIndex = GetTrollByKeyIndex(i, troll);
+			// Pass key index
 			Format(id, sizeof(id), "%d|%d", userid, i);
-			trollMenu.AddItem(id, TROLL_MODES_NAMES[i]);
+			trollMenu.AddItem(id, name);
 		}
 		trollMenu.ExitButton = true;
 		trollMenu.Display(param1, 0);
-    } else if (action == MenuAction_End)
-        delete menu;
+	} else if (action == MenuAction_End)
+		delete menu;
 }
+
 public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
-    /* If an option was selected, tell the client about the item. */
-    if (action == MenuAction_Select) {
-		char info[16];
+	/* If an option was selected, tell the client about the item. */
+	if (action == MenuAction_Select) {
+		static char info[16];
 		menu.GetItem(param2, info, sizeof(info));
-		char str[2][8];
+		static char str[2][8];
 		ExplodeString(info, "|", str, 2, 8, false);
 		int userid = StringToInt(str[0]);
 		int client = GetClientOfUserId(userid);
-		trollMode mode = view_as<trollMode>(StringToInt(str[1]));
+		int keyIndex = StringToInt(str[1]);
+		static Troll troll;
+		static char trollID[MAX_TROLL_NAME_LENGTH];
+		GetTrollByKeyIndex(keyIndex, troll);
+		troll.GetID(trollID, MAX_TROLL_NAME_LENGTH);
 		//If mode has an option to be single-time fired/continous/both, prompt:
-		if(mode == Troll_Clumsy 
-			|| mode ==Troll_ThrowItAll
-			|| mode == Troll_PrimaryDisable
-			|| mode == Troll_CameTooEarly
-			|| mode == Troll_Swarm
-		) {
+		if(!troll.runsOnce) {
 			Menu modiferMenu = new Menu(ChooseTrollModiferHandler); 
 			modiferMenu.SetTitle("Choose Troll Modifer Option");
-			char singleUse[16], multiUse[16], bothUse[16];
-			Format(singleUse, sizeof(singleUse), "%d|%d|1", userid, mode);
-			Format(multiUse,   sizeof(multiUse), "%d|%d|2", userid, mode);
-			Format(bothUse,     sizeof(bothUse), "%d|%d|3", userid, mode);
+			static char singleUse[16], multiUse[16], bothUse[16];
+			Format(singleUse, sizeof(singleUse), "%d|%d|1", userid, keyIndex);
+			Format(multiUse,   sizeof(multiUse), "%d|%d|2", userid, keyIndex);
+			Format(bothUse,     sizeof(bothUse), "%d|%d|3", userid, keyIndex);
 			modiferMenu.AddItem(singleUse, "Activate once");
 			modiferMenu.AddItem(multiUse, "Activate Periodically");
 			modiferMenu.AddItem(bothUse, "Activate Periodically & Instantly");
 			modiferMenu.ExitButton = true;
 			modiferMenu.Display(param1, 0);
 		} else {
-			ApplyModeToClient(param1, client, mode, TrollMod_None);
+			ApplyTroll(client, trollID, param1, TrollMod_None);
 		}
-    } else if (action == MenuAction_End)
-        delete menu;
+	} else if (action == MenuAction_End)
+		delete menu;
 }
+
 public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, int param2) {
 	if (action == MenuAction_Select) {
-		char info[16];
+		static char info[16];
 		menu.GetItem(param2, info, sizeof(info));
-		char str[3][8];
+		static char str[3][8];
 		ExplodeString(info, "|", str, 3, 8, false);
 		int client = GetClientOfUserId(StringToInt(str[0]));
-		trollMode mode = view_as<trollMode>(StringToInt(str[1]));
+		int keyIndex = StringToInt(str[1]);
+		static Troll troll;
+		static char trollID[MAX_TROLL_NAME_LENGTH];
+		GetTrollByKeyIndex(keyIndex, troll);
+		troll.GetID(trollID, MAX_TROLL_NAME_LENGTH);
 		int modifier = StringToInt(str[2]);
 		if(modifier == 2 || modifier == 3)
-			ApplyModeToClient(param1, client, mode, TrollMod_Repeat);
+			ApplyTroll(client, trollID, param1, TrollMod_Repeat);
 		else
-			ApplyModeToClient(param1, client, mode, TrollMod_InstantFire);
+			ApplyTroll(client, trollID, param1, TrollMod_InstantFire);
 	} else if (action == MenuAction_End)	
 		delete menu;
 }
@@ -777,6 +993,7 @@ public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 public void StopItemGive(int client) {
 	g_bPendingItemGive[client] = false;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 // TIMERS
 ///////////////////////////////////////////////////////////////////////////////
@@ -784,25 +1001,26 @@ public void StopItemGive(int client) {
 public Action Timer_ThrowTimer(Handle timer) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) &&HasTrollMode(i,Troll_ThrowItAll)) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && IsTrollActive(i, "ThrowItAll")) {
 			ThrowAllItems(i);
 			count++;
 		}
 	}
 	return count > 0 ? Plugin_Continue : Plugin_Stop;
 }
+
 public Action Timer_Main(Handle timer) {
 	static int loop;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i)) {
-			if(HasTrollMode(i, Troll_SlowDrain)) {
+			if(IsTrollActive(i, "SlowDrain")) {
 				if(loop % 4 == 0) {
 					int hp = GetClientHealth(i);
 					if(hp > 50) {
 						SetEntProp(i, Prop_Send, "m_iHealth", hp - 1); 
 					}
 				}
-			}else if(HasTrollMode(i, Troll_TempHealthQuickDrain)) {
+			}else if(IsTrollActive(i, "TempHealthQuickDrain")) {
 				if(loop % 2 == 0) {
 					float bufferTime = GetEntPropFloat(i, Prop_Send, "m_healthBufferTime");
 					float buffer = GetEntPropFloat(i, Prop_Send, "m_healthBuffer");
@@ -813,7 +1031,7 @@ public Action Timer_Main(Handle timer) {
 						SetEntPropFloat(i, Prop_Send, "m_healthBufferTime", bufferTime - 7.0); 
 					}
 				}
-			}else if(HasTrollMode(i, Troll_Swarm)) {
+			}else if(IsTrollActive(i, "Swarm")) {
 				L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", GetClientUserId(i), 15000);
 			}
 		}
@@ -845,7 +1063,7 @@ public Action Timer_ThrowWeapon(Handle timer, Handle pack) {
 		int wpn = EntRefToEntIndex(wpnRef);
 		if(wpn != INVALID_ENT_REFERENCE) {
 			if(slot == 1) {
-				char name[16];
+				static char name[16];
 				GetEdictClassname(wpn, name, sizeof(name));
 				if(!StrEqual(name, "weapon_pistol", false)) {
 					SDKHooks_DropWeapon(victim, wpn, dest);
@@ -861,9 +1079,9 @@ public Action Timer_ResetAutoPunish(Handle timer, int user) {
 	int client = GetClientOfUserId(user);
 	if(client) {
 		if(hAutoPunish.IntValue & 2 == 2) 
-			TurnOffTrollMode(client, Troll_SpecialMagnet);
+			DisableTroll(client, "SpecialMagnet");
 		if(hAutoPunish.IntValue & 1 == 1) 
-			TurnOffTrollMode(client, Troll_TankMagnet);
+			DisableTroll(client, "TankMagnet");
 	}
 }
 
@@ -901,6 +1119,7 @@ void ThrowAllItems(int victim) {
 		
 	}
 }
+
 bool IsPlayerFarDistance(int client, float distance) {
 	int farthestClient = -1, secondClient = -1;
 	float highestFlow, secondHighestFlow;
@@ -965,45 +1184,42 @@ stock bool SetPrimaryReserveAmmo(int client, int amount) {
 stock void SendChatToAll(int client, const char[] message) {
 	char nameBuf[MAX_NAME_LENGTH];
 	
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (!IsClientInGame(i) || IsFakeClient(i))
-		{
-			continue;
+	for (int i = 1; i <= MaxClients; i++) {
+		if (IsClientInGame(i) && IsFakeClient(i)) {
+			FormatActivitySource(client, i, nameBuf, sizeof(nameBuf));
+			PrintToChat(i, "\x03 %s : \x01%s", nameBuf, message);
 		}
-		FormatActivitySource(client, i, nameBuf, sizeof(nameBuf));
-		PrintToChat(i, "\x03 %s : \x01%s", nameBuf, message);
 	}
 }
+
 stock float GetTempHealth(int client) {
-    //First filter -> Must be a valid client, successfully in-game and not an spectator (The dont have health).
-    if(!client || !IsValidEntity(client) || !IsClientInGame(client)|| !IsPlayerAlive(client) || IsClientObserver(client)) {
-        return -1.0;
-    }
-    
-    //If the client is not on the survivors team, then just return the normal client health.
-    if(GetClientTeam(client) != 2) {
-        return 0.0;
-    }
-    
-    //First, we get the amount of temporal health the client has
-    float buffer = GetEntPropFloat(client, Prop_Send, "m_healthBuffer");
-    
-    //In case the buffer is 0 or less, we set the temporal health as 0, because the client has not used any pills or adrenaline yet
-    if(buffer > 0.0) {
-        //This is the difference between the time we used the temporal item, and the current time
-        float difference = GetGameTime() - GetEntPropFloat(client, Prop_Send, "m_healthBufferTime");
-        
-        //We get the decay rate from this convar (Note: Adrenaline uses this value)
-        float decay = GetConVarFloat(FindConVar("pain_pills_decay_rate"));
-        
-        //This is a constant we create to determine the amount of health. This is the amount of time it has to pass
-        //before 1 Temporal HP is consumed.
-        float constant = 1.0 / decay;
-        
-        //Then we do the calcs
-        return buffer - (difference / constant);
-    }else{
+	//First filter -> Must be a valid client, successfully in-game and not an spectator (The dont have health).
+	if(!client || !IsValidEntity(client) || !IsClientInGame(client)|| !IsPlayerAlive(client) || IsClientObserver(client)) {
+		return -1.0;
+	}
+	
+	//If the client is not on the survivors team, then just return the normal client health.
+	if(GetClientTeam(client) != 2) {
 		return 0.0;
 	}
+	
+	//First, we get the amount of temporal health the client has
+	float buffer = GetEntPropFloat(client, Prop_Send, "m_healthBuffer");
+
+	//In case the buffer is 0 or less, we set the temporal health as 0, because the client has not used any pills or adrenaline yet
+	if(buffer <= 0.0) return 0.0;
+
+
+	//This is the difference between the time we used the temporal item, and the current time
+	float difference = GetGameTime() - GetEntPropFloat(client, Prop_Send, "m_healthBufferTime");
+	
+	//We get the decay rate from this convar (Note: Adrenaline uses this value)
+	float decay = GetConVarFloat(FindConVar("pain_pills_decay_rate"));
+	
+	//This is a constant we create to determine the amount of health. This is the amount of time it has to pass
+	//before 1 Temporal HP is consumed.
+	float constant = 1.0 / decay;
+	
+	//Then we do the calcs
+	return buffer - (difference / constant);
 }
