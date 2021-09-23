@@ -81,10 +81,10 @@ public Action Cmd_VGag(int client, int args) {
             int playerIndex = gaggedPlayers[client].FindValue(target_list[i]);
             if(playerIndex > -1) {
                 gaggedPlayers[client].Erase(playerIndex);
-                ReplyToCommand(client, "Locally vocalize ungagged %s", target_name[i]);
+                ReplyToCommand(client, "Locally vocalize ungagged %s", target_name);
             }else{
                 gaggedPlayers[client].Push(target_list[i]);
-                ReplyToCommand(client, "Locally vocalize gagged %s", target_name[i]);
+                ReplyToCommand(client, "Locally vocalize gagged %s", target_name);
             }
 		}
 	}

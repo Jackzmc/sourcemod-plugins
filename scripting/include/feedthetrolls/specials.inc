@@ -37,6 +37,7 @@ float GetIdealMinDistance(int specialType) {
 }
 
 bool SpawnSpecialInFace(int target, int specialType) {
+	if(specialType >= sizeof(SPECIAL_NAMES)) return false;
 	static float pos[3], ang[3];
 	static float testPos[3];
 	testPos = pos;
@@ -68,6 +69,7 @@ bool SpawnSpecialInFace(int target, int specialType) {
 }
 
 bool SpawnSpecialNear(int target, int specialType) {
+	if(specialType >= sizeof(SPECIAL_NAMES)) return false;
 	static float pos[3];
 	if(L4D_GetRandomPZSpawnPosition(target, specialType, 10, pos)) {
 		int special = (specialType == 7) ? L4D2_SpawnWitch(pos, ZERO_VECTOR) : L4D2_SpawnSpecial(specialType, pos, ZERO_VECTOR);

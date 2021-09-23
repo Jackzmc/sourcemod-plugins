@@ -13,9 +13,13 @@
 #include <sceneprocessor>
 #include "l4d_survivor_identity_fix.inc"
 
+char ReserveLevels[4][] = {
+	"Public", "Watch", "Admin-Only", "Private"
+};
+
 static ArrayList LasersUsed;
-static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres;
-static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1];
+static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres, hForceSurvivorSet;
+static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1], reserveMode;
 static bool isHighPingIdle[MAXPLAYERS+1], isL4D1Survivors;
 static Handle hTakeOverBot, hGoAwayFromKeyboard;
 static char lastSound[MAXPLAYERS+1][64];
@@ -30,7 +34,7 @@ public Plugin myinfo = {
 	url = ""
 };
 
-//TODO: Fix ladder issue (click to tp to safe area?)
+//TODO: On pickup ammo pack, mark dropped kit/defib 
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
@@ -63,6 +67,7 @@ public void OnPluginStart() {
 	hFFNotice    	= CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
 	hPingDropThres 	= CreateConVar("sm_autoidle_ping_max", "0.0", "The highest ping a player can have until they will automatically go idle.\n0=OFF, Min is 30", FCVAR_NONE, true, 0.0, true, 1000.0);
 	hMPGamemode  = FindConVar("mp_gamemode");
+	hForceSurvivorSet = FindConVar("l4d_force_survivorset");
 
 	hFFNotice.AddChangeHook(CVC_FFNotice);
 	if(hFFNotice.IntValue > 0) {
@@ -78,6 +83,8 @@ public void OnPluginStart() {
 	HookEvent("finale_vehicle_leaving", Event_FinaleEnd);
 	HookEvent("player_bot_replace", Event_BotPlayerSwap);
 	HookEvent("bot_player_replace", Event_BotPlayerSwap);
+	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
+	HookEvent("weapon_drop", Event_WeaponDrop);
 
 	AutoExecConfig(true, "l4d2_tools");
 
@@ -86,22 +93,69 @@ public void OnPluginStart() {
 			if(IsFakeClient(client)) {
 				SDKHook(client, SDKHook_OnTakeDamage, Event_OnTakeDamage);
 				SDKHook(client, SDKHook_WeaponDrop, Event_OnWeaponDrop);
+			} else {
+				SDKHook(client, SDKHook_WeaponEquip, Event_OnWeaponEquip);
 			}
 		}
 	}
 
 	HookUserMessage(GetUserMessageId("VGUIMenu"), VGUIMenu, true);
 
-	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_ROOT);
-	RegAdminCmd("sm_surv", Cmd_SetSurvivor, ADMFLAG_ROOT);
+	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_KICK);
+	RegAdminCmd("sm_surv", Cmd_SetSurvivor, ADMFLAG_KICK);
 	RegAdminCmd("sm_respawn_all", Command_RespawnAll, ADMFLAG_CHEATS, "Makes all dead players respawn in a closet");
 	RegAdminCmd("sm_playsound", Command_PlaySound, ADMFLAG_CHEATS, "Plays a gamesound for player");
 	RegAdminCmd("sm_stopsound", Command_StopSound, ADMFLAG_CHEATS, "Stops the last played gamesound for player");
 	RegAdminCmd("sm_swap", Command_SwapPlayer, ADMFLAG_CHEATS, "Swarms two player's locations");
+	RegAdminCmd("sm_perm", Command_SetServerPermissions, ADMFLAG_KICK, "Sets the server's permissions.");
+	RegAdminCmd("sm_perms", Command_SetServerPermissions, ADMFLAG_KICK, "Sets the server's permissions.");
+	RegAdminCmd("sm_permissions", Command_SetServerPermissions, ADMFLAG_KICK, "Sets the server's permissions.");
 	RegConsoleCmd("sm_pmodels", Command_ListClientModels, "Lists all player's models");
 
 	CreateTimer(8.0, Timer_CheckPlayerPings, _, TIMER_REPEAT);
 }
+
+public void OnClientConnected(int client) {
+	if(!IsFakeClient(client) && reserveMode == 1) {
+		PrintToChatAll("%N is connecting", client);
+	}
+}
+
+public void OnClientPostAdminCheck(int client) {
+	if(!IsFakeClient(client)) {
+		if(reserveMode == 2) {
+			if(GetUserAdmin(client) == INVALID_ADMIN_ID) {
+				KickClient(client, "Sorry, server is reserved");
+			}
+		}else if(reserveMode == 3) {
+			KickClient(client, "Sorry, server is reserved");
+		}
+	}
+}
+
+public Action Command_SetServerPermissions(int client, int args) {
+	if(args > 0) {
+		char arg1[32];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		if(StrEqual(arg1, "public", false)) {
+			reserveMode = 0;
+		}else if(StrContains(arg1, "notice", false) > -1) {
+			reserveMode = 1;
+		}else if(StrContains(arg1, "admin", false) > -1) {
+			reserveMode = 2;
+		}else if(StrEqual(arg1, "private", false)) {
+			reserveMode = 3;
+		}else {
+			ReplyToCommand(client, "Usage: sm_reserve [public/notify/admin/private] or no arguments to view current reservation.");
+			return Plugin_Handled;
+		}
+		PrintToChatAll("Server is now %s.", ReserveLevels[reserveMode]);
+	} else {
+		ReplyToCommand(client, "Server is currently %s", ReserveLevels[reserveMode]);
+	}
+	return Plugin_Handled;
+}
+
 
 public Action Timer_CheckPlayerPings(Handle timer) {
 	if(hPingDropThres.IntValue != 0) {
@@ -144,11 +198,12 @@ public Action Command_RespawnAll(int client, int args) {
 }
 public Action Command_SwapPlayer(int client, int args) {
 	if(args < 1) {
-		ReplyToCommand(client, "Usage: sm_swap <player> [player or yourself]");
+		ReplyToCommand(client, "Usage: sm_swap <player> [player or yourself] [silent]");
 	}else{
-		char arg1[64], arg2[64];
+		char arg1[64], arg2[64], arg3[8];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		GetCmdArg(2, arg2, sizeof(arg2));
+		GetCmdArg(3, arg3, sizeof(arg3));
 
 		char target_name[MAX_TARGET_LENGTH];
 		int target_list[MAXPLAYERS], target_count;
@@ -193,6 +248,10 @@ public Action Command_SwapPlayer(int client, int args) {
 		GetClientAbsAngles(target2, ang2);
 		TeleportEntity(target, pos2, ang2, NULL_VECTOR);
 		TeleportEntity(target2, pos1, ang1, NULL_VECTOR);
+		if(args < 3 || !StrEqual(arg3, "silent") && !StrEqual(arg2, "silent")) {
+			EmitSoundToClient(target, "custom/xen_teleport.mp3", target, 0);
+			EmitSoundToClient(target2, "custom/xen_teleport.mp3", target2);
+		}
 	}
 	return Plugin_Handled;
 }
@@ -308,7 +367,7 @@ public Action Command_SetClientModel(int client, int args) {
 		}
 		GetSurvivorModel(modelID, modelPath, sizeof(modelPath));
 		//Convert the l4d1 survivors to proper l4d1 ID if game is l4d1
-		if(isL4D1Survivors) modelID = GetSurvivorId(arg2, true);
+		if(isL4D1Survivors && hForceSurvivorSet != null && hForceSurvivorSet.IntValue < 2) modelID = GetSurvivorId(arg2, true);
 
 		char target_name[MAX_TARGET_LENGTH];
 		int target_list[MAXPLAYERS], target_count;
@@ -417,31 +476,15 @@ public Action Timer_RequipWeapon(Handle hdl, DataPack pack) {
 	}
 }
 
-public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
-	int bot = GetClientOfUserId(event.GetInt("bot"));
-	if(StrEqual(name, "player_bot_replace")) {
-		//Bot replaced player
-		SDKHook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
-	}else{
-		//Player replaced a bot
-		int client = GetClientOfUserId(event.GetInt("player"));
-		if(botDropMeleeWeapon[bot] > 0) {
-			int meleeOwnerEnt = GetEntPropEnt(botDropMeleeWeapon[bot], Prop_Send, "m_hOwnerEntity");
-			if(meleeOwnerEnt == -1) { 
-				EquipPlayerWeapon(client, botDropMeleeWeapon[bot]);
-				botDropMeleeWeapon[bot] = -1;
-			}else{
-				PrintToChat(client, "Could not give back your melee weapon, %N has it instead.", meleeOwnerEnt);
-			}
-		}
-		SDKUnhook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
-	}
-}
 public Action VGUIMenu(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init) {
 	char buffer[5];
 	BfReadString(bf, buffer, sizeof(buffer));
 	return StrEqual(buffer, "info") ? Plugin_Handled : Plugin_Continue;
 }  
+public void OnClientPutInServer(int client) {
+	if(!IsFakeClient(client))
+		SDKHook(client, SDKHook_WeaponEquip, Event_OnWeaponEquip);
+}
 public void OnClientDisconnect(int client) {
 	if(IsClientConnected(client) && IsClientInGame(client) && botDropMeleeWeapon[client] > -1) {
 		float pos[3];
@@ -450,7 +493,32 @@ public void OnClientDisconnect(int client) {
 		botDropMeleeWeapon[client] = -1;
 	}
 }
+int disabledItem[2048];
+//Can also probably prevent kit drop to pick them up 
+public Action Event_WeaponDrop(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	int weapon = event.GetInt("propid");
+	char newWpn[32];
+	GetEntityClassname(client, newWpn, sizeof(newWpn));
+	if(StrEqual(newWpn, "weapon_ammo_pack")) {
+		// prevent weapon from being picked up?
+		disabledItem[weapon] = client;
+		CreateTimer(10.0, Timer_AllowKitPickup, weapon);
+	}
+}
+public Action Event_OnWeaponEquip(int client, int weapon) {
+	if(disabledItem[weapon] > 0 && disabledItem[weapon] != client) return Plugin_Handled;
+	return Plugin_Continue;
+}
+public Action Timer_AllowKitPickup(Handle h, int entity) {
+	disabledItem[entity] = 0;
+}
 public void OnMapStart() {
+	AddFileToDownloadsTable("sound/custom/meow1.mp3");
+	PrecacheSound("sound/custom/meow1.mp3");
+	AddFileToDownloadsTable("sound/custom/xen_teleport.mp3");
+	PrecacheSound("sound/custom/xen_teleport.mp3");
+	AddFileToDownloadsTable("sound/custom/mariokartmusic.mp3");
 	PrecacheSound("sound/custom/mariokartmusic.mp3");	
 	
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
@@ -472,7 +540,27 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 		}
 	}
 }
-
+///AFK BOT WEAPON FIX
+public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
+	int bot = GetClientOfUserId(event.GetInt("bot"));
+	if(StrEqual(name, "player_bot_replace")) {
+		//Bot replaced player
+		SDKHook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
+	}else{
+		//Player replaced a bot
+		int client = GetClientOfUserId(event.GetInt("player"));
+		if(botDropMeleeWeapon[bot] > 0) {
+			int meleeOwnerEnt = GetEntPropEnt(botDropMeleeWeapon[bot], Prop_Send, "m_hOwnerEntity");
+			if(meleeOwnerEnt == -1) { 
+				EquipPlayerWeapon(client, botDropMeleeWeapon[bot]);
+				botDropMeleeWeapon[bot] = -1;
+			}else{
+				PrintToChat(client, "Could not give back your melee weapon, %N has it instead.", meleeOwnerEnt);
+			}
+		}
+		SDKUnhook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
+	}
+}
 public Action Event_OnWeaponDrop(int client, int weapon) {
 	if(!IsValidEntity(weapon)) return Plugin_Continue;
 	char wpn[32];
@@ -486,6 +574,10 @@ public Action Event_OnWeaponDrop(int client, int weapon) {
 	}
 	return Plugin_Continue;
 }
+public void Frame_HideEntity(int entity) {
+	TeleportEntity(entity, OUT_OF_BOUNDS, NULL_VECTOR, NULL_VECTOR);
+}
+//STUCK BOTS WITH ZOMBIES FIX
 public Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
 	if(attacker > MaxClients) {
 		char name[16];
@@ -504,10 +596,7 @@ public Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, floa
 	}
 	return Plugin_Continue;
 }
-public void Frame_HideEntity(int entity) {
-	TeleportEntity(entity, OUT_OF_BOUNDS, NULL_VECTOR, NULL_VECTOR);
-}
-
+//MINOR FIXES
 public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
 	if(client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
 		if(botDropMeleeWeapon[client] > 0) {
@@ -539,8 +628,7 @@ public Action Timer_TPBots(Handle timer, int user) {
 		}
 	}
 }
-
-//laserNotice
+//FRIENDLY FIRE NOTICE
 public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) {
 	if(hFFNotice.IntValue > 0) {
 		int victim = GetClientOfUserId(event.GetInt("userid"));
@@ -559,6 +647,7 @@ public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 		}
 	}
 }
+//LASER SIGHT NOTICE
 public void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast) {
 	if(hLaserNotice.BoolValue) {
 		char entity_name[32];
@@ -575,9 +664,7 @@ public void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast) 
 		}	
 	}
 }
-
-
-//finaletimer
+//FINALE TIME INFO
 public void Event_GauntletStart(Event event, const char[] name, bool dontBroadcast) {
 	if(hFinaleTimer.IntValue > 0) {
 		iFinaleStartTime = GetTime();
@@ -600,9 +687,13 @@ public void Event_FinaleEnd(Event event, const char[] name, bool dontBroadcast) 
 		}
 	}
 }
-public void Event_CarAlarmTriggered(Event event, const char[] name, bool dontBroadcast) {
-	int userID = GetClientOfUserId(event.GetInt("userid"));
-	PrintToChatAll("%N activated a car alarm!", userID);
+//Give kits to bots that replace kicked player
+public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0 && IsFakeClient(client) && HasEntProp(client, Prop_Send, "m_humanSpectatorUserID") && GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") < 0) {
+		int ent = GivePlayerItem(client, "weapon_first_aid_kit");
+		EquipPlayerWeapon(client, ent);
+	}
 }
 /**
  * Prints human readable duration from milliseconds

@@ -40,6 +40,7 @@ bool ToggleMarkPlayer(int client, int target) {
 			Call_PushCell(target);
 			Call_Finish();
 			g_PendingBanTroll[target] = true;
+			EnableTroll(target, "NoProfanity");
 			ShowActivity(client, "marked %N as troll", target);
 			return true;
 		}else{
