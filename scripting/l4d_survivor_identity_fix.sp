@@ -37,6 +37,7 @@ static bool isLateLoad, cookieModelsSet, isL4D1Survivors;
 static int survivors;
 static bool IsTemporarilyL4D2[MAXPLAYERS]; //Use index 0 to state if its activated
 static char currentMap[16];
+Handle cookieModelTimer;
 
 static Menu chooseMenu;
 
@@ -295,7 +296,8 @@ public void OnMapStart() {
 }
 //Either use preferred model OR find the least-used.
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
-	RequestFrame(Frame_CheckClient, event.GetInt("userid"));
+	if(hCookiesEnabled.IntValue > 0)
+		RequestFrame(Frame_CheckClient, event.GetInt("userid"));
 }
 public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
@@ -311,11 +313,11 @@ public void Frame_CheckClient(int userid) {
 		int survivorThreshold = hCookiesEnabled.IntValue == 1 ? 4 : 0;
 		if(++survivors > survivorThreshold && g_iPendingCookieModel[client] > 0) {
 			//A model is set: Fetched from cookie
-			if(!cookieModelsSet) {
-				cookieModelsSet = true;
-				CreateTimer(0.2, Timer_SetAllCookieModels);
-			}else {
-				RequestFrame(Frame_SetPlayerModel, client);
+			CreateTimer(0.2, Timer_SetClientModel, client);
+			if(cookieModelTimer != null && !cookieModelsSet) {
+				delete cookieModelTimer;
+			}else{
+				cookieModelTimer = CreateTimer(20.0, Timer_SetAllCookieModels);
 			}
 		}else{
 			//Model was not set: Use least-used survivor.
@@ -324,12 +326,13 @@ public void Frame_CheckClient(int userid) {
 		}
 	}
 }
-public void Frame_SetPlayerModel(int client) {
+public Action Timer_SetClientModel(Handle timer, int client) {
 	SetEntityModel(client, survivor_models[g_iPendingCookieModel[client] - 1]);
 	SetEntProp(client, Prop_Send, "m_survivorCharacter", g_iPendingCookieModel[client] - 1);
 	g_iPendingCookieModel[client] = 0;
 }
 public Action Timer_SetAllCookieModels(Handle h) {
+	cookieModelsSet = true;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && g_iPendingCookieModel[i] && GetClientTeam(i) == 2) {
 			SetEntityModel(i, survivor_models[g_iPendingCookieModel[i] - 1]);

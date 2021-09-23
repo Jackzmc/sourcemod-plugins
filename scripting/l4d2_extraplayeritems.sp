@@ -408,7 +408,7 @@ public void OnMapEnd() {
 	}
 	ammoPacks.Clear();
 	playersLoadedIn = 0;
-	L4D2_RunScript("ExtraPlayerHUD  <- { Fields = { } }; HUDSetLayout(ModeHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
+	L4D2_RunScript("ExtraPlayerHUD  <- { Fields = { } }; HUDSetLayout(ExtraPlayerHud); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
 }
 
 public void Event_RoundFreezeEnd(Event event, const char[] name, bool dontBroadcast) {
@@ -604,7 +604,7 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 			return Plugin_Handled;
 		}
 
-		char classname[32];
+		static char classname[32];
 		int upgradeBits = GetEntProp(primaryWeapon, Prop_Send, "m_upgradeBitVec"), ammo;
 
 		//Get the new flag bits
@@ -623,10 +623,7 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 				if(currentAmmo > 10) ammo = 10;
 			}
 		}
-		//Reset after minute after first pickup
-		if(clients.Length == 0) {
-			CreateTimer(60.0, Timer_ResetAmmoPack, entity);
-		}
+		
 		if(GetEntProp(primaryWeapon, Prop_Send, "m_iClip1") < ammo) {
 			SetEntProp(primaryWeapon, Prop_Send, "m_iClip1", ammo);
 		}

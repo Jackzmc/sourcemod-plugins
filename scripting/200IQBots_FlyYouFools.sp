@@ -78,7 +78,7 @@ New logic overview:
 3. Find the closest tank
 4. Retreat if in close range (~300 units)
 */
-public Action BotControlTimerV2(Handle timer)
+Action BotControlTimerV2(Handle timer)
 {
 	//remove timer once tanks no longer exists/are all dead or finale escape vehicle arrived
 	if(bEscapeReady || iAliveTanks == 0) {
@@ -136,7 +136,7 @@ void resetPlugin() {
 }
 
 
-public void FindExistingTank() {
+void FindExistingTank() {
 	//Loop all valid clients, check if they a BOT and an infected. Check for a name that contains "Tank"
 	iAliveTanks = 0;
 	char name[16];

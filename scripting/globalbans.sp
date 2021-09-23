@@ -168,7 +168,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
                     else
                         KickClient(client, "You have been banned from this server.");
                     
-                    char query[64];
+                    char query[128];
                     Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = ?", steamid);
                     db.Query(DB_OnBanQuery, query);
                 }else{

@@ -1,6 +1,8 @@
 #pragma semicolon 1
 #pragma newdecls required
 
+#define CLOWN_MUSIC_THRESHOLD 30
+
 //#define DEBUG
 
 #define PLUGIN_VERSION "1.0"
@@ -29,10 +31,10 @@ static ConVar hPercentFallen;
 static ConVar hTotalZombies;
 static ConVar hZCommonLimit;
 
-static bool IsDoneLoading;
+static bool IsDoneLoading, clownMusicPlayed;
 
-static int iCurrentCommons;
-static int commonLimit;
+static int iCurrentCommons, commonLimit, clownCommonsSpawned;
+static int commonType[2048];
 
 #define COMMON_MODELS_COUNT 6
 static char INFECTED_MODELS[COMMON_MODELS_COUNT][] = {
@@ -58,6 +60,8 @@ enum CommonTypes {
 	Common_Worker = -1,
 };
 
+//TODO: Add back survivor zombie, inc z_fallen_max_count 
+
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
 	if(g_Game != Engine_Left4Dead2) {
@@ -77,7 +81,7 @@ public void OnPluginStart() {
 	hTotalZombies.AddChangeHook(CVAR_hTotalZombiesChanged);
 	CVAR_hTotalZombiesChanged(hTotalZombies, "0", "0");
 
-	HookEvent("infected_death", Event_InfectedDeath);
+	//HookEvent("infected_death", Event_InfectedDeath);
 
 	RegConsoleCmd("sm_population_list", Cmd_List, "Lists the current population percentages", FCVAR_NONE);
 	RegConsoleCmd("sm_populations", Cmd_List, "Lists the current population percentages", FCVAR_NONE);
@@ -96,6 +100,7 @@ public void OnMapStart() {
 public void OnMapEnd() {
 	IsDoneLoading = false;
 	iCurrentCommons = 0;
+	clownCommonsSpawned = 0;
 }
 
 public void CVAR_hTotalZombiesChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
@@ -108,6 +113,8 @@ public void CVAR_hTotalZombiesChanged(ConVar convar, const char[] oldValue, cons
 	}
 }
 
+//TODO: Setup music to play when % of clowns are in
+
 public void OnEntityCreated(int entity, const char[] classname) {
 	if (StrEqual(classname, "infected") && IsDoneLoading) {
 		SDKHook(entity, SDKHook_SpawnPost, Hook_SpawnPost);
@@ -117,18 +124,28 @@ public void OnEntityCreated(int entity, const char[] classname) {
 		if(GetRandomFloat() <= hPercentTotal.FloatValue) {
 			if(GetRandomFloat() <= hPercentClown.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Clown]);
+				commonType[entity] = 2;
 			}else if(GetRandomFloat() <= hPercentMud.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Mud]);
+				commonType[entity] = 3;
 			}else if(GetRandomFloat() <= hPercentCeda.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Ceda]);
+				commonType[entity] = 4;
 			}else if(GetRandomFloat() <= hPercentWorker.FloatValue) {
 				//worker has multiple models:
 				SetEntityModel(entity, WORKER_MODELS[GetRandomInt(0,2)]);
+				commonType[entity] = 5;
 			}else if(GetRandomFloat() <= hPercentRiot.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Riot]);
+				commonType[entity] = 6;
 			}else if(GetRandomFloat() <= hPercentJimmy.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Jimmy]);
+				commonType[entity] = 7;
+			}else{
+				commonType[entity] = 1;
 			}
+		}else{
+			commonType[entity] = 1;
 		}
 	}
 }
@@ -141,11 +158,33 @@ public Action Hook_SpawnPost(int entity) {
 		}
 	}
 	++iCurrentCommons;
+	if(commonType[entity] == 2) {
+		if(++clownCommonsSpawned > CLOWN_MUSIC_THRESHOLD && !clownMusicPlayed) {
+			clownMusicPlayed = true;
+			EmitSoundToAll("custom/clown.mp3");
+			//Play music
+		}
+	}
 	return Plugin_Continue;
 } 
 
-public Action Event_InfectedDeath(Event event, const char[] name, bool dontBroadcast) {
-	--iCurrentCommons;
+// public Action Event_InfectedDeath(Event event, const char[] name, bool dontBroadcast) {
+// 	--iCurrentCommons;
+// 	if(commonType[entity] == 2) {
+// 		--clownCommonsSpawned;
+// 	}
+// }
+
+public void OnEntityDestroyed(int entity) {
+	if(commonType[entity] > 0) {
+		commonType[entity] = 0;
+		if(commonType[entity] == 2) {
+			--clownCommonsSpawned;
+		}
+		if(--iCurrentCommons < CLOWN_MUSIC_THRESHOLD - 10) {
+			clownMusicPlayed = false;
+		}
+	}
 }
 
 public Action Cmd_List(int client, int args) {
