@@ -114,12 +114,12 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
 
     if(!silent) {
         if(IsTrollActive(victim, name)) {
-            ShowActivity(victim, "deactivated troll \"%s\" on %N. ", troll.name, victim);
+            ShowActivity(activator, "deactivated troll \"%s\" on %N. ", troll.name, victim);
         } else {
             if(modifier == TrollMod_Constant)
-				ShowActivity(victim, "activated constant troll \"%s\" for %N. ", troll.name, victim);
+				ShowActivity(activator, "activated constant troll \"%s\" for %N. ", troll.name, victim);
 			else
-				ShowActivity(victim, "activated troll \"%s\" for %N. ", troll.name, victim);
+				ShowActivity(activator, "activated troll \"%s\" for %N. ", troll.name, victim);
         }
     }
     if(modifier == TrollMod_Constant) {

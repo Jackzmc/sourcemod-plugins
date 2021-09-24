@@ -263,8 +263,12 @@ public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
 	char[][] modeListArr = new char[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
 	static char modeList[255];
-	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && ActiveTrolls[i] > 0) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) > 1 && ActiveTrolls[i] > 0) {
+			if(IsFakeClient(i)) {
+				int player = GetRealClient(i);
+				if(player != -1) i = player;
+			}
 			int modeCount = 0;
 			static char name[MAX_TROLL_NAME_LENGTH];
 			for(int j = 1; j <= MAX_TROLLS; j++) {
@@ -276,7 +280,10 @@ public Action Command_ListTheTrolls(int client, int args) {
 			}
 
 			ImplodeStrings(modeListArr, modeCount, ", ", modeList, sizeof(modeList));
-			ReplyToCommand(client, "%N | %s", i, modeList);
+			if(IsPlayerAlive(i))
+				ReplyToCommand(client, "%N | %s", i, modeList);
+			else
+				ReplyToCommand(client, "%N (Paused) | %s", i, modeList);
 			count++;
 		}
 	}
