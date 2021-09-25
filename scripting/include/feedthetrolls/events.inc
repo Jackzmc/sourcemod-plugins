@@ -12,6 +12,8 @@ public void OnMapStart() {
 	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 	CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	PrecacheSound("player/footsteps/clown/concrete1.wav");
+	PrecacheSound("weapons/ceda_jar/ceda_jar_explode.wav");
+	PrecacheSound("weapons/molotov/molotov_detonate_1.wav");
 	//CreateTimer(30.0, Timer_AutoPunishCheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 public void OnClientPutInServer(int client) {
@@ -219,7 +221,8 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		int words = ExplodeString(sArgs, " ", strings, 32, MAX_PHRASE_LENGTH);
 		for(int i = 0; i < words; i++) {
 			//TODO: Check for valid working
-			if((phrases = GetPhrasesArray(strings[i])) && phrases.Length > 0) {
+			phrases = GetPhrasesArray(strings[i]);
+			if(phrases != null && phrases.Length > 0) {
 				foundWord = true;
 				int c = phrases.GetString(GetRandomInt(0, phrases.Length - 1), strings[i], MAX_PHRASE_LENGTH);
 				PrintToServer("replacement: %s (%d)", strings[i], c);
@@ -367,5 +370,49 @@ public Action Event_WitchVictimSet(Event event, const char[] name, bool dontBroa
 		CreateDataTimer(0.2, Timer_NextWitchSet, pack);
 		pack.WriteCell(GetClientUserId(closestClient));
 		pack.WriteCell(witch);
+	}
+}
+
+public void OnEntityCreated(int entity, const char[] classname) {
+	if(IsValidEntity(entity) && StrContains(classname, "_projectile", true) > -1 ) {
+		RequestFrame(EntityCreateCallback, entity);
+	}
+}
+void EntityCreateCallback(int entity) {
+	if(!HasEntProp(entity, Prop_Send, "m_hOwnerEntity") || !IsValidEntity(entity)) return;
+	static char class[16];
+
+	GetEntityClassname(entity, class, sizeof(class));
+	int entOwner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
+	if(entOwner > 0 && entOwner <= MaxClients && IsTrollActive(entOwner, "BadThrow")) {
+		static float pos[3];
+		GetClientEyePosition(entOwner, pos);
+		if(StrContains(class, "vomitjar", true) > -1) {
+			AcceptEntityInput(entity, "Kill");
+			if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() > hBadThrowHitSelf.FloatValue) {
+				L4D_CTerrorPlayer_OnVomitedUpon(entOwner, entOwner);
+				EmitSoundToAll("weapons/ceda_jar/ceda_jar_explode.wav", entOwner);
+				FindClosestClient(entOwner, false, pos);
+			}
+			SpawnItem("vomitjar", pos);
+		} else if(StrContains(class, "molotov", true) > -1) {
+			// Burn them if no one near :)
+			if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() > hBadThrowHitSelf.FloatValue) {
+				GetClientAbsOrigin(entOwner, pos);
+				if(IsAnyPlayerNear(entOwner, 500.0)) {
+					AcceptEntityInput(entity, "Kill");
+					EmitSoundToAll("weapons/molotov/molotov_detonate_1.wav", entOwner);
+				} else { // or delete if there is
+					TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
+				}
+			} else {
+				SpawnItem("molotov", pos);
+				AcceptEntityInput(entity, "Kill");
+			}
+		} else if(StrContains(class, "pipe_bomb", true) > -1) {
+			if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() > hBadThrowHitSelf.FloatValue)
+				TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
+			SpawnItem("pipe_bomb", pos);
+		}
 	}
 }

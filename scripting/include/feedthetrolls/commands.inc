@@ -1,7 +1,7 @@
 public Action Command_InstaSpecial(int client, int args) {
 	if(args < 1) {
 		Menu menu = new Menu(Insta_PlayerHandler);
-		menu.SetTitle("Choose a player");
+		menu.SetTitle("InstaSpecial: Choose a player");
 		for(int i = 1; i < MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
 				static char userid[8], display[16];
@@ -59,7 +59,7 @@ public Action Command_InstaSpecial(int client, int args) {
 public Action Command_InstaSpecialFace(int client, int args) {
 	if(args < 1) {
 		Menu menu = new Menu(Insta_PlayerHandler);
-		menu.SetTitle("Choose a player");
+		menu.SetTitle("Inface: Choose a player");
 		for(int i = 1; i < MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
 				static char userid[8], display[16];
@@ -201,7 +201,7 @@ public Action Command_ResetUser(int client, int args) {
 public Action Command_ApplyUser(int client, int args) {
 	if(args < 2) {
 		Menu menu = new Menu(ChoosePlayerHandler);
-		menu.SetTitle("Choose a player");
+		menu.SetTitle("Choose a player to troll");
 		for(int i = 1; i < MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
 				static char userid[8], display[16];

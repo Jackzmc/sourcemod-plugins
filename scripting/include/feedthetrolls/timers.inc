@@ -42,11 +42,14 @@ public Action Timer_Main(Handle timer) {
 	return Plugin_Continue;
 }
 
-public Action Timer_GivePistol(Handle timer, int client) {
-	int flags = GetCommandFlags("give");
-	SetCommandFlags("give", flags & ~FCVAR_CHEAT);
-	FakeClientCommand(client, "give pistol");
-	SetCommandFlags("give", flags|FCVAR_CHEAT);
+public Action Timer_GivePistol(Handle timer, int user) {
+	int client = GetClientOfUserId(user);
+	if(client > 0) {
+		int flags = GetCommandFlags("give");
+		SetCommandFlags("give", flags & ~FCVAR_CHEAT);
+		FakeClientCommand(client, "give pistol");
+		SetCommandFlags("give", flags);
+	}
 }
 
 public Action Timer_ThrowWeapon(Handle timer, Handle pack) {
@@ -67,7 +70,7 @@ public Action Timer_ThrowWeapon(Handle timer, Handle pack) {
 				GetEdictClassname(wpn, name, sizeof(name));
 				if(!StrEqual(name, "weapon_pistol", false)) {
 					SDKHooks_DropWeapon(victim, wpn, dest);
-					CreateTimer(0.2, Timer_GivePistol, victim);
+					CreateTimer(0.2, Timer_GivePistol, GetClientUserId(victim));
 				}
 			}else 
 				SDKHooks_DropWeapon(victim, wpn, dest);

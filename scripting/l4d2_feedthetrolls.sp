@@ -67,6 +67,7 @@ public void OnPluginStart() {
 	hMagnetTargetMode   = CreateConVar("sm_ftt_magnet_targetting", "1", "How does the specials target players. Add bits together\n0= Target until Dead, 1=Specials ignore incapped, 2=Tank ignores incapped");
 	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.5", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
 	hWitchTargetIncapp  = CreateConVar("sm_ftt_witch_target_incapped", "1", "Should the witch target witch magnet victims who are incapped?\n 0 = No, 1 = Yes", FCVAR_NONE, true, 0.0, true, 1.0);
+	hBadThrowHitSelf    = CreateConVar("sm_ftt_badthrow_fail_chance", "1", "The % chance that on a throw, they will instead hit themselves. 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	RegAdminCmd("sm_ftl", Command_ListTheTrolls, ADMFLAG_KICK, "Lists all the trolls currently ingame.");
 	RegAdminCmd("sm_ftm", Command_ListModes, ADMFLAG_KICK, "Lists all the troll modes and their description");
@@ -94,7 +95,6 @@ public void OnPluginStart() {
 		HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 	}
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 // CVAR CHANGES
 ///////////////////////////////////////////////////////////////////////////////
@@ -201,7 +201,7 @@ stock bool SetPrimaryReserveAmmo(int client, int amount) {
 }
 
 stock void SendChatToAll(int client, const char[] message) {
-	char nameBuf[MAX_NAME_LENGTH];
+	static char nameBuf[MAX_NAME_LENGTH];
 	
 	for (int i = 1; i <= MaxClients; i++) {
 		if (IsClientInGame(i) && IsFakeClient(i)) {
@@ -213,7 +213,7 @@ stock void SendChatToAll(int client, const char[] message) {
 
 stock float GetTempHealth(int client) {
 	//First filter -> Must be a valid client, successfully in-game and not an spectator (The dont have health).
-	if(!client || !IsValidEntity(client) || !IsClientInGame(client)|| !IsPlayerAlive(client) || IsClientObserver(client)) {
+	if(client <= 0 || !IsValidEntity(client) || !IsClientInGame(client)|| !IsPlayerAlive(client) || IsClientObserver(client)) {
 		return -1.0;
 	}
 	

@@ -116,6 +116,116 @@ ArrayList GetPhrasesArray(const char[] key) {
 		keyLower[i] = CharToLower(key[i]);
 	}
 	ArrayList phrases;
-	REPLACEMENT_PHRASES.GetValue(keyLower, phrases);
-	return phrases;
+	if(REPLACEMENT_PHRASES.GetValue(keyLower, phrases)) {
+		return phrases;
+	} else {
+		return null;
+	}
 }
+
+
+int FindClosestClientAdminPriority(int source, bool ignoreBots, float pos[3]) {
+	int c = FindClosestAdmin(source, ignoreBots, pos);
+	if(c == -1) return FindClosestClient(source, ignoreBots, pos);
+	else return c;
+}
+
+int FindClosestClient(int source, bool ignoreBots, float pos[3]) {
+	int closest = -1;
+	float minDist = -1.0;
+	static float pos1[3];
+	static float pos2[3];
+	GetClientAbsOrigin(source, pos1);
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && (!ignoreBots || !IsFakeClient(i)) && i != source) {
+			GetClientAbsOrigin(i, pos2);
+			float dist = GetVectorDistance(pos1, pos2);
+			if(minDist == -1.0 || dist <= minDist) {
+				closest = i;
+				minDist = dist;
+			}
+		}
+	}
+	GetClientEyePosition(closest, pos);
+	return closest;
+}
+
+int FindClosestAdmin(int source, bool ignoreBots, float pos[3]) {
+	int closest = -1;
+	float minDist = -1.0;
+	static float pos1[3];
+	static float pos2[3];
+	GetClientAbsOrigin(source, pos);
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && (|ignoreBots || !IsFakeClient(i)) && GetUserAdmin(i) != INVALID_ADMIN_ID && i != source) {
+			GetClientAbsOrigin(i, pos2);
+			float dist = GetVectorDistance(pos1, pos2);
+			if(minDist == -1.0 || dist <= minDist) {
+				closest = i;
+				minDist = dist;
+			}
+		}
+	}
+	GetClientEyePosition(closest, pos);
+	return closest;
+}
+
+int SpawnItem(const char[] entityName, float pos[3], float ang[3] = NULL_VECTOR) {
+	static char classname[32];
+	Format(classname, sizeof(classname), "weapon_%s", entityName);
+	int spawner = CreateEntityByName(classname);
+	if(spawner == -1) return -1;
+	DispatchKeyValue(spawner, "solid", "6");
+	// DispatchKeyValue(entity_weapon, "model", g_bLeft4Dead2 ? g_sWeaponModels2[model] : g_sWeaponModels[model]);
+	DispatchKeyValue(spawner, "rendermode", "3");
+	DispatchKeyValue(spawner, "disableshadows", "1");
+	TeleportEntity(spawner, pos, ang, NULL_VECTOR);
+	DispatchSpawn(spawner);
+	TeleportEntity(spawner, pos, ang, NULL_VECTOR);
+	return spawner;
+}
+
+bool IsAnyPlayerNear(int source, float range) {
+	static float pos1[3];
+	static float pos2[3];
+	GetClientAbsOrigin(source, pos1);
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && i != source) {
+			GetClientAbsOrigin(i, pos2);
+			float dist = GetVectorDistance(pos1, pos2);
+			PrintToChatAll("%f <= %f: %b", dist, range, (dist <= range));
+			if(dist <= range) return true;
+		}
+	}
+	return false;
+}
+
+void ThrowItemToClosestPlayer(int victim, int slot) {
+	int wpn = GetPlayerWeaponSlot(victim, slot);
+	if(slot != 1 || DoesClientHaveMelee(victim)) {
+		static float pos[3];
+		int clients[4];
+		GetClientAbsOrigin(victim, pos);
+		int clientCount = GetClientsInRange(pos, RangeType_Visibility, clients, sizeof(clients));
+		for(int i = 0; i < clientCount; i++) {
+			if(clients[i] != victim) {
+				static float targPos[3];
+				GetClientAbsOrigin(clients[i], targPos);
+				SDKHooks_DropWeapon(victim, wpn, targPos);
+				if(slot == 1)
+					CreateTimer(0.2, Timer_GivePistol, GetClientUserId(victim));
+				return;
+			}
+		}
+		// No client found, drop on ground:
+		SDKHooks_DropWeapon(victim, wpn, NULL_VECTOR);
+	}
+}
+
+void DropItem(int victim, int slot) {
+	int wpn = GetPlayerWeaponSlot(victim, slot);
+	if(slot != 1 || DoesClientHaveMelee(victim)) {
+		SDKHooks_DropWeapon(victim, wpn, NULL_VECTOR);
+	}
+}
+

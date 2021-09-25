@@ -1,6 +1,6 @@
 
 #define MAX_TROLL_NAME_LENGTH 32
-#define MAX_TROLLS 25
+#define MAX_TROLLS 28
 //#define DEBUG 1
 
 enum trollModifier {
@@ -11,14 +11,17 @@ enum trollModifier {
 
 
 enum struct Troll {
-    char name[32];
+    char name[MAX_TROLL_NAME_LENGTH];
     char description[128];
 
     bool runsOnce;
     int flags;
+    int categoryID;
 
-    void GetID(char[] name, int length) {
-        strcopy(name, length, this.name);
+    char _id[MAX_TROLL_NAME_LENGTH];
+
+    void GetID(char[] name) {
+        strcopy(name, MAX_TROLL_NAME_LENGTH, this.name);
         ReplaceString(name, MAX_TROLL_NAME_LENGTH, " ", "", false);
     }
 
@@ -32,6 +35,10 @@ enum struct Troll {
         if(this.flags == view_as<int>(TrollMod_Instant)) return TrollMod_Instant;
         else if(this.flags == view_as<int>(TrollMod_Constant)) return TrollMod_Constant;
         else return TrollMod_Invalid;
+    }
+
+    void Activate(int victim, int activator, trollModifier modifier, bool silent = false) {
+        ApplyTroll(victim, this._id, activator, modifier, silent);
     }
 }
 
@@ -50,7 +57,8 @@ void ResetClient(int victim, bool wipe = true) {
 	if(wpn > -1)
 		SDKUnhook(wpn, SDKHook_Reload, Event_WeaponReload);
 }
-
+ArrayList categories;
+static int categoryID = 0;
 int SetupTroll(const char[] name, const char description[128], int flags) {
     if(flags == 0) {
         ThrowError("Troll \"%s\" has no flags defined.", name);
@@ -59,11 +67,13 @@ int SetupTroll(const char[] name, const char description[128], int flags) {
     static int i = 0;
     strcopy(Trolls[i].name, MAX_TROLL_NAME_LENGTH, name);
     strcopy(Trolls[i].description, 128, description);
+    Trolls[i].categoryID = categoryID;
     Trolls[i].flags = flags;
     static char key[MAX_TROLL_NAME_LENGTH];
     strcopy(key, MAX_TROLL_NAME_LENGTH, name);
     ReplaceString(key, MAX_TROLL_NAME_LENGTH, " ", "", false);
     strcopy(trollIds[i], MAX_TROLL_NAME_LENGTH, key); 
+    strcopy(Trolls[i]._id, MAX_TROLL_NAME_LENGTH, key); 
     trollKV.SetValue(key, i);
     return i++;
 }
@@ -110,7 +120,9 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
 		victim = FindIdlePlayerBot(victim);
 	}
 
-    ApplyAffect(victim, name, activator, modifier);
+    if(!ApplyAffect(victim, name, activator, modifier)) {
+        return;
+    }
 
     if(!silent) {
         if(IsTrollActive(victim, name)) {
@@ -127,11 +139,11 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
     }
 }
 
-void ApplyAffect(int victim, const char[] name, int activator, trollModifier modifier) {
+bool ApplyAffect(int victim, const char[] name, int activator, trollModifier modifier) {
     if(StrEqual(name, "ResetTroll")) {
         ShowActivity(activator, "reset troll effects for %N. ", victim);
         ActiveTrolls[victim] = 0;
-        return;
+        return false;
     } else if(StrEqual(name, "SlowSpeed"))
         SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 0.8);
     else if(StrEqual(name, "HigherGravity"))
@@ -151,26 +163,6 @@ void ApplyAffect(int victim, const char[] name, int activator, trollModifier mod
         DisableTroll(victim, "UziRules");
         DisableTroll(victim, "PrimaryDisable");
         SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
-    } else if(StrEqual(name, "Clumsy")) {
-        int wpn = GetClientSecondaryWeapon(victim);
-        bool hasMelee = DoesClientHaveMelee(victim);
-        if(hasMelee) {
-            float pos[3];
-            int clients[4];
-            GetClientAbsOrigin(victim, pos);
-            int clientCount = GetClientsInRange(pos, RangeType_Visibility, clients, sizeof(clients));
-            for(int i = 0; i < clientCount; i++) {
-                if(clients[i] != victim) {
-                    float targPos[3];
-                    GetClientAbsOrigin(clients[i], targPos);
-                    SDKHooks_DropWeapon(victim, wpn, targPos);
-                    // g_iTrollUsers[victim] = mode;
-                    CreateTimer(0.2, Timer_GivePistol);
-                    return;
-                }
-            }
-            SDKHooks_DropWeapon(victim, wpn);
-        }
     } else if(StrEqual(name, "CameTooEarly")) {
         ReplyToCommand(activator, "This troll mode is not implemented.");
     } else if(StrEqual(name, "KillMeSoftly")) {
@@ -181,10 +173,10 @@ void ApplyAffect(int victim, const char[] name, int activator, trollModifier mod
             g_bPendingItemGive[victim] = true;
         }else{
             ReplyToCommand(activator, "User does not have pills or adrenaline");
-            return;
+            return false;
         }
         //TODO: Implement TrollMod_Constant
-        return;
+        return false;
     } else if(StrEqual(name, "ThrowItAll")) {
         if(modifier == TrollMod_Instant)
             ThrowAllItems(victim);
@@ -198,7 +190,7 @@ void ApplyAffect(int victim, const char[] name, int activator, trollModifier mod
             
         }else{
             ReplyToCommand(activator, "Invalid modifier for mode.");
-            return;
+            return false;
         }
     } else if(StrEqual(name, "GunJam")) {
         int wpn = GetClientWeaponEntIndex(victim, 0);
@@ -208,12 +200,19 @@ void ApplyAffect(int victim, const char[] name, int activator, trollModifier mod
             ReplyToCommand(activator, "Victim does not have a primary weapon.");
     } else if(StrEqual(name, "VomitPlayer"))
         L4D_CTerrorPlayer_OnVomitedUpon(victim, victim);
-    else {
+    else if(StrEqual(name, "InfaceSpecial")) {
+        FakeClientCommand(victim, "sm_inface");
+        return false;
+    } else if(StrEqual(name, "InstaSpecial")) {
+        FakeClientCommand(victim, "sm_insta");
+        return false;
+    } else {
         #if defined DEBUG
         PrintToServer("[FTT] Possibly invalid troll, no action: %s", name);
         ReplyToCommand(activator, "[FTT/Debug] If nothing occurs, this troll possibly was not implemented correctly. ");
         #endif
     }
+    return true;
 }
 
 bool IsTrollActive(int client, const char[] troll) {
@@ -238,34 +237,53 @@ void DisableTroll(int client, const char[] troll) {
     } 
 }
 
+void SetCategory(const char[] newCat) {
+    categoryID = categories.PushString(newCat);
+}
+void GetCategory(int category, char[] buffer, int size) {
+    categories.GetString(category, buffer, size);
+} 
 
 void SetupTrolls() {
     trollKV = new StringMap();
+    categories = new ArrayList(ByteCountToCells(16));
     SetupTroll("Reset Troll", "Resets the user, removes all troll effects", TrollMod_Instant);
+
+    SetCategory("Magnet / Horde");
     SetupTroll("Special Magnet", "Attracts ALL specials to any alive target with this troll enabled", TrollMod_Constant);
     SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant);
     SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
+    SetupTroll("Swarm", "Swarms a player with zombies. Requires swarm plugin", TrollMod_Instant | TrollMod_Constant);
     SetupTroll("Vomit Player", "Shortcut to sm_vomitplayer. vomits the player.", TrollMod_Instant);
-    SetupTroll("Throw It All", "Player throws all their items at nearby player, periodically", TrollMod_Instant | TrollMod_Constant);
-    SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
-    SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
-    SetupTroll("Swarm", "Swarms a player with zombies. Requires swarm plugin", TrollMod_Instant);
-    SetupTroll("UziRules", "Picking up a weapon gives them a UZI instead", TrollMod_Constant);
-    SetupTroll("Slow Speed", "Sets player speed to 0.8x of normal speed", TrollMod_Constant);
-    SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
-    SetupTroll("Half Primary Ammo", "Cuts their primary reserve ammo in half", TrollMod_Instant);
-    SetupTroll("Primary Disable", "Player cannot pickup any weapons, only melee/pistols", TrollMod_Constant);
-    SetupTroll("Clusmy", "Player drops axe periodically or on demand", TrollMod_Instant | TrollMod_Constant);
-    SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Instant);
-    SetupTroll("KillMeSoftly", "Make player eat or waste pills whenever possible", TrollMod_Instant | TrollMod_Constant);
-    SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
+    SetupTroll("Inface Special", "Shortcut to sm_inface", TrollMod_Instant);
+    SetupTroll("Insta Special", "Shortcut to sm_insta", TrollMod_Instant);
+
+    SetCategory("Items");
+    SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
+    SetupTroll("Bad Throw", "Player drops throwables on throw, and biles/molotovs themselves", TrollMod_Constant);
     SetupTroll("No Pickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", TrollMod_Constant);
+    SetupTroll("UziRules", "Picking up a weapon gives them a UZI instead", TrollMod_Constant);
+    SetupTroll("Primary Disable", "Player cannot pickup any weapons, only melee/pistols", TrollMod_Constant);
+    SetupTroll("Half Primary Ammo", "Cuts their primary reserve ammo in half", TrollMod_Instant);
+    
+    SetCategory("Chat");
+    SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Instant);
+    SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
+    SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
     SetupTroll("Honk", "Honk", TrollMod_Constant);
-    SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
+    SetupTroll("Meow", "Makes the player meow", TrollMod_Constant);
+
+    SetCategory("Health");
     SetupTroll("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant);
     SetupTroll("Temp Health Quick Drain", "Makes a player's temporarily health drain very quickly", TrollMod_Constant);
     SetupTroll("Slow Drain", "Will make the player slowly lose health over time", TrollMod_Constant);
+    SetupTroll("KillMeSoftly", "Make player eat or waste pills whenever possible", TrollMod_Instant | TrollMod_Constant);
+
+    SetCategory("Misc");
+    SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
+    SetupTroll("Slow Speed", "Sets player speed to 0.8x of normal speed", TrollMod_Constant);
+    SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
+    SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
     SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
-    SetupTroll("Meow", "Makes the player meow", TrollMod_Constant);
     //INFO: UP MAX_TROLLS when adding new trolls!
 }

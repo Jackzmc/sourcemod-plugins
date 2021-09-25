@@ -21,6 +21,7 @@ Handle g_hWitchAttack;
 Handle hThrowTimer;
 //CONVARS
 ConVar hVictimsList, hThrowItemInterval, hAutoPunish, hMagnetChance, hShoveFailChance, hAutoPunishExpire, hMagnetTargetMode, hWitchTargetIncapp;
+ConVar hBadThrowHitSelf;
 //BOOLS
 bool lateLoaded; //Is plugin late loaded
 bool bChooseVictimAvailable = false; //For charge player feature, is it available?
@@ -28,7 +29,7 @@ bool bChooseVictimAvailable = false; //For charge player feature, is it availabl
 int g_iAmmoTable; //Loads the ammo table to get ammo amounts
 int gChargerVictim = -1; //For charge player feature
 
-float ZERO_VECTOR[3] = {0.0, 0.0, 0.0};
+
 
 #include <feedthetrolls/base>
 #include <feedthetrolls/specials>
