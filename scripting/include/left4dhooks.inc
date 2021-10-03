@@ -93,6 +93,9 @@ public void __pl_l4dh_SetNTVOptional()
 	MarkNativeAsOptional("L4D2_IsReachable");
 	MarkNativeAsOptional("L4D_HasPlayerControlledZombies");
 	MarkNativeAsOptional("L4D_PipeBombPrj");
+	MarkNativeAsOptional("L4D_MolotovPrj");
+	MarkNativeAsOptional("L4D2_VomitJarPrj");
+	MarkNativeAsOptional("L4D2_GrenadeLauncherPrj");
 
 	MarkNativeAsOptional("L4D2_ExecVScriptCode");
 	MarkNativeAsOptional("L4D2_GetVScriptOutput");
@@ -301,6 +304,9 @@ public void __pl_l4dh_SetNTVOptional()
 
 
 
+// ====================================================================================================
+// VARIOUS ENUMS
+// ====================================================================================================
 // For the game mode native and forward.
 enum
 {
@@ -311,6 +317,23 @@ enum
 	GAMEMODE_SCAVENGE	= 8
 }
 
+// Provided by "BHaType":
+// For the "L4D_State_Transition" native.
+// X -> Y (means X state will become Y state on next frame or some seconds later)
+enum
+{
+    STATE_ACTIVE = 0,
+    STATE_WELCOME,				// -> STATE_PICKING_TEAM
+    STATE_PICKING_TEAM,
+    STATE_PICKINGCLASS,			// -> STATE_ACTIVE
+    STATE_DEATH_ANIM,			// -> STATE_DEATH_WAIT_FOR_KEY
+    STATE_DEATH_WAIT_FOR_KEY,	// -> STATE_OBSERVER_MODE
+    STATE_OBSERVER_MODE,
+    STATE_WAITING_FOR_RESCUE,
+    STATE_GHOST,
+    STATE_INTRO_CAMERA
+}  
+
 
 
 
@@ -320,6 +343,7 @@ enum
 // ====================================================================================================
 // To find list: Search for "ACT_RESET" for example, in the server binary. XRef to the "ActivityList_RegisterSharedActivities" function. View in HexRays to see the full list of constants and values.
 // These constants can be used in a plugins source code instead of hard coding the sequence number when working with the animation pre-hook.
+// Only for Survivors, not Special Infected.
 enum
 {
 	L4D1_ACT_RESET,
@@ -5128,7 +5152,6 @@ native int L4D_Dissolve(int entity);
  * @brief Removes the boomer vomit effect from a player.
  *
  * @param client	Client id of the player to remove the effect from
- * @param vecAng	Angular velocity vector, director to spin the projectile
  *
  * @noreturn
  */
@@ -5270,6 +5293,41 @@ native bool L4D_HasPlayerControlledZombies();
  * @return			Entity index of the projectile
  */
 native int L4D_PipeBombPrj(int client, const float vecPos[3], const float vecAng[3]);
+
+/**
+ * @brief Creates an activated Molotov projectile.
+ *
+ * @param client	Client id to attribute the projectile to for damage credit
+ * @param vecPos	Vector coordinate of the projectile on creation
+ * @param vecAng	Vector velocity and direction of the projectile
+ *
+ * @return			Entity index of the projectile
+ */
+native int L4D_MolotovPrj(int client, const float vecPos[3], const float vecAng[3]);
+
+/**
+ * @brief Creates an activated VomitJar projectile.
+ *
+ * @param client	Client id to attribute the projectile to for damage credit
+ * @param vecPos	Vector coordinate of the projectile on creation
+ * @param vecAng	Vector velocity and direction of the projectile
+ *
+ * @return			Entity index of the projectile
+ */
+// L4D2 Only.
+native int L4D2_VomitJarPrj(int client, const float vecPos[3], const float vecAng[3]);
+
+/**
+ * @brief Creates an activated Grenade Launcher projectile.
+ *
+ * @param client	Client id to attribute the projectile to for damage credit
+ * @param vecPos	Vector coordinate of the projectile on creation
+ * @param vecAng	Vector velocity and direction of the projectile
+ *
+ * @return			Entity index of the projectile
+ */
+// L4D2 Only.
+native int L4D2_GrenadeLauncherPrj(int client, const float vecPos[3], const float vecAng[3]);
 
 /**
  * @brief Creates a Spitter goo projectile.

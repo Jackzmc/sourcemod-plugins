@@ -29,9 +29,8 @@ bool bChooseVictimAvailable = false; //For charge player feature, is it availabl
 int g_iAmmoTable; //Loads the ammo table to get ammo amounts
 int gChargerVictim = -1; //For charge player feature
 
-
-
 #include <feedthetrolls/base>
+#include <feedthetrolls/trolls>
 #include <feedthetrolls/specials>
 #include <feedthetrolls/misc>
 #include <feedthetrolls/commands>

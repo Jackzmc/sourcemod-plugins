@@ -40,7 +40,7 @@ public void OnPluginStart()
 	SwarmRadius = hSwarmDefaultRange.IntValue;
 
 	LoadTranslations("common.phrases");
-	RegAdminCmd("sm_swarm", Cmd_Swarm, ADMFLAG_ROOT, "sm_swarm [player] [range] - Zombies swarm player (or random if not set)");
+	RegAdminCmd("sm_swarm", Cmd_Swarm, ADMFLAG_CHEATS, "sm_swarm [player] [range] - Zombies swarm player (or random if not set)");
 	RegAdminCmd("sm_rush", Cmd_Swarm, ADMFLAG_ROOT, "sm_swarm [player] [range] - Zombies swarm player (or random if not set)");
 	RegAdminCmd("sm_rushmenu", Cmd_SwarmMenu, ADMFLAG_ROOT, "sm_swarmmenu - Open swarm menu");
 	RegAdminCmd("sm_rmenu", Cmd_SwarmMenu, ADMFLAG_ROOT, "sm_swarmmenu - Open swarm menu");

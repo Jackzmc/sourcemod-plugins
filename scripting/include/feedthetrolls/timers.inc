@@ -1,7 +1,8 @@
+
 public Action Timer_ThrowTimer(Handle timer) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && IsTrollActive(i, "ThrowItAll")) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && IsTrollActive(i, "Throw It All")) {
 			ThrowAllItems(i);
 			count++;
 		}
@@ -13,14 +14,14 @@ public Action Timer_Main(Handle timer) {
 	static int loop;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i)) {
-			if(IsTrollActive(i, "SlowDrain")) {
+			if(IsTrollActive(i, "Slow Drain")) {
 				if(loop % 4 == 0) {
 					int hp = GetClientHealth(i);
 					if(hp > 50) {
 						SetEntProp(i, Prop_Send, "m_iHealth", hp - 1); 
 					}
 				}
-			}else if(IsTrollActive(i, "TempHealthQuickDrain")) {
+			}else if(IsTrollActive(i, "Temp Health Quick Drain")) {
 				if(loop % 2 == 0) {
 					float bufferTime = GetEntPropFloat(i, Prop_Send, "m_healthBufferTime");
 					float buffer = GetEntPropFloat(i, Prop_Send, "m_healthBuffer");
@@ -82,9 +83,9 @@ public Action Timer_ResetAutoPunish(Handle timer, int user) {
 	int client = GetClientOfUserId(user);
 	if(client) {
 		if(hAutoPunish.IntValue & 2 == 2) 
-			DisableTroll(client, "SpecialMagnet");
+			DisableTroll(client, "Special Magnet");
 		if(hAutoPunish.IntValue & 1 == 1) 
-			DisableTroll(client, "TankMagnet");
+			DisableTroll(client, "Tank Magnet");
 	}
 }
 
@@ -93,4 +94,10 @@ public Action Timer_NextWitchSet(Handle timer, DataPack pack) {
 	int client = GetClientOfUserId(pack.ReadCell());
 	int witch = pack.ReadCell();
 	SetWitchTarget(witch, client);
+}
+
+public Action Timer_KickBot(Handle timer, int client) {
+	if(IsClientInGame(client) && (!IsClientInKickQueue(client))) {
+		if(IsFakeClient(client)) KickClient(client);
+	}
 }

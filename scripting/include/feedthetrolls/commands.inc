@@ -41,15 +41,22 @@ public Action Command_InstaSpecial(int client, int args) {
 			ReplyToCommand(client, "Unknown special \"%s\"", arg2);
 			return Plugin_Handled;
 		}
+		int successes = 0;
 		for (int i = 0; i < target_count; i++) {
 			int target = target_list[i];
 			if(GetClientTeam(target) == 2) {
-				SpawnSpecialNear(target, specialType);
+				if(SpawnSpecialNear(target, specialType)) {
+					LogAction(client, target, "\"%L\" spawned Insta-%s™ nearby \"%L\"", client, arg2, target);
+					successes++;
+				} else {
+					ReplyToCommand(client, "[FTT] Could not spawn %s near %s", arg2, target_name);
+				}
 			}else{
 				ReplyToTargetError(client, target_count);
 			}
 		}
-		ShowActivity(client, "spawned Insta-%s™ near %s", arg2, target_name);
+		if(successes > 0)
+			ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ near %s", arg2, target_name);
 	}
 
 
@@ -99,15 +106,22 @@ public Action Command_InstaSpecialFace(int client, int args) {
 			ReplyToCommand(client, "Unknown special \"%s\"", arg2);
 			return Plugin_Handled;
 		}
+		int successes = 0;
 		for (int i = 0; i < target_count; i++) {
 			int target = target_list[i];
 			if(GetClientTeam(target) == 2) {
-				SpawnSpecialInFace(target, specialType);
+				if(SpawnSpecialInFace(target, specialType)) {
+					LogAction(client, target, "\"%L\" spawned Insta-%s™ at player \"%L\"", client, arg2, target);
+					successes++;
+				} else {
+					ReplyToCommand(client, "[FTT] Could not spawn %s on %s", arg2, target_name);
+				}
 			}else{
 				ReplyToTargetError(client, target_count);
 			}
 		}
-		ShowActivity(client, "spawned Insta-%s™ on %s", arg2, target_name);
+		if(successes > 0)
+			ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ on %s", arg2, target_name);
 	}
 	return Plugin_Handled;
 }
@@ -143,7 +157,8 @@ public Action Command_WitchAttack(int client, int args) {
 			while ((witch = FindEntityByClassname(witch, "witch")) != INVALID_ENT_REFERENCE) {
 				SetWitchTarget(witch, target);
 
-				ShowActivity(client, "all witches target %s", target_name);
+				ShowActivityEx(client, "[FTT] ", "set all witches to target %s", target_name);
+				LogAction(client, target, "\"%L\" set all witches to attack \"%L\"", client, target);
 			}
 		}else{
 			ReplyToTargetError(client, target_count);
@@ -157,7 +172,8 @@ public Action Command_FeedTheCrescendoTroll(int client, int args) {
 	if(lastCrescendoUser > -1) {
 		ActivateAutoPunish(lastCrescendoUser);
 		ReplyToCommand(client, "Activated auto punish on %N", lastCrescendoUser);
-		ShowActivity(client, "activated autopunish for crescendo activator %N",lastCrescendoUser);
+		LogAction(client, lastCrescendoUser, "\"%L\" autopunished crescendo rusher \"%L\"", client, lastCrescendoUser);
+		ShowActivityEx(client, "[FTT] ", "activated autopunish for crescendo activator %N",lastCrescendoUser);
 	}else{
 		ReplyToCommand(client, "No player could be found to autopunish.");
 	}
@@ -191,7 +207,8 @@ public Action Command_ResetUser(int client, int args) {
 		for (int i = 0; i < target_count; i++) {
 			if(ActiveTrolls[target_list[i]] > 0) {
 				ResetClient(target_list[i], true);
-				ShowActivity(client, "reset troll effects on \"%N\". ", target_list[i]);
+				LogAction(client, target_list[i], "\"%L\" reset all troll effects for \"%L\"", client, target_list[i]);
+				ShowActivityEx(client, "[FTT] ", "reset troll effects for \"%N\". ", target_list[i]);
 			}
 		}
 	}
@@ -199,52 +216,30 @@ public Action Command_ResetUser(int client, int args) {
 }
 
 public Action Command_ApplyUser(int client, int args) {
-	if(args < 2) {
-		Menu menu = new Menu(ChoosePlayerHandler);
-		menu.SetTitle("Choose a player to troll");
-		for(int i = 1; i < MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
-				static char userid[8], display[16];
-				Format(userid, sizeof(userid), "%d", GetClientUserId(i));
-				GetClientName(i, display, sizeof(display));
-				menu.AddItem(userid, display);
-			}
-		}
-		menu.ExitButton = true;
-		menu.Display(client, 0);
+	if(args < 1) {
+		ShowTrollMenu(client);
 	}else{
-		char arg1[32], arg2[32], arg3[8];
+		char arg1[32];
 		GetCmdArg(1, arg1, sizeof(arg1));
-		GetCmdArg(2, arg2, sizeof(arg2));
-		GetCmdArg(3, arg3, sizeof(arg3));
 
-		bool silent = StrEqual(arg3, "silent") || StrEqual(arg3, "quiet") || StrEqual(arg3, "mute");
-		static char name[MAX_TROLL_NAME_LENGTH];
-		if(!GetTrollID(StringToInt(arg2), name)) {
-			ReplyToCommand(client, "Not a valid mode. Must be greater than 0. Usage: sm_fta [player] [mode]. Use sm_ftr <player> to reset.");
-		}else{
-			char target_name[MAX_TARGET_LENGTH];
-			int target_list[MAXPLAYERS], target_count;
-			bool tn_is_ml;
-			if ((target_count = ProcessTargetString(
-				arg1,
-				client,
-				target_list,
-				MAXPLAYERS,
-				0, 
-				target_name,
-				sizeof(target_name),
-				tn_is_ml)) <= 0
-			) {
-				/* This function replies to the admin with a failure message */
-				ReplyToTargetError(client, target_count);
-				return Plugin_Handled;
-			}
-			for (int i = 0; i < target_count; i++) {
-				if(IsClientInGame(target_list[i]) && GetClientTeam(target_list[i]) == 2)
-					ApplyTroll(target_list[i], name, client, TrollMod_Instant, silent);
-			}
+		static char target_name[MAX_TARGET_LENGTH];
+		int target_list[1], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			1,
+			COMMAND_FILTER_NO_MULTI, 
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		&& target_list[0] > 0) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
 		}
+		SetupCategoryMenu(client, target_list[0]);
 	}
 	return Plugin_Handled;
 }
@@ -272,9 +267,8 @@ public Action Command_ListTheTrolls(int client, int args) {
 			int modeCount = 0;
 			static char name[MAX_TROLL_NAME_LENGTH];
 			for(int j = 1; j <= MAX_TROLLS; j++) {
-				GetTrollID(j, name);
-				if(IsTrollActive(i, name)) {
-					strcopy(modeListArr[modeCount], MAX_TROLL_NAME_LENGTH, name);
+				if(trollIds[j][0] != '\0' && IsTrollActive(i, trollIds[j])) {
+					strcopy(modeListArr[modeCount], MAX_TROLL_NAME_LENGTH, trollIds[j]);
 					modeCount++;
 				}
 			}

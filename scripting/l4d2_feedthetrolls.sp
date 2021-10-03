@@ -15,6 +15,7 @@
 #include <l4d2_behavior>
 #include <ftt>
 #include <multicolors>
+#include <activitymonitor>
 
 
 public Plugin myinfo = 
@@ -103,7 +104,6 @@ public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const cha
 	//If a throw timer exists (someone has mode 11), destroy & recreate w/ new interval
 	if(hThrowTimer != INVALID_HANDLE) {
 		delete hThrowTimer;
-		PrintToServer("Reset new throw item timer");
 		hThrowTimer = CreateTimer(convar.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 }

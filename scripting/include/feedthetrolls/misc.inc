@@ -1,13 +1,14 @@
 #define AUTOPUNISH_FLOW_MIN_DISTANCE 5000.0
 #define AUTOPUNISH_MODE_COUNT 3
+// #define DEBUG_PHRASE_LOAD 1
 
 void ActivateAutoPunish(int client) {
 	if(hAutoPunish.IntValue & 2 == 2) 
-		ApplyTroll(lastButtonUser, "SpecialMagnet", 0, TrollMod_Constant);
+		ApplyTroll(lastButtonUser, "Special Magnet", 0, TrollMod_Constant);
 	if(hAutoPunish.IntValue & 1 == 1) 
-		ApplyTroll(lastButtonUser, "TankMagnet", 0, TrollMod_Constant);
+		ApplyTroll(lastButtonUser, "Tank Magnet", 0, TrollMod_Constant);
 	if(hAutoPunish.IntValue & 8 == 8)
-		ApplyTroll(lastButtonUser, "VomitPlayer", 0, TrollMod_Instant);
+		ApplyTroll(lastButtonUser, "Vomit Player", 0, TrollMod_Instant);
 	else if(hAutoPunish.IntValue & 4 == 4) 
 		ApplyTroll(lastButtonUser, "Swarm", 0, TrollMod_Instant);
 	if(hAutoPunishExpire.IntValue > 0) {
@@ -29,7 +30,8 @@ void SetWitchTarget(int witch, int target) {
 bool ToggleMarkPlayer(int client, int target) {
 	if(g_PendingBanTroll[target]) {
 		g_PendingBanTroll[target] = false;
-		ShowActivity(client, "unmarked %N as troll", target);
+		LogAction(client, target, "\"%L\" unmarked \"%L\" as troll", client, target);
+		ShowActivityEx(client, "[FTT] ", "unmarked %N as troll", target);
 		return true;
 	}else{
 		AdminId admin_client = GetUserAdmin(client);
@@ -41,7 +43,8 @@ bool ToggleMarkPlayer(int client, int target) {
 			Call_Finish();
 			g_PendingBanTroll[target] = true;
 			EnableTroll(target, "NoProfanity");
-			ShowActivity(client, "marked %N as troll", target);
+			LogAction(client, target, "\"%L\" marked \"%L\" as troll", client, target);
+			ShowActivityEx(client, "[FTT] ", "marked %N as troll", target);
 			return true;
 		}else{
 			ReplyToCommand(client, "cannot mark %N as troll as they are an admin.", target);
@@ -68,6 +71,7 @@ stock bool IsPlayerIncapped(int client) {
 #define MAX_PHRASES_PER_WORD 8
 #define MAX_PHRASE_LENGTH 191
 StringMap REPLACEMENT_PHRASES; 
+ArrayList fullMessagePhraseList;
 /* Example:
 exWord 
 {
@@ -104,6 +108,13 @@ void LoadPhrases() {
 			phrases.PushString(phrase);
 		}
 		i = 0;
+		if(StrEqual(word, "_full message phrases")) {
+			fullMessagePhraseList = phrases.Clone();
+			continue;
+		}
+		#if defined DEBUG_PHRASE_LOAD
+			PrintToServer("Loaded %d phrases for word \"%s\"", phrases.Length, word);
+		#endif
 		REPLACEMENT_PHRASES.SetValue(word, phrases.Clone(), true);
 	} while (kv.GotoNextKey(false));
 	delete kv;
@@ -193,7 +204,6 @@ bool IsAnyPlayerNear(int source, float range) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && i != source) {
 			GetClientAbsOrigin(i, pos2);
 			float dist = GetVectorDistance(pos1, pos2);
-			PrintToChatAll("%f <= %f: %b", dist, range, (dist <= range));
 			if(dist <= range) return true;
 		}
 	}
@@ -202,7 +212,7 @@ bool IsAnyPlayerNear(int source, float range) {
 
 void ThrowItemToClosestPlayer(int victim, int slot) {
 	int wpn = GetPlayerWeaponSlot(victim, slot);
-	if(slot != 1 || DoesClientHaveMelee(victim)) {
+	if(wpn > 0 && (slot != 1 || DoesClientHaveMelee(victim))) {
 		static float pos[3];
 		int clients[4];
 		GetClientAbsOrigin(victim, pos);
@@ -229,3 +239,13 @@ void DropItem(int victim, int slot) {
 	}
 }
 
+int GetSpectatorClient(int bot) {
+	if(!IsFakeClient(bot)) return -1;
+	static char netclass[16];
+	GetEntityNetClass(bot, netclass, sizeof(netclass));
+	if(strcmp(netclass, "SurvivorBot") == 0 ) {
+		int user = GetEntProp(bot, Prop_Send, "m_humanSpectatorUserID");
+		if(user > 0) return GetClientOfUserId(user);
+	}
+	return -1;
+}

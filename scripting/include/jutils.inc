@@ -581,3 +581,20 @@ stock void MakeEntityGlow(int entity, const int color[3], float distance = 1500.
 	SetEntProp(entity, Prop_Send, "m_nGlowRange", distance);
 	SetEntProp(entity, Prop_Send, "m_glowColorOverride", color[0] + (color[1] * 256) + (color[2] * 65536));
 }
+
+//Unless I'm dumb, this does not exist
+stock void StringToLower(char[] str) {
+	int len = strlen(str);
+	for(int i = 0; i < len; i++) {
+		str[i] = CharToLower(str[i]);
+	}
+}
+
+stock int GetRealClient(int client) {
+	if(IsFakeClient(client)) {
+		int realPlayer = GetClientOfUserId(GetEntProp(client, Prop_Send, "m_humanSpectatorUserID"));
+		return realPlayer > 0 ? realPlayer : -1;
+	}else{
+		return client;
+	}
+}

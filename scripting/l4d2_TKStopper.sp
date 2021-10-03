@@ -193,17 +193,18 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		lastFF[attacker] = time;
 		
 		if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding && isDamageDirect) {
+			LogAction(-1, attacker, "Excessive FF (%.2f HP)", playerTotalDamageFF[attacker]);
 			if(hAction.IntValue == 1) {
-				LogMessage("[NOTICE] Kicking %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
-				NotifyAllAdmins("[Notice] Kicking %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				LogMessage("[NOTICE] Kicking %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				NotifyAllAdmins("[Notice] Kicking %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				KickClient(attacker, "Excessive FF");
 			} else if(hAction.IntValue == 2) {
-				LogMessage("[NOTICE] Banning %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
-				NotifyAllAdmins("[Notice] Banning %N for excessive FF (%f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				LogMessage("[NOTICE] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				NotifyAllAdmins("[Notice] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
 			} else if(hAction.IntValue == 3) {
-				LogMessage("[NOTICE] %N will be banned for FF on disconnect (%f HP) for %d minutes. ", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
-				NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%f HP) for %d minutes. Use /ignore <player> to make them immune.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				LogMessage("[NOTICE] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. ", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. Use /ignore <player> to make them immune.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				isPlayerTroll[attacker] = true;
 			}
 			damage = 0.0;
@@ -254,8 +255,10 @@ public Action Command_IgnorePlayer(int client, int args) {
 			ReplyToCommand(client, "%N is an admin and is already immune.");
 		}else{
 			if(isImmune[target]) {
+				LogAction(client, target, "\"%L\" re-enabled teamkiller detection for \"%L\"",  client, target);
 				ShowActivity2(client, "[FTT] ", "%N has re-enabled teamkiller detection for %N", client, target);
 			} else {
+				LogAction(client, target, "\"%L\" ignored teamkiller detection for \"%L\"",  client, target);
 				ShowActivity2(client, "[FTT] ", "%N has ignored teamkiller detection for %N", client, target);
 			}
 			isImmune[target] = !isImmune[target];
