@@ -31,11 +31,6 @@ public Plugin myinfo =
 //TODO: Friendly trolling VS punishment trolling
 //TODO: Trolls: Force take pills, Survivor Bot Magnet
 
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
-	if(late) {
-		lateLoaded = true;
-	}
-} 
 
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
@@ -66,7 +61,7 @@ public void OnPluginStart() {
 	hAutoPunishExpire 	= CreateConVar("sm_ftt_autopunish_expire", "0", "How many minutes of gametime until autopunish is turned off? 0 for never.", FCVAR_NONE, true, 0.0);
 	hMagnetChance 	 	= CreateConVar("sm_ftt_magnet_chance", "1.0", "% of the time that the magnet will work on a player.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hMagnetTargetMode   = CreateConVar("sm_ftt_magnet_targetting", "1", "How does the specials target players. Add bits together\n0= Target until Dead, 1=Specials ignore incapped, 2=Tank ignores incapped");
-	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.5", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
+	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.65", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
 	hWitchTargetIncapp  = CreateConVar("sm_ftt_witch_target_incapped", "1", "Should the witch target witch magnet victims who are incapped?\n 0 = No, 1 = Yes", FCVAR_NONE, true, 0.0, true, 1.0);
 	hBadThrowHitSelf    = CreateConVar("sm_ftt_badthrow_fail_chance", "1", "The % chance that on a throw, they will instead hit themselves. 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
 
@@ -90,11 +85,6 @@ public void OnPluginStart() {
 	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 
 	AutoExecConfig(true, "l4d2_feedthetrolls");
-
-	if(lateLoaded) {
-		CreateTimer(MAIN_TIMER_INTERVAL_S, Timer_Main, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
-		HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
-	}
 }
 ///////////////////////////////////////////////////////////////////////////////
 // CVAR CHANGES
@@ -109,7 +99,7 @@ public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const cha
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// METHODS
+// METHODS - Old methods, some are also in feedthetrolls/misc.inc
 ///////////////////////////////////////////////////////////////////////////////
 
 void ThrowAllItems(int victim) {
