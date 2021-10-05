@@ -78,6 +78,11 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	// =========================
 	// OVERRIDE VICTIM
 	// =========================
+	static Troll spMagnet;
+	static Troll tankMagnet;
+	if(!spMagnet.id) GetTroll("Special Magnet", spMagnet);
+	if(!tankMagnet.id) GetTroll("Tank Magnet", tankMagnet);
+
 	if(hMagnetChance.FloatValue < GetRandomFloat()) return Plugin_Continue;
 	L4D2Infected class = view_as<L4D2Infected>(GetEntProp(attacker, Prop_Send, "m_zombieClass"));
 	int existingTarget = GetClientOfUserId(g_iAttackerTarget[attacker]);
@@ -101,7 +106,11 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 				if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2 == 2) || hMagnetTargetMode.IntValue & 1 == 1 ) continue;
 			}
 			
-			if(class == L4D2Infected_Tank && IsTrollActive(i, "Tank Magnet") || (class != L4D2Infected_Tank && IsTrollActive(i, "Special Magnet"))) {
+			if(class == L4D2Infected_Tank && tankMagnet.IsActive(i) || (class != L4D2Infected_Tank && spMagnet.IsActive(i))) {
+				if(class == L4D2Infected_Tank) {
+					if(!WillMagnetRun(tankMagnet, i)) return Plugin_Continue;
+				} else if(!WillMagnetRun(spMagnet, i)) return Plugin_Continue;
+
 				GetClientAbsOrigin(i, survPos);
 				float dist = GetVectorDistance(survPos, spPos, true);
 				if(closestClient == -1 || dist < closestDistance) {
@@ -118,6 +127,17 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 		return Plugin_Changed;
 	}
 	return Plugin_Continue;
+}
+
+bool WillMagnetRun(const Troll troll, int i) {
+	if(troll.activeFlagClients[i] == 0) return true;
+	float cChance = 1.0;
+	//Skip first bit as it is ('Always')
+	if(troll.activeFlagClients[i] & 2) // 2nd: 50%
+		cChance = 0.5;
+	else if(troll.activeFlagClients[i] & 4) //3rd: 10%
+		cChance = 0.1;
+	return GetRandomFloat() <= cChance;
 }
 public Action L4D2_OnEntityShoved(int client, int entity, int weapon, float vecDir[3], bool bIsHighPounce) {
 	if(client > 0 && client <= MaxClients && IsTrollActive(client, "No Shove") && hShoveFailChance.FloatValue > GetRandomFloat()) {
@@ -141,7 +161,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
 	}else if(IsTrollActive(client, "iCantSpellNoMore")) {
-		int type = GetRandomInt(1, trollKV.Size + 8);
+		int type = GetRandomInt(1, 13 + 5);
 		char letterSrc, replaceChar;
 		switch(type) {
 			case 1: {
@@ -195,6 +215,10 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			case 13: {
 				letterSrc = 'e';
 				replaceChar = 'r';
+			}
+			case 14: {
+				letterSrc = 'w';
+				replaceChar = 'h';
 			}
 
 			default:
@@ -413,23 +437,28 @@ void EntityCreateCallback(int entity) {
 	if(!HasEntProp(entity, Prop_Send, "m_hOwnerEntity") || !IsValidEntity(entity)) return;
 	static char class[16];
 
+	static Troll badThrow;
+	if(!badThrow.id) {
+		GetTroll("Bad Throw", badThrow);
+	}
+
 	GetEntityClassname(entity, class, sizeof(class));
 	int entOwner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
 	if(entOwner > 0 && entOwner <= MaxClients) {
-		if(IsTrollActive(entOwner, "Bad Throw")) {
+		if(badThrow.IsActive(entOwner)) {
 			static float pos[3];
 			GetClientEyePosition(entOwner, pos);
-			if(StrContains(class, "vomitjar", true) > -1) {
+			if(badThrow.IsFlagActive(entOwner, Flag_1) && StrContains(class, "vomitjar", true) > -1) {
 				AcceptEntityInput(entity, "Kill");
-				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() > hBadThrowHitSelf.FloatValue) {
+				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
 					L4D_CTerrorPlayer_OnVomitedUpon(entOwner, entOwner);
 					EmitSoundToAll("weapons/ceda_jar/ceda_jar_explode.wav", entOwner);
 					FindClosestClient(entOwner, false, pos);
 				}
 				SpawnItem("vomitjar", pos);
-			} else if(StrContains(class, "molotov", true) > -1) {
+			} else if(badThrow.IsFlagActive(entOwner, Flag_2) && StrContains(class, "molotov", true) > -1) {
 				// Burn them if no one near :)
-				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() > hBadThrowHitSelf.FloatValue) {
+				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
 					GetClientAbsOrigin(entOwner, pos);
 					if(IsAnyPlayerNear(entOwner, 500.0)) {
 						AcceptEntityInput(entity, "Kill");
@@ -441,8 +470,8 @@ void EntityCreateCallback(int entity) {
 					SpawnItem("molotov", pos);
 					AcceptEntityInput(entity, "Kill");
 				}
-			} else if(StrContains(class, "pipe_bomb", true) > -1) {
-				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() > hBadThrowHitSelf.FloatValue)
+			} else if(badThrow.IsFlagActive(entOwner, Flag_3) && StrContains(class, "pipe_bomb", true) > -1) {
+				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue)
 					TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
 				SpawnItem("pipe_bomb", pos);
 			}
