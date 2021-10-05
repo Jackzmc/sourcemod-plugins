@@ -34,7 +34,6 @@ enum WeaponId {
     WEPID_PROPANE_TANK,     // 17
     WEPID_OXYGEN_TANK,      // 18
     WEPID_MELEE,            // 19
-    WEPID_CHAINSAW,         // 20
     WEPID_GRENADE_LAUNCHER, // 21
     WEPID_AMMO_PACK,        // 22
     WEPID_ADRENALINE,       // 23
@@ -93,7 +92,7 @@ enum MeleeWeaponId
 };
 
 // Weapon names for each of the weapons, used in identification.
-const char WeaponNames[WeaponId][] =
+const char WeaponNames[sizeof(WeaponId)][] =
 {
     "weapon_none", "weapon_pistol", "weapon_smg",                                            // 0
     "weapon_pumpshotgun", "weapon_autoshotgun", "weapon_rifle",                              // 3
