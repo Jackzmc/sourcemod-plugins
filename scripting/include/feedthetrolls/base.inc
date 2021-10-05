@@ -1,8 +1,11 @@
 
 #define MAX_TROLL_NAME_LENGTH 32
 #define MAX_TROLL_FLAG_LENGTH 32
-#define MAX_TROLLS 29
-//#define DEBUG 1
+//Allow MAX_TROLLS to be defined elsewhere
+#if defined MAX_TROLLS
+#else
+    #define MAX_TROLLS 29
+#endif
 
 enum trollModifier {
     TrollMod_Invalid = 0,
@@ -28,15 +31,14 @@ char trollIds[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
 
 enum struct Troll {
     int id;
+    int categoryID;
 
     char name[MAX_TROLL_NAME_LENGTH];
     char description[128];
 
     int mods;
-    int categoryID;
 
     int activeFlagClients[MAXPLAYERS+1];
-
     ArrayList flagNames;
     int defaultFlags;
     bool flagsMultiselectable;
@@ -101,6 +103,7 @@ enum struct Troll {
     }
 
 /////// TROLL ACTIVATION
+
     void Activate(int client, int activator, trollModifier modifier = TrollMod_Invalid, int flags = 0) {
         if(modifier == TrollMod_Invalid) modifier = this.GetDefaultMod();
         ApplyTroll(client, this.name, activator, modifier, false, flags);
@@ -181,12 +184,6 @@ int GetTrollByKeyIndex(int index, Troll troll) {
     // trollIds.GetKey(index, name, sizeof(name));
     troll = Trolls[index];
     // return GetTroll(name, troll);
-}
-
-bool GetTrollID(int index, char name[MAX_TROLL_NAME_LENGTH]) {
-    if(index > MAX_TROLLS) return false;
-    strcopy(name, sizeof(name), trollIds[index]);
-    return true;
 }
 
 void ToggleTroll(int client, const char[] name, int flags = 0) {
