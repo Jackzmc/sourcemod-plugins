@@ -3,12 +3,16 @@
 void SetupTrolls() {
     trollKV = new StringMap();
     categories = new ArrayList(ByteCountToCells(16));
+    int index;
     SetupTroll("Reset User", "Resets the user, removes all troll effects", TrollMod_Instant);
 
     SetCategory("Magnets");
-    SetupTroll("Special Magnet", "Attracts ALL specials to any alive target with this troll enabled", TrollMod_Constant);
-    SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant);
-    SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
+    index = SetupTroll("Special Magnet", "Attracts ALL specials to any alive target with this troll enabled", TrollMod_Constant, false);
+    AddMagnetFlags(index);
+    index = SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant);
+    AddMagnetFlags(index);
+    index = SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
+    AddMagnetFlags(index);
 
     SetCategory("Infected");
     SetupTroll("Swarm", "Swarms a player with zombies. Requires swarm plugin", TrollMod_Instant | TrollMod_Constant);
@@ -18,14 +22,18 @@ void SetupTrolls() {
 
     SetCategory("Items");
     SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
-    SetupTroll("Bad Throw", "Player drops throwables on throw, and biles/molotovs themselves", TrollMod_Constant);
+    index = SetupTroll("Bad Throw", "Player drops throwables on throw, and biles/molotovs themselves", TrollMod_Constant, true);
+    Trolls[index].AddFlag("Biles", true);
+    Trolls[index].AddFlag("Molotovs", true);
+    Trolls[index].AddFlag("Pipebombs", true);
+
     SetupTroll("No Pickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", TrollMod_Constant);
     SetupTroll("UziRules", "Picking up a weapon gives them a UZI instead", TrollMod_Constant);
     SetupTroll("Primary Disable", "Player cannot pickup any weapons, only melee/pistols", TrollMod_Constant);
     SetupTroll("Half Primary Ammo", "Cuts their primary reserve ammo in half", TrollMod_Instant);
-    
+
     SetCategory("Chat");
-    SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Instant);
+    SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant);
     SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
     SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
     SetupTroll("Honk", "Honk", TrollMod_Constant);
@@ -45,4 +53,10 @@ void SetupTrolls() {
     SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
     SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant);
     //INFO: UP MAX_TROLLS when adding new trolls!
+}
+
+void AddMagnetFlags(int index) {
+    Trolls[index].AddFlag("Always (100%)", true);
+    Trolls[index].AddFlag("Half Time (50%)", false);
+    Trolls[index].AddFlag("Rare (10%)", false);
 }
