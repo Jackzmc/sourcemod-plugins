@@ -53,6 +53,14 @@ void SetupTrolls() {
     SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
     SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant);
     //INFO: UP MAX_TROLLS when adding new trolls!
+    
+
+    // Initialize the default flag values to -1
+    for(int i = 0; i <= MAX_TROLLS; i++) {
+        for(int j = 1; j <= MAXPLAYERS+1; j++) {
+            Trolls[i].activeFlagClients[j] = -1;
+        }
+    }
 }
 
 void AddMagnetFlags(int index) {
