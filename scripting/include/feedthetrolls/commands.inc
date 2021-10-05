@@ -219,6 +219,57 @@ public Action Command_ApplyUser(int client, int args) {
 	if(args < 1) {
 		ShowTrollMenu(client);
 	}else{
+		char arg1[32], arg2[16];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+		StringToLower(arg2);
+
+		static char target_name[MAX_TARGET_LENGTH];
+		int target_list[1], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			1,
+			COMMAND_FILTER_NO_MULTI, 
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		&& target_list[0] > 0) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		if(args == 2) {
+			static char key[32];
+			for(int i = 0; i < categories.Length; i++) {
+				categories.GetString(i, key, sizeof(key));
+				if(StrEqual(key, arg2, false)) {
+					ShowTrollsForCategory(client, GetClientUserId(target_list[0]), i);
+					return Plugin_Handled;
+				}
+			} 
+			ReplyToCommand(client, "[FTT] Unknown category: '%s'", arg2);
+		}
+		SetupCategoryMenu(client, target_list[0]);
+	}
+	return Plugin_Handled;
+}
+
+public Action Command_ListModes(int client, int args) {
+	static char name[MAX_TROLL_NAME_LENGTH];
+	static Troll troll;
+	for(int i = 0; i <= MAX_TROLLS; i++) {
+		GetTrollByKeyIndex(i, troll);
+		ReplyToCommand(client, "%d. %s - %s", i, troll.name, troll.description);
+	}
+	return Plugin_Handled;
+}
+
+public Action Command_ListTheTrolls(int client, int args) {
+	// View more info about a user
+	if(args == 1) {
 		char arg1[32];
 		GetCmdArg(1, arg1, sizeof(arg1));
 
@@ -239,25 +290,43 @@ public Action Command_ApplyUser(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		SetupCategoryMenu(client, target_list[0]);
-	}
-	return Plugin_Handled;
-}
+		int target = target_list[0];
+		if(IsPlayerAlive(target))
+			ReplyToCommand(client, "> Active Trolls for %N:", target);
+		else
+			ReplyToCommand(client, "> Active Trolls for %N:  (Paused)", target);
 
-public Action Command_ListModes(int client, int args) {
-	static char name[MAX_TROLL_NAME_LENGTH];
-	static Troll troll;
-	for(int i = 0; i <= MAX_TROLLS; i++) {
-		GetTrollByKeyIndex(i, troll);
-		ReplyToCommand(client, "%d. %s - %s", i, troll.name, troll.description);
-	}
-	return Plugin_Handled;
-}
+		if(IsFakeClient(target)) {
+			int player = GetRealClient(target);
+			if(player != -1) target = player;
+		}
 
-public Action Command_ListTheTrolls(int client, int args) {
+		for(int j = 1; j <= MAX_TROLLS; j++) {
+			if(trollIds[j][0] != '\0' && IsTrollActive(target, trollIds[j])) {
+				if(Trolls[j].activeFlagClients[target] > 0) {
+					static char list[MAX_TROLL_FLAG_LENGTH*8]; //May in future need to up magic number 8 (supports 8 active flags )
+					static char buffer[MAX_TROLL_FLAG_LENGTH];
+					for(int i = 0; i < Trolls[j].flagNames.Length; i++) {
+						int a = (1 << i);
+						if(Trolls[j].activeFlagClients[target] & a) {
+							Trolls[j].flagNames.GetString(i, buffer, sizeof(buffer));
+							Format(list, sizeof(list), "%s%s;", list, buffer);
+						} else {
+							Trolls[j].flagNames.GetString(i, buffer, sizeof(buffer));
+						}
+					}
+					ReplyToCommand(client, "\"%s\" Flags: %s", trollIds[j], list);
+				} else
+					ReplyToCommand(client, trollIds[j]);
+			}
+		}
+		return Plugin_Handled;
+	}
+
 	int count = 0;
 	char[][] modeListArr = new char[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
 	static char modeList[255];
+	static char name[MAX_TROLL_NAME_LENGTH];
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) > 1 && ActiveTrolls[i] > 0) {
 			if(IsFakeClient(i)) {
@@ -265,10 +334,12 @@ public Action Command_ListTheTrolls(int client, int args) {
 				if(player != -1) i = player;
 			}
 			int modeCount = 0;
-			static char name[MAX_TROLL_NAME_LENGTH];
 			for(int j = 1; j <= MAX_TROLLS; j++) {
 				if(trollIds[j][0] != '\0' && IsTrollActive(i, trollIds[j])) {
-					strcopy(modeListArr[modeCount], MAX_TROLL_NAME_LENGTH, trollIds[j]);
+					if(Trolls[j].activeFlagClients[i] > 0)
+						Format(modeListArr[modeCount], MAX_TROLL_NAME_LENGTH, "%s(%d)", trollIds[j], Trolls[j].activeFlagClients[i]);
+					else
+						strcopy(modeListArr[modeCount], MAX_TROLL_NAME_LENGTH, trollIds[j]);
 					modeCount++;
 				}
 			}
