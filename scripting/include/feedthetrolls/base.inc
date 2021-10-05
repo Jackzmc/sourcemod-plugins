@@ -353,8 +353,10 @@ void DisableTroll(int client, const char[] troll) {
     } 
 }
 
-void SetCategory(const char[] newCat) {
-    categoryID = categories.PushString(newCat);
+public void SetCategory(const char[] newCat) {
+    categoryID = categories.FindString(newCat);
+    if(categoryID == -1)
+        categoryID = categories.PushString(newCat);
 }
 void GetCategory(int category, char[] buffer, int size) {
     categories.GetString(category, buffer, size);

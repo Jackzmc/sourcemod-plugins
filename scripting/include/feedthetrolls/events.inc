@@ -147,7 +147,9 @@ public Action L4D2_OnEntityShoved(int client, int entity, int weapon, float vecD
 }
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
 	if(sArgs[0] == '@') return Plugin_Continue;
-	if(IsTrollActive(client, "Honk")) {
+	static Troll honkTroll;
+	if(!honkTroll.id) GetTroll("Honk / Meow", honkTroll);
+	if(honkTroll.IsActive(client) && honkTroll.activeFlagClients[client] & 1) {
 		static char strings[32][7];
 		int words = ExplodeString(sArgs, " ", strings, sizeof(strings), 5);
 		for(int i = 0; i < words; i++) {
@@ -379,14 +381,16 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 		lastButtonUser = -1;
 	}else if(numClients > 0 && entity > 0 && entity <= MaxClients) {
 		if(StrContains(sample, "survivor\\voice") > -1) {
-			if(IsTrollActive(entity, "Honk")) {
-				strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
+			static Troll honkTroll;
+			if(!honkTroll.id) GetTroll("Honk / Meow", honkTroll);
+			if(honkTroll.IsActive(entity)) {
+				if(honkTroll.activeFlagClients[entity] & 1)
+					strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
+				else
+					strcopy(sample, sizeof(sample), "custom/meow1.mp3");
 				return Plugin_Changed;
 			} else if(IsTrollActive(entity, "Vocalize Gag")) {
 				return Plugin_Handled;
-			} else if(IsTrollActive(entity, "Meow")) {
-				strcopy(sample, sizeof(sample), "custom/meow1.mp3");
-				return Plugin_Changed;
 			}
 		}
 		

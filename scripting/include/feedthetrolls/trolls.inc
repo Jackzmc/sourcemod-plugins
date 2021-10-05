@@ -27,7 +27,6 @@ void SetupTrolls() {
     Trolls[index].AddFlag("Biles", true);
     Trolls[index].AddFlag("Molotovs", true);
     Trolls[index].AddFlag("Pipebombs", true);
-
     SetupTroll("No Pickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", TrollMod_Constant);
     SetupTroll("UziRules", "Picking up a weapon gives them a UZI instead", TrollMod_Constant);
     SetupTroll("Primary Disable", "Player cannot pickup any weapons, only melee/pistols", TrollMod_Constant);
@@ -37,8 +36,9 @@ void SetupTrolls() {
     SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant);
     SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
     SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
-    SetupTroll("Honk", "Honk", TrollMod_Constant);
-    SetupTroll("Meow", "Makes the player meow", TrollMod_Constant);
+    index = SetupTroll("Honk / Meow", "Honk", TrollMod_Constant, false);
+    Trolls[index].AddFlag("Honk", true);
+    Trolls[index].AddFlag("Meow", false);
 
     SetCategory("Health");
     SetupTroll("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant);
