@@ -108,6 +108,7 @@ public Action Command_SpawnSpecial(int client, int args) {
 					ReplyToCommand(client, "[SM] Director will now attempt to spawn %dx %s.", amount, arg1);
 				}
 				AnnounceSpawn(arg1);
+				LogAction(client, -1, "\"%L\" spawned %dx \"%s\"", client, amount, arg1);
 				ShowActivity(client, "spawned %dx \"%s\"", amount, arg1);
 			}
 		}
@@ -147,7 +148,8 @@ public Action Command_SpawnSpecialForceLocal(int client, int args) {
 			ReplyToCommand(client, "[SM] Spawned %dx %s.", amount, arg1);
 		}
 		AnnounceSpawn(arg1);
-		ShowActivity(client, "cursor spawned %dx \"%s\"", amount, arg1);
+		LogAction(client, -1, "\"%L\" spawned %dx \"%s\" at cursor", client, amount, arg1);
+		ShowActivity(client, "spawned %dx \"%s\" at cursor", amount, arg1);
 	}
 	return Plugin_Continue;
 }
@@ -184,7 +186,8 @@ public Action Command_SpawnSpecialForce(int client, int args) {
 			ReplyToCommand(client, "[SM] Spawned a %dx %s.", amount, arg1);
 		}
 		AnnounceSpawn(arg1);
-		ShowActivity(client, "forced spawned %dx \"%s\"", amount, arg1);
+		LogAction(client, -1, "\"%L\" force spawned %dx \"%s\"", client, amount, arg1);
+		ShowActivity(client, "force spawned %dx \"%s\"", amount, arg1);
 	}
 	return Plugin_Handled;
 }
