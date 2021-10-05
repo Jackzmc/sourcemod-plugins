@@ -68,6 +68,12 @@ public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int par
 		static char info[8];
 		menu.GetItem(param2, info, sizeof(info));
 		int userid = StringToInt(info);
+		int client = GetClientOfUserId(userid);
+
+		if(client == 0) {
+			ReplyToCommand(param1, "FTT: Could not acquire player");
+			return;
+		}
 		
 		SetupCategoryMenu(param1, userid);
 	} else if (action == MenuAction_End)
@@ -84,6 +90,12 @@ public int ChooseCategoryHandler(Menu menu, MenuAction action, int param1, int p
 		static char str[2][8];
 		ExplodeString(info, "|", str, 2, 8, false);
 		int userid = StringToInt(str[0]);
+		int client = GetClientOfUserId(userid);
+		if(client == 0) {
+			ReplyToCommand(param1, "FTT: Could not acquire player");
+			return;
+		}
+		
 		iMenuVictimID[param1] = userid;
 		int category = StringToInt(str[1]);
 
@@ -93,24 +105,7 @@ public int ChooseCategoryHandler(Menu menu, MenuAction action, int param1, int p
 			return;
 		}
 		
-		Menu trollMenu = new Menu(ChooseModeMenuHandler);
-		GetCategory(category, info, sizeof(info));
-		Format(info, sizeof(info), "Category: %s", info);
-		trollMenu.SetTitle(info);
-		
-		static Troll troll;
-
-		// Add all menus that have same category
-		for(int i = 0; i < trollKV.Size; i++) {
-			GetTrollByKeyIndex(i, troll);
-			if(troll.categoryID == category) {
-				Format(info, sizeof(info), "%d|%d", userid, i);
-				trollMenu.AddItem(info, troll.name);
-			}
-		}
-		trollMenu.ExitButton = true;
-		trollMenu.ExitBackButton = true;
-		trollMenu.Display(param1, 0);
+		ShowTrollsForCategory(param1, userid, category);
 	} else if (action == MenuAction_End)
 		delete menu;
 }
@@ -130,28 +125,18 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 		ExplodeString(info, "|", str, 2, 8, false);
 		int userid = StringToInt(str[0]);
 		int client = GetClientOfUserId(userid);
+		if(client == 0) {
+			ReplyToCommand(param1, "FTT: Could not acquire player");
+			return;
+		}
+
 		int keyIndex = StringToInt(str[1]);
 		static Troll troll;
 		GetTrollByKeyIndex(keyIndex, troll);
 		//If troll has multiple flags, prompt:
 		if(StrEqual(troll.name, "Throw It All")) {
 			// Setup menu to call itself, but with an extra data point
-			Menu itmMenu = new Menu(ChooseClumsySlotHandler); 
-			itmMenu.SetTitle("Choose Item To Throw");
-
-			static char itmName[32];
-			Format(info, sizeof(info), "%d|-1", userid);
-			itmMenu.AddItem(info, "All Items");
-			for(int slot = 0; slot <= 4; slot++) {
-				int item = GetPlayerWeaponSlot(client, slot);
-				if(item > -1) {
-					GetEdictClassname(item, itmName, sizeof(itmName));
-					Format(info, sizeof(info), "%d|%d", userid,  slot);
-					itmMenu.AddItem(info, itmName[7]);
-				}
-			}
-			itmMenu.ExitButton = true;
-			itmMenu.Display(param1, 0);
+			ShowThrowItAllMenu(param1, userid);
 		} else if(troll.HasMod(TrollMod_Instant) && troll.HasMod(TrollMod_Constant)) {
 			Menu modiferMenu = new Menu(ChooseTrollModiferHandler); 
 			Format(info, sizeof(info), "%s: Choose Modifier", troll.name);
@@ -166,9 +151,13 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 
 			modiferMenu.ExitButton = true;
 			modiferMenu.Display(param1, 0);
+		} else if(troll.HasFlags() && !troll.IsActive(client)) {
+ 			ShowSelectFlagMenu(param1, userid, 0, troll);
 		} else {
 			troll.Activate(client, param1);
+			ShowTrollsForCategory(param1, userid, troll.categoryID);
 		}
+		
 	} else if (action == MenuAction_End)
 		delete menu;
 }
@@ -179,7 +168,8 @@ public int ChooseClumsySlotHandler(Menu menu, MenuAction action, int param1, int
 		menu.GetItem(param2, info, sizeof(info));
 		static char str[2][8];
 		ExplodeString(info, "|", str, 2, 8, false);
-		int client = GetClientOfUserId(StringToInt(str[0]));
+		int userid = StringToInt(str[0]);
+		int client = GetClientOfUserId(userid);
 		int slot = StringToInt(str[1]);
 		if(client == 0) {
 			ReplyToCommand(param1, "FTT: Could not acquire player");
@@ -192,8 +182,9 @@ public int ChooseClumsySlotHandler(Menu menu, MenuAction action, int param1, int
 			ThrowItemToClosestPlayer(client, slot);
 		}
 		LogAction(param1, client, "\"%L\" activated troll \"Throw It all\" for \"%L\"", param1, client);
-
 		ShowActivityEx(param1, "[FTT] ", "activated troll \"Throw It All\" for %N. ", client);
+
+		ShowThrowItAllMenu(param1, userid);
 	} else if (action == MenuAction_End)	
 		delete menu;
 }
@@ -204,9 +195,10 @@ public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 		menu.GetItem(param2, info, sizeof(info));
 		static char str[3][8];
 		ExplodeString(info, "|", str, 3, 8, false);
-		int client = GetClientOfUserId(StringToInt(str[0]));
+		int userid = StringToInt(str[0]);
+		int client = GetClientOfUserId(userid);
 		int keyIndex = StringToInt(str[1]);
-		int flags = StringToInt(str[2]);
+		int modifiers = StringToInt(str[2]);
 
 		if(client == 0) {
 			ReplyToCommand(param1, "FTT: Could not acquire player");
@@ -216,13 +208,59 @@ public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 		static Troll troll;
 		GetTrollByKeyIndex(keyIndex, troll);
 
-		if(flags == 1 || flags == 3)
-			troll.Activate(client, param1, TrollMod_Instant);
-		if(flags == 2 || flags == 3)
-			troll.Activate(client, param1, TrollMod_Constant);	
+		if(troll.HasFlags() && !troll.IsActive(client)) {
+ 			ShowSelectFlagMenu(param1, userid, modifiers, troll);
+		} else {
+			if(modifiers == 1 || modifiers == 3)
+				troll.Activate(client, param1, TrollMod_Instant);
+			if(modifiers == 2 || modifiers == 3)
+				troll.Activate(client, param1, TrollMod_Constant);	
+			ShowTrollsForCategory(param1, userid, troll.categoryID);
+		}
+		
 	} else if (action == MenuAction_End)	
 		delete menu;
 }
+
+public int ChooseTrollFlagHandler(Menu menu, MenuAction action, int param1, int param2) {
+	if (action == MenuAction_Select) {
+		static char info[32];
+		menu.GetItem(param2, info, sizeof(info));
+		static char str[5][8];
+		ExplodeString(info, "|", str, 5, 8, false);
+		int userid = StringToInt(str[0]);
+		int client = GetClientOfUserId(userid);
+		int keyIndex = StringToInt(str[1]);
+		int modifiers = StringToInt(str[2]);
+		int flags = StringToInt(str[3]);
+		bool done = StringToInt(str[4]) == 1;
+
+		if(client == 0) {
+			ReplyToCommand(param1, "FTT: Could not acquire player");
+			return;
+		}
+
+		static Troll troll;
+		GetTrollByKeyIndex(keyIndex, troll);
+
+		if(done || !troll.flagsMultiselectable) {
+			if(modifiers > 0) {
+				if(modifiers == 1 || modifiers == 3)
+					troll.Activate(client, param1, TrollMod_Instant, flags);
+				if(modifiers == 2 || modifiers == 3)
+					troll.Activate(client, param1, TrollMod_Constant, flags);
+			} else {
+				troll.Activate(client, param1, TrollMod_Invalid, flags);
+			}
+			ShowTrollsForCategory(param1, userid, troll.categoryID);
+		} else {
+			ShowSelectFlagMenu(param1, userid, modifiers, troll, flags);
+		}
+
+	} else if (action == MenuAction_End)	
+		delete menu;
+}
+
 
 public void StopItemGive(int client) {
 	g_bPendingItemGive[client] = false;
@@ -263,4 +301,90 @@ void ShowTrollMenu(int client) {
 	}
 	menu.ExitButton = true;
 	menu.Display(client, 0);
+}
+
+void ShowTrollsForCategory(int client, int userid, int category) {
+	static char info[32];
+	Menu trollMenu = new Menu(ChooseModeMenuHandler);
+	GetCategory(category, info, sizeof(info));
+	Format(info, sizeof(info), "Category: %s", info);
+	trollMenu.SetTitle(info);
+	
+	static Troll troll;
+
+	int victim = GetClientOfUserId(userid);
+
+	// Add all menus that have same category
+	static char name[MAX_TROLL_NAME_LENGTH+8];
+	for(int i = 0; i < trollKV.Size; i++) {
+		GetTrollByKeyIndex(i, troll);
+		if(troll.categoryID == category) {
+			Format(info, sizeof(info), "%d|%d", userid, i);
+			if(troll.IsActive(victim)) {
+				Format(name, sizeof(name), "%s (Active)", troll.name);
+				trollMenu.AddItem(info, name);
+			} else
+				trollMenu.AddItem(info, troll.name);
+		}
+	}
+	trollMenu.ExitButton = true;
+	trollMenu.ExitBackButton = true;
+	trollMenu.Display(client, 0);
+}
+
+void ShowSelectFlagMenu(int activator, int victimUserID, int modifiers, Troll troll, int prevFlags = 0) {
+	static char info[MAX_TROLL_NAME_LENGTH+16];
+	static char name[32];
+
+
+	Menu flagMenu = new Menu(ChooseTrollFlagHandler);
+	if(troll.flagsMultiselectable) {
+		if(prevFlags == 0) prevFlags = troll.defaultFlags;
+		Format(info, sizeof(info), "%s: Choose flags (Multiple)", troll.name);
+		flagMenu.SetTitle(info);
+
+		Format(info, sizeof(info), "%d|%d|%d|%d|1", victimUserID, troll.id, modifiers, prevFlags);
+		flagMenu.AddItem(info, "Apply Troll / Finish");
+
+		for(int i = 0; i < troll.flagNames.Length; i++) {
+			troll.flagNames.GetString(i, name, sizeof(name));
+			int a = 1 << i;
+			if(prevFlags > 0 && prevFlags & a == a)
+				Format(name, sizeof(name), "%s (On)", name);
+			int newFlags = prevFlags ^ a;
+			Format(info, sizeof(info), "%d|%d|%d|%d|0", victimUserID, troll.id, modifiers, newFlags);
+			flagMenu.AddItem(info, name);
+		}
+	} else {
+		Format(info, sizeof(info), "%s: Choose flags", troll.name);
+		flagMenu.SetTitle(info);
+
+		for(int i = 0; i < troll.flagNames.Length; i++) {
+			troll.flagNames.GetString(i, name, sizeof(name));
+			Format(info, sizeof(info), "%d|%d|%d|%d|0", victimUserID, troll.id, modifiers, 1 << i);
+			flagMenu.AddItem(info, name);
+		}
+	}
+	flagMenu.ExitButton = true;
+	flagMenu.Display(activator, 0);
+}
+
+void ShowThrowItAllMenu(int client, int userid) {
+	static char info[32];
+	Menu itmMenu = new Menu(ChooseClumsySlotHandler); 
+	itmMenu.SetTitle("Choose Item To Throw");
+
+	static char itmName[32];
+	Format(info, sizeof(info), "%d|-1", userid);
+	itmMenu.AddItem(info, "All Items");
+	for(int slot = 0; slot <= 4; slot++) {
+		int item = GetPlayerWeaponSlot(client, slot);
+		if(item > -1) {
+			GetEdictClassname(item, itmName, sizeof(itmName));
+			Format(info, sizeof(info), "%d|%d", userid, slot);
+			itmMenu.AddItem(info, itmName[7]);
+		}
+	}
+	itmMenu.ExitButton = true;
+	itmMenu.Display(client, 0);
 }
