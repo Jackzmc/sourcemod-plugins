@@ -9,9 +9,9 @@ void SetupTrolls() {
     SetCategory("Magnets");
     index = SetupTroll("Special Magnet", "Attracts ALL specials to any alive target with this troll enabled", TrollMod_Constant, false);
     AddMagnetFlags(index);
-    index = SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant);
+    index = SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant, false);
     AddMagnetFlags(index);
-    index = SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
+    index = SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant, false);
     AddMagnetFlags(index);
 
     SetCategory("Infected");
@@ -19,6 +19,7 @@ void SetupTrolls() {
     SetupTroll("Vomit Player", "Shortcut to sm_vomitplayer. vomits the player.", TrollMod_Instant);
     SetupTroll("Inface Special", "Shortcut to sm_inface", TrollMod_Instant);
     SetupTroll("Insta Special", "Shortcut to sm_insta", TrollMod_Instant);
+    SetupTroll("Goo", "Spawns a spitter puddle underneath them", TrollMod_Instant);
 
     SetCategory("Items");
     SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
@@ -52,6 +53,7 @@ void SetupTrolls() {
     SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
     SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
     SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant);
+    SetupTroll("Stagger", "Like a slap, but different", TrollMod_Instant);
     //INFO: UP MAX_TROLLS when adding new trolls!
 }
 

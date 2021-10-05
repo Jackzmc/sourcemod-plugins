@@ -311,6 +311,13 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
     } else if(StrEqual(troll.name, "Insta Special")) {
         FakeClientCommand(victim, "sm_insta");
         return false;
+    } else if(StrEqual(troll.name, "Goo")) {
+        static float pos[3], ang[3];
+        GetClientAbsOrigin(victim, pos);
+        GetClientAbsAngles(victim, ang);
+        L4D2_SpitterPrj(victim, pos, ang);
+    } else if(StrEqual(troll.name, "Stagger")) {
+        L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
     } else {
         #if defined DEBUG
         PrintToServer("[FTT] Possibly invalid troll, no action: %s", troll.name);
