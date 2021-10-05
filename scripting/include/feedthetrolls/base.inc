@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 29
+    #define MAX_TROLLS 31
 #endif
 
 enum trollModifier {
@@ -128,6 +128,9 @@ enum struct Troll {
 
 Troll Trolls[MAX_TROLLS+1];
 
+ArrayList categories;
+static int categoryID = -1;
+
 void ResetClient(int victim, bool wipe = true) {
 	if(wipe) {
         ActiveTrolls[victim] = 0;
@@ -140,8 +143,6 @@ void ResetClient(int victim, bool wipe = true) {
 		SDKUnhook(wpn, SDKHook_Reload, Event_WeaponReload);
 }
 
-ArrayList categories;
-static int categoryID = -1;
 
 int SetupTroll(const char[] name, const char description[128], int mods, bool flagsMultiselectable = false, int defaultFlags = 0) {
     if(mods == 0) {
@@ -323,7 +324,6 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
     }
     return true;
 }
-
 
 bool IsTrollActive(int client, const char[] troll) {
     if(ActiveTrolls[client] == 0) return false;

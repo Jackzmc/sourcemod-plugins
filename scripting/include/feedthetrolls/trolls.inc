@@ -58,8 +58,8 @@ void SetupTrolls() {
     
 
     // Initialize the default flag values to -1
-    for(int i = 0; i <= MAX_TROLLS; i++) {
-        for(int j = 1; j <= MAXPLAYERS+1; j++) {
+    for(int i = 0; i < MAX_TROLLS; i++) {
+        for(int j = 1; j <= MAXPLAYERS; j++) {
             Trolls[i].activeFlagClients[j] = -1;
         }
     }

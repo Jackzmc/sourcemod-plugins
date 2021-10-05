@@ -42,7 +42,7 @@ bool ToggleMarkPlayer(int client, int target) {
 			Call_PushCell(target);
 			Call_Finish();
 			g_PendingBanTroll[target] = true;
-			EnableTroll(target, "NoProfanity");
+			EnableTroll(target, "No Profanity");
 			LogAction(client, target, "\"%L\" marked \"%L\" as troll", client, target);
 			ShowActivityEx(client, "[FTT] ", "marked %N as troll", target);
 			return true;
