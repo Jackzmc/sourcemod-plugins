@@ -1,7 +1,7 @@
 
 #define MAX_TROLL_NAME_LENGTH 32
 #define MAX_TROLL_FLAG_LENGTH 32
-#define MAX_TROLLS 28
+#define MAX_TROLLS 29
 //#define DEBUG 1
 
 enum trollModifier {
@@ -11,11 +11,14 @@ enum trollModifier {
 }
 
 enum trollFlag {
-    Flag_1 = 1,
-    Flag_2 = 4,
-    Flag_3 = 8,
-    Flag_4 = 16,
-    Flag_5 = 32
+    Flag_1 = 1 << 0,
+    Flag_2 = 1 << 1,
+    Flag_3 = 1 << 2,
+    Flag_4 = 1 << 3,
+    Flag_5 = 1 << 4,
+    Flag_6 = 1 << 5,
+    Flag_7 = 1 << 6,
+    Flag_8 = 1 << 7,
 }
 
 int ActiveTrolls[MAXPLAYERS+1];
@@ -30,33 +33,16 @@ enum struct Troll {
     char description[128];
 
     int mods;
-    int enabledFlags;
     int categoryID;
 
     int activeFlagClients[MAXPLAYERS+1];
 
     ArrayList flagNames;
+    int defaultFlags;
+    bool flagsMultiselectable;
 
     bool HasMod(trollModifier mod) {
         return ((this.mods >> (view_as<int>(mod)) - 1) & 1) == 1;
-    }
-
-    bool GetFlagName(trollFlag flag, char[] buffer, int maxlength) {
-        if(this.flagNames == null) return false;
-        this.flagNames.GetString(view_as<int>(flag), buffer, maxlength);
-        return true;
-    }
-
-    int AddFlag(const char[] name) {
-        if(this.flagNames == null) this.flagNames = new ArrayList(MAX_TROLL_FLAG_LENGTH);
-        int index = this.flagNames.PushString(name);
-        index = RoundFloat(Pow(2.0, float(index)));
-        this.enabledFlags |= index;
-        return index;
-    }
-
-    bool HasFlags() {
-        return this.enabledFlags > 0 && this.flagNames != null;
     }
 
     // Gets the default modifier to use
@@ -67,9 +53,36 @@ enum struct Troll {
         else return TrollMod_Invalid;
     }
 
+/////// FLAGS
+
+    bool GetFlagName(int index, char[] buffer, int maxlength) {
+        if(this.flagNames == null) return false;
+        this.flagNames.GetString(index, buffer, maxlength);
+        return true;
+    }
+
+
+    int AddFlag(const char[] name, bool defaultOn) {
+        if(defaultOn && !this.flagsMultiselectable && this.defaultFlags > 0) {
+            ThrowError("Flag \"%s\" cannot be set as default flag in single select mode, as one has already been set (%d)", name, this.defaultFlags);
+            return -1;
+        }
+        if(this.flagNames == null) this.flagNames = new ArrayList(MAX_TROLL_FLAG_LENGTH);
+        int index = this.flagNames.PushString(name);
+        index = RoundFloat(Pow(2.0, float(index)));
+        if(defaultOn)
+            this.defaultFlags |= 1 << index;
+        return index;
+    }
+
+    bool HasFlags() {
+        return this.flagNames != null && this.flagNames.Length > 0;
+    }
+
+
     bool IsFlagActive(int client, trollFlag flag) {
-        if(ActiveTrolls[client] > 0 && IsTrollActive(client, this.name) && this.enabledFlags > 0 && this.activeFlagClients[client] >= 0) {
-            return ((this.activeFlagClients[client] >> view_as<int>(flag)) & 1) == 1;
+        if(ActiveTrolls[client] > 0 && IsTrollActive(client, this.name) && this.activeFlagClients[client] >= 0) {
+            return this.activeFlagClients[client] & view_as<int>(flag) != 0;
         } 
         return false;
     }
@@ -83,6 +96,11 @@ enum struct Troll {
         return false;
     }
 
+    int GetClientFlags(int client) {
+        return this.activeFlagClients[client];
+    }
+
+/////// TROLL ACTIVATION
     void Activate(int client, int activator, trollModifier modifier = TrollMod_Invalid, int flags = 0) {
         if(modifier == TrollMod_Invalid) modifier = this.GetDefaultMod();
         ApplyTroll(client, this.name, activator, modifier, false, flags);
@@ -98,6 +116,10 @@ enum struct Troll {
 
     void Disable(int client) {
         DisableTroll(client, this.name);
+    }
+
+    bool IsActive(int client) {
+        return IsTrollActive(client, this.name);
     }
 }
 
@@ -118,7 +140,7 @@ void ResetClient(int victim, bool wipe = true) {
 ArrayList categories;
 static int categoryID = -1;
 
-int SetupTroll(const char[] name, const char description[128], int mods) {
+int SetupTroll(const char[] name, const char description[128], int mods, bool flagsMultiselectable = false, int defaultFlags = 0) {
     if(mods == 0) {
         ThrowError("Troll \"%s\" has no flags defined.", name);
         return -1;
@@ -129,6 +151,7 @@ int SetupTroll(const char[] name, const char description[128], int mods) {
     strcopy(Trolls[i].description, 128, description);
     Trolls[i].categoryID = categoryID;
     Trolls[i].mods = mods;
+    Trolls[i].flagsMultiselectable = flagsMultiselectable;
 
     strcopy(trollIds[i], MAX_TROLL_NAME_LENGTH, name); 
     trollKV.SetValue(name, i);
@@ -188,27 +211,31 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
     if(!ApplyAffect(victim, troll, activator, modifier, flags)) {
         return;
     }
-
     if(!silent) {
         if(IsTrollActive(victim, troll.name)) {
             ShowActivityEx(activator, "[FTT] ", "deactivated troll \"%s\" on %N. ", troll.name, victim);
             LogAction(activator, victim, "\"%L\" deactivated troll \"%s\" on \"%L\"", activator, troll.name, victim);
         } else {
             if(modifier == TrollMod_Constant) {
-				ShowActivityEx(activator, "[FTT] ", "activated constant troll \"%s\" for %N. ", troll.name, victim);
-            } else {
+                if(flags > 0) {
+                    ShowActivityEx(activator, "[FTT] ", "activated constant troll \"%s\" with flags=%d for %N. ", troll.name, flags, victim);
+                } else
+                    ShowActivityEx(activator, "[FTT] ", "activated constant troll \"%s\" for %N. ", troll.name, victim);
+            } else if(flags > 0) 
+				ShowActivityEx(activator, "[FTT] ", "activated troll \"%s\" with flags=%d for %N. ", troll.name, flags, victim);
+            else 
 				ShowActivityEx(activator, "[FTT] ", "activated troll \"%s\" for %N. ", troll.name, victim);
-            }
-            LogAction(activator, victim, "\"%L\" activated troll \"%s\" for \"%L\"", activator, troll.name, victim);
+            
+            LogAction(activator, victim, "\"%L\" activated troll \"%s\" with flags=%d for \"%L\"", activator, troll.name, flags, victim);
         }
     }
     if(modifier == TrollMod_Constant) {
         ActiveTrolls[victim] ^= 1 << trollIndex;
     }
-    troll.activeFlagClients[victim] = flags;
+    Trolls[troll.id].activeFlagClients[victim] = flags;
 }
 
-bool ApplyAffect(int victim, Troll troll, int activator, trollModifier modifier, int flags) {
+bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier modifier, int flags) {
     bool isActive = IsTrollActiveByRawID(victim, troll.id);
     if(StrEqual(troll.name, "Reset User")) {
         LogAction(activator, victim, "\"%L\" reset all troll effects for \"%L\"", activator, victim);
