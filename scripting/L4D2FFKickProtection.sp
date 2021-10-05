@@ -59,21 +59,24 @@ public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast)
 public Action VoteStart(int client, const char[] command, int argc) {
 	if(GetClientCount(true) == 0 || client == 0) return Plugin_Handled; //prevent votes while server is empty or if server tries calling vote
 	if(argc >= 1) {
-		char issue[32];
-		char caller[32];
+		static char issue[32];
 
 		GetCmdArg(1, issue, sizeof(issue));
-		Format(caller, sizeof(caller), "%N", client);
 
 		if(StrEqual(issue, "Kick", false)) {
-			char option[32];
+			static char option[32];
 			GetCmdArg(2, option, sizeof(option));
+
 			if(strlen(option) < 1) { //empty userid/console can't call votes
 				int target = GetClientOfUserId(StringToInt(option));
+				if(target == 0) return Plugin_Continue; //invalid, pass it through
 				AdminId callerAdmin = GetUserAdmin(client);
 				AdminId targetAdmin = GetUserAdmin(target);
-				if(callerAdmin == INVALID_ADMIN_ID && targetAdmin != INVALID_ADMIN_ID) {
+				if(targetAdmin != INVALID_ADMIN_ID) {
 					PrintToChat(target, "%N has attempted to vote kick you.", client);
+					if(callerAdmin == INVALID_ADMIN_ID) {
+						BanClient(client, 0, 0, "Attempted Vote Kick Admin", "Dick-Be-Gone", "noFF");
+					}
 					return Plugin_Handled;
 				}
 				if(GetClientTeam(target) == 2) {
