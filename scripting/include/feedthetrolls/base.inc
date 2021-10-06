@@ -71,16 +71,14 @@ enum struct Troll {
         }
         if(this.flagNames == null) this.flagNames = new ArrayList(MAX_TROLL_FLAG_LENGTH);
         int index = this.flagNames.PushString(name);
-        index = RoundFloat(Pow(2.0, float(index)));
         if(defaultOn)
-            this.defaultFlags |= 1 << index;
+            this.defaultFlags |= (1 << index);
         return index;
     }
 
     bool HasFlags() {
         return this.flagNames != null && this.flagNames.Length > 0;
     }
-
 
     bool IsFlagActive(int client, trollFlag flag) {
         if(ActiveTrolls[client] > 0 && IsTrollActive(client, this.name) && this.activeFlagClients[client] >= 0) {
@@ -132,9 +130,8 @@ ArrayList categories;
 static int categoryID = -1;
 
 void ResetClient(int victim, bool wipe = true) {
-	if(wipe) {
+	if(wipe) //TODO: Remove legacy system, including this:
         ActiveTrolls[victim] = 0;
-    }
 	SetEntityGravity(victim, 1.0);
 	SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
 	SDKUnhook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
@@ -142,7 +139,6 @@ void ResetClient(int victim, bool wipe = true) {
 	if(wpn > -1)
 		SDKUnhook(wpn, SDKHook_Reload, Event_WeaponReload);
 }
-
 
 int SetupTroll(const char[] name, const char description[128], int mods, bool flagsMultiselectable = false, int defaultFlags = 0) {
     if(mods == 0) {
@@ -161,6 +157,7 @@ int SetupTroll(const char[] name, const char description[128], int mods, bool fl
     trollKV.SetValue(name, i);
     return i++;
 }
+
 // Gets the Troll enum struct via name
 // Returns index of troll enum
 int GetTroll(const char[] name, Troll troll) {

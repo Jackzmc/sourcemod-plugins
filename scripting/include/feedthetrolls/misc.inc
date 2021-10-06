@@ -28,8 +28,8 @@ void SetWitchTarget(int witch, int target) {
 }
 
 bool ToggleMarkPlayer(int client, int target) {
-	if(g_PendingBanTroll[target]) {
-		g_PendingBanTroll[target] = false;
+	if(g_PendingBanTroll[target] > 0) {
+		g_PendingBanTroll[target] = 0;
 		LogAction(client, target, "\"%L\" unmarked \"%L\" as troll", client, target);
 		ShowActivityEx(client, "[FTT] ", "unmarked %N as troll", target);
 		return true;
@@ -41,7 +41,7 @@ bool ToggleMarkPlayer(int client, int target) {
 			Call_PushCell(client);
 			Call_PushCell(target);
 			Call_Finish();
-			g_PendingBanTroll[target] = true;
+			g_PendingBanTroll[target] = GetClientUserId(client);
 			EnableTroll(target, "No Profanity");
 			LogAction(client, target, "\"%L\" marked \"%L\" as troll", client, target);
 			ShowActivityEx(client, "[FTT] ", "marked %N as troll", target);

@@ -17,7 +17,7 @@ public void OnMapStart() {
 	//CreateTimer(30.0, Timer_AutoPunishCheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 public void OnClientPutInServer(int client) {
-	g_PendingBanTroll[client] = false;
+	g_PendingBanTroll[client] = 0;
 	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
 }
 public void OnClientAuthorized(int client, const char[] auth) {
@@ -27,11 +27,11 @@ public void OnClientAuthorized(int client, const char[] auth) {
 }
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(g_PendingBanTroll[client]) {
-		g_PendingBanTroll[client] = false;
+	if(g_PendingBanTroll[client] > 0) {
 		if(!IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID) {
-			BanIdentity(steamids[client], 0, BANFLAG_AUTHID, "TrollMarked", "ftt", 0);
+			BanIdentity(steamids[client], 0, BANFLAG_AUTHID, "Marked as Troll", "ftt", GetClientOfUserId(g_PendingBanTroll[client]));
 		}
+		g_PendingBanTroll[client] = 0;
 	}
 	steamids[client][0] = '\0';
 	ActiveTrolls[client] = 0;
@@ -352,7 +352,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
 	//Stop FF from marked:
 	if(attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
-		if(g_PendingBanTroll[attacker] && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
+		if(g_PendingBanTroll[attacker] > 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
 			
 			return Plugin_Stop;
 		}
