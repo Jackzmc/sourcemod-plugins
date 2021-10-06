@@ -10,9 +10,9 @@ enum L4D2Infected
 	L4D2Infected_Witch = 7,
 	L4D2Infected_Tank = 8
 };
-int  g_iAttackerTarget[MAXPLAYERS+1];
+int  g_iAttackerTarget[MAXPLAYERS+1], g_PendingBanTroll[MAXPLAYERS+1];
 int autoPunished = -1, autoPunishMode, lastButtonUser, lastCrescendoUser;
-bool g_bPendingItemGive[MAXPLAYERS+1], g_PendingBanTroll[MAXPLAYERS+1];
+bool g_bPendingItemGive[MAXPLAYERS+1];
 GlobalForward g_PlayerMarkedForward;
 char steamids[MAXPLAYERS+1][64];
 Handle g_hWitchAttack;
