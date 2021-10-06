@@ -36,9 +36,10 @@ void SetupTrolls() {
     SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant);
     SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
     SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
-    index = SetupTroll("Honk / Meow", "Honk", TrollMod_Constant, false);
+    index = SetupTroll("Honk / Meow", "Honk or Meow", TrollMod_Constant, false);
     Trolls[index].AddFlag("Honk", true);
     Trolls[index].AddFlag("Meow", false);
+    SetupTroll("Reversed", "Reserves their message", TrollMod_Constant);
 
     SetCategory("Health");
     SetupTroll("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant);

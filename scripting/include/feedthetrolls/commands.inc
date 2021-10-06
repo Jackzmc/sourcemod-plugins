@@ -205,11 +205,9 @@ public Action Command_ResetUser(int client, int args) {
 		}
 
 		for (int i = 0; i < target_count; i++) {
-			if(ActiveTrolls[target_list[i]] > 0) {
-				ResetClient(target_list[i], true);
-				LogAction(client, target_list[i], "\"%L\" reset all troll effects for \"%L\"", client, target_list[i]);
-				ShowActivityEx(client, "[FTT] ", "reset troll effects for \"%N\". ", target_list[i]);
-			}
+			ResetClient(target_list[i], true);
+			LogAction(client, target_list[i], "\"%L\" reset all troll effects for \"%L\"", client, target_list[i]);
+			ShowActivityEx(client, "[FTT] ", "reset troll effects for \"%N\". ", target_list[i]);
 		}
 	}
 	return Plugin_Handled;
@@ -328,7 +326,7 @@ public Action Command_ListTheTrolls(int client, int args) {
 	static char modeList[255];
 	static char name[MAX_TROLL_NAME_LENGTH];
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) > 1 && ActiveTrolls[i] > 0) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) > 1 && IsAnyTrollActive(i)) {
 			if(IsFakeClient(i)) {
 				int player = GetRealClient(i);
 				if(player != -1) i = player;

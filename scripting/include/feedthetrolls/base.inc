@@ -24,8 +24,6 @@ enum trollFlag {
     Flag_8 = 1 << 7,
 }
 
-int ActiveTrolls[MAXPLAYERS+1];
-
 StringMap trollKV;
 char trollIds[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
 
@@ -81,10 +79,7 @@ enum struct Troll {
     }
 
     bool IsFlagActive(int client, trollFlag flag) {
-        if(ActiveTrolls[client] > 0 && IsTrollActive(client, this.name) && this.activeFlagClients[client] >= 0) {
-            return this.activeFlagClients[client] & view_as<int>(flag) != 0;
-        } 
-        return false;
+        return this.activeFlagClients[client] & view_as<int>(flag) != 0;
     }
 
     bool IsFlagNameActive(int client, const char[] flagName) {
@@ -120,7 +115,7 @@ enum struct Troll {
     }
 
     bool IsActive(int client) {
-        return IsTrollActive(client, this.name);
+        return this.activeFlagClients[client] != -1;
     }
 }
 
@@ -130,8 +125,11 @@ ArrayList categories;
 static int categoryID = -1;
 
 void ResetClient(int victim, bool wipe = true) {
-	if(wipe) //TODO: Remove legacy system, including this:
-        ActiveTrolls[victim] = 0;
+	if(wipe) {
+        for(int i = 0; i < MAX_TROLLS; i++) {
+            Trolls[i].activeFlagClients[victim] = -1;
+        }
+    }
 	SetEntityGravity(victim, 1.0);
 	SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
 	SDKUnhook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
@@ -168,12 +166,19 @@ int GetTroll(const char[] name, Troll troll) {
     }
     return -1;
 }
-int GetTrollIndex(const char[] name) {
+int GetTrollID(const char[] name) {
     static int i = 0;
     if(trollKV.GetValue(name, i)) {
         return i;
     }
     return -1;
+}
+
+bool IsAnyTrollActive(int victim) {
+    for(int i = 0; i < MAX_TROLLS; i++) {
+        if(Trolls[i].activeFlagClients[victim] >= 0) return true;
+    }
+    return false;
 }
 // Gets the Troll enum struct via key index
 // Returns index of troll enum
@@ -186,9 +191,11 @@ int GetTrollByKeyIndex(int index, Troll troll) {
 
 void ToggleTroll(int client, const char[] name, int flags = 0) {
     static Troll troll;
-    int index = GetTroll(name, troll);
-    ActiveTrolls[client] ^= 1 << view_as<int>(index);
-    troll.activeFlagClients[client] = flags;
+    GetTroll(name, troll);
+    if(troll.IsActive(client))
+        troll.activeFlagClients[client] = -1;
+    else
+        troll.activeFlagClients[client] = flags;
 }
 void ApplyTroll(int victim, const char[] name, int activator, trollModifier modifier, bool silent = false, int flags = 0) {
     static Troll troll;
@@ -225,9 +232,8 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
         }
     }
     if(modifier == TrollMod_Constant) {
-        ActiveTrolls[victim] ^= 1 << trollIndex;
+        Trolls[troll.id].activeFlagClients[victim] = flags;
     }
-    Trolls[troll.id].activeFlagClients[victim] = flags;
 }
 
 bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier modifier, int flags) {
@@ -235,8 +241,7 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
     if(StrEqual(troll.name, "Reset User")) {
         LogAction(activator, victim, "\"%L\" reset all troll effects for \"%L\"", activator, victim);
         ShowActivityEx(activator, "[FTT] ", "reset troll effects for %N. ", victim);
-        ActiveTrolls[victim] = 0;
-        troll.activeFlagClients[victim] = 0;
+        troll.activeFlagClients[victim] = -1;
         SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
         SetEntityGravity(victim, 1.0);
         return false;
@@ -323,18 +328,20 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 }
 
 bool IsTrollActive(int client, const char[] troll) {
-    if(ActiveTrolls[client] == 0) return false;
+    if(troll[0] == '\0') {
+        ThrowError("Troll name is empty");
+        return false;
+    }
     static int i = 0;
     if(trollKV.GetValue(troll, i)) {
-        return ((ActiveTrolls[client] >> i) & 1) == 1;
+        return Trolls[i].activeFlagClients[client] != -1;
     }
     ThrowError("Troll \"%s\" does not exist", troll);
     return false; //errors instead but compiler no like
 }
 
 bool IsTrollActiveByRawID(int client, int id) {
-    if(ActiveTrolls[client] == 0) return false;
-    return ((ActiveTrolls[client] >> id) & 1) == 1;
+    return Trolls[id].activeFlagClients[client] != -1;
 }
 
 
