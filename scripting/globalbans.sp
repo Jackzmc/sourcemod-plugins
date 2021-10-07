@@ -37,7 +37,7 @@ public void OnPluginStart() {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool ConnectDB() {
-    char error[255];
+    static char error[255];
     g_db = SQL_Connect(DB_NAME, true, error, sizeof(error));
     if (g_db == null) {
         LogError("Database error %s", error);
@@ -59,7 +59,7 @@ bool ConnectDB() {
 
 public void OnClientAuthorized(int client, const char[] auth) {
     if(!StrEqual(auth, "BOT", true)) {
-        char query[256], ip[32];
+        static char query[256], ip[32];
         GetClientIP(client, ip, sizeof(ip));
         Format(query, sizeof(query), "SELECT `reason`, `steamid`, `expired` FROM `bans` WHERE `steamid` = '%s' OR ip = '?'", auth, ip);
         g_db.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
@@ -74,8 +74,8 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
         }else{
             executor = "CONSOLE";
         }
-        char query[255];
-        char expiresDate[64];
+        static char query[255];
+        static char expiresDate[64];
         if(time > 0) {
             Format(expiresDate, sizeof(expiresDate), "%d", GetTime() + (time * 60000));
         }else{
@@ -109,8 +109,8 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
     GetClientAuthId(client, AuthId_Steam2, identity, sizeof(identity));
     GetClientIP(client, ip, sizeof(ip));
 
-    char query[255];
-    char expiresDate[64];
+    static char query[255];
+    static char expiresDate[64];
     if(time > 0) {
         Format(expiresDate, sizeof(expiresDate), "%d", GetTime() + (time * 60000));
     }else{
@@ -132,7 +132,7 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
 
 public Action OnRemoveBan(const char[] identity, int flags, const char[] command, any source) {
     if(flags == BANFLAG_AUTHID) {
-        char query[128];
+        static char query[128];
         Format(query, sizeof(query), "DELETE FROM `bans` WHERE steamid = '%s'", identity);
         g_db.Query(DB_OnRemoveBanQuery, query, flags);
     }
@@ -154,7 +154,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
         //No failure, check the data.
         if(results.RowCount > 0 && client) {
             results.FetchRow();
-            char reason[128], steamid[64];
+            static char reason[128], steamid[64];
             DBResult reasonResult;
             results.FetchString(1, steamid, sizeof(steamid));
             bool expired = results.FetchInt(2) == 1;
@@ -168,7 +168,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
                     else
                         KickClient(client, "You have been banned from this server.");
                     
-                    char query[128];
+                    static char query[128];
                     Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = ?", steamid);
                     db.Query(DB_OnBanQuery, query);
                 }else{
@@ -180,7 +180,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
 }
 
 void DeleteBan(const char[] steamid) {
-    char query[128];
+    static char query[128];
     Format(query, sizeof(query), "DELETE FROM `bans` WHERE steamid = '%s'", steamid);
     g_db.Query(DB_OnRemoveBanQuery, query);
 }
