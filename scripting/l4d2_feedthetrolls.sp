@@ -161,23 +161,13 @@ bool IsPlayerFarDistance(int client, float distance) {
 	return client == farthestClient && difference > distance;
 }
 
-int GetAutoPunishMode() {
-	int number = 2 ^ GetRandomInt(0, AUTOPUNISH_MODE_COUNT - 1);
-	if(hAutoPunish.IntValue & number == 0) {
-		return GetAutoPunishMode();
-	}else{
-		return number;
-	}
-}
-
 stock int GetPrimaryReserveAmmo(int client) {
 	int weapon = GetPlayerWeaponSlot(client, 0);
 	if(weapon > -1) {
 		int primaryAmmoType = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
 		return GetEntData(client, g_iAmmoTable + (primaryAmmoType * 4));
-	} else {
-		return -1;
 	}
+	return -1;
 }
 stock bool SetPrimaryReserveAmmo(int client, int amount) {
 	int weapon = GetPlayerWeaponSlot(client, 0);
@@ -185,9 +175,8 @@ stock bool SetPrimaryReserveAmmo(int client, int amount) {
 		int primaryAmmoType = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
 		SetEntData(client, g_iAmmoTable + (primaryAmmoType * 4), amount);
 		return true;
-	} else {
-		return false;
 	}
+	return false;
 }
 
 stock void SendChatToAll(int client, const char[] message) {
@@ -202,33 +191,12 @@ stock void SendChatToAll(int client, const char[] message) {
 }
 
 stock float GetTempHealth(int client) {
-	//First filter -> Must be a valid client, successfully in-game and not an spectator (The dont have health).
-	if(client <= 0 || !IsValidEntity(client) || !IsClientInGame(client)|| !IsPlayerAlive(client) || IsClientObserver(client)) {
-		return -1.0;
-	}
+	if(client <= 0 || !IsValidEntity(client) || !IsClientInGame(client)|| !IsPlayerAlive(client) || IsClientObserver(client)) return -1.0;
+	if(GetClientTeam(client) != 2) return 0.0;
 	
-	//If the client is not on the survivors team, then just return the normal client health.
-	if(GetClientTeam(client) != 2) {
-		return 0.0;
-	}
-	
-	//First, we get the amount of temporal health the client has
 	float buffer = GetEntPropFloat(client, Prop_Send, "m_healthBuffer");
-
-	//In case the buffer is 0 or less, we set the temporal health as 0, because the client has not used any pills or adrenaline yet
 	if(buffer <= 0.0) return 0.0;
-
-
-	//This is the difference between the time we used the temporal item, and the current time
 	float difference = GetGameTime() - GetEntPropFloat(client, Prop_Send, "m_healthBufferTime");
-	
-	//We get the decay rate from this convar (Note: Adrenaline uses this value)
-	float decay = GetConVarFloat(FindConVar("pain_pills_decay_rate"));
-	
-	//This is a constant we create to determine the amount of health. This is the amount of time it has to pass
-	//before 1 Temporal HP is consumed.
-	float constant = 1.0 / decay;
-	
-	//Then we do the calcs
-	return buffer - (difference / constant);
+	float decay = FindConVar("pain_pills_decay_rate").FloatValue;
+	return buffer - (difference / (1.0 / decay));
 }

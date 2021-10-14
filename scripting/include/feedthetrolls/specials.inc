@@ -71,7 +71,7 @@ bool SpawnSpecialNear(int target, int specialType) {
 
 // doesnt seem to work with l4dhooks methods
 void BypassLimit() {
-	int bot = CreateFakeClient("InfectedBot");
+	int bot = CreateFakeClient("Infected Bot");
 	if (bot != 0) {
 		ChangeClientTeam(bot, 3);
 		CreateTimer(0.1, Timer_KickBot, bot);

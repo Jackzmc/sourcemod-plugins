@@ -181,7 +181,7 @@ public int ChooseClumsySlotHandler(Menu menu, MenuAction action, int param1, int
 		} else {
 			ThrowItemToClosestPlayer(client, slot);
 		}
-		LogAction(param1, client, "\"%L\" activated troll \"Throw It all\" for \"%L\"", param1, client);
+		LogAction(param1, client, "\"%L\" activated troll \"Throw It all\" slot=%d for \"%L\"", param1, slot, client);
 		ShowActivityEx(param1, "[FTT] ", "activated troll \"Throw It All\" for %N. ", client);
 
 		ShowThrowItAllMenu(param1, userid);
@@ -233,7 +233,7 @@ public int ChooseTrollFlagHandler(Menu menu, MenuAction action, int param1, int 
 		int keyIndex = StringToInt(str[1]);
 		int modifiers = StringToInt(str[2]);
 		int flags = StringToInt(str[3]);
-		bool done = StringToInt(str[4]) == 1;
+		int nextIndex = StringToInt(str[4]);
 
 		if(client == 0) {
 			ReplyToCommand(param1, "FTT: Could not acquire player");
@@ -243,19 +243,24 @@ public int ChooseTrollFlagHandler(Menu menu, MenuAction action, int param1, int 
 		static Troll troll;
 		GetTrollByKeyIndex(keyIndex, troll);
 
-		if(done || !troll.flagsMultiselectable) {
-			if(modifiers > 0) {
-				if(modifiers == 1 || modifiers == 3)
-					troll.Activate(client, param1, TrollMod_Instant, flags);
-				if(modifiers == 2 || modifiers == 3)
-					troll.Activate(client, param1, TrollMod_Constant, flags);
-			} else {
-				troll.Activate(client, param1, TrollMod_Invalid, flags);
+		static TrollFlagPrompt prompt;
+		if(nextIndex != -1) {
+			nextIndex = GetNextPrompt(troll, flags, nextIndex);
+			if(nextIndex != -1) {
+				ShowSelectFlagMenu(param1, userid, modifiers, troll, flags, nextIndex);
+				return;
 			}
-			ShowTrollsForCategory(param1, userid, troll.categoryID);
-		} else {
-			ShowSelectFlagMenu(param1, userid, modifiers, troll, flags);
 		}
+
+		if(modifiers > 0) {
+			if(modifiers & view_as<int>(TrollMod_Instant))
+				troll.Activate(client, param1, TrollMod_Instant, flags);
+			if(modifiers & view_as<int>(TrollMod_Constant))
+				troll.Activate(client, param1, TrollMod_Constant, flags);
+		} else {
+			troll.Activate(client, param1, TrollMod_Invalid, flags);
+		}
+		ShowTrollsForCategory(param1, userid, troll.categoryID);
 
 	} else if (action == MenuAction_End)	
 		delete menu;
@@ -332,37 +337,52 @@ void ShowTrollsForCategory(int client, int userid, int category) {
 	trollMenu.Display(client, 0);
 }
 
-void ShowSelectFlagMenu(int activator, int victimUserID, int modifiers, Troll troll, int prevFlags = 0) {
-	static char info[MAX_TROLL_NAME_LENGTH+16];
+void ShowSelectFlagMenu(int activator, int victimUserID, int modifiers, Troll troll, int prevFlags = -1, int promptIndex = 0) {
+	static char info[MAX_TROLL_NAME_LENGTH+16]; //victimUSERID|trollID|modifiers|flags||flagIndex
 	static char name[32];
 
-
 	Menu flagMenu = new Menu(ChooseTrollFlagHandler);
-	if(troll.flagsMultiselectable) {
-		if(prevFlags == 0) prevFlags = troll.defaultFlags;
-		Format(info, sizeof(info), "%s: Choose flags (Multiple)", troll.name);
-		flagMenu.SetTitle(info);
 
-		Format(info, sizeof(info), "%d|%d|%d|%d|1", victimUserID, troll.id, modifiers, prevFlags);
-		flagMenu.AddItem(info, "Apply Troll / Finish");
+	TrollFlagPrompt prompt;
+	troll.GetFlagPrompt(promptIndex, prompt);
+	prompt.GetPromptText(info, sizeof(info));
+
+	Format(info, sizeof(info), "%s: %s", troll.name, info);
+	flagMenu.SetTitle(info);
+
+	// If there is another prompt, go to this index, or be done (-1)
+	int nextIndex = (promptIndex < troll.flagPrompts.Length - 1) ? promptIndex + 1 : -1;
+	
+	if(prompt.multiselect) {
+		if(prevFlags == -1) prevFlags = prompt.defaults;
+		
+		Format(info, sizeof(info), "%d|%d|%d|%d|%d", victimUserID, troll.id, modifiers, prevFlags, nextIndex);
+		if(nextIndex == -1)
+			flagMenu.AddItem(info, "Apply Troll / Finish");
+		else
+			flagMenu.AddItem(info, "Next Prompt");
 
 		for(int i = 0; i < troll.flagNames.Length; i++) {
-			troll.flagNames.GetString(i, name, sizeof(name));
 			int a = 1 << i;
-			if(prevFlags > 0 && prevFlags & a == a)
-				Format(name, sizeof(name), "%s (On)", name);
-			int newFlags = prevFlags ^ a;
-			Format(info, sizeof(info), "%d|%d|%d|%d|0", victimUserID, troll.id, modifiers, newFlags);
-			flagMenu.AddItem(info, name);
+			if(prompt.flags & a) {
+				troll.flagNames.GetString(i, name, sizeof(name));
+				if(prevFlags > 0 && prevFlags & a)
+					Format(name, sizeof(name), "%s (On)", name);
+				int newFlags = prevFlags ^ a;
+				Format(info, sizeof(info), "%d|%d|%d|%d|%d", victimUserID, troll.id, modifiers, newFlags, promptIndex);
+				flagMenu.AddItem(info, name);
+			}
 		}
 	} else {
-		Format(info, sizeof(info), "%s: Choose flags", troll.name);
-		flagMenu.SetTitle(info);
-
+		if(prevFlags == -1) prevFlags = 0;
+		// Single choice only
 		for(int i = 0; i < troll.flagNames.Length; i++) {
-			troll.flagNames.GetString(i, name, sizeof(name));
-			Format(info, sizeof(info), "%d|%d|%d|%d|0", victimUserID, troll.id, modifiers, 1 << i);
-			flagMenu.AddItem(info, name);
+			if(prompt.flags & 1 << i) {
+				troll.flagNames.GetString(i, name, sizeof(name));
+				int newFlags = prevFlags | 1 << i;
+				Format(info, sizeof(info), "%d|%d|%d|%d|%d", victimUserID, troll.id, modifiers, newFlags, nextIndex);
+				flagMenu.AddItem(info, name);
+			}
 		}
 	}
 	flagMenu.ExitButton = true;
@@ -377,8 +397,15 @@ void ShowThrowItAllMenu(int client, int userid) {
 	static char itmName[32];
 	Format(info, sizeof(info), "%d|-1", userid);
 	itmMenu.AddItem(info, "All Items");
+
+	int victim = GetClientOfUserId(userid);
+	if(victim == 0) {
+		ReplyToCommand(client, "FTT: Could not acquire player");
+		return;
+	}
+	
 	for(int slot = 0; slot <= 4; slot++) {
-		int item = GetPlayerWeaponSlot(client, slot);
+		int item = GetPlayerWeaponSlot(victim, slot);
 		if(item > -1) {
 			GetEdictClassname(item, itmName, sizeof(itmName));
 			Format(info, sizeof(info), "%d|%d", userid, slot);
@@ -387,4 +414,17 @@ void ShowThrowItAllMenu(int client, int userid) {
 	}
 	itmMenu.ExitButton = true;
 	itmMenu.Display(client, 0);
+}
+
+int GetNextPrompt(Troll troll, int flags, int currentPrompt = 0) {
+	static TrollFlagPrompt prompt;
+	//If this prompt requires flags but they don't exist, skip to next that is valid or be done:
+	for(int i = currentPrompt; i < troll.flagPrompts.Length; i++) {
+		troll.GetFlagPrompt(i, prompt);
+		if(prompt.requireFlags & flags) {
+			return i;
+		}
+	}
+	// No suitable prompts found, mark it as done:
+	return -1;
 }

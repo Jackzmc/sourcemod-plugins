@@ -12,7 +12,6 @@ void SetupTrolls() {
     index = SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant, false);
     AddMagnetFlags(index);
     index = SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant, false);
-    AddMagnetFlags(index);
 
     SetCategory("Infected");
     SetupTroll("Swarm", "Swarms a player with zombies. Requires swarm plugin", TrollMod_Instant | TrollMod_Constant);
@@ -22,8 +21,13 @@ void SetupTrolls() {
     SetupTroll("Goo", "Spawns a spitter puddle underneath them", TrollMod_Instant);
 
     SetCategory("Items");
-    SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
+    index = SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant, false);
+    //Can't add directly, is custom troll: 
+    // Trolls[index].AddFlag("Throw to Admin", true);
+    // Trolls[index].AddFlag("Drop At Feet", false);
+    // Trolls[index].AddFlag("Drop At Admin", false);
     index = SetupTroll("Bad Throw", "Player drops throwables on throw, and biles/molotovs themselves", TrollMod_Constant, true);
+    Trolls[index].AddFlagPrompt(true);
     Trolls[index].AddFlag("Biles", true);
     Trolls[index].AddFlag("Molotovs", true);
     Trolls[index].AddFlag("Pipebombs", true);
@@ -34,11 +38,18 @@ void SetupTrolls() {
 
     SetCategory("Chat");
     SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant);
-    SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
+    index = SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
+    Trolls[index].AddFlagPrompt(false);
+    Trolls[index].AddFlag("Show Modified to Them", true);
+    Trolls[index].AddFlag("Show Original to Them", false);
     SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
     index = SetupTroll("Honk / Meow", "Honk or Meow", TrollMod_Constant, false);
+    Trolls[index].AddCustomFlagPrompt("Choose Sound Type:");
     Trolls[index].AddFlag("Honk", true);
     Trolls[index].AddFlag("Meow", false);
+    Trolls[index].AddCustomFlagPrompt("Choose Chat modifier:", false, 1);
+    Trolls[index].AddFlag("Show Modified to Them", true);
+    Trolls[index].AddFlag("Show Original to Them", false);
     SetupTroll("Reversed", "Reserves their message", TrollMod_Constant);
 
     SetCategory("Health");
@@ -46,6 +57,11 @@ void SetupTrolls() {
     SetupTroll("Temp Health Quick Drain", "Makes a player's temporarily health drain very quickly", TrollMod_Constant);
     SetupTroll("Slow Drain", "Will make the player slowly lose health over time", TrollMod_Constant);
     SetupTroll("KillMeSoftly", "Make player eat or waste pills whenever possible", TrollMod_Instant | TrollMod_Constant);
+    index = SetupTroll("Reverse FF", "All damage dealt to a player is reversed", TrollMod_Constant, false);
+    Trolls[index].AddCustomFlagPrompt("Choose Reverse FF", false);
+    Trolls[index].AddFlag("1:1 Ratio", true);
+    Trolls[index].AddFlag("2x Ratio", false);
+    Trolls[index].AddFlag("0.5x Ratio", false);
 
     SetCategory("Misc");
     SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
@@ -59,7 +75,7 @@ void SetupTrolls() {
     
 
     // Initialize the default flag values to -1
-    for(int i = 0; i < MAX_TROLLS; i++) {
+    for(int i = 0; i <= MAX_TROLLS; i++) {
         for(int j = 1; j <= MAXPLAYERS; j++) {
             Trolls[i].activeFlagClients[j] = -1;
         }
@@ -67,6 +83,7 @@ void SetupTrolls() {
 }
 
 void AddMagnetFlags(int index) {
+    Trolls[index].AddCustomFlagPrompt("Choose Magnet Chance:", false);
     Trolls[index].AddFlag("Always (100%)", true);
     Trolls[index].AddFlag("Half Time (50%)", false);
     Trolls[index].AddFlag("Rare (10%)", false);

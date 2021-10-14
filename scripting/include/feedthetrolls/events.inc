@@ -147,7 +147,10 @@ public Action L4D2_OnEntityShoved(int client, int entity, int weapon, float vecD
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
 	if(sArgs[0] == '@') return Plugin_Continue;
 	static int honkID;
+	static int profanityID;
 	if(honkID == 0) honkID = GetTrollID("Honk / Meow");
+	if(profanityID == 0) profanityID = GetTrollID("No Profanity");
+
 	if(Trolls[honkID].IsActive(client) && Trolls[honkID].activeFlagClients[client] & 1) {
 		static char strings[32][7];
 		int words = ExplodeString(sArgs, " ", strings, sizeof(strings), 5);
@@ -250,7 +253,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		PrintToServer("%N: %s", client, sArgs);
 		CPrintToChatAll("{blue}%N {default}:  %s", client, newMessage);
 		return Plugin_Handled;
-	}else if(IsTrollActive(client, "No Profanity")) {
+	}else if(Trolls[profanityID].IsActive(client)) {
 		static char strings[32][MAX_PHRASE_LENGTH];
 		ArrayList phrases;
 		bool foundWord = false;
@@ -274,7 +277,16 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			}
 			fullMessagePhraseList.GetString(GetRandomInt(0, fullMessagePhraseList.Length - 1), message, MAX_PHRASE_LENGTH);
 		}
-		CPrintToChatAll("{blue}%N {default}:  %s", client, message);
+		if(Trolls[profanityID].activeFlagClients[client] % 2) {
+			CPrintToChat(client, "{blue}%N {default}:  %s", client, sArgs);
+			for(int i = 1; i <= MaxClients; i++) {
+				if(IsClientConnected(i) && IsClientInGame(i) && i != client) {
+					CPrintToChat(i, "{blue}%N {default}:  %s", client, message);
+				}
+			}
+		} else {
+			CPrintToChatAll("{blue}%N {default}:  %s", client, message);
+		}
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
 	}
@@ -361,13 +373,25 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
 public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
 	//Stop FF from marked:
+	static int reverseFF;
+	if(reverseFF == 0) reverseFF = GetTrollID("Reverse FF");
 	if(attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
 		if(g_PendingBanTroll[attacker] > 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
 			
 			return Plugin_Stop;
 		}
-		if(IsTrollActive(attacker, "Damage Boost")) {
+		if(IsTrollActive(victim, "Damage Boost")) {
 			damage * 2;
+			return Plugin_Changed;
+		} else if(Trolls[reverseFF].IsActive(attacker) && attacker != victim && GetClientTeam(attacker) != GetClientTeam(victim)) {
+			float returnDmg = damage; //default is 1:1
+			if(Trolls[reverseFF].activeFlagClients[attacker] & 4) {
+				returnDmg /= 2.0;
+			} else if(Trolls[reverseFF].activeFlagClients[attacker] & 2) {
+				returnDmg *= 2.0;
+			}
+			SDKHooks_TakeDamage(attacker, attacker, attacker, returnDmg, damagetype, -1);
+			damage = 0.0;
 			return Plugin_Changed;
 		}
 	}
