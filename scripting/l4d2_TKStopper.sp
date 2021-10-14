@@ -150,6 +150,11 @@ public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast) {
 ///////////////////////////////////////////////////////////////////////////////
 public void Event_FinaleVehicleReady(Event event, const char[] name, bool dontBroadcast) {
 	IsFinaleEnding = true;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && isPlayerTroll[i]) {
+			PrintChatToAdmins("Note: %N is still marked as troll and will be banned after this game.", i);
+		}
+	}
 }
 
 public void OnMapEnd() {
@@ -267,4 +272,18 @@ public Action Command_IgnorePlayer(int client, int args) {
 	}
 
 	return Plugin_Handled;
+}
+
+stock void PrintChatToAdmins(const char[] format, any ...) {
+	char buffer[254];
+	VFormat(buffer, sizeof(buffer), format, 2);
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			AdminId admin = GetUserAdmin(i);
+			if(admin != INVALID_ADMIN_ID) {
+				PrintToChat(i, "%s", buffer);
+			}
+		}
+	}
+	PrintToServer("%s", buffer);
 }
