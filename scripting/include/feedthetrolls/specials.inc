@@ -28,7 +28,7 @@ stock bool FindSuitablePosition(int target, const float pos[3], float outputPos[
 float GetIdealMinDistance(int specialType) {
 	switch(specialType) {
 		// /*Boomer*/ case 2: return 1200.0;
-		/*Charger*/ case 6: return 19000.0;
+		/*Charger*/ case 6: return 19500.0;
 		/*Smoker*/ case 1: return 20000.0;
 	
 		default:
