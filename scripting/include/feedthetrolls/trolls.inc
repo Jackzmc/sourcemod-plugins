@@ -40,6 +40,9 @@ void SetupTrolls() {
     SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant);
     index = SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
     Trolls[index].AddFlagPrompt(false);
+    Trolls[index].AddFlag("Only Replace Swears", false);
+    Trolls[index].AddFlag("Replace Full Messages", true);
+    Trolls[index].AddFlagPrompt(false);
     Trolls[index].AddFlag("Show Modified to Them", true);
     Trolls[index].AddFlag("Show Original to Them", false);
     SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
@@ -87,4 +90,91 @@ void AddMagnetFlags(int index) {
     Trolls[index].AddFlag("Always (100%)", true);
     Trolls[index].AddFlag("Half Time (50%)", false);
     Trolls[index].AddFlag("Rare (10%)", false);
+}
+
+bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier modifier, int flags) {
+    bool isActive = IsTrollActiveByRawID(victim, troll.id);
+    if(StrEqual(troll.name, "Reset User")) {
+        LogAction(activator, victim, "\"%L\" reset all troll effects for \"%L\"", activator, victim);
+        ShowActivityEx(activator, "[FTT] ", "reset troll effects for %N. ", victim);
+        for(int i = 0; i <= MAX_TROLLS; i++) {
+            Trolls[i].activeFlagClients[victim] = -1;
+        }
+        SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
+        SetEntityGravity(victim, 1.0);
+        return false;
+    } else if(StrEqual(troll.name, "Slow Speed"))
+        SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", isActive ? 1.0 : 0.8);
+    else if(StrEqual(troll.name, "Higher Gravity"))
+        SetEntityGravity(victim, isActive ? 1.0 : 1.3);
+    else if(StrEqual(troll.name, "Half Primary Ammo")) {
+        int current = GetPrimaryReserveAmmo(victim);
+        SetPrimaryReserveAmmo(victim, current / 2);
+    } else if(StrEqual(troll.name, "UziRules")) {
+        DisableTroll(victim, "No Pickup");
+        DisableTroll(victim, "Primary Disable");
+        SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+    } else if(StrEqual(troll.name, "Primary Disable")) {
+        DisableTroll(victim, "UziRules");
+        DisableTroll(victim, "No Pickup");
+        SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+    } else if(StrEqual(troll.name, "No Pickup")) {
+        DisableTroll(victim, "UziRules");
+        DisableTroll(victim, "Primary Disable");
+        SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+    } else if(StrEqual(troll.name, "CameTooEarly")) {
+        ReplyToCommand(activator, "This troll mode is not implemented.");
+    } else if(StrEqual(troll.name, "KillMeSoftly")) {
+        static char wpn[32];
+        GetClientWeaponName(victim, 4, wpn, sizeof(wpn));
+        if(StrEqual(wpn, "weapon_adrenaline") || StrEqual(wpn, "weapon_pain_pills")) {
+            ClientCommand(victim, "slot5");
+            g_bPendingItemGive[victim] = true;
+        }else{
+            ReplyToCommand(activator, "User does not have pills or adrenaline");
+            return false;
+        }
+        //TODO: Implement TrollMod_Constant
+        return false;
+    } else if(StrEqual(troll.name, "Throw It All")) {
+        if(modifier == TrollMod_Instant)
+            ThrowAllItems(victim);
+        if(hThrowTimer == INVALID_HANDLE && modifier == TrollMod_Constant) {
+            hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
+        }
+    } else if(StrEqual(troll.name, "Swarm")) {
+        if(modifier == TrollMod_Instant) {
+            L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", victim, 15000);
+        }
+        return true;
+    } else if(StrEqual(troll.name, "Gun Jam")) {
+        int wpn = GetClientWeaponEntIndex(victim, 0);
+        if(wpn > -1)
+            SDKHook(wpn, SDKHook_Reload, Event_WeaponReload);
+        else {
+            ReplyToCommand(activator, "Victim does not have a primary weapon.");
+            return false;
+        }
+    } else if(StrEqual(troll.name, "Vomit Player"))
+        L4D_CTerrorPlayer_OnVomitedUpon(victim, victim);
+    else if(StrEqual(troll.name, "Inface Special")) {
+        FakeClientCommand(victim, "sm_inface");
+        return false;
+    } else if(StrEqual(troll.name, "Insta Special")) {
+        FakeClientCommand(victim, "sm_insta");
+        return false;
+    } else if(StrEqual(troll.name, "Goo")) {
+        static float pos[3], ang[3];
+        GetClientAbsOrigin(victim, pos);
+        GetClientAbsAngles(victim, ang);
+        L4D2_SpitterPrj(victim, pos, ang);
+    } else if(StrEqual(troll.name, "Stagger")) {
+        L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
+    } else {
+        PrintToServer("[FTT] Warn: Possibly invalid troll, no action defined for \"%s\"", troll.name);
+        #if defined DEBUG
+        ReplyToCommand(activator, "[FTT/Debug] If nothing occurs, this troll possibly was not implemented correctly. ");
+        #endif
+    }
+    return true;
 }
