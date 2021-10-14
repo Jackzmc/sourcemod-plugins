@@ -161,7 +161,16 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		int length = 7 * words;
 		char[] message = new char[length];
 		ImplodeStrings(strings, 32, " ", message, length);
-		CPrintToChatAll("{blue}%N {default}:  %s", client, message);
+		if(Trolls[honkID].activeFlagClients[client] & 1)
+			CPrintToChatAll("{blue}%N {default}:  %s", client, message);
+		else {
+			CPrintToChat(client, "{blue}%N {default}:  %s", client, message);
+			for(int i = 1; i <= MaxClients; i++) {
+				if(IsClientConnected(i) && IsClientInGame(i) && i != client) {
+					CPrintToChat(i, "{blue}%N {default}:  %s", client, message);
+				}
+			}
+		}
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
 	} else if(IsTrollActive(client, "Reversed")) {
