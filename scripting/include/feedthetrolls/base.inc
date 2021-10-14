@@ -29,6 +29,7 @@ StringMap trollKV;
 char trollIds[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
 char DEFAULT_FLAG_PROMPT_MULTIPLE[] = "Choose flags (Multiple)";
 char DEFAULT_FLAG_PROMPT[] = "Choose flags";
+bool SilentMenuSelected[MAXPLAYERS+1];
 
 static int g_trollAddPromptIndex;
 
@@ -176,7 +177,7 @@ enum struct Troll {
 
     void Activate(int client, int activator, trollModifier modifier = TrollMod_Invalid, int flags = 0) {
         if(modifier == TrollMod_Invalid) modifier = this.GetDefaultMod();
-        ApplyTroll(client, this.name, activator, modifier, false, flags);
+        ApplyTroll(client, this.name, activator, modifier, flags);
     }
 
     void Toggle(int client, int flags) {
@@ -278,7 +279,7 @@ void ToggleTroll(int client, const char[] name, int flags = 0) {
         troll.activeFlagClients[client] = flags;
 }
 
-void ApplyTroll(int victim, const char[] name, int activator, trollModifier modifier, bool silent = false, int flags = 0) {
+void ApplyTroll(int victim, const char[] name, int activator, trollModifier modifier, int flags = 0) {
     static Troll troll;
     int trollIndex = GetTroll(name, troll);
     if(trollIndex == -1) {
@@ -295,7 +296,7 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
         return;
     }
     bool isActive = IsTrollActive(victim, troll.name);
-    if(!silent) {
+    if(!SilentMenuSelected[activator]) {
         if(isActive) {
             ShowActivityEx(activator, "[FTT] ", "deactivated troll \"%s\" on %N. ", troll.name, victim);
             LogAction(activator, victim, "\"%L\" deactivated troll \"%s\" on \"%L\"", activator, troll.name, victim);
@@ -312,103 +313,10 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
             
             LogAction(activator, victim, "\"%L\" activated troll \"%s\" with flags=%d for \"%L\"", activator, troll.name, flags, victim);
         }
-    }
+    } else SilentMenuSelected[activator] = false;
     if(modifier == TrollMod_Constant) {
         Trolls[troll.id].activeFlagClients[victim] = isActive ? -1 : flags;
     }
-}
-
-bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier modifier, int flags) {
-    bool isActive = IsTrollActiveByRawID(victim, troll.id);
-    if(StrEqual(troll.name, "Reset User")) {
-        LogAction(activator, victim, "\"%L\" reset all troll effects for \"%L\"", activator, victim);
-        ShowActivityEx(activator, "[FTT] ", "reset troll effects for %N. ", victim);
-        for(int i = 0; i <= MAX_TROLLS; i++) {
-            Trolls[i].activeFlagClients[victim] = -1;
-        }
-        SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
-        SetEntityGravity(victim, 1.0);
-        return false;
-    } else if(StrEqual(troll.name, "Slow Speed"))
-        if(isActive)
-            SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
-        else
-            SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 0.8);
-    else if(StrEqual(troll.name, "Higher Gravity"))
-        if(isActive)
-            SetEntityGravity(victim, 1.0);
-        else
-            SetEntityGravity(victim, 1.3);
-    else if(StrEqual(troll.name, "Half Primary Ammo")) {
-        int current = GetPrimaryReserveAmmo(victim);
-        SetPrimaryReserveAmmo(victim, current / 2);
-    } else if(StrEqual(troll.name, "UziRules")) {
-        DisableTroll(victim, "No Pickup");
-        DisableTroll(victim, "Primary Disable");
-        SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
-    } else if(StrEqual(troll.name, "Primary Disable")) {
-        DisableTroll(victim, "UziRules");
-        DisableTroll(victim, "No Pickup");
-        SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
-    } else if(StrEqual(troll.name, "No Pickup")) {
-        DisableTroll(victim, "UziRules");
-        DisableTroll(victim, "Primary Disable");
-        SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
-    } else if(StrEqual(troll.name, "CameTooEarly")) {
-        ReplyToCommand(activator, "This troll mode is not implemented.");
-    } else if(StrEqual(troll.name, "KillMeSoftly")) {
-        static char wpn[32];
-        GetClientWeaponName(victim, 4, wpn, sizeof(wpn));
-        if(StrEqual(wpn, "weapon_adrenaline") || StrEqual(wpn, "weapon_pain_pills")) {
-            ClientCommand(victim, "slot5");
-            g_bPendingItemGive[victim] = true;
-        }else{
-            ReplyToCommand(activator, "User does not have pills or adrenaline");
-            return false;
-        }
-        //TODO: Implement TrollMod_Constant
-        return false;
-    } else if(StrEqual(troll.name, "Throw It All")) {
-        if(modifier == TrollMod_Instant)
-            ThrowAllItems(victim);
-        if(hThrowTimer == INVALID_HANDLE && modifier == TrollMod_Constant) {
-            hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
-        }
-    } else if(StrEqual(troll.name, "Swarm")) {
-        if(modifier == TrollMod_Instant) {
-            L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", victim, 15000);
-        }
-        return true;
-    } else if(StrEqual(troll.name, "Gun Jam")) {
-        int wpn = GetClientWeaponEntIndex(victim, 0);
-        if(wpn > -1)
-            SDKHook(wpn, SDKHook_Reload, Event_WeaponReload);
-        else {
-            ReplyToCommand(activator, "Victim does not have a primary weapon.");
-            return false;
-        }
-    } else if(StrEqual(troll.name, "Vomit Player"))
-        L4D_CTerrorPlayer_OnVomitedUpon(victim, victim);
-    else if(StrEqual(troll.name, "Inface Special")) {
-        FakeClientCommand(victim, "sm_inface");
-        return false;
-    } else if(StrEqual(troll.name, "Insta Special")) {
-        FakeClientCommand(victim, "sm_insta");
-        return false;
-    } else if(StrEqual(troll.name, "Goo")) {
-        static float pos[3], ang[3];
-        GetClientAbsOrigin(victim, pos);
-        GetClientAbsAngles(victim, ang);
-        L4D2_SpitterPrj(victim, pos, ang);
-    } else if(StrEqual(troll.name, "Stagger")) {
-        L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
-    } else {
-        #if defined DEBUG
-        PrintToServer("[FTT] Possibly invalid troll, no action: %s", troll.name);
-        ReplyToCommand(activator, "[FTT/Debug] If nothing occurs, this troll possibly was not implemented correctly. ");
-        #endif
-    }
-    return true;
 }
 
 bool IsTrollActive(int client, const char[] troll) {

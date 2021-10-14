@@ -255,6 +255,50 @@ public Action Command_ApplyUser(int client, int args) {
 	return Plugin_Handled;
 }
 
+public Action Command_ApplyUserSilent(int client, int args) {
+	if(args < 1) {
+		SilentMenuSelected[client] = true;
+		ShowTrollMenu(client);
+	}else{
+		char arg1[32], arg2[16];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+		StringToLower(arg2);
+
+		static char target_name[MAX_TARGET_LENGTH];
+		int target_list[1], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			1,
+			COMMAND_FILTER_NO_MULTI, 
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		&& target_list[0] > 0) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		SilentMenuSelected[client] = true;
+		if(args == 2) {
+			static char key[32];
+			for(int i = 0; i < categories.Length; i++) {
+				categories.GetString(i, key, sizeof(key));
+				if(StrEqual(key, arg2, false)) {
+					ShowTrollsForCategory(client, GetClientUserId(target_list[0]), i);
+					return Plugin_Handled;
+				}
+			} 
+			ReplyToCommand(client, "[FTT] Unknown category: '%s'", arg2);
+		}
+		SetupCategoryMenu(client, target_list[0]);
+	}
+	return Plugin_Handled;
+}
+
 public Action Command_ListModes(int client, int args) {
 	static char name[MAX_TROLL_NAME_LENGTH];
 	static Troll troll;

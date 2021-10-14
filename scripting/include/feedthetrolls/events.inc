@@ -267,8 +267,8 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		ArrayList phrases;
 		bool foundWord = false;
 		int words = ExplodeString(sArgs, " ", strings, 32, MAX_PHRASE_LENGTH);
+		// Replace all swear words
 		for(int i = 0; i < words; i++) {
-			//TODO: Check for valid working
 			phrases = GetPhrasesArray(strings[i]);
 			if(phrases != null && phrases.Length > 0) {
 				foundWord = true;
@@ -277,25 +277,30 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		}
 		int length = MAX_PHRASE_LENGTH * words;
 		char[] message = new char[length];
+
 		if(foundWord) {
 			ImplodeStrings(strings, 32, " ", message, length);
-		} else {
+		} else if(Trolls[profanityID].activeFlagClients[client] & 2) { //Replace full messages if flag enabled
 			if(!fullMessagePhraseList) {
 				PrintToServer("[FTT] Error: Could not find full message phrases!!!");
 				return Plugin_Continue;
 			}
 			fullMessagePhraseList.GetString(GetRandomInt(0, fullMessagePhraseList.Length - 1), message, MAX_PHRASE_LENGTH);
+		} else {
+			return Plugin_Continue;
 		}
-		if(Trolls[profanityID].activeFlagClients[client] % 2) {
+
+		if(Trolls[profanityID].activeFlagClients[client] & 8) { //If 'show original' enabled
 			CPrintToChat(client, "{blue}%N {default}:  %s", client, sArgs);
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i) && i != client) {
 					CPrintToChat(i, "{blue}%N {default}:  %s", client, message);
 				}
 			}
-		} else {
+		} else { //else show modified to all
 			CPrintToChatAll("{blue}%N {default}:  %s", client, message);
 		}
+		// Print original in console no matter what
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
 	}
