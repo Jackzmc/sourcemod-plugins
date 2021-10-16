@@ -34,6 +34,11 @@ void SetupTrolls() {
     SetupTroll("No Pickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", TrollMod_Constant);
     SetupTroll("UziRules", "Picking up a weapon gives them a UZI instead", TrollMod_Constant);
     SetupTroll("Primary Disable", "Player cannot pickup any weapons, only melee/pistols", TrollMod_Constant);
+    index = SetupTroll("Dull Melee", "Player's melee weapon does 0 damage (based on %). Headshots still work", TrollMod_Constant);
+    Trolls[index].AddFlagPrompt(false);
+    Trolls[index].AddFlag("Always (100%)", false);
+    Trolls[index].AddFlag("Half Time (50%)", true);
+    Trolls[index].AddFlag("Rare (10%)", false);
     SetupTroll("Half Primary Ammo", "Cuts their primary reserve ammo in half", TrollMod_Instant);
 
     SetCategory("Chat");
@@ -170,8 +175,8 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
         L4D2_SpitterPrj(victim, pos, ang);
     } else if(StrEqual(troll.name, "Stagger")) {
         L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
-    } else {
-        PrintToServer("[FTT] Warn: Possibly invalid troll, no action defined for \"%s\"", troll.name);
+    } else if(modifier != TrollMod_Constant) {
+        PrintToServer("[FTT] Warn: Possibly invalid troll, no apply action defined for \"%s\"", troll.name);
         #if defined DEBUG
         ReplyToCommand(activator, "[FTT/Debug] If nothing occurs, this troll possibly was not implemented correctly. ");
         #endif
