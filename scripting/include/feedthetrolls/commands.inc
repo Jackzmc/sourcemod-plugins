@@ -316,50 +316,53 @@ public Action Command_ListTheTrolls(int client, int args) {
 		GetCmdArg(1, arg1, sizeof(arg1));
 
 		static char target_name[MAX_TARGET_LENGTH];
-		int target_list[1], target_count;
+		int target_list[MAXPLAYERS], target_count;
 		bool tn_is_ml;
 		if ((target_count = ProcessTargetString(
 			arg1,
 			client,
 			target_list,
-			1,
-			COMMAND_FILTER_NO_MULTI, 
+			MAXPLAYERS,
+			0, 
 			target_name,
 			sizeof(target_name),
 			tn_is_ml)) <= 0
-		&& target_list[0] > 0) {
+		|| target_list[0] == 0) {
 			/* This function replies to the admin with a failure message */
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		int target = target_list[0];
-		if(IsPlayerAlive(target))
-			ReplyToCommand(client, "> Active Trolls for %N:", target);
-		else
-			ReplyToCommand(client, "> Active Trolls for %N:  (Paused)", target);
+		
+		for(int p = 0; p < target_count; p++) {
+			int target = target_list[p];
+			if(IsPlayerAlive(target))
+				ReplyToCommand(client, "> Active Trolls for %N:", target);
+			else
+				ReplyToCommand(client, "> Active Trolls for %N:  (Paused)", target);
 
-		if(IsFakeClient(target)) {
-			int player = GetRealClient(target);
-			if(player != -1) target = player;
-		}
+			if(IsFakeClient(target)) {
+				int player = GetRealClient(target);
+				if(player != -1) target = player;
+			}
 
-		for(int j = 1; j <= MAX_TROLLS; j++) {
-			if(trollIds[j][0] != '\0' && IsTrollActive(target, trollIds[j])) {
-				if(Trolls[j].activeFlagClients[target] > 0) {
-					static char list[MAX_TROLL_FLAG_LENGTH*8]; //May in future need to up magic number 8 (supports 8 active flags )
-					static char buffer[MAX_TROLL_FLAG_LENGTH];
-					for(int i = 0; i < Trolls[j].flagNames.Length; i++) {
-						int a = (1 << i);
-						if(Trolls[j].activeFlagClients[target] & a) {
-							Trolls[j].flagNames.GetString(i, buffer, sizeof(buffer));
-							Format(list, sizeof(list), "%s%s;", list, buffer);
-						} else {
-							Trolls[j].flagNames.GetString(i, buffer, sizeof(buffer));
+			for(int j = 1; j <= MAX_TROLLS; j++) {
+				if(trollIds[j][0] != '\0' && IsTrollActive(target, trollIds[j])) {
+					if(Trolls[j].activeFlagClients[target] > 0) {
+						static char list[MAX_TROLL_FLAG_LENGTH*8]; //May in future need to up magic number 8 (supports 8 active flags )
+						static char buffer[MAX_TROLL_FLAG_LENGTH];
+						for(int i = 0; i < Trolls[j].flagNames.Length; i++) {
+							int a = (1 << i);
+							if(Trolls[j].activeFlagClients[target] & a) {
+								Trolls[j].flagNames.GetString(i, buffer, sizeof(buffer));
+								Format(list, sizeof(list), "%s%s;", list, buffer);
+							} else {
+								Trolls[j].flagNames.GetString(i, buffer, sizeof(buffer));
+							}
 						}
-					}
-					ReplyToCommand(client, "\"%s\" Flags: %s", trollIds[j], list);
-				} else
-					ReplyToCommand(client, trollIds[j]);
+						ReplyToCommand(client, "\"%s\" Flags: %s", trollIds[j], list);
+					} else
+						ReplyToCommand(client, trollIds[j]);
+				}
 			}
 		}
 		return Plugin_Handled;
