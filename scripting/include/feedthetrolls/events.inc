@@ -534,6 +534,22 @@ void EntityCreateCallback(int entity) {
 	}
 }
 
+//Dull Melee
+public Action L4D2_MeleeGetDamageForVictim(int client, int weapon, int victim, float &damage) {
+	static int dullMeleeID;
+	if(!dullMeleeID) dullMeleeID = GetTrollID("Dull Melee");
+	if(Trolls[dullMeleeID].IsActive(client)) {
+		float max = 1.0;
+		if(Trolls[dullMeleeID].activeFlagClients[client] & 2) max = 0.5;
+		else if(Trolls[dullMeleeID].activeFlagClients[client] & 4) max = 0.1;
+		if(GetRandomFloat() <= max) {
+			damage = 0.0;
+			return Plugin_Changed;
+		}
+	}
+	return Plugin_Continue;
+}
+
 int FindClosestVisibleClient(int source) {
 	static float pos[3], ang[3];
 	GetClientEyePosition(source, pos);
