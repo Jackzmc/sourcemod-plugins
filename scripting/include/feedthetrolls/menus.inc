@@ -387,6 +387,10 @@ void ShowSelectFlagMenu(int activator, int victimUserID, int modifiers, Troll tr
 		for(int i = 0; i < troll.flagNames.Length; i++) {
 			if(prompt.flags & 1 << i) {
 				troll.flagNames.GetString(i, name, sizeof(name));
+				// Add (default) indicator
+
+				if(prompt.defaults & 1 << i)
+					Format(name, sizeof(name), "%s (default)", name);
 				int newFlags = prevFlags | 1 << i; //Set flag with any from previous prompts
 				Format(info, sizeof(info), "%d|%d|%d|%d|%d", victimUserID, troll.id, modifiers, newFlags, nextIndex);
 				flagMenu.AddItem(info, name);
