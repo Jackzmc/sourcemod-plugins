@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 31
+    #define MAX_TROLLS 32
 #endif
 
 enum trollModifier {
@@ -127,7 +127,7 @@ enum struct Troll {
                 ThrowError("Flag \"%s\" cannot be set as default flag in single select mode, as one has already been set for prompt %d", name, g_trollAddPromptIndex);
                 return -1;
             }
-            prompt.defaults |= flagIndex;
+            prompt.defaults |= (1 << flagIndex);
         }
         this.flagPrompts.SetArray(g_trollAddPromptIndex, prompt); //May not be required
         return flagIndex;
@@ -222,8 +222,11 @@ int SetupTroll(const char[] name, const char description[128], int mods, bool fl
         ThrowError("Troll \"%s\" has no flags defined.", name);
         return -1;
     }
-    g_trollAddPromptIndex = 0;
     static int i = 0;
+    if(i == MAX_TROLLS + 1) {
+        ThrowError("Maximum number of trolls (%d) reached. Up MAX_TROLLS value.", MAX_TROLLS);
+    }
+    g_trollAddPromptIndex = 0;
     Trolls[i].id = i;
     strcopy(Trolls[i].name, MAX_TROLL_NAME_LENGTH, name);
     strcopy(Trolls[i].description, 128, description);
@@ -245,6 +248,7 @@ int GetTroll(const char[] name, Troll troll) {
         troll = Trolls[i];
         return i;
     }
+    PrintToServer("GetTroll: Troll was not found \"%s\"", name);
     return -1;
 }
 int GetTrollID(const char[] name) {
@@ -252,6 +256,7 @@ int GetTrollID(const char[] name) {
     if(trollKV.GetValue(name, i)) {
         return i;
     }
+    PrintToServer("GetTrollID: Troll was not found \"%s\"", name);
     return -1;
 }
 
@@ -303,15 +308,15 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
         } else {
             if(modifier == TrollMod_Constant) {
                 if(flags > 0) {
-                    ShowActivityEx(activator, "[FTT] ", "activated constant troll \"%s\" with flags=%d for %N. ", troll.name, flags, victim);
+                    ShowActivityEx(activator, "[FTT] ", "activated constant troll \"%s\" (%d) for %N. ", troll.name, flags, victim);
                 } else
                     ShowActivityEx(activator, "[FTT] ", "activated constant troll \"%s\" for %N. ", troll.name, victim);
             } else if(flags > 0) 
-				ShowActivityEx(activator, "[FTT] ", "activated troll \"%s\" with flags=%d for %N. ", troll.name, flags, victim);
+				ShowActivityEx(activator, "[FTT] ", "activated troll \"%s\" (%d) for %N. ", troll.name, flags, victim);
             else 
 				ShowActivityEx(activator, "[FTT] ", "activated troll \"%s\" for %N. ", troll.name, victim);
             
-            LogAction(activator, victim, "\"%L\" activated troll \"%s\" with flags=%d for \"%L\"", activator, troll.name, flags, victim);
+            LogAction(activator, victim, "\"%L\" activated troll \"%s\" (%d) for \"%L\"", activator, troll.name, flags, victim);
         }
     } else SilentMenuSelected[activator] = false;
     if(modifier == TrollMod_Constant) {
