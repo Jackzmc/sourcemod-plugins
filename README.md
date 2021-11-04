@@ -324,7 +324,6 @@ This plugin prevents the activation of buttons ahead of the team. It will preven
 
 _This plugin is currently in **development.**_ Current implementation may be lacking.
 
-(For technical information look at https://jackz.me/l4d2/admin/#plugins under 'Crescendo Stopper')
 
 * **Cvars:**
   * `l4d2_crescendo_percent`
