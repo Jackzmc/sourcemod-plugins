@@ -3,15 +3,16 @@
 void SetupTrolls() {
     trollKV = new StringMap();
     categories = new ArrayList(ByteCountToCells(16));
+    gRandomClients = new ArrayList();
     int index;
     SetupTroll("Reset User", "Resets the user, removes all troll effects", TrollMod_Instant);
 
     SetCategory("Magnets");
-    index = SetupTroll("Special Magnet", "Attracts ALL specials to any alive target with this troll enabled", TrollMod_Constant, false);
+    index = SetupTroll("Special Magnet", "Attracts ALL specials to any alive target with this troll enabled", TrollMod_Constant);
     AddMagnetFlags(index);
-    index = SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant, false);
+    index = SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant);
     AddMagnetFlags(index);
-    index = SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant, false);
+    index = SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
 
     SetCategory("Infected");
     SetupTroll("Swarm", "Swarms a player with zombies. Requires swarm plugin", TrollMod_Instant | TrollMod_Constant);
@@ -21,12 +22,12 @@ void SetupTrolls() {
     SetupTroll("Goo", "Spawns a spitter puddle underneath them", TrollMod_Instant);
 
     SetCategory("Items");
-    index = SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant, false);
+    index = SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
     //Can't add directly, is custom troll: 
     // Trolls[index].AddFlag("Throw to Admin", true);
     // Trolls[index].AddFlag("Drop At Feet", false);
     // Trolls[index].AddFlag("Drop At Admin", false);
-    index = SetupTroll("Bad Throw", "Player drops throwables on throw, and biles/molotovs themselves", TrollMod_Constant, true);
+    index = SetupTroll("Bad Throw", "Player drops throwables on throw, and biles/molotovs themselves", TrollMod_Constant | TrollMod_PlayerOnly);
     Trolls[index].AddFlagPrompt(true);
     Trolls[index].AddFlag("Biles", true);
     Trolls[index].AddFlag("Molotovs", true);
@@ -42,8 +43,8 @@ void SetupTrolls() {
     SetupTroll("Half Primary Ammo", "Cuts their primary reserve ammo in half", TrollMod_Instant);
 
     SetCategory("Chat");
-    SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant);
-    index = SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
+    SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant | TrollMod_PlayerOnly);
+    index = SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant | TrollMod_PlayerOnly);
     Trolls[index].AddFlagPrompt(false);
     Trolls[index].AddFlag("Only Replace Swears", false);
     Trolls[index].AddFlag("Replace Full Messages", true);
@@ -51,21 +52,21 @@ void SetupTrolls() {
     Trolls[index].AddFlag("Show Modified to Them", true);
     Trolls[index].AddFlag("Show Original to Them", false);
     SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
-    index = SetupTroll("Honk / Meow", "Honk or Meow", TrollMod_Constant, false);
+    index = SetupTroll("Honk / Meow", "Honk or Meow", TrollMod_Constant);
     Trolls[index].AddCustomFlagPrompt("Choose Sound Type:");
     Trolls[index].AddFlag("Honk", true);
     Trolls[index].AddFlag("Meow", false);
     Trolls[index].AddCustomFlagPrompt("Choose Chat modifier:", false, 1);
     Trolls[index].AddFlag("Show Modified to Them", true);
     Trolls[index].AddFlag("Show Original to Them", false);
-    SetupTroll("Reversed", "Reserves their message", TrollMod_Constant);
+    SetupTroll("Reversed", "Reserves their message", TrollMod_Constant | TrollMod_PlayerOnly);
 
     SetCategory("Health");
     SetupTroll("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant);
     SetupTroll("Temp Health Quick Drain", "Makes a player's temporarily health drain very quickly", TrollMod_Constant);
     SetupTroll("Slow Drain", "Will make the player slowly lose health over time", TrollMod_Constant);
     SetupTroll("KillMeSoftly", "Make player eat or waste pills whenever possible", TrollMod_Instant | TrollMod_Constant);
-    index = SetupTroll("Reverse FF", "All damage dealt to a player is reversed", TrollMod_Constant, false);
+    index = SetupTroll("Reverse FF", "All damage dealt to a player is reversed", TrollMod_Constant);
     Trolls[index].AddCustomFlagPrompt("Choose Reverse FF", false);
     Trolls[index].AddFlag("1:1 Ratio", true);
     Trolls[index].AddFlag("2x Ratio", false);
@@ -76,9 +77,15 @@ void SetupTrolls() {
     SetupTroll("Slow Speed", "Sets player speed to 0.8x of normal speed", TrollMod_Constant);
     SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
     SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
-    SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
-    SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant);
+    SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant | TrollMod_PlayerOnly);
+    SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant | TrollMod_PlayerOnly);
     SetupTroll("Stagger", "Like a slap, but different", TrollMod_Instant);
+    index = SetupTroll("Meta: Inverse", "Uhm you are not supposed to see this...", TrollMod_Instant | TrollMod_PlayerOnly);
+    Trolls[index].hidden = true;
+    Trolls[index].AddFlagPrompt(false);
+    Trolls[index].AddFlag("100%", true);
+    Trolls[index].AddFlag("50%", false);
+    Trolls[index].AddFlag("10%", false);
     //INFO: UP MAX_TROLLS when adding new trolls!
     
 
@@ -142,13 +149,13 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
         //TODO: Implement TrollMod_Constant
         return false;
     } else if(StrEqual(troll.name, "Throw It All")) {
-        if(modifier == TrollMod_Instant)
+        if(modifier & TrollMod_Instant)
             ThrowAllItems(victim);
-        if(hThrowTimer == INVALID_HANDLE && modifier == TrollMod_Constant) {
+        if(hThrowTimer == INVALID_HANDLE && modifier & TrollMod_Constant) {
             hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
         }
     } else if(StrEqual(troll.name, "Swarm")) {
-        if(modifier == TrollMod_Instant) {
+        if(modifier & TrollMod_Instant) {
             L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", victim, 15000);
         }
         return true;
@@ -163,10 +170,10 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
     } else if(StrEqual(troll.name, "Vomit Player"))
         L4D_CTerrorPlayer_OnVomitedUpon(victim, victim);
     else if(StrEqual(troll.name, "Inface Special")) {
-        FakeClientCommand(victim, "sm_inface");
+        FakeClientCommand(activator, "sm_inface");
         return false;
     } else if(StrEqual(troll.name, "Insta Special")) {
-        FakeClientCommand(victim, "sm_insta");
+        FakeClientCommand(activator, "sm_insta");
         return false;
     } else if(StrEqual(troll.name, "Goo")) {
         static float pos[3], ang[3];

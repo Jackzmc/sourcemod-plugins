@@ -20,6 +20,29 @@ public void OnClientPutInServer(int client) {
 	g_PendingBanTroll[client] = 0;
 	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
 }
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
+	int userid = event.GetInt("userid");
+	CreateTimer(0.1, Timer_CheckSpecial, userid);
+}
+public Action Timer_CheckSpecial(Handle h, int specialID) {
+	int special = GetClientOfUserId(specialID);
+	if(special > 0 && gInstaSpecialType > -1 && IsFakeClient(special) && GetClientTeam(special) == 3) {
+		int type = GetEntProp(special, Prop_Send, "m_zombieClass");
+		if(type == gInstaSpecialType) {
+			gInstaSpecialType = -1;
+			g_iAttackerTarget[special] = gInstaSpecialTarget;
+			gInstaSpecialMagnet[GetClientOfUserId(gInstaSpecialTarget)]++;
+
+			TeleportEntity(special, gInstaSpecialSpawnPos, gInstaSpecialSpawnAng, NULL_VECTOR);
+			if(gInstaSpecialInstaKill) {
+				SDKHooks_TakeDamage(special, special, special, 1000.0);
+			}
+		}
+	} 
+}
+public void Frame_InstaSpawned(int special) {
+	
+}
 public void OnClientAuthorized(int client, const char[] auth) {
 	if(!IsFakeClient(client)) {
 		strcopy(steamids[client], 64, auth);
@@ -39,6 +62,14 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 }
 public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0 && g_iAttackerTarget[client] > 0) {
+		int target = GetClientOfUserId(g_iAttackerTarget[client]);
+		gInstaSpecialMagnet[target]--;
+		if(gInstaSpecialMagnet[target] == 0) {
+			PrintToServer("[FTT] gInstaSpecialMagnet droped below 0");
+			gInstaSpecialMagnet[target] = 0;
+		}
+	}
 	g_iAttackerTarget[client] = 0;
 }
 public Action Event_WeaponReload(int weapon) {
@@ -85,11 +116,14 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	if(hMagnetChance.FloatValue < GetRandomFloat()) return Plugin_Continue;
 	L4D2Infected class = view_as<L4D2Infected>(GetEntProp(attacker, Prop_Send, "m_zombieClass"));
 	int existingTarget = GetClientOfUserId(g_iAttackerTarget[attacker]);
-	if(existingTarget > 0 && IsPlayerAlive(existingTarget) && (hMagnetTargetMode.IntValue & 1 != 1 || !IsPlayerIncapped(existingTarget))) {
-		if(class == L4D2Infected_Tank && (hMagnetTargetMode.IntValue % 2 != 2 || !IsPlayerIncapped(existingTarget))) {
+	if(existingTarget > 0 && IsPlayerAlive(existingTarget)) {
+		if(gInstaSpecialMagnet[existingTarget] > 0) {
 			curTarget = existingTarget;
 			return Plugin_Changed;
-		}else if(hMagnetTargetMode.IntValue & 1 != 1 || !IsPlayerIncapped(existingTarget)) {
+		} else if(class == L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 2) && WillMagnetRun(Trolls[tankMagnetID], existingTarget)) {
+			curTarget = existingTarget;
+			return Plugin_Changed;
+		}else if((!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 1) && WillMagnetRun(Trolls[spMagnetID], existingTarget)) {
 			curTarget = existingTarget;
 			return Plugin_Changed;
 		}
@@ -102,7 +136,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 			//Ignore incapped players if turned on:
 			if(IsPlayerIncapped(i)) {
-				if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2 == 2) || hMagnetTargetMode.IntValue & 1 == 1 ) continue;
+				if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2) || (class !=  L4D2Infected_Tank && hMagnetTargetMode.IntValue & 1)) continue;
 			}
 			
 			if(class == L4D2Infected_Tank && Trolls[tankMagnetID].IsActive(i) || (class != L4D2Infected_Tank && Trolls[spMagnetID].IsActive(i))) {
@@ -355,10 +389,10 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		return Plugin_Continue;
 	}
 	static int invertedTrollIndex;
-	if(invertedTrollIndex <= 0) {
+	if(invertedTrollIndex == 0) {
 		invertedTrollIndex = GetTrollID("Inverted Controls");
 	}
-	if(IsTrollActiveByRawID(client, invertedTrollIndex)) {
+	if(Trolls[invertedTrollIndex].IsActive(client)) {
 		if(buttons & IN_MOVELEFT || buttons & IN_MOVERIGHT) {
 			vel[1] = -vel[1];
 		}
@@ -397,7 +431,7 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 		if(IsTrollActive(victim, "Damage Boost")) {
 			damage * 2;
 			return Plugin_Changed;
-		} else if(Trolls[reverseFF].IsActive(attacker) && attacker != victim && GetClientTeam(attacker) != GetClientTeam(victim)) {
+		} else if(Trolls[reverseFF].IsActive(attacker) && attacker != victim && GetClientTeam(attacker) == GetClientTeam(victim)) {
 			float returnDmg = damage; //default is 1:1
 			if(Trolls[reverseFF].activeFlagClients[attacker] & 4) {
 				returnDmg /= 2.0;
@@ -413,6 +447,8 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 }
 
 public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
+	static int honkID;
+	if(honkID == 0) honkID = GetTrollID("Honk / Meow");
 	if(lastButtonUser > -1 && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
 		PrintToConsoleAll("CRESCENDO STARTED BY %N", lastButtonUser);
 		#if defined DEBUG
@@ -429,22 +465,16 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 		lastButtonUser = -1;
 	}else if(numClients > 0 && entity > 0 && entity <= MaxClients) {
 		if(StrContains(sample, "survivor\\voice") > -1) {
-			static int honkID;
-			if(honkID == 0) {
-				honkID = GetTrollID("Honk / Meow");
-			}
 			if(Trolls[honkID].IsActive(entity)) {
 				if(Trolls[honkID].activeFlagClients[entity] & 1)
 					strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
 				else if(Trolls[honkID].activeFlagClients[entity] & 2)
 					strcopy(sample, sizeof(sample), "custom/meow1.mp3");
 				else return Plugin_Continue;
-				return Plugin_Changed;
 			} else if(IsTrollActive(entity, "Vocalize Gag")) {
 				return Plugin_Handled;
 			}
 		}
-		
 	}
 	return Plugin_Continue;
 }
@@ -457,7 +487,7 @@ public Action Event_WitchVictimSet(Event event, const char[] name, bool dontBroa
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 			//Ignore incapped players if hWitchIgnoreIncapp turned on:
-			if(IsPlayerIncapped(i) && !hWitchTargetIncapp.BoolValue) {
+			if(IsPlayerIncapped(i) && ~hMagnetTargetMode.IntValue & 4) {
 				continue;
 			}
 			

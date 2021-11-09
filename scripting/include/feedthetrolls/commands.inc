@@ -13,6 +13,10 @@ public Action Command_InstaSpecial(int client, int args) {
 		menu.ExitButton = true;
 		menu.Display(client, 0);
 	} else {
+		if(gInstaSpecialType > -1) {
+			ReplyToCommand(client, "Please wait for last Insta to spawn.");
+			return Plugin_Handled;
+		}
 		char arg1[32], arg2[32] = "jockey";
 		GetCmdArg(1, arg1, sizeof(arg1));
 		if(args >= 2) {
@@ -78,6 +82,10 @@ public Action Command_InstaSpecialFace(int client, int args) {
 		menu.ExitButton = true;
 		menu.Display(client, 0);
 	} else {
+		if(gInstaSpecialType > -1) {
+			ReplyToCommand(client, "Please wait for last Insta to spawn.");
+			return Plugin_Handled;
+		}
 		char arg1[32], arg2[32] = "jockey";
 		GetCmdArg(1, arg1, sizeof(arg1));
 		if(args >= 2) {
@@ -215,6 +223,7 @@ public Action Command_ResetUser(int client, int args) {
 
 public Action Command_ApplyUser(int client, int args) {
 	if(args < 1) {
+		SilentMenuSelected[client] = false;
 		ShowTrollMenu(client);
 	}else{
 		char arg1[32], arg2[16];
@@ -244,12 +253,14 @@ public Action Command_ApplyUser(int client, int args) {
 			for(int i = 0; i < categories.Length; i++) {
 				categories.GetString(i, key, sizeof(key));
 				if(StrEqual(key, arg2, false)) {
+					SilentMenuSelected[client] = false;
 					ShowTrollsForCategory(client, GetClientUserId(target_list[0]), i);
 					return Plugin_Handled;
 				}
 			} 
 			ReplyToCommand(client, "[FTT] Unknown category: '%s'", arg2);
 		}
+		SilentMenuSelected[client] = false;
 		SetupCategoryMenu(client, target_list[0]);
 	}
 	return Plugin_Handled;
@@ -304,6 +315,7 @@ public Action Command_ListModes(int client, int args) {
 	static Troll troll;
 	for(int i = 0; i <= MAX_TROLLS; i++) {
 		GetTrollByKeyIndex(i, troll);
+		if(troll.hidden) continue;
 		ReplyToCommand(client, "%d. %s - %s", i, troll.name, troll.description);
 	}
 	return Plugin_Handled;
@@ -346,6 +358,7 @@ public Action Command_ListTheTrolls(int client, int args) {
 			}
 
 			for(int j = 1; j <= MAX_TROLLS; j++) {
+				if(Trolls[j].hidden) continue;
 				if(trollIds[j][0] != '\0' && IsTrollActive(target, trollIds[j])) {
 					if(Trolls[j].activeFlagClients[target] > 0) {
 						static char list[MAX_TROLL_FLAG_LENGTH*8]; //May in future need to up magic number 8 (supports 8 active flags )
@@ -423,7 +436,7 @@ public Action Command_MarkPendingTroll(int client, int args) {
 		menu.ExitButton = true;
 		menu.Display(client, 0);
 	} else {
-		char arg1[32];
+		static char arg1[32];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		char target_name[MAX_TARGET_LENGTH];
 		int target_list[MAXPLAYERS], target_count;
@@ -452,13 +465,45 @@ public Action Command_MarkPendingTroll(int client, int args) {
 	return Plugin_Handled;
 }
 
+public Action Command_MarkNoob(int client, int args) {
+	if(args == 0) {
+		ReplyToCommand(client, "sm_noob <player>");
+		return Plugin_Handled;
+	}
+	static char target_name[MAX_TARGET_LENGTH];
+	GetCmdArg(1, target_name, sizeof(target_name));
+
+	int target_list[MAXPLAYERS], target_count;
+	bool tn_is_ml;
+	if ((target_count = ProcessTargetString(
+		target_name,
+		client,
+		target_list,
+		1,
+		COMMAND_FILTER_NO_MULTI, /* Only allow alive players */
+		target_name,
+		sizeof(target_name),
+		tn_is_ml)) <= 0
+	) {
+		/* This function replies to the admin with a failure message */
+		ReplyToTargetError(client, target_count);
+		return Plugin_Handled;
+	}
+	int target = target_list[0];
+	//Todo: Check if marked as noob or not, undo if so, add if not
+
+	ShowActivityEx(client, "[FTT] ", "marked %N as a noob", target_name);
+	LogAction(client, target, "\"%L\" marked \"%L\" as a noob", client, target);
+	return Plugin_Handled;
+}
+
 public Action Command_FeedTheTrollMenu(int client, int args) {
-	ReplyToCommand(client, "sm_ftl - Lists all the active trolls on players");
-	ReplyToCommand(client, "sm_ftm - Lists all available troll modes & descriptions");
-	ReplyToCommand(client, "sm_ftr - Resets target users' of their trolls");
-	ReplyToCommand(client, "sm_fta - Applies a troll mode on targets");
-	ReplyToCommand(client, "sm_ftt - Opens this menu");
-	ReplyToCommand(client, "sm_ftc - Will apply a punishment to last crescendo activator");
+	ReplyToCommand(client, "sm_ftl [player(s)] - Lists all the active trolls on players. Will show flag names if a player is specified.");
+	ReplyToCommand(client, "sm_ftm - Lists all available trolls & descriptions");
+	ReplyToCommand(client, "sm_ftr <player(s)> - Resets target users' of any active trolls");
+	ReplyToCommand(client, "sm_fta [player] [category] - Apply a troll on a player, with optional shortcut to player and/or category");
+	ReplyToCommand(client, "sm_ftt - Shows this text");
+	ReplyToCommand(client, "sm_ftc - Will apply a punishment to the last crescendo/event activator");
 	ReplyToCommand(client, "sm_mark - Marks the user to be banned on disconnect, prevents their FF.");
 	return Plugin_Handled;
 }

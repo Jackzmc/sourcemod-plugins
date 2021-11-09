@@ -43,6 +43,8 @@ bool SpawnSpecialInFace(int target, int specialType) {
 	testPos = pos;
 	GetClientAbsOrigin(target, pos);
 	GetClientEyeAngles(target, ang);
+	if(specialType == 2) 
+		gInstaSpecialInstaKill = true;
 	if(specialType != 5 && specialType != 2) { //If not jockey/hunter find a suitable area that is at least 5 m away
 		float minDistance = GetIdealMinDistance(specialType);
 		GetHorizontalPositionFromOrigin(pos, ang, minDistance, testPos);
@@ -57,14 +59,15 @@ bool SpawnSpecialInFace(int target, int specialType) {
 	pos[2] += 1.0;
 	NegateVector(ang);
 
-	return SpawnSpecialInternal(specialType, target, pos, NULL_VECTOR) > 0;
+	return SpawnSpecialInternal(specialType, target, pos, NULL_VECTOR) != -1;
 }
 
 bool SpawnSpecialNear(int target, int specialType) {
+	gInstaSpecialInstaKill = false;
 	if(specialType > 8) return false;
 	static float pos[3];
 	if(L4D_GetRandomPZSpawnPosition(target, specialType, 10, pos)) {
-		return SpawnSpecialInternal(specialType, target, pos, NULL_VECTOR) > 0;
+		return SpawnSpecialInternal(specialType, target, pos, NULL_VECTOR) != -1;
 	}
 	return false;
 }
@@ -80,11 +83,19 @@ void BypassLimit() {
 
 int SpawnSpecialInternal(int type, int target, float pos[3], float ang[3]) {
 	if(type <= 6) {
-		// BypassLimit();
-		int special = L4D2_SpawnSpecial(type, pos, ang);
-		if(special != -1)
-			g_iAttackerTarget[special] = GetClientUserId(target);
-		return special;
+		// Bypass limit:
+		gInstaSpecialType = type;
+		gInstaSpecialTarget = GetClientUserId(target);
+		gInstaSpecialSpawnPos = pos;
+		gInstaSpecialSpawnAng = pos;
+		CreateTimer(2.0, Timer_InstaFailed);
+		int bot = CreateFakeClient("ManualDirectorBot");
+		if (bot != 0) {
+			ChangeClientTeam(bot, 3);
+			CreateTimer(0.1, Timer_KickBot, bot);
+		}
+		CheatCommand(target, "z_spawn_old", SPECIAL_NAMES[type-1], "auto");
+		return 0;
 	}
 	else if(type == 7) {
 		int witch = L4D2_SpawnWitch(pos, ang);
@@ -102,3 +113,9 @@ int SpawnSpecialInternal(int type, int target, float pos[3], float ang[3]) {
 	}
 	else return -1;
 }
+
+/* TODO: Bypass limit:
+ Spawn special auto, far away, mark with global vars:
+	1. special type (check)
+	2. its target
+	3. float[3] to TP it to

@@ -101,3 +101,10 @@ public Action Timer_KickBot(Handle timer, int client) {
 		if(IsFakeClient(client)) KickClient(client);
 	}
 }
+
+public Action Timer_InstaFailed(Handle h) {
+	if(gInstaSpecialType != -1) {
+		gInstaSpecialType = -1;
+		gInstaSpecialTarget = 0;
+	}
+}

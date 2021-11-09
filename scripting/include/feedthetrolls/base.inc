@@ -4,13 +4,14 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 32
+    #define MAX_TROLLS 33
 #endif
 
 enum trollModifier {
     TrollMod_Invalid = 0,
-	TrollMod_Instant = 1,
-	TrollMod_Constant = 2
+	TrollMod_Instant = 1 << 0,
+	TrollMod_Constant = 1 << 1,
+    TrollMod_PlayerOnly = 1 << 2, // Does the troll only work on players, not bots? If set, troll only applied on real user. If not, troll applied to both bot and idler
 }
 
 //up to 30 flags technically possiible
@@ -32,6 +33,7 @@ char DEFAULT_FLAG_PROMPT[] = "Choose flags";
 bool SilentMenuSelected[MAXPLAYERS+1];
 
 static int g_trollAddPromptIndex;
+ArrayList gRandomClients;
 
 enum struct TrollFlagPrompt {
     char promptText[MAX_TROLL_FLAG_LENGTH];
@@ -57,13 +59,14 @@ enum struct Troll {
 
     char name[MAX_TROLL_NAME_LENGTH];
     char description[128];
+    bool hidden;
 
     int mods;
 
+    // Flags
     int activeFlagClients[MAXPLAYERS+1];
-    ArrayList flagNames;
-    bool flagsMultiselectable;
     char flagPrompt[MAX_TROLL_FLAG_LENGTH];
+    ArrayList flagNames;
     ArrayList flagPrompts;
 
     bool HasMod(trollModifier mod) {
@@ -177,6 +180,7 @@ enum struct Troll {
 
     void Activate(int client, int activator, trollModifier modifier = TrollMod_Invalid, int flags = 0) {
         if(modifier == TrollMod_Invalid) modifier = this.GetDefaultMod();
+        // Sadly, unable to pass in <this> to ApplyTroll, so it has to do unnecessary lookup via string
         ApplyTroll(client, this.name, activator, modifier, flags);
     }
 
@@ -195,6 +199,17 @@ enum struct Troll {
     bool IsActive(int client) {
         return this.activeFlagClients[client] != -1;
     }
+
+    int GetRandomClient(int start = 0) {
+        gRandomClients.Clear();
+        for(int i = start + 1; i <= MaxClients; i++) {
+            if(this.activeFlagClients[i] != -1) {
+                gRandomClients.Push(i);
+            }
+        }
+        if(gRandomClients.Length == 0) return -1;
+        return GetRandomInt(0, gRandomClients.Length);
+    }
 }
 
 Troll Trolls[MAX_TROLLS+1];
@@ -203,12 +218,13 @@ ArrayList categories;
 static int categoryID = -1;
 
 void ResetClient(int victim, bool wipe = true) {
-    if(victim == 0) return;
+    if(victim == 0 || !IsClientConnected(victim)) return;
     if(wipe) {
         for(int i = 0; i <= MAX_TROLLS; i++) {
             Trolls[i].activeFlagClients[victim] = -1;
         }
     }
+
     SetEntityGravity(victim, 1.0);
     SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
     SDKUnhook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
@@ -217,14 +233,14 @@ void ResetClient(int victim, bool wipe = true) {
         SDKUnhook(wpn, SDKHook_Reload, Event_WeaponReload);
 }
 
-int SetupTroll(const char[] name, const char description[128], int mods, bool flagsMultiselectable = false) {
-    if(mods == 0) {
-        ThrowError("Troll \"%s\" has no flags defined.", name);
-        return -1;
-    }
+int SetupTroll(const char[] name, const char description[128], int mods) {
     static int i = 0;
-    if(i == MAX_TROLLS + 1) {
+    if(mods == 0) {
+        ThrowError("Troll \"%s\" has no modifiers defined.", name);
+        return -1;
+    } else if(i == MAX_TROLLS + 1) {
         ThrowError("Maximum number of trolls (%d) reached. Up MAX_TROLLS value.", MAX_TROLLS);
+        return -1;
     }
     g_trollAddPromptIndex = 0;
     Trolls[i].id = i;
@@ -232,7 +248,6 @@ int SetupTroll(const char[] name, const char description[128], int mods, bool fl
     strcopy(Trolls[i].description, 128, description);
     Trolls[i].categoryID = categoryID;
     Trolls[i].mods = mods;
-    Trolls[i].flagsMultiselectable = flagsMultiselectable;
     Trolls[i].flagPrompts = new ArrayList(sizeof(TrollFlagPrompt));
 
     strcopy(trollIds[i], MAX_TROLL_NAME_LENGTH, name); 
@@ -284,7 +299,7 @@ void ToggleTroll(int client, const char[] name, int flags = 0) {
         troll.activeFlagClients[client] = flags;
 }
 
-void ApplyTroll(int victim, const char[] name, int activator, trollModifier modifier, int flags = 0) {
+void ApplyTroll(int victim, const char[] name, int activator, trollModifier modifier, int flags = 0, bool silent = false) {
     static Troll troll;
     int trollIndex = GetTroll(name, troll);
     if(trollIndex == -1) {
@@ -292,21 +307,46 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
         return;
     }
 
-    if(GetClientTeam(victim) == 1) {
-		//Victim is spectating, find its bot
-		victim = FindIdlePlayerBot(victim);
-	}
+    if(!silent && SilentMenuSelected[activator]) silent = true;
 
+    static int MetaInverseTrollID;
+    if(!MetaInverseTrollID) MetaInverseTrollID = GetTrollID("Meta: Inverse");
+
+    if(activator > 0 && Trolls[MetaInverseTrollID].IsActive(activator)) {
+        float max = 1.0;
+        if(Trolls[MetaInverseTrollID].activeFlagClients[activator] & 2) max = 0.5;
+        else if(Trolls[MetaInverseTrollID].activeFlagClients[activator] & 4) max = 0.1;
+        if(GetRandomFloat() <= max) {
+            victim = activator;
+        }
+    }
+
+    // If victim is a survivor bot, check if has an idle player
+    if(IsFakeClient(victim) && GetClientTeam(victim) == 2) {
+        int player = GetSpectatorClient(victim);
+        if(player > 0) {
+            // If there is an idle player, apply troll to them
+            ApplyTroll(player, name, activator, modifier, flags, silent);
+            // And continue IF there is TrollMod_PlayerOnly mod
+            if(troll.mods & view_as<int>(TrollMod_PlayerOnly)) return;
+            // Don't want to show two logs, so just ignore the bot
+            silent = true;
+        }
+    }
+
+    // Applies any custom logic needed for a troll, mostly only used for TrollMod_Instant
     if(!ApplyAffect(victim, troll, activator, modifier, flags)) {
         return;
     }
+
+    // Log all actions, indicating if constant or single-fire, and if any flags
     bool isActive = IsTrollActive(victim, troll.name);
-    if(!SilentMenuSelected[activator]) {
+    if(!silent) {
         if(isActive) {
             ShowActivityEx(activator, "[FTT] ", "deactivated troll \"%s\" on %N. ", troll.name, victim);
             LogAction(activator, victim, "\"%L\" deactivated troll \"%s\" on \"%L\"", activator, troll.name, victim);
         } else {
-            if(modifier == TrollMod_Constant) {
+            if(modifier & TrollMod_Constant) {
                 if(flags > 0) {
                     ShowActivityEx(activator, "[FTT] ", "activated constant troll \"%s\" (%d) for %N. ", troll.name, flags, victim);
                 } else
@@ -318,8 +358,11 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
             
             LogAction(activator, victim, "\"%L\" activated troll \"%s\" (%d) for \"%L\"", activator, troll.name, flags, victim);
         }
-    } else SilentMenuSelected[activator] = false;
-    if(modifier == TrollMod_Constant) {
+    } else {
+        ReplyToCommand(activator, "apply troll \"%s\" flags=%d on %N", troll.name, flags, victim);
+    }
+    // Toggle on flags for client, if it's not a single run.
+    if(modifier & TrollMod_Constant) {
         Trolls[troll.id].activeFlagClients[victim] = isActive ? -1 : flags;
     }
 }

@@ -53,16 +53,18 @@ bool ToggleMarkPlayer(int client, int target) {
 	}
 }
 
-stock int FindIdlePlayerBot(int client) {
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsFakeClient(i)) {
-			int user = GetEntProp(i, Prop_Send, "m_humanSpectatorUserID");
-			int bot = GetClientOfUserId(user);
-			return bot > 0 ? bot : client;
-		}
+// Finds the survivor bot that took over an idle player
+int GetSpectatorClient(int bot) {
+	if(!IsFakeClient(bot)) return -1;
+	static char netclass[16];
+	GetEntityNetClass(bot, netclass, sizeof(netclass));
+	if(strcmp(netclass, "SurvivorBot") == 0 ) {
+		int user = GetEntProp(bot, Prop_Send, "m_humanSpectatorUserID");
+		if(user > 0) return GetClientOfUserId(user);
 	}
-	return client;
+	return -1;
 }
+
 stock bool IsPlayerIncapped(int client) {
 	return GetEntProp(client, Prop_Send, "m_isIncapacitated") == 1;
 }
@@ -237,15 +239,4 @@ void DropItem(int victim, int slot) {
 	if(slot != 1 || DoesClientHaveMelee(victim)) {
 		SDKHooks_DropWeapon(victim, wpn, NULL_VECTOR);
 	}
-}
-
-int GetSpectatorClient(int bot) {
-	if(!IsFakeClient(bot)) return -1;
-	static char netclass[16];
-	GetEntityNetClass(bot, netclass, sizeof(netclass));
-	if(strcmp(netclass, "SurvivorBot") == 0 ) {
-		int user = GetEntProp(bot, Prop_Send, "m_humanSpectatorUserID");
-		if(user > 0) return GetClientOfUserId(user);
-	}
-	return -1;
 }

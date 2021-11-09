@@ -38,13 +38,15 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 	LoadTranslations("common.phrases");
-	g_iAmmoTable = FindSendPropInfo("CTerrorPlayer", "m_iAmmo");
 
 	g_PlayerMarkedForward = new GlobalForward("FTT_OnClientMarked", ET_Ignore, Param_Cell, Param_Cell);
 
+	// Load core things (trolls & phrases):
 	REPLACEMENT_PHRASES = new StringMap();
 	LoadPhrases();
 	SetupTrolls();
+
+	// Witch target overwrite stuff:
 
 	GameData data = new GameData("l4d2_behavior");
 	
@@ -60,24 +62,25 @@ public void OnPluginStart() {
 	hAutoPunish 		= CreateConVar("sm_ftt_autopunish_action", "0", "Setup automatic punishment of players. Add bits together\n0=Disabled, 1=Tank magnet, 2=Special magnet, 4=Swarm, 8=InstantVomit", FCVAR_NONE, true, 0.0);
 	hAutoPunishExpire 	= CreateConVar("sm_ftt_autopunish_expire", "0", "How many minutes of gametime until autopunish is turned off? 0 for never.", FCVAR_NONE, true, 0.0);
 	hMagnetChance 	 	= CreateConVar("sm_ftt_magnet_chance", "1.0", "% of the time that the magnet will work on a player.", FCVAR_NONE, true, 0.0, true, 1.0);
-	hMagnetTargetMode   = CreateConVar("sm_ftt_magnet_targetting", "1", "How does the specials target players. Add bits together\n0= Target until Dead, 1=Specials ignore incapped, 2=Tank ignores incapped");
+	hMagnetTargetMode   = CreateConVar("sm_ftt_magnet_targetting", "6", "How does the specials target players. Add bits together\n0=Incapped are ignored, 1=Specials targets incapped, 2=Tank targets incapped 4=Witch targets incapped");
 	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.65", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
-	hWitchTargetIncapp  = CreateConVar("sm_ftt_witch_target_incapped", "1", "Should the witch target witch magnet victims who are incapped?\n 0 = No, 1 = Yes", FCVAR_NONE, true, 0.0, true, 1.0);
 	hBadThrowHitSelf    = CreateConVar("sm_ftt_badthrow_fail_chance", "1", "The % chance that on a throw, they will instead hit themselves. 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
 
-	RegAdminCmd("sm_ftl", Command_ListTheTrolls, ADMFLAG_KICK, "Lists all the trolls currently ingame.");
-	RegAdminCmd("sm_ftm", Command_ListModes, ADMFLAG_KICK, "Lists all the troll modes and their description");
-	RegAdminCmd("sm_ftr", Command_ResetUser, ADMFLAG_KICK, "Resets user of any troll effects.");
-	RegAdminCmd("sm_fta", Command_ApplyUser, ADMFLAG_KICK, "Apply a troll mod to a player, or shows menu if no parameters.");
-	RegAdminCmd("sm_ftas", Command_ApplyUserSilent, ADMFLAG_CHEATS, "Apply a troll mod to a player, or shows menu if no parameters.");
-	RegAdminCmd("sm_ftt", Command_FeedTheTrollMenu, ADMFLAG_KICK, "Opens a list that shows all the commands");
+	RegAdminCmd("sm_ftl",  Command_ListTheTrolls, ADMFLAG_KICK, "Lists all the trolls currently ingame.");
+	RegAdminCmd("sm_ftm",  Command_ListModes,     ADMFLAG_KICK, "Lists all the troll modes and their description");
+	RegAdminCmd("sm_ftr",  Command_ResetUser, 	  ADMFLAG_KICK, "Resets user of any troll effects.");
+	RegAdminCmd("sm_fta",  Command_ApplyUser,     ADMFLAG_KICK, "Apply a troll mod to a player, or shows menu if no parameters.");
+	RegAdminCmd("sm_ftas", Command_ApplyUserSilent,  ADMFLAG_CHEATS, "Apply a troll mod to a player, or shows menu if no parameters.");
+	RegAdminCmd("sm_ftt",  Command_FeedTheTrollMenu, ADMFLAG_KICK, "Opens a list that shows all the commands");
 	RegAdminCmd("sm_mark", Command_MarkPendingTroll, ADMFLAG_KICK, "Marks a player as to be banned on disconnect");
-	RegAdminCmd("sm_ftc", Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
-	RegAdminCmd("sm_witch_attack", Command_WitchAttack, ADMFLAG_CHEATS, "Makes all witches target a player");
+	RegAdminCmd("sm_ftc",  Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
+	RegAdminCmd("sm_witch_attack", Command_WitchAttack,   ADMFLAG_CHEATS, "Makes all witches target a player");
 	RegAdminCmd("sm_insta", Command_InstaSpecial, ADMFLAG_KICK, "Spawns a special that targets them, close to them.");
 	RegAdminCmd("sm_instaface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
 	RegAdminCmd("sm_inface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
+	RegAdminCmd("sm_noob", Command_MarkNoob, ADMFLAG_KICK, "Marks a player as a noob. stored in a database");
 
+	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_death", Event_PlayerDeath);
 	HookEvent("triggered_car_alarm", Event_CarAlarm);
@@ -86,6 +89,8 @@ public void OnPluginStart() {
 	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 
 	AutoExecConfig(true, "l4d2_feedthetrolls");
+
+	
 }
 ///////////////////////////////////////////////////////////////////////////////
 // CVAR CHANGES
@@ -103,11 +108,12 @@ public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const cha
 // METHODS - Old methods, some are also in feedthetrolls/misc.inc
 ///////////////////////////////////////////////////////////////////////////////
 
+
 void ThrowAllItems(int victim) {
 	float vicPos[3], destPos[3];
 	int clients[4];
 	GetClientAbsOrigin(victim, vicPos);
-	//Find a bot to throw to
+	//Find a survivor to throw to (grabs the first nearest non-self survivor)
 	int clientCount = GetClientsInRange(vicPos, RangeType_Visibility, clients, sizeof(clients));
 	for(int i = 0; i < clientCount; i++) {
 		if(clients[i] != victim) {
@@ -126,7 +132,6 @@ void ThrowAllItems(int victim) {
 		WritePackFloat(pack, destPos[2]);
 		WritePackCell(pack, slot);
 		WritePackCell(pack, victim);
-		
 	}
 }
 
@@ -164,18 +169,15 @@ bool IsPlayerFarDistance(int client, float distance) {
 
 stock int GetPrimaryReserveAmmo(int client) {
 	int weapon = GetPlayerWeaponSlot(client, 0);
-	if(weapon > -1) {
-		int primaryAmmoType = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
-		return GetEntData(client, g_iAmmoTable + (primaryAmmoType * 4));
+	if(weapon > 0) {
+		return GetEntProp(client, Prop_Send, "m_iAmmo", _, GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType"));
 	}
 	return -1;
 }
 stock bool SetPrimaryReserveAmmo(int client, int amount) {
 	int weapon = GetPlayerWeaponSlot(client, 0);
 	if(weapon > -1) {
-		int primaryAmmoType = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
-		SetEntData(client, g_iAmmoTable + (primaryAmmoType * 4), amount);
-		return true;
+		SetEntProp(client, Prop_Send, "m_iAmmo", amount, _, GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType"));
 	}
 	return false;
 }
