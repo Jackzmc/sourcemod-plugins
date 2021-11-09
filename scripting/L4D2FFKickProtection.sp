@@ -72,9 +72,9 @@ public Action VoteStart(int client, const char[] command, int argc) {
 				if(target == 0) return Plugin_Continue; //invalid, pass it through
 				AdminId callerAdmin = GetUserAdmin(client);
 				AdminId targetAdmin = GetUserAdmin(target);
-				if(targetAdmin != INVALID_ADMIN_ID) {
+				if(targetAdmin != INVALID_ADMIN_ID) { //Only run if vote is against an admin
 					PrintToChat(target, "%N has attempted to vote kick you.", client);
-					if(callerAdmin == INVALID_ADMIN_ID) {
+					if(callerAdmin == INVALID_ADMIN_ID) { //If vote starter is not an admin, ban their ass
 						BanClient(client, 0, 0, "Attempted Vote Kick Admin", "Dick-Be-Gone", "noFF");
 					}
 					return Plugin_Handled;
@@ -86,10 +86,9 @@ public Action VoteStart(int client, const char[] command, int argc) {
 				PrintToServer("VOTE KICK STARTED | Target=%N | Caller=%N", issue, target, client);
 				return Plugin_Continue;
 			}	
-			//Kick vote started
 		}
 	}	
-	return Plugin_Continue; //if it wasn't handled up there I would start panicking
+	return Plugin_Continue;
 }
 
 public Action VotePassFail(UserMsg msg_id, BfRead msg, const int[] players, int playersNum, bool reliable, bool init) {
@@ -102,10 +101,10 @@ public Action OnTakeDamage(int victim,  int& attacker, int& inflictor, float& da
 		if(forceKickFFThreshold.IntValue > -1 && ffDamageCount > 0.0) {
 			//auto kick
 			if(ffDamageCount > forceKickFFThreshold.FloatValue) {
-				KickClient(disableFFClient, "Kicked for excessive friendly fire");
+				BanClient(disableFFClient, 0, 0, "Kicked for excessive friendly fire", "Dick-Be-Gone", "noFF");
 			}
 		}
-		return Plugin_Stop;
+		return Plugin_Handled;
 	} 
 	return Plugin_Continue;
 }
