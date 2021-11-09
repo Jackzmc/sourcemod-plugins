@@ -4,13 +4,14 @@
 //#define DEBUG
 
 #define PLUGIN_VERSION "1.0"
+#define MAX_TIME_ONLINE_MS 604800
 
 #include <sourcemod>
 #include <sdktools>
 //#include <sdkhooks>
+int startupTime, triesBots, triesEmpty;
 
-public Plugin myinfo = 
-{
+public Plugin myinfo = {
 	name =  "L4D2 Autorestart", 
 	author = "jackzmc", 
 	description = "", 
@@ -18,8 +19,8 @@ public Plugin myinfo =
 	url = ""
 };
 
-public void OnPluginStart()
-{
+public void OnPluginStart() {
+	startupTime = GetTime();
 	EngineVersion g_Game = GetEngineVersion();
 	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2)
 	{
@@ -28,7 +29,7 @@ public void OnPluginStart()
 
 	RegAdminCmd("sm_request_restart", Command_RequestRestart, ADMFLAG_GENERIC);
 
-	CreateTimer(60.0, Timer_Check, _, TIMER_REPEAT);
+	CreateTimer(30.0, Timer_Check, _, TIMER_REPEAT);
 }
 
 public Action Command_RequestRestart(int client, int args) {
@@ -43,21 +44,28 @@ public Action Command_RequestRestart(int client, int args) {
 }
 
 public Action Timer_Check(Handle h) {
-	// char time[8];
-	// FormatTime(strtime, sizeof(strtime), "%H%M");
-	// int time = StringToInt(time);
-	// if(0400 <= time && time <= 0401) {
-	//     //If around 4 AM
-	//     ServerCommand("quit");
-	//     return Plugin_Stop;
-	// }else 
 	if(IsServerEmptyWithOnlyBots()) {
-		//Server is stuck in non-hibernation with only bots, quit
-		LogAction(0, -1, "Detected server in hibernation with no players, restarting...");
-		ServerCommand("quit");
+		if(++triesBots > 0) {
+			//Server is stuck in non-hibernation with only bots, quit
+			LogAction(0, -1, "Detected server in hibernation with no players, restarting...");
+			ServerCommand("quit");
+		}
+	} else if(GetTime() - startupTime > MAX_TIME_ONLINE_MS) {
+		LogAction(0, -1, "Server has passed max online time threshold, will restart if remains empty");
+		if(IsServerEmpty()) {
+			if(++triesEmpty > 2) {
+				LogAction(0, -1, "Server has passed max online time threshold and is empty, restarting now");
+				ServerCommand("quit");
+			}
+		}
+	} else {
+		triesBots = 0;
+		triesEmpty = 0;
 	}
+	return Plugin_Continue;
 }
 
+// Returns true if server is empty, and there is only bots. No players
 bool IsServerEmptyWithOnlyBots() {
 	bool hasBot;
 	for(int i = 1; i <= MaxClients; i++) {
