@@ -53,9 +53,9 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 
 
 public void OnMapStart() {
-	if(!StrEqual(gamemode, "tankrun")) {
+	if(StrEqual(gamemode, "coop")) {
 		HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
-		CreateTimer(0.3, Timer_GetFlows, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(1.0, Timer_GetFlows, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
 
