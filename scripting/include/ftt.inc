@@ -10,24 +10,38 @@ enum L4D2Infected
 	L4D2Infected_Witch = 7,
 	L4D2Infected_Tank = 8
 };
-int  g_iAttackerTarget[MAXPLAYERS+1], g_PendingBanTroll[MAXPLAYERS+1];
-int autoPunished = -1, autoPunishMode, lastButtonUser, lastCrescendoUser;
-bool g_bPendingItemGive[MAXPLAYERS+1];
-GlobalForward g_PlayerMarkedForward;
-char steamids[MAXPLAYERS+1][64];
-Handle g_hWitchAttack;
 
-//HANDLES
+GlobalForward g_PlayerMarkedForward;
+Handle g_hWitchAttack;
 Handle hThrowTimer;
-//CONVARS
-ConVar hVictimsList, hThrowItemInterval, hAutoPunish, hMagnetChance, hShoveFailChance, hAutoPunishExpire, hMagnetTargetMode, hWitchTargetIncapp;
+
+ConVar hVictimsList;
+ConVar hThrowItemInterval;
+ConVar hAutoPunish;
+ConVar hMagnetChance;
+ConVar hShoveFailChance;
+ConVar hAutoPunishExpire;
+ConVar hMagnetTargetMode;
 ConVar hBadThrowHitSelf;
-//BOOLS
-bool lateLoaded; //Is plugin late loaded
-bool bChooseVictimAvailable = false; //For charge player feature, is it available?
-//INTEGERS
-int g_iAmmoTable; //Loads the ammo table to get ammo amounts
-int gChargerVictim = -1; //For charge player feature
+
+bool g_bPendingItemGive[MAXPLAYERS+1];
+
+int g_iAmmoTable; //Loads the ammo table to get max ammo for weapons
+int autoPunished = -1;
+int autoPunishMode; 
+int lastButtonUser;
+int lastCrescendoUser;
+int g_iAttackerTarget[MAXPLAYERS+1];
+int g_PendingBanTroll[MAXPLAYERS+1];
+
+int gInstaSpecialType = -1;
+int gInstaSpecialTarget;
+float gInstaSpecialSpawnPos[3];
+float gInstaSpecialSpawnAng[3];
+bool gInstaSpecialInstaKill;
+int gInstaSpecialMagnet[MAXPLAYERS+1];
+
+char steamids[MAXPLAYERS+1][64];
 
 #include <feedthetrolls/base>
 #include <feedthetrolls/trolls>

@@ -67,7 +67,7 @@ stock void ShowDelayedHintToAll(const char[] format, any ...) {
 	hintInt++;
 }
 
-stock int GetSurvivorId(const char str[16], bool isL4D1 = false) {
+stock int GetSurvivorId(const char[] str, bool isL4D1 = false) {
 	int possibleNumber = StringToInt(str, 10);
 	if(strlen(str) == 1) {
 		if(possibleNumber <= 7 && possibleNumber >= 0) {
@@ -224,7 +224,7 @@ stock bool TraceFilter(int entity, int contentsMask) {
 		return false;
 	return true;
 }
-stock bool GetGround(int client, float[3] vPos, float[3] vAng) {
+stock bool GetGround(int client, float vPos[3], float vAng[3]) {
 	GetClientAbsOrigin(client, vPos);
 	vAng = vPos;
 	vAng[2] += 5.0;
@@ -276,7 +276,7 @@ stock bool SpawnMinigun(const float vPos[3], const float vAng[3]) {
 
 
 stock bool GiveClientWeapon(int client, const char[] wpnName, bool lasers) {
-	char sTemp[64];
+	static char sTemp[64];
 	float pos[3];
 	GetClientAbsOrigin(client, pos);
 	Format(sTemp, sizeof(sTemp), "weapon_%s", wpnName);
@@ -544,7 +544,7 @@ stock float GetNearestEntityDistance(int originEntity, char[] classname) {
 	{
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", entityVecOrigin);
 		distance = GetVectorDistance(compareVec, entityVecOrigin);
-		PrintDebug(DEBUG_SPAWNLOGIC, "Comparing %s (id %d) (%.2f,%.2f,%.2f) distance to entity %d (%.2f,%.2f,%.2f) is %.4f", classname, entity, entityVecOrigin[0], entityVecOrigin[1], entityVecOrigin[2], originEntity, compareVec[0], compareVec[1], compareVec[2], distance);
+		// PrintDebug(DEBUG_SPAWNLOGIC, "Comparing %s (id %d) (%.2f,%.2f,%.2f) distance to entity %d (%.2f,%.2f,%.2f) is %.4f", classname, entity, entityVecOrigin[0], entityVecOrigin[1], entityVecOrigin[2], originEntity, compareVec[0], compareVec[1], compareVec[2], distance);
 		
 		if (distance < nearestDistance || nearestDistance == -1.0)
 		{
@@ -568,7 +568,7 @@ stock int FindNearestEntityInRange(int originEntity, char[] classname, float ran
 		distance = GetVectorDistance(compareVec, entityVecOrigin);
 		
 		if (distance <= range && (distance < nearestDistance || nearestDistance == -1.0)) {
-			PrintDebug(DEBUG_SPAWNLOGIC, "Comparing %s (id %d) (%.2f,%.2f,%.2f) distance to entity %d (%.2f,%.2f,%.2f) is %.4f", classname, entity, entityVecOrigin[0], entityVecOrigin[1], entityVecOrigin[2], originEntity, compareVec[0], compareVec[1], compareVec[2], distance);
+			// PrintDebug(DEBUG_SPAWNLOGIC, "Comparing %s (id %d) (%.2f,%.2f,%.2f) distance to entity %d (%.2f,%.2f,%.2f) is %.4f", classname, entity, entityVecOrigin[0], entityVecOrigin[1], entityVecOrigin[2], originEntity, compareVec[0], compareVec[1], compareVec[2], distance);
 			nearestDistance = distance;
 			closest = entity;
 		}
