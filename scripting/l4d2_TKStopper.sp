@@ -15,11 +15,11 @@
 #include <left4dhooks>
 
 bool lateLoaded, IsFinaleEnding, isPlayerTroll[MAXPLAYERS+1], isImmune[MAXPLAYERS+1], isUnderAttack[MAXPLAYERS+1];
-int iJoinTime[MAXPLAYERS+1], iIdleStartTime[MAXPLAYERS+1];
+int iJoinTime[MAXPLAYERS+1], iIdleStartTime[MAXPLAYERS+1], iJumpAttempts[MAXPLAYERS+1];
 float playerTotalDamageFF[MAXPLAYERS+1];
 int lastFF[MAXPLAYERS+1];
 
-ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime, hAction;
+ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime, hTKAction, hSuicideAction, hSuicideLimit;
 
 public Plugin myinfo = 
 {
@@ -44,11 +44,14 @@ public void OnPluginStart()
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
-	hForgivenessTime = CreateConVar("l4d2_tk_forgiveness_time", "15", "The minimum amount of time to pass (in seconds) where a player's previous accumulated FF is forgiven");
-	hBanTime = CreateConVar("l4d2_tk_bantime", "60", "How long in minutes should a player be banned for? 0 for permanently");
-	hThreshold = CreateConVar("l4d2_tk_ban_ff_threshold", "75.0", "How much damage does a player need to do before being instantly banned");
-	hJoinTime = CreateConVar("l4d2_tk_ban_join_time", "2", "Upto how many minutes should any new player be subjected to instant bans on any FF");
-	hAction = CreateConVar("l4d2_tk_action", "3", "How should the TK be punished?\n0 = No action (No message), 1 = Kick, 2 = Instant Ban, 3 = Ban on disconnect");
+	hForgivenessTime = CreateConVar("l4d2_tk_forgiveness_time", "15", "The minimum amount of time to pass (in seconds) where a player's previous accumulated FF is forgiven", FCVAR_NONE, true, 0.0);
+	hBanTime = CreateConVar("l4d2_tk_bantime", "60", "How long in minutes should a player be banned for? 0 for permanently",  FCVAR_NONE, true, 0.0);
+	hThreshold = CreateConVar("l4d2_tk_ban_ff_threshold", "75.0", "How much damage does a player need to do before being instantly banned",  FCVAR_NONE, true, 0.0);
+	hJoinTime = CreateConVar("l4d2_tk_ban_join_time", "2", "Upto how many minutes should any new player be subjected to instant bans on any FF",  FCVAR_NONE, true, 0.0);
+	hTKAction = CreateConVar("l4d2_tk_action", "3", "How should the TK be punished?\n0 = No action (No message), 1 = Kick, 2 = Instant Ban, 3 = Ban on disconnect", FCVAR_NONE, true, 0.0, true, 3.0);
+	hSuicideAction = CreateConVar("l4d2_suicide_action", "3", "How should a suicider be punished?\n0 = No action (No message), 1 = Kick, 2 = Instant Ban, 3 = Ban on disconnect", FCVAR_NONE, true, 0.0, true, 3.0);
+	hSuicideLimit = CreateConVar("l4d2_suicide_limit", "1", "How many attempts does a new joined player have until action is taken for suiciding?", FCVAR_NONE, true, 0.0);
+
 
 	//AutoExecConfig(true, "l4d2_tkstopper");
 
@@ -96,6 +99,7 @@ public Action Event_ChargerCarry(Event event, const char[] name, bool dontBroadc
 			isUnderAttack[victim] = false;
 		}
 	}
+	return Plugin_Continue; 
 }
 
 public Action Event_HunterPounce(Event event, const char[] name, bool dontBroadcast) {
@@ -107,6 +111,7 @@ public Action Event_HunterPounce(Event event, const char[] name, bool dontBroadc
 			isUnderAttack[victim] = false;
 		}
 	}
+	return Plugin_Continue; 
 }
 
 public Action Event_SmokerChoke(Event event, const char[] name, bool dontBroadcast) {
@@ -118,6 +123,7 @@ public Action Event_SmokerChoke(Event event, const char[] name, bool dontBroadca
 			isUnderAttack[victim] = false;
 		}
 	}
+	return Plugin_Continue; 
 }
 public Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcast) {
 	int victim = GetClientOfUserId(event.GetInt("victim"));
@@ -128,6 +134,7 @@ public Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcas
 			isUnderAttack[victim] = false;
 		}
 	}
+	return Plugin_Continue; 
 }
 ///////////////////////////////////////////////////////////////////////////////
 // IDLE 
@@ -135,15 +142,18 @@ public Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcas
 public Action Event_BotToPlayer(Handle event, const char[] name, bool dontBroadcast) {
 	int player = GetClientOfUserId(GetEventInt(event, "player"));
 
-	if (!IsValidClient(player) || (GetClientTeam(player) != 2 && GetClientTeam(player) != 3) || IsFakeClient(player)) return;  // ignore fake players (side product of creating bots)
+	if (!IsValidClient(player) || (GetClientTeam(player) != 2 && GetClientTeam(player) != 3) || IsFakeClient(player)) return Plugin_Continue;  // ignore fake players (side product of creating bots)
 
-	if(GetTime() - iIdleStartTime[player] >= 60000) {
+	// If a player has been idle for over 600s (10 min), reset to them "first joining"
+	if(GetTime() - iIdleStartTime[player] >= 600) {
 		iJoinTime[player] = GetTime();
 	}
+	return Plugin_Continue; 
 }
 public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast) {
 	int player = GetClientOfUserId(GetEventInt(event, "player"));
 	iIdleStartTime[player] = GetTime(); 
+	return Plugin_Continue; 
 }
 ///////////////////////////////////////////////////////////////////////////////
 // Misc events
@@ -151,8 +161,8 @@ public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast) {
 public void Event_FinaleVehicleReady(Event event, const char[] name, bool dontBroadcast) {
 	IsFinaleEnding = true;
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && isPlayerTroll[i]) {
-			PrintChatToAdmins("Note: %N is still marked as troll and will be banned after this game.", i);
+		if(isPlayerTroll[i] && IsClientConnected(i) && IsClientInGame(i)) {
+			PrintChatToAdmins("Note: %N is still marked as troll and will be banned after this game. Use /ignore to ignore them.", i);
 		}
 	}
 }
@@ -166,11 +176,15 @@ public void OnClientPutInServer(int client) {
 	SDKHook(client, SDKHook_OnTakeDamage, Event_OnTakeDamage);
 }
 
+// Called on map changes, so only reset some variables:
 public void OnClientDisconnect(int client) {
 	playerTotalDamageFF[client] = 0.0;
 	isUnderAttack[client] = false;
+	iJumpAttempts[client] = 0;
+	isUnderAttack[client] = false;
 }
 
+// Only clear things when they fully left on their own accord:
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && isPlayerTroll[client]) {
@@ -187,27 +201,51 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		//if(IsFakeClient(victim) && !HasEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") || GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) return Plugin_Continue;
 		if(isPlayerTroll[attacker]) return Plugin_Stop;
 		if(isUnderAttack[victim]) return Plugin_Continue;
-
+	
 		bool isDamageDirect = damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0;
-
 		int time = GetTime();
+		// If is a fall within first 2 minutes, do appropiate action
+		if(damagetype & DMG_FALL && attacker == victim && damage > 0.0 && time- iJoinTime[victim] <= hJoinTime.IntValue * 60000) {
+			iJumpAttempts[victim]++;
+			float pos[3];
+			GetNearestPlayerPosition(victim, pos);
+			PrintToConsoleAdmins("%N within join time (%d min), attempted to fall");
+			if(iJumpAttempts[victim] > hSuicideLimit.IntValue) {
+				if(hSuicideAction.IntValue == 1) {
+					LogMessage("[NOTICE] Kicking %N for suicide attempts", victim, hBanTime.IntValue);
+					NotifyAllAdmins("[Notice]  Kicking %N for suicide attempts", victim, hBanTime.IntValue);
+					KickClient(victim, "Troll");
+				} else if(hSuicideAction.IntValue == 2) {
+					LogMessage("[NOTICE] Banning %N for suicide attempts for %d minutes.", victim, hBanTime.IntValue);
+					NotifyAllAdmins("[Notice] Banning %N for suicide attempts for %d minutes.", victim, hBanTime.IntValue);
+					BanClient(victim, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Suicide fall attempts", "Troll", "TKStopper");
+				} else if(hSuicideAction.IntValue == 3) {
+					LogMessage("[NOTICE] %N will be banned for suicide attempts for %d minutes. ", victim, hBanTime.IntValue);
+					NotifyAllAdmins("[Notice] %N will be banned for suicide attempts for %d minutes. Use /ignore <player> to make them immune.", victim, hBanTime.IntValue);
+					isPlayerTroll[victim] = true;
+				}
+			}
+		}
+
+		// Forgive player based on threshold, resetting accumlated damage
 		if(time - lastFF[attacker] > hForgivenessTime.IntValue) {
 			playerTotalDamageFF[attacker] = 0.0;
 		}
 		playerTotalDamageFF[attacker] += damage;
 		lastFF[attacker] = time;
 		
+		// Check for friendly fire damage
 		if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding && isDamageDirect) {
 			LogAction(-1, attacker, "Excessive FF (%.2f HP)", playerTotalDamageFF[attacker]);
-			if(hAction.IntValue == 1) {
+			if(hTKAction.IntValue == 1) {
 				LogMessage("[NOTICE] Kicking %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				NotifyAllAdmins("[Notice] Kicking %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				KickClient(attacker, "Excessive FF");
-			} else if(hAction.IntValue == 2) {
+			} else if(hTKAction.IntValue == 2) {
 				LogMessage("[NOTICE] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				NotifyAllAdmins("[Notice] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
-			} else if(hAction.IntValue == 3) {
+			} else if(hTKAction.IntValue == 3) {
 				LogMessage("[NOTICE] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. ", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. Use /ignore <player> to make them immune.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
 				isPlayerTroll[attacker] = true;
@@ -215,15 +253,20 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 			damage = 0.0;
 			return Plugin_Handled;
 		}
-		//If the amount of MS is <= join time threshold * 60000 ms then cancel
-		if(L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) || time - iJoinTime[attacker] <= hJoinTime.IntValue * 60000) {
+
+		// Modify damages based on criteria		
+		if(iJumpAttempts[victim] > 0 || L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) || time - iJoinTime[attacker] <= hJoinTime.IntValue * 60000) {
+			// If the amount of MS is <= join time threshold * 60000 ms then cancel
+			// Or if the player is in a saferoom
+			// Or if the player tried to suicide jump
 			damage = 0.0;
 			return Plugin_Handled;
 		}else if(IsFinaleEnding) {
 			SDKHooks_TakeDamage(attacker, attacker, attacker, damage * 2.0);
 			damage = 0.0;
 			return Plugin_Changed;
-		}else if(!isDamageDirect) {
+		}else if(!isDamageDirect) { // Ignore fire and propane damage, mistakes can happen
+			// Make the victim take slightly less, attacker more, to in event of 1-1 victim wins
 			SDKHooks_TakeDamage(attacker, attacker, attacker, damage / 1.9);
 			damage /= 2.1;
 			return Plugin_Changed;
@@ -274,6 +317,24 @@ public Action Command_IgnorePlayer(int client, int args) {
 	return Plugin_Handled;
 }
 
+stock bool GetNearestPlayerPosition(int client, float pos[3]) {
+	static float targetPos[3], lowestDist;
+	int lowestID = -1;
+	GetClientAbsOrigin(client, targetPos);
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && i != client) {
+			GetClientAbsOrigin(i, pos);
+			float distance = GetVectorDistance(pos, targetPos);
+			if(lowestID == -1 || distance < lowestDist) {
+				lowestID = i;
+				lowestDist = distance;
+			}
+		}
+	}
+	GetClientAbsOrigin(lowestID, pos);
+	return lowestID > 0;
+}
+
 stock void PrintChatToAdmins(const char[] format, any ...) {
 	char buffer[254];
 	VFormat(buffer, sizeof(buffer), format, 2);
@@ -282,6 +343,20 @@ stock void PrintChatToAdmins(const char[] format, any ...) {
 			AdminId admin = GetUserAdmin(i);
 			if(admin != INVALID_ADMIN_ID) {
 				PrintToChat(i, "%s", buffer);
+			}
+		}
+	}
+	PrintToServer("%s", buffer);
+}
+
+stock void PrintToConsoleAdmins(const char[] format, any ...) {
+	char buffer[254];
+	VFormat(buffer, sizeof(buffer), format, 2);
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			AdminId admin = GetUserAdmin(i);
+			if(admin != INVALID_ADMIN_ID) {
+				PrintToConsole(i, "%s", buffer);
 			}
 		}
 	}
