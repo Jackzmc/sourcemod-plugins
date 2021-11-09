@@ -94,143 +94,143 @@ Change Log:
 // ====================================================================================================
 // Handle
 // ====================================================================================================
-new Handle:sb_fix_enabled				= INVALID_HANDLE;
-new Handle:sb_fix_select_type			= INVALID_HANDLE;
-new Handle:sb_fix_select_number		= INVALID_HANDLE;
-new Handle:sb_fix_select_character_name	= INVALID_HANDLE;
+Handle sb_fix_enabled				= INVALID_HANDLE;
+Handle sb_fix_select_type			= INVALID_HANDLE;
+Handle sb_fix_select_number		= INVALID_HANDLE;
+Handle sb_fix_select_character_name	= INVALID_HANDLE;
 
-new Handle:sb_fix_dont_switch_secondary	= INVALID_HANDLE;
+Handle sb_fix_dont_switch_secondary	= INVALID_HANDLE;
 
-new Handle:sb_fix_help_enabled			= INVALID_HANDLE;
-new Handle:sb_fix_help_range			= INVALID_HANDLE;
-new Handle:sb_fix_help_shove_type		= INVALID_HANDLE;
-new Handle:sb_fix_help_shove_reloading	= INVALID_HANDLE;
+Handle sb_fix_help_enabled			= INVALID_HANDLE;
+Handle sb_fix_help_range			= INVALID_HANDLE;
+Handle sb_fix_help_shove_type		= INVALID_HANDLE;
+Handle sb_fix_help_shove_reloading	= INVALID_HANDLE;
 
-new Handle:sb_fix_ci_enabled			= INVALID_HANDLE;
-new Handle:sb_fix_ci_range				= INVALID_HANDLE;
-new Handle:sb_fix_ci_melee_allow		= INVALID_HANDLE;
-new Handle:sb_fix_ci_melee_range		= INVALID_HANDLE;
+Handle sb_fix_ci_enabled			= INVALID_HANDLE;
+Handle sb_fix_ci_range				= INVALID_HANDLE;
+Handle sb_fix_ci_melee_allow		= INVALID_HANDLE;
+Handle sb_fix_ci_melee_range		= INVALID_HANDLE;
 
-new Handle:sb_fix_si_enabled			= INVALID_HANDLE;
-new Handle:sb_fix_si_range				= INVALID_HANDLE;
-new Handle:sb_fix_si_ignore_boomer		= INVALID_HANDLE;
-new Handle:sb_fix_si_ignore_boomer_range	= INVALID_HANDLE;
+Handle sb_fix_si_enabled			= INVALID_HANDLE;
+Handle sb_fix_si_range				= INVALID_HANDLE;
+Handle sb_fix_si_ignore_boomer		= INVALID_HANDLE;
+Handle sb_fix_si_ignore_boomer_range	= INVALID_HANDLE;
 
-new Handle:sb_fix_tank_enabled			= INVALID_HANDLE;
-new Handle:sb_fix_tank_range			= INVALID_HANDLE;
+Handle sb_fix_tank_enabled			= INVALID_HANDLE;
+Handle sb_fix_tank_range			= INVALID_HANDLE;
 
-new Handle:sb_fix_si_tank_priority_type	= INVALID_HANDLE;
+Handle sb_fix_si_tank_priority_type	= INVALID_HANDLE;
 
-new Handle:sb_fix_bash_enabled			= INVALID_HANDLE;
-new Handle:sb_fix_bash_hunter_chance	= INVALID_HANDLE;
-new Handle:sb_fix_bash_hunter_range	= INVALID_HANDLE;
-new Handle:sb_fix_bash_jockey_chance	= INVALID_HANDLE;
-new Handle:sb_fix_bash_jockey_range		= INVALID_HANDLE;
+Handle sb_fix_bash_enabled			= INVALID_HANDLE;
+Handle sb_fix_bash_hunter_chance	= INVALID_HANDLE;
+Handle sb_fix_bash_hunter_range	= INVALID_HANDLE;
+Handle sb_fix_bash_jockey_chance	= INVALID_HANDLE;
+Handle sb_fix_bash_jockey_range		= INVALID_HANDLE;
 
-new Handle:sb_fix_rock_enabled			= INVALID_HANDLE;
-new Handle:sb_fix_rock_range			= INVALID_HANDLE;
+Handle sb_fix_rock_enabled			= INVALID_HANDLE;
+Handle sb_fix_rock_range			= INVALID_HANDLE;
 
-new Handle:sb_fix_witch_enabled		= INVALID_HANDLE;
-new Handle:sb_fix_witch_range			= INVALID_HANDLE;
-new Handle:sb_fix_witch_range_incapacitated	= INVALID_HANDLE;
-new Handle:sb_fix_witch_range_killed		= INVALID_HANDLE;
-new Handle:sb_fix_witch_shotgun_control	= INVALID_HANDLE;
-new Handle:sb_fix_witch_shotgun_range_max	= INVALID_HANDLE;
-new Handle:sb_fix_witch_shotgun_range_min	= INVALID_HANDLE;
+Handle sb_fix_witch_enabled		= INVALID_HANDLE;
+Handle sb_fix_witch_range			= INVALID_HANDLE;
+Handle sb_fix_witch_range_incapacitated	= INVALID_HANDLE;
+Handle sb_fix_witch_range_killed		= INVALID_HANDLE;
+Handle sb_fix_witch_shotgun_control	= INVALID_HANDLE;
+Handle sb_fix_witch_shotgun_range_max	= INVALID_HANDLE;
+Handle sb_fix_witch_shotgun_range_min	= INVALID_HANDLE;
 
-new Handle:sb_fix_prioritize_ownersmoker	= INVALID_HANDLE;
+Handle sb_fix_prioritize_ownersmoker	= INVALID_HANDLE;
 
-new Handle:sb_fix_incapacitated_enabled	= INVALID_HANDLE;
+Handle sb_fix_incapacitated_enabled	= INVALID_HANDLE;
 
-new Handle:sb_fix_debug				= INVALID_HANDLE;
+Handle sb_fix_debug				= INVALID_HANDLE;
 
 // ====================================================================================================
 // SendProp
 // ====================================================================================================
-new g_Velo = -1;
-new g_ActiveWeapon = -1;
-new g_iAmmoOffset = -1;
+int g_Velo = -1;
+int g_ActiveWeapon = -1;
+int g_iAmmoOffset = -1;
 
 // ====================================================================================================
 // Variables
 // ====================================================================================================
-new bool:g_hEnabled;
-new c_iSelectType;
-new c_iSelectNumber;
+bool g_hEnabled;
+int c_iSelectType;
+int c_iSelectNumber;
 
-new bool:c_bDontSwitchSecondary;
+bool c_bDontSwitchSecondary;
 
-new bool:c_bHelp_Enabled;
-new Float:c_fHelp_Range;
-new c_iHelp_ShoveType;
-new bool:c_bHelp_ShoveOnlyReloading;
+bool c_bHelp_Enabled;
+float c_fHelp_Range;
+int c_iHelp_ShoveType;
+bool c_bHelp_ShoveOnlyReloading;
 
-new bool:c_bCI_Enabled;
-new Float:c_fCI_Range;
-new bool:c_bCI_MeleeEnabled;
-new Float:c_fCI_MeleeRange;
+bool c_bCI_Enabled;
+float c_fCI_Range;
+bool c_bCI_MeleeEnabled;
+float c_fCI_MeleeRange;
 
-new bool:c_bSI_Enabled;
-new Float:c_fSI_Range;
-new bool:c_bSI_IgnoreBoomer;
-new Float:c_fSI_IgnoreBoomerRange;
+bool c_bSI_Enabled;
+float c_fSI_Range;
+bool c_bSI_IgnoreBoomer;
+float c_fSI_IgnoreBoomerRange;
 
-new bool:c_bTank_Enabled;
-new Float:c_fTank_Range;
+bool c_bTank_Enabled;
+float c_fTank_Range;
 
-new c_iSITank_PriorityType;
+int c_iSITank_PriorityType;
 
-new bool:c_bBash_Enabled;
-new c_iBash_HunterChance;
-new Float:c_fBash_HunterRange;
-new c_iBash_JockeyChance;
-new Float:c_fBash_JockeyRange;
+bool c_bBash_Enabled;
+int c_iBash_HunterChance;
+float c_fBash_HunterRange;
+int c_iBash_JockeyChance;
+float c_fBash_JockeyRange;
 
-new bool:c_bRock_Enabled;
-new Float:c_fRock_Range;
+bool c_bRock_Enabled;
+float c_fRock_Range;
 
-new bool:c_bWitch_Enabled;
-new Float:c_fWitch_Range;
-new Float:c_fWitch_Range_Incapacitated;
-new Float:c_fWitch_Range_Killed;
-new bool:c_bWitch_Shotgun_Control;
-new Float:c_fWitch_Shotgun_Range_Max;
-new Float:c_fWitch_Shotgun_Range_Min;
+bool c_bWitch_Enabled;
+float c_fWitch_Range;
+float c_fWitch_Range_Incapacitated;
+float c_fWitch_Range_Killed;
+bool c_bWitch_Shotgun_Control;
+float c_fWitch_Shotgun_Range_Max;
+float c_fWitch_Shotgun_Range_Min;
 
-new bool:c_bPrioritize_OwnerSmoker;
+bool c_bPrioritize_OwnerSmoker;
 
-new bool:c_bIncapacitated_Enabled;
+bool c_bIncapacitated_Enabled;
 
-new bool:c_bDebug_Enabled;
+bool c_bDebug_Enabled;
 
 // ====================================================================================================
 // Int Array
 // ====================================================================================================
-new g_iWitch_Process[MAXENTITIES];
+int  g_iWitch_Process[MAXENTITIES];
 
-new g_Stock_NextThinkTick[MAXPLAYERS1];
+int  g_Stock_NextThinkTick[MAXPLAYERS1];
 
 // ====================================================================================================
 // Bool Array
 // ====================================================================================================
-new bool:g_bFixTarget[MAXPLAYERS1];
+bool g_bFixTarget[MAXPLAYERS1];
 
-new bool:g_bDanger[MAXPLAYERS1] = false;
+bool g_bDanger[MAXPLAYERS1];
 
-new bool:g_bWitchActive = false;
+bool g_bWitchActive = false;
 
-new bool:g_bCommonWithinMelee[MAXPLAYERS1] = false;
-new bool:g_bShove[MAXPLAYERS1][MAXPLAYERS1];
+bool g_bCommonWithinMelee[MAXPLAYERS1];
+bool g_bShove[MAXPLAYERS1][MAXPLAYERS1];
 
 // ====================================================================================================
 // Round
 // ====================================================================================================
-new bool:LeftSafeRoom = false;
-new bool:TimerAlreadyWorking = false;
+bool LeftSafeRoom = false;
+bool TimerAlreadyWorking = false;
 
 /****************************************************************************************************/
 
-new bool:bLateLoad = false;
+bool bLateLoad = false;
 
 public APLRes:AskPluginLoad2(Handle plugin, bool late, char[] error, errMax)
 {
@@ -1890,7 +1890,7 @@ public Action:Event_WitchRage(Handle:event, const char[] name, bool:dontBroadcas
 
 public OnEntityCreated(entity, const char[] classname)
 {
-	if (g_hEnabled && strcmp(classname, "witch") == 0)
+	if (entity >= MaxClients && g_hEnabled && strcmp(classname, "witch") == 0)
 	{
 		g_iWitch_Process[entity] = 0;
 	}
@@ -1927,7 +1927,7 @@ public OnEntityDestroyed(entity) {
 ================================================================================================ */
 stock ScriptCommand(client, const char[] command, const char[] arguments, any:...)
 {
-	new char vscript[PLATFORM_MAX_PATH];
+	static char vscript[PLATFORM_MAX_PATH];
 	VFormat(vscript, sizeof(vscript), arguments, 4);
 	
 	new flags = GetCommandFlags(command);
