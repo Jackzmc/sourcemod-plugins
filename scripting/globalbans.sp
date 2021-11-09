@@ -19,7 +19,7 @@ public Plugin myinfo =
 };
 
 static Database g_db;
-static ConVar hKickOnDBFailure;
+static ConVar hKickType;
 
 public void OnPluginStart() {
     if(!SQL_CheckConfig(DB_NAME)) {
@@ -29,7 +29,8 @@ public void OnPluginStart() {
         SetFailState("Failed to connect to database.");
     }
 
-    hKickOnDBFailure = CreateConVar("sm_hKickOnDBFailure", "0", "Should the plugin kick players if it cannot connect to the database?", FCVAR_NONE, true, 0.0, true, 1.0);
+    hKickType = CreateConVar("sm_globalbans_kick_type", "1", "0 = Do not kick, just notify\n1 = Kick if banned\n 2 = Kick if cannot reach database", FCVAR_NONE, true, 0.0, true, 2.0);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -94,6 +95,7 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
     }else if(flags == BANFLAG_IP) {
         LogMessage("Cannot save IP without steamid: %s [Source: %s]", identity, source);
     }
+    return Plugin_Continue;
 }
 
 public Action OnBanClient(int client, int time, int flags, const char[] reason, const char[] kick_message, const char[] command, any source) {
@@ -133,9 +135,11 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
 public Action OnRemoveBan(const char[] identity, int flags, const char[] command, any source) {
     if(flags == BANFLAG_AUTHID) {
         static char query[128];
-        Format(query, sizeof(query), "DELETE FROM `bans` WHERE steamid = '%s'", identity);
+        g_db.Format(query, sizeof(query), "DELETE FROM `bans` WHERE steamid = '%s'", identity);
         g_db.Query(DB_OnRemoveBanQuery, query, flags);
     }
+    return Plugin_Continue;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -146,7 +150,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
     int client = GetClientOfUserId(user);
     if(db == INVALID_HANDLE || results == null) {
         LogError("DB_OnConnectCheck returned error: %s", error);
-        if(client > 0 && hKickOnDBFailure.BoolValue) {
+        if(client > 0 && hKickType.IntValue == 2) {
             KickClient(client, "Could not authenticate at this time.");
             LogMessage("Could not connect to database to authorize user '%N' (#%d)", client, user);
         }
@@ -163,14 +167,17 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
             }else{
                 results.FetchString(0, reason, sizeof(reason), reasonResult);
                 if(!expired) {
-                    if(reasonResult == DBVal_Data)
-                        KickClient(client, "You have been banned: %s", reason);
-                    else
-                        KickClient(client, "You have been banned from this server.");
-                    
+                    if(hKickType.IntValue > 0) {
+                        if(reasonResult == DBVal_Data)
+                            KickClient(client, "You have been banned: %s", reason);
+                        else
+                            KickClient(client, "You have been banned from this server.");
+                    } else {
+                        PrintChatToAdmins("%N was banned from this server for: \"%s\"", client, reason);
+                    }
                     static char query[128];
-                    Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = ?", steamid);
-                    db.Query(DB_OnBanQuery, query);
+                    g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = ?", steamid);
+                    g_db.Query(DB_OnBanQuery, query);
                 }else{
                     DeleteBan(steamid);
                 }
@@ -181,7 +188,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
 
 void DeleteBan(const char[] steamid) {
     static char query[128];
-    Format(query, sizeof(query), "DELETE FROM `bans` WHERE steamid = '%s'", steamid);
+    g_db.Format(query, sizeof(query), "DELETE FROM `bans` WHERE steamid = '%s'", steamid);
     g_db.Query(DB_OnRemoveBanQuery, query);
 }
 
@@ -196,4 +203,18 @@ public void DB_OnRemoveBanQuery(Database db, DBResultSet results, const char[] e
     if(db == INVALID_HANDLE || results == null) {
         LogError("DB_OnRemoveBanQuery returned error: %s", error);
     }
+}
+
+stock void PrintChatToAdmins(const char[] format, any ...) {
+	char buffer[254];
+	VFormat(buffer, sizeof(buffer), format, 2);
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			AdminId admin = GetUserAdmin(i);
+			if(admin != INVALID_ADMIN_ID) {
+				PrintToChat(i, "%s", buffer);
+			}
+		}
+	}
+	PrintToServer("%s", buffer);
 }
