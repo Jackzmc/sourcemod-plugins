@@ -4,12 +4,18 @@
 //#define DEBUG
 
 #define PLUGIN_VERSION "1.0"
+// #define DEBUG_BLOCKERS 1
 // #define FORCE_ENABLED 1
-//TODO: Preload models
+// #define DEBUG_LOG_MAPSTART 1
 
 #include <sourcemod>
 #include <sdktools>
 #include <left4dhooks>
+#include <sceneprocessor>
+#if defined DEBUG_BLOCKERS
+#include <smlib/effects>
+int g_iLaserIndex;
+#endif
 //#include <sdkhooks>
 
 public Plugin myinfo = 
@@ -21,51 +27,64 @@ public Plugin myinfo =
 	url = ""
 };
 
-#define PROP_DUMPSTER "models/props_junk/dumpster.mdl"
-#define PROP_DOCK "models/props_swamp/boardwalk_384.mdl"
-#define PROP_SHELF "models/props/cs_office/shelves_metal.mdl"
-#define PROP_SIGN "models/props_swamp/river_sign01.mdl"
+/*
+script g_ModeScript.DeepPrintTable(g_ModeScript.MutationState)
+{
+   MapName      = "c6m2_bedlam"
+   StartActive  = true
+   CurrentSlasher       = ([1] player)
+   MapTime      = 480
+   StateTick    = 464
+   LastGiveAdren        = 10
+   ModeName     = "hideandseek"
+   Tick = 484
+   CurrentStage = 3
+   SlasherLastStumbled  = 0
+}
+*/
 
-static char gamemode[32];
+#define SOUND_SUSPENSE_1 "custom/suspense1.mp3"
+#define SOUND_SUSPENSE_1_FAST "custom/suspense1fast.mp3"
+
+enum GameState {
+	State_Unknown = -1,
+	State_Startup,
+	State_Hiding,
+	State_Restarting,
+	State_Hunting
+}
+
+static char gamemode[32], currentMap[64];
 static bool isEnabled, lateLoaded;
 
 static bool isPendingPlay[MAXPLAYERS+1];
-static bool isNavBlockersEnabled = true;
-static bool hasFiredRoundStart = false;
+static bool isNavBlockersEnabled = true, isPropsEnabled = true;
+static bool isNearbyPlaying[MAXPLAYERS+1];
+static bool wasThirdPersonVomitted[MAXPLAYERS+1];
+static bool gameOver;
+static int currentSeeker;
+static int currentPlayers = 0;
 
-static const float C8M3_SEWERS_A[3] = { 13265.965820, 8547.057617, -250.7 };
-static const float C8M3_SEWERS_A_PROP[3] = { 13265.965820, 8497.057617, -240.7 };
-static const float C8M3_SEWERS_B[3] = { 14130.535156, 8026.46386, -254.7 };
-
-static const float C3M4_PLANTATION_A[3] = { 2122.044189, -588.200195, 470.435608};
-static const float C3M4_PLANTATION_A2[3] = {2000.802612, -426.686829, 402.803497};
-
-static const float C1M3_MALL_A[3] = { 1714.133179, -1023.777527, 347.735168};
-static const float C1M3_MALL_A_PROP[3] = { 1581.286865, -1029.394043, 280.079254};
- 
-
-static const float SCALE_FLAT_MEDIUM[3] = { 50.0, 50.00, 1.0 };
-static const float SCALE_FLAT_LARGE[3] = { 150.0, 150.00, 1.0 };
-static const float SCALE_TALL_MEDIUM[3] = { 25.0, 25.00, 100.0 };
-
-static const float ROT_H_90[3] = { 0.0, 90.0, 0.0 };
-static const float ROT_V_90_H_90[3] = { 90.0, 90.0, 0.0 };
-static const float ROT_V_90[3] = { 90.0, 00.0, 0.0 };
 static const float DEFAULT_SCALE[3] = { 5.0, 5.0, 5.0 };
+static float spawnpoint[3];
+static bool hasSpawnpoint;
 
 static ArrayList entities;
-static char currentMapConfig[32];
+static ArrayList inputs;
 
 static KeyValues kv;
 static StringMap mapConfigs;
+static StringMap mapInputs;
+static Handle suspenseTimer, thirdPersonTimer;
+
+// TODO: Disable weapon drop
+
 enum struct EntityConfig {
 	float origin[3];
 	float rotation[3];
-	char type[16];
+	char type[32];
 	char model[64];
 	float scale[3];
-
-	bool toggleable;
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -90,23 +109,55 @@ public void OnPluginStart() {
 	}
 
 	mapConfigs = new StringMap();
+	mapInputs = new StringMap();
 
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.GetString(gamemode, sizeof(gamemode));
 	hGamemode.AddChangeHook(Event_GamemodeChange);
 	Event_GamemodeChange(hGamemode, gamemode, gamemode);
 
-	lateLoaded = false;
+	if(lateLoaded) {
+		int seeker = GetSlasher();
+		if(seeker > -1) {
+			currentSeeker = seeker;
+			PrintToServer("[H&S] Late load, found seeker %N", currentSeeker);
+		}
+		if(IsGameSoloOrPlayersLoading()) {
+			Handle timer = CreateTimer(10.0, Timer_KeepWaiting, _, TIMER_REPEAT);
+			TriggerTimer(timer);
+			PrintToServer("[H&S] Late load, player(s) are connecting, or solo. Waiting...");
+			SetState(State_Startup);
+		}
+	}
 
 	RegConsoleCmd("sm_joingame", Command_Join, "Joins or joins someone else");
-	RegAdminCmd("sm_hs_toggle", Command_ToggleBlockers, ADMFLAG_KICK, "Toggle nav blockers");
+	RegAdminCmd("sm_hs_blockers", Command_ToggleBlockers, ADMFLAG_KICK, "Toggle nav blockers");
+	RegAdminCmd("sm_hs_props", Command_ToggleProps, ADMFLAG_KICK, "Toggle props");
+	RegAdminCmd("sm_hs_clear", Command_Clear, ADMFLAG_KICK, "Toggle props");
+
+}
+
+public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
+	if(isEnabled) {
+		if(!StrEqual(command, "say")) { //Is team message
+			if(currentSeeker <= 0 || currentSeeker == client) {
+				return Plugin_Continue;
+			}
+			for(int i = 1; i <= MaxClients; i++) {
+				if(IsClientConnected(i) && IsClientInGame(i) && i != currentSeeker)
+					PrintToChat(i, "[Hiders] %N: %s", client, sArgs);
+			}
+			return Plugin_Handled;
+		}
+	}
+	return Plugin_Continue;
 }
 
 ArrayList LoadConfigForMap(const char[] map) {
 	if (kv.JumpToKey(map)) {
-		strcopy(currentMapConfig, sizeof(currentMapConfig), map);
 		ArrayList configs = new ArrayList(sizeof(EntityConfig));
-		if(kv.JumpToKey("blockers")) {
+		ArrayList entInputs = new ArrayList(ByteCountToCells(64));
+		if(kv.JumpToKey("ents")) {
 			kv.GotoFirstSubKey();
 			do {
 				EntityConfig config;
@@ -114,53 +165,91 @@ ArrayList LoadConfigForMap(const char[] map) {
 				kv.GetVector("rotation", config.rotation, NULL_VECTOR);
 				kv.GetString("type", config.type, sizeof(config.type), "env_physics_blocker");
 				kv.GetString("model", config.model, sizeof(config.model), "");
+				if(config.model[0] != '\0')
+					Format(config.model, sizeof(config.model), "models/%s", config.model);
 				kv.GetVector("scale", config.scale, DEFAULT_SCALE);
-
-				config.toggleable = true;
 
 				configs.PushArray(config);
 			} while (kv.GotoNextKey());
+			// Both JumpToKey and GotoFirstSubKey both traverse, i guess, go back
+			kv.GoBack();
+			kv.GoBack();
 		}
-		if(kv.JumpToKey("props")) {
+		if(kv.JumpToKey("inputs")) {
+			// Use 'false' to propery grab
+			// "key"	"value" in a section
+			kv.GotoFirstSubKey(false);
+			static char buffer[64];
 			do {
-				EntityConfig config;
-				kv.GetVector("origin", config.origin, NULL_VECTOR);
-				kv.GetVector("rotation", config.rotation, NULL_VECTOR);
-				kv.GetString("type", config.type, sizeof(config.type), "env_physics_blocker");
-				kv.GetString("model", config.model, sizeof(config.model), "");
-				kv.GetVector("scale", config.scale, DEFAULT_SCALE);
+				kv.GetSectionName(buffer, sizeof(buffer));
+				entInputs.PushString(buffer);
 
-				configs.PushArray(config);
-			} while (kv.GotoNextKey());
+				kv.GetString(NULL_STRING, buffer, sizeof(buffer));
+				entInputs.PushString(buffer);
+			} while (kv.GotoNextKey(false));
+			kv.GoBack();
 		}
-		kv.GoBack();
+		
+		if(kv.GetVector("spawnpoint", spawnpoint)) {
+			hasSpawnpoint = true;
+		} else {
+			hasSpawnpoint = false;
+		}
 		// Store ArrayList<EntityConfig> handle
 		mapConfigs.SetValue(map, configs);
+		// Discard entInputs if unused
+		if(entInputs.Length > 0)
+			mapInputs.SetValue(map, entInputs);
+		else
+			delete entInputs;
 		return configs;
-    } else {
+	} else {
 		return null;
 	}
 }
 
-public Action Command_ToggleBlockers(int client, int args) {
-	static char targetname[32];
-	int entity = INVALID_ENT_REFERENCE;
-	while ((entity = FindEntityByClassname(entity, "env_physics_blocker")) != INVALID_ENT_REFERENCE) {
-		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
-		if(StrEqual(targetname, "hsblocker")) {
-			if(isNavBlockersEnabled)
-				AcceptEntityInput(entity, "Disable");
-			else
-				AcceptEntityInput(entity, "Enable");
+public Action Command_Clear(int client, int args) {
+	if(args > 0) {
+		static char arg[16];
+		GetCmdArg(1, arg, sizeof(arg));
+		if(StrEqual(arg, "props")) {
+			EntFire("hsprop", "kill");
+			ReplyToCommand(client, "Removed all custom gamemode props");
+			return Plugin_Continue;
+		} else if(StrEqual(arg, "blockers")) {
+			EntFire("hsblockers", "kill");
+			ReplyToCommand(client, "Removed all custom gamemode blockers");
+			return Plugin_Continue;
+
 		}
 	}
+	ReplyToCommand(client, "Specify 'props' or 'blockers'");
+	return Plugin_Continue;
+}
 
+public Action Command_ToggleBlockers(int client, int args) {
 	if(isNavBlockersEnabled) {
-		ReplyToCommand(client, "Disabled all custom nav blockers");
+		EntFire("hsblocker", "Disable");
+		ReplyToCommand(client, "Disabled all custom gamemode blockers");
 	} else {
-		ReplyToCommand(client, "Enabled all custom nav blockers");
+		EntFire("hsblocker", "Enable");
+		ReplyToCommand(client, "Enabled all custom gamemode blockers");
 	}
 	isNavBlockersEnabled = !isNavBlockersEnabled;
+	return Plugin_Handled;
+}
+
+public Action Command_ToggleProps(int client, int args) {
+	if(isPropsEnabled) {
+		EntFire("hsprop", "Disable");
+		EntFire("hsprop", "DisableCollision");
+		ReplyToCommand(client, "Disabled all custom gamemode props");
+	} else {
+		EntFire("hsprop", "Enable");
+		EntFire("hsprop", "EnableCollision");
+		ReplyToCommand(client, "Enabled all custom gamemode props");
+	}
+	isPropsEnabled = !isPropsEnabled;
 	return Plugin_Handled;
 }
 
@@ -178,7 +267,7 @@ public Action Command_Join(int client, int args) {
 				client,
 				target_list,
 				MAXPLAYERS,
-				COMMAND_FILTER_ALIVE,
+				0,
 				target_name,
 				sizeof(target_name),
 				tn_is_ml)) <= 0)
@@ -194,10 +283,15 @@ public Action Command_Join(int client, int args) {
 				L4D_RespawnPlayer(target);
 				TeleportEntity(target, tpLoc, NULL_VECTOR, NULL_VECTOR);
 				isPendingPlay[client] = false;
+				CheatCommand(target, "give", "knife");
 			}
 		}
 		ReplyToCommand(client, "Joined %s", target_name);
 	} else {
+		if(currentSeeker == client) {
+			ReplyToCommand(client, "You are already in-game as a seeker.");
+			return Plugin_Handled;
+		}
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 				GetClientAbsOrigin(i, tpLoc);
@@ -208,56 +302,305 @@ public Action Command_Join(int client, int args) {
 		ChangeClientTeam(client, 2);
 		L4D_RespawnPlayer(client);
 		TeleportEntity(client, tpLoc, NULL_VECTOR, NULL_VECTOR);
+		CheatCommand(client, "give", "knife");
 	}
 	return Plugin_Handled;
 }
 
-public void OnMapStart() {
-	static char map[16];
-	GetCurrentMap(map, sizeof(map));
-
-	ArrayList configs;
-	if(!mapConfigs.GetValue(map, configs)) {
-		configs = LoadConfigForMap(map);
-		PrintToServer("H&S: Fetching config for map %s", map);
-	}
-	if(isEnabled) {
-		for(int i = 0; i < configs.Length; i++) {
-			EntityConfig config;
-			configs.GetArray(i, config);
-			if(config.model[0] != '\0')
-				PrecacheModel(config.model);
-			bool isEnabled = true;
-			if(config.toggleable && !isNavBlockersEnabled) {
-				isEnabled = false;
-			}
-			if(StrEqual(config.type, "env_physics_blocker")) {
-				CreateEnvBlockerBoxScaled(config.origin, config.scale, isEnabled);
-			} else {
-				CreateProp(config.model, config.origin, config.rotation);
+public void OnClientConnected(int client) {
+	if(!IsFakeClient(client)) {
+		currentPlayers++;
+		if(isEnabled) {
+			GameState state = GetState();
+			if(currentPlayers == 1 && state == State_Startup) {
+				CreateTimer(10.0, Timer_KeepWaiting, _, TIMER_REPEAT);
 			}
 		}
-		// 
-		// if(StrEqual(map, "c8m3_sewers")) {
-		// 	if(isNavBlockersEnabled) {
-		// 		CreateEnvBlockerBox(C8M3_SEWERS_A, isNavBlockersEnabled);
-		// 		CreateEnvBlockerBox(C8M3_SEWERS_B, isNavBlockersEnabled);
-		// 		CreateProp(PROP_SHELF, C8M3_SEWERS_A_PROP, ROT_V_90_H_90);
-		// 		CreateProp(PROP_SIGN, C8M3_SEWERS_B, ROT_V_90);
-		// 	}
-		// } else if(StrEqual(map, "c3m4_plantation")) {
-		// 	if(isNavBlockersEnabled) {
-		// 		CreateEnvBlockerBoxScaled(C3M4_PLANTATION_A2, SCALE_FLAT_LARGE);
-		// 		CreateProp(PROP_DOCK, C3M4_PLANTATION_A2, ROT_H_90);
-		// 	}
-		// 	// CreateEnvBlockerBoxScaled(C3M4_PLANTATION_A, SCALE_FLAT_LARGE);
-		// } else if(StrEqual(map, "c1m3_mall")) {
-		// 	CreateProp(PROP_DUMPSTER, C1M3_MALL_A_PROP, ROT_H_90);
-		// 	if(isNavBlockersEnabled) {
-		// 		CreateEnvBlockerBoxScaled(C1M3_MALL_A, SCALE_TALL_MEDIUM);
-		// 	}
-		// }
 	}
+}
+
+public Action Timer_KeepWaiting(Handle h) {
+	L4D2_ExecVScriptCode("g_ModeScript.MutationState.StateTick = -40");
+	SetState(State_Startup);
+	PrintHintTextToAll("Waiting for players to join...");
+	return IsGameSoloOrPlayersLoading() ? Plugin_Continue : Plugin_Stop;
+}
+
+public void OnClientDisconnect(int client) {
+	if(!IsFakeClient(client))
+		currentPlayers--;
+}
+
+
+public void OnMapStart() {
+	if(!isEnabled) return;
+
+	char map[64];
+	GetCurrentMap(map, sizeof(map));
+
+	if(!StrEqual(currentMap, map)) {
+		strcopy(currentMap, sizeof(currentMap), map);
+		static char mapTime[16];
+		L4D2_GetVScriptOutput("g_ModeScript.MutationState.MapTime", mapTime, sizeof(mapTime));
+		PrintToServer("[H&S] Map %s has a time of %s seconds", map, mapTime);
+
+
+		if(!mapConfigs.GetValue(map, entities)) {
+			entities = LoadConfigForMap(map);
+		}
+		mapInputs.GetValue(map, inputs);
+	}
+
+	#if defined DEBUG_BLOCKERS
+	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt");
+	#endif
+	PrecacheSound(SOUND_SUSPENSE_1);
+	PrecacheSound(SOUND_SUSPENSE_1_FAST);
+	AddFileToDownloadsTable("sound/custom/suspense1.mp3");
+	AddFileToDownloadsTable("sound/custom/suspense1fast.mp3");
+
+	if(lateLoaded) {
+		lateLoaded = false;
+		SetupEntities();
+	}
+}
+
+public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
+	if(isEnabled) {
+		finaleType = 0;
+		return Plugin_Changed;
+	}
+	return Plugin_Continue;
+}
+
+
+public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
+	cvar.GetString(gamemode, sizeof(gamemode));
+	#if defined FORCE_ENABLED
+		isEnabled = true;
+		PrintToServer("[H&S] Force-enabled debug");
+	#else
+		isEnabled = StrEqual(gamemode, "hideandseek", false);
+	#endif
+	if(isEnabled) {
+		HookEvent("round_end", Event_RoundEnd);
+		HookEvent("round_start", Event_RoundStart);
+		HookEvent("item_pickup", Event_ItemPickup);
+		HookEvent("player_death", Event_PlayerDeath);
+		SetupEntities();
+		CreateTimer(15.0, Timer_RoundStart);
+		if(suspenseTimer != null)
+			delete suspenseTimer;
+		suspenseTimer = CreateTimer(20.0, Timer_Music, _, TIMER_REPEAT);
+		if(thirdPersonTimer != null)
+			delete thirdPersonTimer;
+		thirdPersonTimer = CreateTimer(1.0, Timer_CheckPlayers, _, TIMER_REPEAT);
+	} else if(!lateLoaded) {
+		UnhookEvent("round_end", Event_RoundEnd);
+		UnhookEvent("round_start", Event_RoundStart);
+		UnhookEvent("item_pickup", Event_ItemPickup);
+		UnhookEvent("player_death", Event_PlayerDeath);
+		delete suspenseTimer;
+		delete thirdPersonTimer;
+	}
+}
+
+
+public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) { 
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(!gameOver && client && GetClientTeam(client) == 2) {
+		int alive = 0;
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+				alive++;
+			}
+		}
+		if(client == currentSeeker) {
+			PrintToChatAll("Hiders win!");
+			gameOver = true;
+		} else {
+			if(alive == 2) {
+				PrintToChatAll("One hider remains.");
+			} else if(alive == 1) {
+				// Player died and not seeker, therefore seeker killed em
+				if(client != currentSeeker) {
+					PrintToChatAll("Seeker %N won!", currentSeeker);
+				} else {
+					PrintToChatAll("Hiders win! The last survivor was %N!", client);
+
+				}
+				gameOver = true;
+			} else if(alive > 2 && client != currentSeeker) {
+				PrintToChatAll("%d hiders remain", alive - 1);
+			}
+		}
+	}
+	return Plugin_Continue;
+}
+
+public void OnClientPutInServer(int client) {
+	if(isEnabled && !IsFakeClient(client)) {
+		ChangeClientTeam(client, 1);
+		isPendingPlay[client] = true;
+		isNearbyPlaying[client] = false;
+		PrintToChatAll("%N will play next round", client);
+	}
+}
+
+public Action Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client && client > 0 && currentSeeker != client) {
+		static char item[32];
+		event.GetString("item", item, sizeof(item));
+		if(StrEqual(item, "melee")) {
+			int entity = GetPlayerWeaponSlot(client, 1);
+			GetEntPropString(entity, Prop_Data, "m_strMapSetScriptName", item, sizeof(item));
+			if(StrEqual(item, "fireaxe")) {
+				gameOver = false;
+				currentSeeker = GetSlasher();
+				if(currentSeeker != client) {
+					PrintToChatAll("[H&S] Seeker does not equal axe-receiver. Possible seeker: %N", client);
+				}
+				if(currentSeeker == -1) {
+					PrintToServer("[H&S] ERROR: GetSlasher() returned -1");
+					currentSeeker = client;
+				}
+				PrintToChatAll("%N is the seeker", currentSeeker);
+			}
+		}
+	}
+	return Plugin_Continue;
+
+}
+
+public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
+	if(hasSpawnpoint) {
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i)) {
+				TeleportEntity(i, spawnpoint, NULL_VECTOR, NULL_VECTOR);
+			}
+		}
+	}
+	SetupEntities();
+	CreateTimer(15.0, Timer_RoundStart);
+	return Plugin_Continue;
+
+}
+
+public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
+	currentSeeker = 0;
+	static float tpLoc[3];
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			GetClientAbsOrigin(i, tpLoc);
+			break;
+		}
+	}
+
+	for(int i = 1; i <= MaxClients; i++) {
+		isNearbyPlaying[i] = false;
+		if(isPendingPlay[i]) {
+			if(IsClientConnected(i) && IsClientInGame(i)) {
+				ChangeClientTeam(i, 2);
+				L4D_RespawnPlayer(i);
+				TeleportEntity(i, tpLoc, NULL_VECTOR, NULL_VECTOR);
+			}
+			isPendingPlay[i] = false;
+		}
+	}
+	return Plugin_Continue;
+
+}
+
+public Action Timer_CheckPlayers(Handle h) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && i != currentSeeker)
+			QueryClientConVar(i, "cam_collision", QueryClientConVarCallback);
+	}
+	return Plugin_Continue;
+}
+
+public void QueryClientConVarCallback(QueryCookie cookie, int client, ConVarQueryResult result, const char[] sCvarName, const char[] bCvarValue) {
+	int value = 0;
+	if (result == ConVarQuery_Okay && StringToIntEx(bCvarValue, value) > 0 && value == 0) {
+		wasThirdPersonVomitted[client] = true;
+		PrintHintText(client, "Third person is disabled in this mode");
+		// L4D_OnITExpired(client);
+		// L4D_CTerrorPlayer_OnVomitedUpon(client, client);
+		float random = GetRandomFloat();
+		if(random < 0.3)
+			PerformScene(client, "Playerareaclear");
+		else if(random <= 0.6)
+			PerformScene(client, "PlayerLaugh");
+		else
+			PerformScene(client, "PlayerDeath");
+	} else if(wasThirdPersonVomitted[client]) {
+		wasThirdPersonVomitted[client] = false;
+		L4D_OnITExpired(client);
+	}
+}
+
+public Action Timer_Music(Handle h) {
+	static float seekerLoc[3];
+	static float playerLoc[3];
+	if(currentSeeker > 0) {
+		GetClientAbsOrigin(currentSeeker, seekerLoc);
+		GameState state = GetState();
+		if(state == State_Hunting) {
+			EmitSoundToClient(currentSeeker, SOUND_SUSPENSE_1, currentSeeker, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEPITCH, 0.2, 90, currentSeeker, seekerLoc, seekerLoc, true);
+		}
+	}
+	int playerCount;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && i != currentSeeker) {
+			
+			playerCount++;
+			GetClientAbsOrigin(i, playerLoc);
+			float dist = GetVectorDistance(seekerLoc, playerLoc, true);
+			if(dist <= 250000.0) {
+				StopSound(i, SNDCHAN_AUTO, SOUND_SUSPENSE_1);
+				EmitSoundToClient(i, SOUND_SUSPENSE_1_FAST, i, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEPITCH, 1.0, 100, currentSeeker, seekerLoc, playerLoc, true);
+				isNearbyPlaying[i] = true;
+			} else if(dist <= 1000000.0) {
+				EmitSoundToClient(i, SOUND_SUSPENSE_1, i, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEPITCH, 0.2, 90, currentSeeker, seekerLoc, playerLoc, true);
+				isNearbyPlaying[i] = true;
+				StopSound(i, SNDCHAN_AUTO, SOUND_SUSPENSE_1_FAST);
+			} else if(isNearbyPlaying[i]) {
+				isNearbyPlaying[i] = false;
+				StopSound(i, SNDCHAN_AUTO, SOUND_SUSPENSE_1_FAST);
+				StopSound(i, SNDCHAN_AUTO, SOUND_SUSPENSE_1);
+			}
+		}
+	}
+	
+	return Plugin_Continue;
+}
+public Action Timer_RoundStart(Handle h) {
+	CreateTimer(0.1, Timer_CheckWeapons);
+	CreateTimer(10.0, Timer_CheckWeapons);
+	int entity = INVALID_ENT_REFERENCE;
+	while ((entity = FindEntityByClassname(entity, "func_button")) != INVALID_ENT_REFERENCE) {
+		AcceptEntityInput(entity, "Press");
+	}
+	entity = INVALID_ENT_REFERENCE;
+	while ((entity = FindEntityByClassname(entity, "func_brush")) != INVALID_ENT_REFERENCE) {
+		AcceptEntityInput(entity, "Kll");
+	}
+	PrintToServer("[H&S] Pressing buttons");
+	return Plugin_Continue;
+}
+public Action Timer_CheckWeapons(Handle h) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			// Check if has no melee:
+			if(GetPlayerWeaponSlot(i, 1) == -1) {
+				CheatCommand(i, "give", "knife");
+			}
+			int item = GetPlayerWeaponSlot(i, 0);
+			if(item != -1) AcceptEntityInput(item, "Kill");
+		}
+	}
+	return Plugin_Continue;
 }
 
 stock int CreateEnvBlockerBox(const float pos[3], bool enabled = true) {
@@ -269,12 +612,11 @@ stock int CreateEnvBlockerBox(const float pos[3], bool enabled = true) {
 	DispatchSpawn(entity);
 	if(enabled)
 		AcceptEntityInput(entity, "Enable");
-	PrintToServer("spawn blocker %f %f %f", pos[0], pos[1], pos[2]);
 	return entity;
 }
 
-stock int CreateEnvBlockerBoxScaled(const float pos[3], const float scale[3], bool enabled = true) {
-	int entity = CreateEntityByName("env_physics_blocker");
+stock int CreateEnvBlockerScaled(const char[] entClass, const float pos[3], const float scale[3] = { 5.0, 5.0, 5.0 }, bool enabled = true) {
+	int entity = CreateEntityByName(entClass);
 	DispatchKeyValue(entity, "targetname", "hsblocker");
 	DispatchKeyValue(entity, "initialstate", "1");
 	DispatchKeyValue(entity, "BlockType", "0");
@@ -292,106 +634,145 @@ stock int CreateEnvBlockerBoxScaled(const float pos[3], const float scale[3], bo
 	SetEntPropVector(entity, Prop_Send, "m_vecMins", mins);
 	if(enabled)
 		AcceptEntityInput(entity, "Enable");
-	PrintToServer("spawn blocker scaled %f %f %f scale [%f %f %f]", pos[0], pos[1], pos[2], scale[0], scale[1], scale[2]);
+	#if defined DEBUG_BLOCKERS
+	Effect_DrawBeamBoxRotatableToAll(pos, mins, scale, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.1, 0.1, 0, 0.0, {0, 255, 0, 255}, 0);
+	#endif
+	#if defined DEBUG_LOG_MAPSTART
+	PrintToServer("spawn blocker scaled %.1f %.1f %.1f scale [%.0f %.0f %.0f]", pos[0], pos[1], pos[2], scale[0], scale[1], scale[2]);
+	#endif
 	return entity;
 }
 
-stock int CreateProp(const char[] model, const float pos[3], const float ang[3]) {
-	int entity = CreateEntityByName("prop_dynamic");
+stock int CreatePropDynamic(const char[] model, const float pos[3], const float ang[3]) {
+	return CreateProp("prop_dynamic", model, pos, ang);
+}
+
+stock int CreatePropPhysics(const char[] model, const float pos[3], const float ang[3]) {
+	return CreateProp("prop_physics", model, pos, ang);
+}
+
+stock int CreateProp(const char[] entClass, const char[] model, const float pos[3], const float ang[3]) {
+	int entity = CreateEntityByName(entClass);
 	DispatchKeyValue(entity, "model", model);
 	DispatchKeyValue(entity, "solid", "6");
 	DispatchKeyValue(entity, "targetname", "hsprop");
 	DispatchKeyValue(entity, "disableshadows", "1");
 	TeleportEntity(entity, pos, ang, NULL_VECTOR);
 	DispatchSpawn(entity);
-	PrintToServer("spawn prop %f %f %f", pos[0], pos[1], pos[2]);
+	#if defined DEBUG_LOG_MAPSTART
+	PrintToServer("spawn prop %.1f %.1f %.1f model %s", pos[0], pos[1], pos[2], model[7]);
+	#endif
 	return entity;
 }
 
-public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
-	cvar.GetString(gamemode, sizeof(gamemode));
-	#if defined FORCE_ENABLED
-		isEnabled = true;
-	#else
-		isEnabled = StrEqual(gamemode, "hideandseek");
-	#endif
-	if(isEnabled) {
-		HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
-		HookEvent("round_end", Event_RoundEnd);
-		HookEvent("round_start", Event_RoundStart);
-	} else if(!lateLoaded) {
-		UnhookEvent("player_first_spawn", Event_PlayerFirstSpawn);
-		UnhookEvent("round_end", Event_RoundEnd);
-		UnhookEvent("round_start", Event_RoundStart);
-	}
-}
+stock void CheatCommand(int client, const char[] command, const char[] argument1) {
+	int userFlags = GetUserFlagBits(client);
+	SetUserFlagBits(client, ADMFLAG_ROOT);
+	int flags = GetCommandFlags(command);
+	SetCommandFlags(command, flags & ~FCVAR_CHEAT);
+	FakeClientCommand(client, "%s %s", command, argument1);
+	SetCommandFlags(command, flags);
+	SetUserFlagBits(client, userFlags);
+} 
 
-public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) { 
-	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(client && GetClientTeam(client) != 2 && !isPendingPlay[client]) {
-		PrintToChat(client, "You will be put in game next round.");
-		isPendingPlay[client] = true;
-	}
-}
-
-public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
-	CreateTimer(10.0, Timer_CheckItems);
-}
-
-public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
-	static float tpLoc[3];
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-			GetClientAbsOrigin(i, tpLoc);
-			break;
-		}
-	}
-
-	for(int i = 1; i <= MaxClients; i++) {
-		if(isPendingPlay[i]) {
-			isPendingPlay[i] = false;
-			ChangeClientTeam(i, 2);
-			L4D_RespawnPlayer(i);
-			TeleportEntity(i, tpLoc, NULL_VECTOR, NULL_VECTOR);
-		}
-	}
-}
-
-///
-public Action Timer_CheckItems(Handle h) {
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-			// Check if has no melee:
-			if(GetPlayerWeaponSlot(i, 1) == -1) {
-				GiveClientWeapon(i, "knife", false);
+stock void EntFire(const char[] name, const char[] input) {
+	static char targetname[64];
+	for(int i = MAXPLAYERS + 1; i <= GetMaxEntities(); i++) {
+		if(IsValidEntity(i) && IsValidEdict(i)) {
+			GetEntPropString(i, Prop_Data, "m_iName", targetname, sizeof(targetname));
+			if(StrEqual(targetname, name)) {
+				AcceptEntityInput(i, input);
 			}
-			int item = GetPlayerWeaponSlot(i, 0);
-			if(item != -1) AcceptEntityInput(item, "Kill");
 		}
-	}
-	PrintToServer("H&S: Pressing buttons");
-	int entity = INVALID_ENT_REFERENCE;
-	while ((entity = FindEntityByClassname(entity, "func_button")) != INVALID_ENT_REFERENCE) {
-		AcceptEntityInput(entity, "Press");
 	}
 }
 
-stock bool GiveClientWeapon(int client, const char[] wpnName, bool lasers) {
-	char sTemp[64];
-	float pos[3];
-	GetClientAbsOrigin(client, pos);
-	Format(sTemp, sizeof(sTemp), "weapon_%s", wpnName);
+void SetupEntities() {
+	if(entities != null) {
+		PrintToServer("[H&S] Found map entity config, deploying %d entities", entities.Length);
+		for(int i = 0; i < entities.Length; i++) {
+			EntityConfig config;
+			entities.GetArray(i, config);
 
-	int entity = CreateEntityByName(sTemp);
-	if( entity != -1 ) {
-		DispatchSpawn(entity);
-		TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
+			if(config.model[0] != '\0') PrecacheModel(config.model);
 
-		if(lasers) SetEntProp(entity, Prop_Send, "m_upgradeBitVec", 4);
+			if(StrEqual(config.type, "env_physics_blocker")) {
+				CreateEnvBlockerScaled(config.type, config.origin, config.scale, isNavBlockersEnabled);
+			} else {
+				CreateProp(config.type, config.model, config.origin, config.rotation);
+			}
+		}
 
-		EquipPlayerWeapon(client, entity);
-		return true;
-	}else{
-		return false;
+		static char key[64];
+		static char value[64];
+		if(inputs != null) {
+			for(int i = 0; i < inputs.Length - 1; i += 2) {
+				inputs.GetString(i, key, sizeof(key));
+				inputs.GetString(i + 1, value, sizeof(value));
+				EntFire(key, value);
+				#if defined DEBUG_LOG_MAPSTART
+				PrintToServer("[H&S] EntFire: %s %s", key, value);
+				#endif
+			}
+		}
+
+
+
 	}
+}
+
+GameState GetState() {
+	if(!isEnabled) return State_Unknown;
+	static char buffer[4];
+	L4D2_GetVScriptOutput("g_ModeScript.MutationState.CurrentStage", buffer, sizeof(buffer));
+	int stage = -1;
+	if(StringToIntEx(buffer, stage) > 0) {
+		return view_as<GameState>(stage);
+	} else {
+		return State_Unknown;
+	}
+}
+
+int GetSlasher() {
+	if(!isEnabled) return -1;
+	static char buffer[8];
+	L4D2_GetVScriptOutput("g_ModeScript.MutationState.CurrentSlasher ? g_ModeScript.MutationState.CurrentSlasher.GetPlayerUserId() : -1", buffer, sizeof(buffer));
+	int uid = StringToInt(buffer);
+	if(uid > 0) {
+		return GetClientOfUserId(uid);
+	} else {
+		return -1;
+	}
+}
+
+int GetTick() {
+	if(!isEnabled) return -1;
+	static char buffer[4];
+	L4D2_GetVScriptOutput("g_ModeScript.MutationState.StateTick", buffer, sizeof(buffer));
+	int value = -1;
+	if(StringToIntEx(buffer, value) > 0) {
+		return value;
+	} else {
+		return value;
+	}
+}
+
+bool SetState(GameState state) {
+	if(!isEnabled) return false;
+	static char buffer[64];
+	Format(buffer, sizeof(buffer), "g_ModeScript.MutationState.CurrentStage = %d", view_as<int>(state));
+	return L4D2_ExecVScriptCode(buffer);
+}
+
+bool IsGameSoloOrPlayersLoading() {
+	int connecting, ingame;
+	for(int i = 1;  i <= MaxClients; i++) {
+		if(IsClientConnected(i)) {
+			if(IsClientInGame(i))
+				ingame++;
+			else
+				connecting++;
+		}
+	}
+	return connecting > 0 || ingame == 1;
 }
