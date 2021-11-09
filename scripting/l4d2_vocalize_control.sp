@@ -97,6 +97,7 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 			for(int i = 0; i < numClients; i++) {
                 int client = clients[i];
                 if(gaggedPlayers[client].FindValue(entity) > -1) {
+					// Swap gagged player to end of list, then remove it (dec. numClients is effectively same)
 					int swap = clients[numClients - 1];
 					clients[numClients - 1] = client;
 					clients[i] = swap;
