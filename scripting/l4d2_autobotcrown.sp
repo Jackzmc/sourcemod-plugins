@@ -68,7 +68,7 @@ public void OnPluginStart()
 	}
 
 	hValidDifficulties = CreateConVar("l4d2_autocrown_allowed_difficulty", "7", "The difficulties the plugin is active on. 1=Easy, 2=Normal 4=Advanced 8=Expert. Add numbers together.", FCVAR_NONE);
-	hAllowedGamemodes = CreateConVar("l4d2_autocrown_modes_tog", "1", "Turn on the plugin in these game modes. 0=All, 1=Coop, 2=Survival, 4=Versus, 8=Scavenge. Add numbers together.", FCVAR_NONE);
+	hAllowedGamemodes = CreateConVar("l4d2_autocrown_modes_tog", "1", "Turn on the plugin in these game modes. 0=All, 1=Coop, 2=Survival, 4=Versus, 8=Scavenge, 16=Other. Add numbers together.", FCVAR_NONE);
 	
 	char diff[16];
 	FindConVar("z_difficulty").GetString(diff, sizeof(diff));
@@ -105,7 +105,7 @@ public void Event_DifficultyChanged(Event event, const char[] name, bool dontBro
 	char diff[16];
 	event.GetString("newDifficulty", diff, sizeof(diff));
 	currentDifficulty = GetDifficultyInt(diff);
-	if(hAllowedGamemodes.IntValue & currentDifficulty > 0) {
+	if(hValidDifficulties.IntValue & currentDifficulty > 0) {
 		if(timer == INVALID_HANDLE && AutoCrownBot == -1) {
 			timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT);
 		}
@@ -114,14 +114,26 @@ public void Event_DifficultyChanged(Event event, const char[] name, bool dontBro
 	}
 }
 public void Change_Gamemode(ConVar convar, const char[] oldValue, const char[] newValue) {
-	if(StrEqual(newValue, "realism")) {
-		delete timer;
-	}
+	int c0 = CharToLower(newValue[0]);
+	int c1 = CharToLower(newValue[1]);
+	bool enable = false;
+	if(c0 == 'c' && hAllowedGamemodes.IntValue & 1) { //co-op
+		enable = true;
+	} else if(c0 == 's' && c1 == 'u' && hAllowedGamemodes.IntValue & 2) { //survival
+		enable = true;
+	} else if(c0 == 'v' && hAllowedGamemodes.IntValue & 4) { //versus
+		enable = true;
+	} else if(c0 == 's' && c1 == 'c' && hAllowedGamemodes.IntValue & 8) { //scavenge
+		enable = true;
+	} else if(hAllowedGamemodes.IntValue & 16)
+		enable = true;
 
-}
+	if(enable) {
+		if(timer == INVALID_HANDLE && AutoCrownBot == -1) {
+			timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT);
+		}
+	} else delete timer;
 
-public bool IsGamemodeAllowed() {
-	return true;
 }
 
 public Action Event_WitchSpawn(Event event, const char[] name, bool dontBroadcast) {
