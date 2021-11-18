@@ -360,8 +360,11 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 				}
 			}
 		} else {
-			RequestFrame(Frame_GiveNewClientKit, client);
-			CreateTimer(1.2, Timer_UpdateMinPlayers);
+			// New client has connected, not on first map.
+			// TODO: Check if Timer_UpdateMinPlayers is needed, or if this works:
+			if(++abmExtraCount > 4) {
+				RequestFrame(Frame_SetupNewClient, client);
+			}
 		}
 	}
 	return Plugin_Continue;
@@ -418,11 +421,14 @@ public Action L4D_OnIsTeamFull(int team, bool &full) {
 	return Plugin_Continue;
 }
 
-public void Frame_GiveNewClientKit(int client) {
-	if(!DoesClientHaveKit(client) && GetRealSurvivorsCount() > 4) {
+public void Frame_SetupNewClient(int client) {
+	if(!DoesClientHaveKit(client)) {
 		int item = GivePlayerItem(client, "weapon_first_aid_kit");
 		EquipPlayerWeapon(client, item);
 	}
+	static float spawnPos[3];
+	GetCenterPositionInSurvivorFlow(client, spawnPos);
+	TeleportEntity(client, spawnPos, NULL_VECTOR, NULL_VECTOR);
 }
 public Action Timer_GiveClientKit(Handle hdl, int user) {
 	int client = GetClientOfUserId(user);
@@ -1099,4 +1105,52 @@ stock void RunVScriptLong(const char[] sCode, any ...) {
 	
 	SetVariantString(sBuffer);
 	AcceptEntityInput(iScriptLogic, "RunScriptCode");
+}
+
+// Gets a position (from a nav area)
+stock void GetCenterPositionInSurvivorFlow(int target, float pos[3]) {
+	int client = GetHighestFlowSurvivor(target);
+	GetClientAbsOrigin(client, pos);
+	int nav = L4D_GetNearestNavArea(pos);
+	L4D_FindRandomSpot(nav, pos);
+}
+
+stock int GetLowestFlowSurvivor(int ignoreTarget = 0) {
+	int client = L4D_GetHighestFlowSurvivor();
+	float lowestFlow = L4D2Direct_GetFlowDistance(client);
+	for(int i = 1; i <= MaxClients; i++) {
+		if(ignoreTarget != i && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			if(L4D2Direct_GetFlowDistance(i) < lowestFlow) {
+				client = i;
+				lowestFlow = L4D2Direct_GetFlowDistance(i);
+			}
+		}
+	}
+	return client;
+}
+
+stock int GetHighestFlowSurvivor(int ignoreTarget = 0) {
+	int client = L4D_GetHighestFlowSurvivor();
+	if(client != ignoreTarget) {
+		return client;
+	} else {
+		float highestFlow = L4D2Direct_GetFlowDistance(client);
+		for(int i = 1; i <= MaxClients; i++) {
+			if(ignoreTarget != i && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+				if(L4D2Direct_GetFlowDistance(i) > highestFlow) {
+					client = i;
+					highestFlow = L4D2Direct_GetFlowDistance(i);
+				}
+			}
+		}
+		return client;
+	}
+}
+
+
+stock float GetSurvivorFlowDifference() {
+	int client = L4D_GetHighestFlowSurvivor();
+	float highestFlow = L4D2Direct_GetFlowDistance(client);
+	client = GetLowestFlowSurvivor();
+	return highestFlow - L4D2Direct_GetFlowDistance(client);
 }
