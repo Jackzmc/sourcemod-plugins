@@ -50,18 +50,19 @@ public Action Timer_Check(Handle h) {
 			LogAction(0, -1, "Detected server in hibernation with no players, restarting...");
 			ServerCommand("quit");
 		}
+		return Plugin_Continue;
 	} else if(GetTime() - startupTime > MAX_TIME_ONLINE_MS) {
 		LogAction(0, -1, "Server has passed max online time threshold, will restart if remains empty");
 		if(IsServerEmpty()) {
-			if(++triesEmpty > 2) {
-				LogAction(0, -1, "Server has passed max online time threshold and is empty, restarting now");
+			if(++triesEmpty > 3) {
+				LogAction(0, -1, "Server has passed max online time threshold and is empty after %d tries, restarting now", triesEmpty);
 				ServerCommand("quit");
 			}
+			return Plugin_Continue;
 		}
-	} else {
-		triesBots = 0;
-		triesEmpty = 0;
 	}
+	triesBots = 0;
+	triesEmpty = 0;
 	return Plugin_Continue;
 }
 
