@@ -45,6 +45,7 @@ public void OnPluginStart() {
 	REPLACEMENT_PHRASES = new StringMap();
 	LoadPhrases();
 	SetupTrolls();
+	SetupsTrollCombos();
 
 	// Witch target overwrite stuff:
 
@@ -73,7 +74,8 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_ftas", Command_ApplyUserSilent,  ADMFLAG_CHEATS, "Apply a troll mod to a player, or shows menu if no parameters.");
 	RegAdminCmd("sm_ftt",  Command_FeedTheTrollMenu, ADMFLAG_KICK, "Opens a list that shows all the commands");
 	RegAdminCmd("sm_mark", Command_MarkPendingTroll, ADMFLAG_KICK, "Marks a player as to be banned on disconnect");
-	RegAdminCmd("sm_ftc",  Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
+	RegAdminCmd("sm_ftp",  Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
+	RegAdminCmd("sm_ftc",  Command_ApplyComboTrolls, ADMFLAG_KICK, "Applies predefined combinations of trolls");
 	RegAdminCmd("sm_witch_attack", Command_WitchAttack,   ADMFLAG_CHEATS, "Makes all witches target a player");
 	RegAdminCmd("sm_insta", Command_InstaSpecial, ADMFLAG_KICK, "Spawns a special that targets them, close to them.");
 	RegAdminCmd("sm_instaface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");

@@ -80,10 +80,49 @@ public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int par
 		delete menu;
 }
 
+public int ChoosePlayerHandlerForCombos(Menu menu, MenuAction action, int client, int param2) {
+	if (action == MenuAction_Select) {
+		static char info[8];
+		menu.GetItem(param2, info, sizeof(info));
+		int userid = StringToInt(info);
+		int victim = GetClientOfUserId(userid);
+
+		if(victim == 0) {
+			ReplyToCommand(victim, "FTT: Could not acquire player");
+			return;
+		}
+		
+		ShowTrollCombosMenu(client, userid);
+	} else if (action == MenuAction_End)
+		delete menu;
+}
+
+public int ChooseComboHandler(Menu menu, MenuAction action, int client, int param2) {
+	if (action == MenuAction_Select) {
+		static char info[16];
+		menu.GetItem(param2, info, sizeof(info));
+		static char str[2][8];
+		ExplodeString(info, "|", str, 2, 8, false);
+		int userid = StringToInt(str[0]);
+		int victim = GetClientOfUserId(userid);
+		int comboID = StringToInt(str[1]);
+
+		if(victim == 0) {
+			ReplyToCommand(client, "FTT: Could not acquire player");
+			return;
+		}
+		
+		static TrollCombo combo;
+		combos.GetArray(comboID, combo, sizeof(combo));
+		combo.Activate(client, victim);
+	} else if (action == MenuAction_End)
+		delete menu;
+}
+
 static int iMenuVictimID[MAXPLAYERS+1];
 public int ChooseCategoryHandler(Menu menu, MenuAction action, int param1, int param2) {
 	if (action == MenuAction_Cancel && param2 == MenuCancel_ExitBack)
-		ShowTrollMenu(param1);
+		ShowTrollMenu(param1, false);
 	else if (action == MenuAction_Select) {
 		static char info[32];
 		menu.GetItem(param2, info, sizeof(info));
@@ -299,8 +338,32 @@ void SetupCategoryMenu(int client, int victimUserID) {
 	categoryMenu.Display(client, 0);
 }
 
-void ShowTrollMenu(int client) {
-	Menu menu = new Menu(ChoosePlayerHandler);
+void ShowTrollCombosMenu(int client, int victimUserID) {
+	Menu comboMenu = new Menu(ChooseComboHandler);
+	static char id[32];
+	Format(id, sizeof(id), "%N: Choose troll combo", GetClientOfUserId(victimUserID));
+	comboMenu.SetTitle(id);
+
+	static TrollCombo combo;
+
+	if(combos.Length == 0) {
+		ReplyToCommand(client, "FTT: No troll combos available");
+		return;
+	} 
+
+	for(int i = 0; i < combos.Length; i++) {
+		combos.GetArray(i, combo, sizeof(combo));
+		Format(id, sizeof(id), "%d|%d", victimUserID, i);
+		comboMenu.AddItem(id, combo.name);
+	}
+
+	comboMenu.ExitButton = true;
+	comboMenu.ExitBackButton = true;
+	comboMenu.Display(client, 0);
+}
+
+void ShowTrollMenu(int client, bool isComboList) {
+	Menu menu = isComboList ? new Menu(ChoosePlayerHandlerForCombos) : new Menu(ChoosePlayerHandler);
 	menu.SetTitle("Choose a player to troll");
 	static char userid[8], display[32];
 	for(int i = 1; i <= MaxClients; i++) {

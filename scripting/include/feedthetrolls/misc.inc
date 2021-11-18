@@ -34,9 +34,9 @@ bool ToggleMarkPlayer(int client, int target) {
 		ShowActivityEx(client, "[FTT] ", "unmarked %N as troll", target);
 		return true;
 	}else{
-		AdminId admin_client = GetUserAdmin(client);
-		AdminId admin_target = GetUserAdmin(target);
-		if(admin_client != INVALID_ADMIN_ID && admin_target == INVALID_ADMIN_ID ) {
+		bool isClientAdmin = GetUserAdmin(client) != INVALID_ADMIN_ID;
+		bool isTargetAdmin = GetUserAdmin(target) != INVALID_ADMIN_ID;
+		if(isClientAdmin && !isTargetAdmin) {
 			Call_StartForward(g_PlayerMarkedForward);
 			Call_PushCell(client);
 			Call_PushCell(target);

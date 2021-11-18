@@ -45,6 +45,7 @@ char steamids[MAXPLAYERS+1][64];
 
 #include <feedthetrolls/base>
 #include <feedthetrolls/trolls>
+#include <feedthetrolls/combos>
 #include <feedthetrolls/specials>
 #include <feedthetrolls/misc>
 #include <feedthetrolls/commands>

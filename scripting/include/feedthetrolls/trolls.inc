@@ -95,6 +95,7 @@ void SetupTrolls() {
             Trolls[i].activeFlagClients[j] = -1;
         }
     }
+
 }
 
 void AddMagnetFlags(int index) {

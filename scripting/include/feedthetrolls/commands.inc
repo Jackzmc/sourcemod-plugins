@@ -224,7 +224,7 @@ public Action Command_ResetUser(int client, int args) {
 public Action Command_ApplyUser(int client, int args) {
 	if(args < 1) {
 		SilentMenuSelected[client] = false;
-		ShowTrollMenu(client);
+		ShowTrollMenu(client, false);
 	}else{
 		char arg1[32], arg2[16];
 		GetCmdArg(1, arg1, sizeof(arg1));
@@ -266,10 +266,39 @@ public Action Command_ApplyUser(int client, int args) {
 	return Plugin_Handled;
 }
 
+public Action Command_ApplyComboTrolls(int client, int args) {
+	if(args < 1) {
+		ShowTrollMenu(client, true);
+	}else{
+		char arg1[32];
+		GetCmdArg(1, arg1, sizeof(arg1));
+
+		static char target_name[MAX_TARGET_LENGTH];
+		int target_list[1], target_count;
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			1,
+			COMMAND_FILTER_NO_MULTI, 
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		&& target_list[0] > 0) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		ShowTrollCombosMenu(client, target_list[0]);
+	}
+	return Plugin_Handled;	
+}
+
 public Action Command_ApplyUserSilent(int client, int args) {
 	if(args < 1) {
 		SilentMenuSelected[client] = true;
-		ShowTrollMenu(client);
+		ShowTrollMenu(client, false);
 	}else{
 		char arg1[32], arg2[16];
 		GetCmdArg(1, arg1, sizeof(arg1));
