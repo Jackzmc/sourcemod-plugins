@@ -62,7 +62,7 @@ public void OnClientAuthorized(int client, const char[] auth) {
     if(!StrEqual(auth, "BOT", true)) {
         static char query[256], ip[32];
         GetClientIP(client, ip, sizeof(ip));
-        Format(query, sizeof(query), "SELECT `reason`, `steamid`, `expired` FROM `bans` WHERE `steamid` = '%s' OR ip = '?'", auth, ip);
+        Format(query, sizeof(query), "SELECT `reason`, `steamid`, `expired` FROM `bans` WHERE `steamid` = 'STEAM_%:%:%s' OR ip = '?'", auth[10], ip);
         g_db.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
     }
 }
@@ -174,6 +174,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
                             KickClient(client, "You have been banned from this server.");
                     } else {
                         PrintChatToAdmins("%N was banned from this server for: \"%s\"", client, reason);
+                        return;
                     }
                     static char query[128];
                     g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);

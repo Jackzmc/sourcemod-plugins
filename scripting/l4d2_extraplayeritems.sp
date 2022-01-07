@@ -27,7 +27,7 @@
 #define DEBUG_LEVEL DEBUG_GENERIC
 #define EXTRA_PLAYER_HUD_UPDATE_INTERVAL 0.8
 //Sets abmExtraCount to this value if set
-//#define DEBUG_FORCE_PLAYERS 5
+// #define DEBUG_FORCE_PLAYERS 5
 
 #define PLUGIN_VERSION "1.0"
 
@@ -269,19 +269,25 @@ public Action Command_RunExtraItems(int client, int args) {
 /// EVENTS
 ////////////////////////////////////
 
-// 0 = inactive | 1 = started | 2 = first tank round started | 3 = waiting for tank spawn | # > 3: Health for next tank
+#define FINALE_TANK 8
+#define FINALE_STARTED 1
+#define FINALE_RESCUE_READY 6
+#define FINALE_HORDE 7
+#define FINALE_WAIT 10
 
 public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
-	if(finaleType == 1 && abmExtraCount > 4 && hExtraFinaleTank.BoolValue) {
+	if(finaleType == FINALE_STARTED && abmExtraCount > 4 && hExtraFinaleTank.BoolValue) {
 		finaleStage = 1;
 		PrintToConsoleAll("[EPI] Finale started and over threshold");
-	} else if(finaleType == 8) {
+	} else if(finaleType == FINALE_TANK) {
 		if(finaleStage == 1) {
 			finaleStage = 2;
-			PrintToConsoleAll("[EPI] First tank has spawned");
-		} else {
+			PrintToConsoleAll("[EPI] First tank stage has started");
+		} else if(finaleStage == 2) {
 			finaleStage = 3;
-			PrintToConsoleAll("[EPI] Waiting for second tank to spawn");
+			PrintToConsoleAll("[EPI] Second stage started, waiting for tank");
+		} else {
+			PrintToConsoleAll("invalid");
 		}
 	}
 	return Plugin_Continue;
@@ -291,23 +297,25 @@ public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) 
 	int user = GetEventInt(event, "userid");
 	int tank = GetClientOfUserId(user);
 	if(finaleStage == 3) {
-		PrintToConsoleAll("[EPI] Third tank spawned, setting health.");
+		PrintToConsoleAll("[EPI] Second tank spawned, setting health.");
 		if(tank > 0 && IsFakeClient(tank)) { 
-			RequestFrame(Frame_ExtraTankWait, user);
+			// Sets health in half, sets finaleStage to health
+			CreateTimer(5.0, Timer_SplitTank, user);
 		}
-		finaleStage = 0; //Only set for a frame
 	} else if(finaleStage > 3) {
+		PrintToConsoleAll("[EPI] Third & final tank spawned, setting health.");
 		RequestFrame(Frame_SetExtraTankHealth, user);
 	}
 }
-
-public void Frame_ExtraTankWait(int user) {
+public Action Timer_SplitTank(Handle t, int user) {
 	int tank = GetClientOfUserId(user);
 	if(tank > 0) {
 		// Half their HP, assign half to self and for next tank
 		int hp = GetEntProp(tank, Prop_Send, "m_iHealth") / 2;
 		SetEntProp(tank, Prop_Send, "m_iHealth", hp);
 		finaleStage = hp;
+		// Then, summon the next tank
+		ServerCommand("sm_forcespecial tank");
 	}
 }
 
@@ -362,7 +370,13 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 		} else {
 			// New client has connected, not on first map.
 			// TODO: Check if Timer_UpdateMinPlayers is needed, or if this works:
-			if(++abmExtraCount > 4) {
+			// Never decrease abmExtraCount
+			int newCount = GetRealSurvivorsCount();
+			if(newCount > abmExtraCount) {
+				abmExtraCount = newCount;
+			}
+			// If 5 survivors, then set them up, TP them.
+ 			if(abmExtraCount > 4) {
 				RequestFrame(Frame_SetupNewClient, client);
 			}
 		}
@@ -427,8 +441,9 @@ public void Frame_SetupNewClient(int client) {
 		EquipPlayerWeapon(client, item);
 	}
 	static float spawnPos[3];
-	GetCenterPositionInSurvivorFlow(client, spawnPos);
-	TeleportEntity(client, spawnPos, NULL_VECTOR, NULL_VECTOR);
+	// TODO: Fix null
+	if(GetCenterPositionInSurvivorFlow(client, spawnPos))
+		TeleportEntity(client, spawnPos, NULL_VECTOR, NULL_VECTOR);
 }
 public Action Timer_GiveClientKit(Handle hdl, int user) {
 	int client = GetClientOfUserId(user);
@@ -479,6 +494,7 @@ public void OnMapStart() {
 			extraKitsStarted = extraKitsAmount;
 		}
 	}
+
 	if(!isLateLoaded) {
 		isLateLoaded = false;
 	}
@@ -505,6 +521,7 @@ public void OnMapStart() {
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 
 	playersLoadedIn = 0;
+	finaleStage = 0;
 }
 
 
@@ -521,7 +538,6 @@ public void OnMapEnd() {
 	}
 	ammoPacks.Clear();
 	playersLoadedIn = 0;
-	L4D2_RunScript("ExtraPlayerHUD  <- { Fields = { } }; HUDSetLayout(ExtraPlayerHud); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.79, 0.25, 0.2 ); g_ModeScript");
 }
 
 public void Event_RoundFreezeEnd(Event event, const char[] name, bool dontBroadcast) {
@@ -577,7 +593,7 @@ public Action Event_MapTransition(Event event, const char[] name, bool dontBroad
 }
 //TODO: Possibly hacky logic of on third different ent id picked up, in short timespan, detect as set of 4 (pills, kits) & give extra
 public Action Event_Pickup(int client, int weapon) {
-	char name[32];
+	static char name[32];
 	GetEntityClassname(weapon, name, sizeof(name));
 	if(StrEqual(name, "weapon_first_aid_kit", true)) {
 		if(isBeingGivenKit[client]) return Plugin_Continue;
@@ -1108,25 +1124,45 @@ stock void RunVScriptLong(const char[] sCode, any ...) {
 }
 
 // Gets a position (from a nav area)
-stock void GetCenterPositionInSurvivorFlow(int target, float pos[3]) {
+stock bool GetCenterPositionInSurvivorFlow(int target, float pos[3]) {
+	static float ang[3];
 	int client = GetHighestFlowSurvivor(target);
-	GetClientAbsOrigin(client, pos);
-	int nav = L4D_GetNearestNavArea(pos);
-	L4D_FindRandomSpot(nav, pos);
+	if(client > 0) {
+		GetClientAbsOrigin(client, pos);
+		GetClientAbsAngles(client, ang);
+		pos[2] = -pos[2];
+		TR_TraceRayFilter(pos, ang, MASK_SHOT, RayType_Infinite, Filter_GroundOnly);
+		if(TR_DidHit()) {
+			TR_GetEndPosition(pos);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	return false;
+}
+
+bool Filter_GroundOnly(int entity, int mask) {
+	return entity == 0;
 }
 
 stock int GetLowestFlowSurvivor(int ignoreTarget = 0) {
 	int client = L4D_GetHighestFlowSurvivor();
-	float lowestFlow = L4D2Direct_GetFlowDistance(client);
-	for(int i = 1; i <= MaxClients; i++) {
-		if(ignoreTarget != i && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-			if(L4D2Direct_GetFlowDistance(i) < lowestFlow) {
-				client = i;
-				lowestFlow = L4D2Direct_GetFlowDistance(i);
+	if(client != ignoreTarget) {
+		return client;
+	} else {
+		client = -1;
+		float lowestFlow = L4D2Direct_GetFlowDistance(client);
+		for(int i = 1; i <= MaxClients; i++) {
+			if(ignoreTarget != i && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+				if(L4D2Direct_GetFlowDistance(i) < lowestFlow) {
+					client = i;
+					lowestFlow = L4D2Direct_GetFlowDistance(i);
+				}
 			}
 		}
+		return client;
 	}
-	return client;
 }
 
 stock int GetHighestFlowSurvivor(int ignoreTarget = 0) {
@@ -1134,6 +1170,7 @@ stock int GetHighestFlowSurvivor(int ignoreTarget = 0) {
 	if(client != ignoreTarget) {
 		return client;
 	} else {
+		client = -1;
 		float highestFlow = L4D2Direct_GetFlowDistance(client);
 		for(int i = 1; i <= MaxClients; i++) {
 			if(ignoreTarget != i && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {

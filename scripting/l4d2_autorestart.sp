@@ -54,7 +54,7 @@ public Action Timer_Check(Handle h) {
 	} else if(GetTime() - startupTime > MAX_TIME_ONLINE_MS) {
 		LogAction(0, -1, "Server has passed max online time threshold, will restart if remains empty");
 		if(IsServerEmpty()) {
-			if(++triesEmpty > 3) {
+			if(++triesEmpty > 4) {
 				LogAction(0, -1, "Server has passed max online time threshold and is empty after %d tries, restarting now", triesEmpty);
 				ServerCommand("quit");
 			}
@@ -86,10 +86,8 @@ bool IsServerEmptyWithOnlyBots() {
 //Returns true if there is a bot connected and there is no real players
 bool IsServerEmpty() {
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i)) {
-			if(!IsFakeClient(i))
-				return false;
-
+		if(IsClientConnected(i) && !IsFakeClient(i)) {
+			return false;
 		}
 	}
 	return true;

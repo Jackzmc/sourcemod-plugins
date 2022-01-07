@@ -274,8 +274,15 @@ stock bool SpawnMinigun(const float vPos[3], const float vAng[3]) {
 	}
 }
 
+stock int GiveClientWeaponLasers(int client, const char[] wpnName) {
+	int entity = GiveClientWeapon(client, wpnName);
+	if(entity != -1) {
+		SetEntProp(entity, Prop_Send, "m_upgradeBitVec", 4);
+	}
+	return entity;
+}
 
-stock bool GiveClientWeapon(int client, const char[] wpnName, bool lasers) {
+stock int GiveClientWeapon(int client, const char[] wpnName) {
 	static char sTemp[64];
 	float pos[3];
 	GetClientAbsOrigin(client, pos);
@@ -286,12 +293,10 @@ stock bool GiveClientWeapon(int client, const char[] wpnName, bool lasers) {
 		DispatchSpawn(entity);
 		TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
 
-		if(lasers) SetEntProp(entity, Prop_Send, "m_upgradeBitVec", 4);
-
 		EquipPlayerWeapon(client, entity);
-		return true;
+		return entity;
 	}else{
-		return false;
+		return -1;
 	}
 }
 stock int GetNearestEntity(int client, char[] classname)
@@ -587,6 +592,12 @@ stock void StringToLower(char[] str) {
 	int len = strlen(str);
 	for(int i = 0; i < len; i++) {
 		str[i] = CharToLower(str[i]);
+	}
+}
+stock void StringToUpper(char[] str) {
+	int len = strlen(str);
+	for(int i = 0; i < len; i++) {
+		str[i] = CharToUpper(str[i]);
 	}
 }
 

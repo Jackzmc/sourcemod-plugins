@@ -19,7 +19,9 @@ int iJoinTime[MAXPLAYERS+1], iIdleStartTime[MAXPLAYERS+1], iJumpAttempts[MAXPLAY
 float playerTotalDamageFF[MAXPLAYERS+1];
 int lastFF[MAXPLAYERS+1];
 
-ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime, hTKAction, hSuicideAction, hSuicideLimit;
+float autoFFScaleFactor[MAXPLAYERS+1];
+
+ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime, hTKAction, hSuicideAction, hSuicideLimit, hFFAutoScaleAmount, hFFAutoScaleForgivenessAmount, hFFAutoScaleMaxRatio, hFFAutoScaleIgnoreAdmins;
 
 public Plugin myinfo = 
 {
@@ -51,7 +53,11 @@ public void OnPluginStart()
 	hTKAction = CreateConVar("l4d2_tk_action", "3", "How should the TK be punished?\n0 = No action (No message), 1 = Kick, 2 = Instant Ban, 3 = Ban on disconnect", FCVAR_NONE, true, 0.0, true, 3.0);
 	hSuicideAction = CreateConVar("l4d2_suicide_action", "3", "How should a suicider be punished?\n0 = No action (No message), 1 = Kick, 2 = Instant Ban, 3 = Ban on disconnect", FCVAR_NONE, true, 0.0, true, 3.0);
 	hSuicideLimit = CreateConVar("l4d2_suicide_limit", "1", "How many attempts does a new joined player have until action is taken for suiciding?", FCVAR_NONE, true, 0.0);
-
+	
+	hFFAutoScaleAmount = CreateConVar("l4d2_tk_auto_ff_rate", "0.04", "The rate at which auto reverse-ff is scaled by.", FCVAR_NONE, true, 0.0);
+	hFFAutoScaleMaxRatio = CreateConVar("l4d2_tk_auto_ff_max_ratio", "5.0", "The maximum amount that the reverse ff can go. 0.0 for unlimited", FCVAR_NONE, true, 0.0);
+	hFFAutoScaleForgivenessAmount = CreateConVar("l4d2_tk_auto_ff_forgive_rate", "0.008", "This amount times amount of minutes since last ff is removed from ff rate", FCVAR_NONE, true, 0.0);
+	hFFAutoScaleIgnoreAdmins = CreateConVar("l4d2_tk_auto_ff_ignore_admins", "1", "Should automatic reverse ff ignore admins? 0 = Admins are subjected\n1 = Admins are excempt", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	//AutoExecConfig(true, "l4d2_tkstopper");
 
@@ -78,6 +84,8 @@ public void OnPluginStart()
 
 	RegAdminCmd("sm_ignore", Command_IgnorePlayer, ADMFLAG_KICK, "Makes a player immune for any anti trolling detection for a session");
 
+	RegAdminCmd("sm_tkinfo", Command_TKInfo, ADMFLAG_KICK, "Debug info for TKSTopper");
+
 	if(lateLoaded) {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
@@ -85,7 +93,17 @@ public void OnPluginStart()
 			}
 		}
 	}
+	// CreateTimer(60.0, Timer_Forgive, _, TIMER_REPEAT);
 }
+
+/*public Action Timer_Forgive(Handle h) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && ) {
+			
+		}
+	}
+	return Plugin_Continue;
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // Special Infected Events 
@@ -173,6 +191,7 @@ public void OnMapEnd() {
 
 public void OnClientPutInServer(int client) {
 	iJoinTime[client] = GetTime();
+	lastFF[client] = GetTime();
 	SDKHook(client, SDKHook_OnTakeDamage, Event_OnTakeDamage);
 }
 
@@ -191,21 +210,32 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 		BanClient(client, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
 	}
 	isPlayerTroll[client] = false;
+	autoFFScaleFactor[client] = 0.0;
 }
 
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
 	if(damage > 0.0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
-		if(GetUserAdmin(attacker) != INVALID_ADMIN_ID || isImmune[attacker] || IsFakeClient(attacker)) return Plugin_Continue;
+		if(damagetype & DMG_BURN && IsFakeClient(attacker)) {
+			damage = 0.0;
+			return Plugin_Changed;
+		}
+		bool isAdmin = GetUserAdmin(attacker) != INVALID_ADMIN_ID;
+		bool ignore = hFFAutoScaleIgnoreAdmins.BoolValue && isAdmin;
+		if(isImmune[attacker] || IsFakeClient(attacker)) return Plugin_Continue;
 		if(GetClientTeam(victim) != 2 || GetClientTeam(attacker) != 2 || attacker == victim) return Plugin_Continue;
 		//Allow friendly firing BOTS that aren't idle players:
 		//if(IsFakeClient(victim) && !HasEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") || GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) return Plugin_Continue;
+		
+		// Stop all damage early if already marked as troll
 		if(isPlayerTroll[attacker]) return Plugin_Stop;
+		// Allow vanilla-damage if being attacked by special (example, charger carry)
 		if(isUnderAttack[victim]) return Plugin_Continue;
 	
+		// Is damage not caused by fire or pipebombs?
 		bool isDamageDirect = damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0;
 		int time = GetTime();
 		// If is a fall within first 2 minutes, do appropiate action
-		if(damagetype & DMG_FALL && attacker == victim && damage > 0.0 && time- iJoinTime[victim] <= hJoinTime.IntValue * 60000) {
+		if(!isAdmin && damagetype & DMG_FALL && attacker == victim && damage > 0.0 && time - iJoinTime[victim] <= hJoinTime.IntValue * 60) {
 			iJumpAttempts[victim]++;
 			float pos[3];
 			GetNearestPlayerPosition(victim, pos);
@@ -232,10 +262,28 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 			playerTotalDamageFF[attacker] = 0.0;
 		}
 		playerTotalDamageFF[attacker] += damage;
+
+		// Auto reverse ff logic
 		lastFF[attacker] = time;
+		if(isDamageDirect && !ignore) {
+			// Decrement any recovered FF
+			float minutesSinceLastFF = (time - lastFF[attacker]) / 60.0;
+			autoFFScaleFactor[attacker] -= minutesSinceLastFF * hFFAutoScaleForgivenessAmount.FloatValue;
+			if(autoFFScaleFactor[attacker] < 0.0) {
+				autoFFScaleFactor[attacker] = 0.0;
+			}
+			// Then increment 
+			autoFFScaleFactor[attacker] += hFFAutoScaleAmount.FloatValue * damage;
+			if(hFFAutoScaleMaxRatio.FloatValue > 0.0 && autoFFScaleFactor[attacker] > hFFAutoScaleMaxRatio.FloatValue) {
+				autoFFScaleFactor[attacker] = hFFAutoScaleMaxRatio.FloatValue;
+			}
+			if(minutesSinceLastFF > 3.0) {
+				PrintToConsoleAdmins("%N new reverse ratio: %f", attacker, autoFFScaleFactor[attacker]);
+			}
+		}
 		
-		// Check for friendly fire damage
-		if(playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding && isDamageDirect) {
+		// Check for excessive friendly fire damage in short timespan
+		if(!isAdmin && playerTotalDamageFF[attacker] > hThreshold.IntValue && !IsFinaleEnding && isDamageDirect) {
 			LogAction(-1, attacker, "Excessive FF (%.2f HP)", playerTotalDamageFF[attacker]);
 			if(hTKAction.IntValue == 1) {
 				LogMessage("[NOTICE] Kicking %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
@@ -255,19 +303,19 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		}
 
 		// Modify damages based on criteria		
-		if(iJumpAttempts[victim] > 0 || L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) || time - iJoinTime[attacker] <= hJoinTime.IntValue * 60000) {
+		if(iJumpAttempts[victim] > 0 || L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) || time - iJoinTime[attacker] <= hJoinTime.IntValue * 60) {
 			// If the amount of MS is <= join time threshold * 60000 ms then cancel
 			// Or if the player is in a saferoom
 			// Or if the player tried to suicide jump
 			damage = 0.0;
 			return Plugin_Handled;
 		}else if(IsFinaleEnding) {
+			if(isAdmin) return Plugin_Continue;
 			SDKHooks_TakeDamage(attacker, attacker, attacker, damage * 2.0);
 			damage = 0.0;
 			return Plugin_Changed;
 		}else if(!isDamageDirect) { // Ignore fire and propane damage, mistakes can happen
-			// Make the victim take slightly less, attacker more, to in event of 1-1 victim wins
-			SDKHooks_TakeDamage(attacker, attacker, attacker, damage / 1.9);
+			SDKHooks_TakeDamage(attacker, attacker, attacker, float(RoundToCeil(autoFFScaleFactor[attacker] * damage)));
 			damage /= 2.1;
 			return Plugin_Changed;
 		}
@@ -275,6 +323,20 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 	return Plugin_Continue;
 }
 
+public Action Command_TKInfo(int client, int args) {
+	int time = GetTime();
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
+			float minutesSinceLastFF = (time - lastFF[i]) / 60.0;
+			float activeRate = autoFFScaleFactor[i] - (minutesSinceLastFF * hFFAutoScaleForgivenessAmount.FloatValue);
+			if(activeRate < 0.0) {
+				activeRate = 0.0;
+			} 
+			ReplyToCommand(client, "%N: %f TK-FF buffer | %f (active: %f), reverse FF rate | %f ff min ago | %d suicide jumps", i, playerTotalDamageFF[i], autoFFScaleFactor[i], activeRate, minutesSinceLastFF,  iJumpAttempts[i]);
+		}
+	}
+	return Plugin_Handled;
+}
 public Action Command_IgnorePlayer(int client, int args) {
 	char arg1[32];
 	GetCmdArg(1, arg1, sizeof(arg1));
@@ -284,15 +346,15 @@ public Action Command_IgnorePlayer(int client, int args) {
 	bool tn_is_ml;
 
 	if ((target_count = ProcessTargetString(
-			arg1,
-			client,
-			target_list,
-			MaxClients,
-			COMMAND_FILTER_ALIVE, 
-			target_name,
-			sizeof(target_name),
-			tn_is_ml)) <= 0)
-	{
+		arg1,
+		client,
+		target_list,
+		MaxClients,
+		COMMAND_FILTER_ALIVE, 
+		target_name,
+		sizeof(target_name),
+		tn_is_ml)) <= 0
+	) {
 		ReplyToTargetError(client, target_count);
 		return Plugin_Handled;
 	}
@@ -338,7 +400,7 @@ stock bool GetNearestPlayerPosition(int client, float pos[3]) {
 stock void PrintChatToAdmins(const char[] format, any ...) {
 	char buffer[254];
 	VFormat(buffer, sizeof(buffer), format, 2);
-	for(int i = 1; i < MaxClients; i++) {
+	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
 			AdminId admin = GetUserAdmin(i);
 			if(admin != INVALID_ADMIN_ID) {
@@ -352,7 +414,7 @@ stock void PrintChatToAdmins(const char[] format, any ...) {
 stock void PrintToConsoleAdmins(const char[] format, any ...) {
 	char buffer[254];
 	VFormat(buffer, sizeof(buffer), format, 2);
-	for(int i = 1; i < MaxClients; i++) {
+	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
 			AdminId admin = GetUserAdmin(i);
 			if(admin != INVALID_ADMIN_ID) {

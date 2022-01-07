@@ -1,8 +1,10 @@
+#pragma newdecls required
+
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
 
-public Plugin:myinfo =
+public Plugin myinfo =
 {
 	name = "L4D2 Survivor Bot Fix",
 	author = "DingbatFlat",
@@ -232,13 +234,13 @@ bool TimerAlreadyWorking = false;
 
 bool bLateLoad = false;
 
-public APLRes:AskPluginLoad2(Handle plugin, bool late, char[] error, errMax)
+public APLRes AskPluginLoad2(Handle plugin, bool late, char[] error, int errMax)
 {
 	bLateLoad = late;
 	return APLRes_Success;
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	// Notes:
 	// If "~_enabled" of the group is not set to 1, other Cvars in that group will not work.
@@ -346,7 +348,7 @@ public OnPluginStart()
 	HookConVarChange(sb_fix_select_character_name, SBSelectChangeConvar);
 	
 	if (bLateLoad) {
-		for (new x = 1; x <= MaxClients; x++) {
+		for (int x = 1; x <= MaxClients; x++) {
 			if (x > 0 && x <= MaxClients && IsClientInGame(x)) {
 				SDKHook(x, SDKHook_WeaponSwitch, WeaponSwitch);
 			}
@@ -374,7 +376,7 @@ public OnPluginStart()
 	InitTimers(); // Safe Room Check
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	input_Help();
 	input_CI();
@@ -385,7 +387,7 @@ public OnMapStart()
 	inputConfig();
 }
 
-public OnAllPluginsLoaded()
+public void OnAllPluginsLoaded()
 {
 	input_Help();
 	input_CI();
@@ -396,46 +398,46 @@ public OnAllPluginsLoaded()
 	inputConfig();
 }
 
-public SBHelp_ChangeConvar(Handle:convar, const char[] oldValue, const char[] newValue)	{ input_Help(); }
-public SBCI_ChangeConvar(Handle:convar, const char[] oldValue, const char[] newValue)	{ input_CI(); }
-public SBSI_ChangeConvar(Handle:convar, const char[] oldValue, const char[] newValue)	{ input_SI(); }
-public SBTank_ChangeConvar(Handle:convar, const char[] oldValue, const char[] newValue)	{ input_Tank(); }
-public SBBash_ChangeConvar(Handle:convar, const char[] oldValue, const char[] newValue)	{ input_Bash(); }
-public SBEnt_ChangeConvar(Handle:convar, const char[] oldValue, const char[] newValue)	{ input_Entity(); }
+public void SBHelp_ChangeConvar(Handle convar, const char[] oldValue, const char[] intValue)	{ input_Help(); }
+public void SBCI_ChangeConvar(Handle convar, const char[] oldValue, const char[] intValue)	{ input_CI(); }
+public void SBSI_ChangeConvar(Handle convar, const char[] oldValue, const char[] intValue)	{ input_SI(); }
+public void SBTank_ChangeConvar(Handle convar, const char[] oldValue, const char[] intValue)	{ input_Tank(); }
+public void SBBash_ChangeConvar(Handle convar, const char[] oldValue, const char[] intValue)	{ input_Bash(); }
+public void SBEnt_ChangeConvar(Handle convar, const char[] oldValue, const char[] intValue)	{ input_Entity(); }
 
-public SBConfigChangeConvar(Handle:convar, const char[] oldValue, const char[] newValue) { inputConfig(); }
+public void SBConfigChangeConvar(Handle convar, const char[] oldValue, const char[] intValue) { inputConfig(); }
 
-public SBSelectChangeConvar(Handle:convar, const char[] oldValue, const char[] newValue) { SelectImprovedTarget(); }
+public void SBSelectChangeConvar(Handle convar, const char[] oldValue, const char[] intValue) { SelectImprovedTarget(); }
 
-input_Help()
+void input_Help()
 {
 	c_bHelp_Enabled = GetConVarBool(sb_fix_help_enabled);
 	c_fHelp_Range = GetConVarInt(sb_fix_help_range) * 1.0;
 	c_iHelp_ShoveType = GetConVarInt(sb_fix_help_shove_type);
 	c_bHelp_ShoveOnlyReloading = GetConVarBool(sb_fix_help_shove_reloading);
 }
-input_CI()
+void input_CI()
 {
 	c_bCI_Enabled = GetConVarBool(sb_fix_ci_enabled);
 	c_fCI_Range = GetConVarInt(sb_fix_ci_range) * 1.0;
 	c_bCI_MeleeEnabled = GetConVarBool(sb_fix_ci_melee_allow);
 	c_fCI_MeleeRange = GetConVarInt(sb_fix_ci_melee_range) * 1.0;
 }
-input_SI()
+void input_SI()
 {
 	c_bSI_Enabled = GetConVarBool(sb_fix_si_enabled);
 	c_fSI_Range = GetConVarInt(sb_fix_si_range) * 1.0;
 	c_bSI_IgnoreBoomer = GetConVarBool(sb_fix_si_ignore_boomer);
 	c_fSI_IgnoreBoomerRange = GetConVarInt(sb_fix_si_ignore_boomer_range) * 1.0;
 }
-input_Tank()
+void input_Tank()
 {
 	c_bTank_Enabled = GetConVarBool(sb_fix_tank_enabled);
 	c_fTank_Range = GetConVarInt(sb_fix_tank_range) * 1.0;
 	
 	c_iSITank_PriorityType = GetConVarInt(sb_fix_si_tank_priority_type);
 }
-input_Bash()
+void input_Bash()
 {
 	c_bBash_Enabled = GetConVarBool(sb_fix_bash_enabled);
 	c_iBash_HunterChance = GetConVarInt(sb_fix_bash_hunter_chance);
@@ -443,7 +445,7 @@ input_Bash()
 	c_iBash_JockeyChance = GetConVarInt(sb_fix_bash_jockey_chance);
 	c_fBash_JockeyRange = GetConVarInt(sb_fix_bash_jockey_range) * 1.0;
 }
-input_Entity()
+void input_Entity()
 {
 	c_bRock_Enabled = GetConVarBool(sb_fix_rock_enabled);
 	c_fRock_Range = GetConVarInt(sb_fix_rock_range) * 1.0;
@@ -457,7 +459,7 @@ input_Entity()
 	c_fWitch_Shotgun_Range_Min = GetConVarInt(sb_fix_witch_shotgun_range_min) * 1.0;
 }
 
-inputConfig()
+void inputConfig()
 {
 	g_hEnabled = GetConVarBool(sb_fix_enabled);
 	c_iSelectType = GetConVarInt(sb_fix_select_type);
@@ -481,7 +483,7 @@ inputConfig()
 *=		Round / Start Ready / Select Improved Targets
 *=
 ================================================================================================ */
-public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
+public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
 	for (int x = 1; x <= MAXPLAYERS; x++) g_bFixTarget[x] = false; // RESET
 	
@@ -496,17 +498,17 @@ public Action:Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 	InitTimers();
 }
 
-public Action:Event_BotAndPlayerReplace(Handle:event, const char[] name, bool:dontBroadcast)
+public Action Event_BotAndPlayerReplace(Handle event, const char[] name, bool dontBroadcast)
 {
 	if (!LeftSafeRoom) return;
 	
-	new bot = GetClientOfUserId(GetEventInt(event, "bot"));
+	int bot = GetClientOfUserId(GetEventInt(event, "bot"));
 	if (g_bFixTarget[bot]) {
 		SelectImprovedTarget();
 	}
 }
 
-InitTimers()
+void InitTimers()
 {
 	if (LeftSafeRoom)
 		SelectImprovedTarget();
@@ -517,7 +519,7 @@ InitTimers()
 	}
 }
 
-public Action:Timer_PlayerLeftCheck(Handle:Timer)
+public Action Timer_PlayerLeftCheck(Handle Timer)
 {
 	if (LeftStartArea())
 	{
@@ -536,10 +538,10 @@ public Action:Timer_PlayerLeftCheck(Handle:Timer)
 	return Plugin_Continue; 
 }
 
-bool:LeftStartArea()
+bool LeftStartArea()
 {
-	new ent = -1, maxents = GetMaxEntities();
-	for (new i = MaxClients+1; i <= maxents; i++)
+	int ent = -1, maxents = GetMaxEntities();
+	for (int i = MaxClients+1; i <= maxents; i++)
 	{
 		if (IsValidEntity(i))
 		{
@@ -556,7 +558,7 @@ bool:LeftStartArea()
 	
 	if (ent > -1)
 	{
-		new offset = FindSendPropInfo("CTerrorPlayerResource", "m_hasAnySurvivorLeftSafeArea");
+		int offset = FindSendPropInfo("CTerrorPlayerResource", "m_hasAnySurvivorLeftSafeArea");
 		if (offset > 0)
 		{
 			if (GetEntData(ent, offset))
@@ -568,12 +570,12 @@ bool:LeftStartArea()
 	return false;
 }
 
-SelectImprovedTarget()
+void SelectImprovedTarget()
 {
 	if (!g_hEnabled || !LeftSafeRoom) return; // Select targets when left the safe area.
 	else if (c_iSelectType == 1) {
-		new count;
-		for (new x = 1; x <= MaxClients; x++) {
+		int count;
+		for (int x = 1; x <= MaxClients; x++) {
 			if (isSurvivorBot(x)) {
 				g_bFixTarget[x] = true;
 				count++
@@ -587,8 +589,8 @@ SelectImprovedTarget()
 		static char sSelectName[256];
 		GetConVarString(sb_fix_select_character_name, sSelectName, sizeof(sSelectName));
 		
-		new count;
-		for (new x = 1; x <= MaxClients; x++) {
+		int count;
+		for (int x = 1; x <= MaxClients; x++) {
 			if (isSurvivorBot(x)) {
 				static char sName[128];
 				GetClientName(x, sName, sizeof(sName));
@@ -606,15 +608,15 @@ SelectImprovedTarget()
 	}
 }
 
-public Action:Timer_ShoveChance(Handle:Timer)
+public Action Timer_ShoveChance(Handle Timer)
 {
 	// ----------------------- Bash Chance -----------------------
 	if (c_iBash_HunterChance < 100 || c_iBash_JockeyChance < 100) {
-		for (new sb = 1; sb <= MaxClients; sb++) {
+		for (int sb = 1; sb <= MaxClients; sb++) {
 			if (isSurvivorBot(sb) && IsPlayerAlive(sb)) {
-				for (new x = 1; x <= MaxClients; x++) {
+				for (int x = 1; x <= MaxClients; x++) {
 					if (isInfected(x) && IsPlayerAlive(x)) {
-						new zombieClass = getZombieClass(x);
+						int zombieClass = getZombieClass(x);
 						if (zombieClass == ZC_HUNTER) {
 							if (GetRandomInt(0, 100) <= c_iBash_HunterChance) g_bShove[sb][x] = true;
 							else g_bShove[sb][x] = false;
@@ -650,14 +652,14 @@ public Action:Timer_ShoveChance(Handle:Timer)
  /*
  *		OnPlayerRunCmd is Runs 30 times per second. (every 0.03333... seconds)
  */
-public Action:OnPlayerRunCmd(client, &buttons, &impulse,
-	Float:vel[3], Float:angles[3], &weapon)
+public Action OnPlayerRunCmd(int client, int &buttons, int &impulse,
+	float vel[3], float angles[3], int &weapon)
 {
 	if(GetTickInterval() < 0.03333) return Plugin_Continue; //Stop running on lag
 	if (g_hEnabled) {
 		if (isSurvivorBot(client) && IsPlayerAlive(client)) {
 			if ((c_iSelectType == 0) || (c_iSelectType >= 1 && g_bFixTarget[client])) {
-				new Action:ret = Plugin_Continue;
+				Action ret = Plugin_Continue;
 				ret = onSBRunCmd(client, buttons, vel, angles);
 				if (c_bIncapacitated_Enabled) ret = onSBRunCmd_Incapacitated(client, buttons, vel, angles);
 				ret = onSBSlotActionCmd(client, buttons, vel, angles);
@@ -678,15 +680,15 @@ public Action:OnPlayerRunCmd(client, &buttons, &impulse,
 *=		Weapon Switch
 *=
 ================================================================================================ */
-public OnClientPutInServer(client)
+public void OnClientPutInServer(int client)
 {
 	SDKHook(client, SDKHook_WeaponSwitch, WeaponSwitch);
 }
-public OnClientDisconnect(client)
+public void OnClientDisconnect(int client)
 {
 	SDKUnhook(client, SDKHook_WeaponSwitch, WeaponSwitch);
 }
-public Action:WeaponSwitch(client, weapon)
+public Action WeaponSwitch(int client, int weapon)
 {
 	if (!g_hEnabled) return Plugin_Continue;
 	if (!isSurvivor(client) || !IsFakeClient(client) || !IsValidEntity(weapon)) return Plugin_Continue;
@@ -700,8 +702,8 @@ public Action:WeaponSwitch(client, weapon)
 		|| isHaveItem(classname, "weapon_dual_pistol"))
 	{
 		if (c_bDontSwitchSecondary) {
-			new slot0 = GetPlayerWeaponSlot(client, 0);
-			new clip, extra_ammo;
+			int slot0 = GetPlayerWeaponSlot(client, 0);
+			int clip, extra_ammo;
 			clip = GetEntProp(slot0, Prop_Send, "m_iClip1");
 			extra_ammo = PrimaryExtraAmmoCheck(client, slot0); // check
 			
@@ -722,7 +724,7 @@ public Action:WeaponSwitch(client, weapon)
 	return Plugin_Continue;
 }
 
-stock Action:onSBSlotActionCmd(client, &buttons, Float:vel[3], Float:angles[3])
+stock Action onSBSlotActionCmd(int client, int &buttons, float vel[3], float angles[3])
 {
 	if (!isIncapacitated(client) && GetPlayerWeaponSlot(client, 0) > -1) {
 		int weapon = GetEntDataEnt2(client, g_ActiveWeapon);
@@ -764,30 +766,30 @@ stock Action:onSBSlotActionCmd(client, &buttons, Float:vel[3], Float:angles[3])
 *=		SB Run Cmd
 *=
 ================================================================================================ */
-stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
+stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 {
 	if (!isIncapacitated(client)
 		&& GetEntityMoveType(client) != MOVETYPE_LADDER)
 	{
 		// Find a nearest visible Special Infected
-		new new_target = -1;
-		new Float:min_dist = 100000.0;
-		new Float:self_pos[3], Float:target_pos[3];
+		int int_target = -1;
+		float min_dist = 100000.0;
+		float self_pos[3], target_pos[3];
 		
 		if ((c_bSI_Enabled || c_bTank_Enabled) && !NeedsTeammateHelp_ExceptSmoker(client)) {
 			GetClientAbsOrigin(client, self_pos);
-			for (new x = 1; x <= MaxClients; ++x) {
+			for (int x = 1; x <= MaxClients; ++x) {
 				if (isInfected(x)
 					&& IsPlayerAlive(x)
 					&& !isIncapacitated(x)
 					&& isVisibleTo(client, x))
 				{
-					new Float:dist;
+					float dist;
 					
 					GetClientAbsOrigin(x, target_pos);
 					dist = GetVectorDistance(self_pos, target_pos);
 					
-					new zombieClass = getZombieClass(x);
+					int zombieClass = getZombieClass(x);
 					if ((c_bSI_Enabled && zombieClass != ZC_TANK && dist <= c_fSI_Range)
 						|| (c_bTank_Enabled && zombieClass == ZC_TANK && dist <= c_fTank_Range))
 					{
@@ -795,14 +797,14 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 							|| (c_iSITank_PriorityType == 2 && zombieClass == ZC_TANK)) {
 							if (dist < min_dist) {
 								min_dist = dist;
-								new_target = x;
+								int_target = x;
 								continue;
 							}
 						}
 						
 						if (dist < min_dist) {
 							min_dist = dist;
-							new_target = x;
+							int_target = x;
 						}
 					}
 					
@@ -810,23 +812,23 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 			}
 		}
 		
-		new aCap_Survivor = -1;
-		new Float:min_dist_CapSur = 100000.0;
-		new Float:target_pos_CapSur[3];
+		int aCap_Survivor = -1;
+		float min_dist_CapSur = 100000.0;
+		float target_pos_CapSur[3];
 		
-		new aCap_Infected = -1;
-		new Float:min_dist_CapInf = 100000.0;
-		new Float:target_pos_CapInf[3];
+		int aCap_Infected = -1;
+		float min_dist_CapInf = 100000.0;
+		float target_pos_CapInf[3];
 		
 		if (c_bHelp_Enabled && !NeedsTeammateHelp_ExceptSmoker(client)) {
 			// Find a Survivor who are pinned
-			for (new x = 1; x <= MaxClients; ++x) {
+			for (int x = 1; x <= MaxClients; ++x) {
 				if (isSurvivor(x)
 					&& NeedsTeammateHelp(x)
 					&& (x != client)
 					&& (isVisibleTo(client, x) || isVisibleTo(x, client)))
 				{
-					new Float:dist;
+					float dist;
 					
 					GetClientAbsOrigin(x, target_pos_CapSur);
 					dist = GetVectorDistance(self_pos, target_pos_CapSur);
@@ -840,12 +842,12 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 			}
 			
 			// Find a Special Infected who are pinning
-			for (new x = 1; x <= MaxClients; ++x) {
+			for (int x = 1; x <= MaxClients; ++x) {
 				if (isInfected(x)
 					&& CappingSuvivor(x)
 					&& (isVisibleTo(client, x) || isVisibleTo(x, client)))
 				{
-					new Float:dist;
+					float dist;
 					
 					GetClientAbsOrigin(x, target_pos_CapInf);
 					dist = GetVectorDistance(self_pos, target_pos_CapInf);
@@ -861,17 +863,17 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		
 		/*
 		// Find aCapSmoker
-		new aCapSmoker = -1;
-		new Float:min_dist_CapSmo = 100000.0;
-		new Float:target_pos_CapSmo[3];
+		int aCapSmoker = -1;
+		float min_dist_CapSmo = 100000.0;
+		float target_pos_CapSmo[3];
 		
-		for (new x = 1; x <= MaxClients; ++x) {
+		for (int x = 1; x <= MaxClients; ++x) {
 			if (isSpecialInfectedBot(x)
 				&& IsPlayerAlive(x)
 				&& HasValidEnt(x, "m_tongueVictim")
-				&& isVisibleTo(client, x))
+				&& isVisibleTo(int client, x))
 			{
-				new Float:dist;
+				float dist;
 				
 				GetClientAbsOrigin(x, target_pos_CapSmo);
 				dist = GetVectorDistance(self_pos, target_pos_CapSmo);
@@ -886,19 +888,19 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		*/
 		
 		// Find a Smoker who is tongued self
-		new aCapSmoker = -1;
+		int aCapSmoker = -1;
 		
 		if (c_bPrioritize_OwnerSmoker) {
-			new Float:min_dist_CapSmo = 100000.0;
-			new Float:target_pos_CapSmo[3];
+			float min_dist_CapSmo = 100000.0;
+			float target_pos_CapSmo[3];
 			
-			for (new x = 1; x <= MaxClients; ++x) {
+			for (int x = 1; x <= MaxClients; ++x) {
 				if (isInfected(x)
 					&& IsPlayerAlive(x)
 					&& HasValidEnt(x, "m_tongueVictim"))
 				{
 					if (GetEntPropEnt(x, Prop_Send, "m_tongueVictim") == client) {
-						new Float:dist;
+						float dist;
 						
 						GetClientAbsOrigin(x, target_pos_CapSmo);
 						dist = GetVectorDistance(self_pos, target_pos_CapSmo);
@@ -914,12 +916,12 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		}
 		
 		// Find a flying Hunter and Jockey
-		new aHunterJockey = -1;
-		new Float:hunjoc_pos[3];
-		new Float:min_dist_HunJoc = 100000.0;
+		int aHunterJockey = -1;
+		float hunjoc_pos[3];
+		float min_dist_HunJoc = 100000.0;
 		
 		if (c_bBash_Enabled && !NeedsTeammateHelp_ExceptSmoker(client)) {
-			for (new x = 1; x <= MaxClients; ++x) {
+			for (int x = 1; x <= MaxClients; ++x) {
 				if (isInfected(x)
 					&& IsPlayerAlive(x)
 					&& !isStagger(x)
@@ -927,12 +929,12 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 				{
 					if (getZombieClass(x) == ZC_HUNTER) {
 						if (c_iBash_HunterChance == 100 || (c_iBash_HunterChance < 100 && g_bShove[client][x])) {
-							new Float:hunterVelocity[3];
+							float hunterVelocity[3];
 							GetEntDataVector(x, g_Velo, hunterVelocity);
 							if ((GetClientButtons(x) & IN_DUCK) && hunterVelocity[2] != 0.0) {
 								GetClientAbsOrigin(x, hunjoc_pos);
 							
-								new Float:hundist;
+								float hundist;
 								hundist = GetVectorDistance(self_pos, hunjoc_pos);
 								
 								if (hundist < c_fBash_HunterRange) { // 145.0 best
@@ -946,12 +948,12 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 					}
 					else if (getZombieClass(x) == ZC_JOCKEY) {
 						if (c_iBash_JockeyChance == 100 || (c_iBash_JockeyChance < 100 && g_bShove[client][x])) {
-							new Float:jockeyVelocity[3];
+							float jockeyVelocity[3];
 							GetEntDataVector(x, g_Velo, jockeyVelocity);
 							if (jockeyVelocity[2] != 0.0) {
 								GetClientAbsOrigin(x, hunjoc_pos);
 								
-								new Float:jocdist;
+								float jocdist;
 								jocdist = GetVectorDistance(self_pos, hunjoc_pos);
 								
 								if (jocdist < c_fBash_JockeyRange) { // 125.0 best
@@ -968,24 +970,24 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		}
 		
 		// Find a Common Infected
-		//new iMaxEntities = GetMaxEntities();
-		new aCommonInfected = -1;
-		new iCI_MeleeCount = 0;
-		new Float:min_dist_CI = 100000.0;
-		new Float:ci_pos[3];
+		//int iMaxEntities = GetMaxEntities();
+		int aCommonInfected = -1;
+		int iCI_MeleeCount = 0;
+		float min_dist_CI = 100000.0;
+		float ci_pos[3];
 		
 		if (c_bCI_Enabled && !NeedsTeammateHelp(client)) {
-			for (new iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity) {
+			for (int iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity) {
 				if (IsCommonInfected(iEntity)
 					&& GetEntProp(iEntity, Prop_Data, "m_iHealth") > 0
 					&& isVisibleToEntity(iEntity, client))
 				{
-					new Float:dist;
+					float dist;
 					GetEntPropVector(iEntity, Prop_Data, "m_vecAbsOrigin", ci_pos);
 					dist = GetVectorDistance(self_pos, ci_pos);
 					
 					if (dist < c_fCI_Range) {
-						new iSeq = GetEntProp(iEntity, Prop_Send, "m_nSequence", 2);
+						int iSeq = GetEntProp(iEntity, Prop_Send, "m_nSequence", 2);
 						// Stagger			122, 123, 126, 127, 128, 133, 134
 						// Down Stagger		128, 129, 130, 131
 						// Object Climb (Very Low)	182, 183, 184, 185
@@ -1009,18 +1011,18 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		}
 		
 		// Fina a rage Witch
-		new aWitch = -1;
-		new Float:min_dist_Witch = 100000.0;
-		new Float:witch_pos[3];
+		int aWitch = -1;
+		float min_dist_Witch = 100000.0;
+		float witch_pos[3];
 		if (g_bWitchActive && c_bWitch_Enabled && !NeedsTeammateHelp(client)) {
-			for (new iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity)
+			for (int iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity)
 			{
 				if (IsWitch(iEntity)
 					&& GetEntProp(iEntity, Prop_Data, "m_iHealth") > 0
 					&& IsWitchRage(iEntity)
 					&& isVisibleToEntity(iEntity, client))
 				{
-					new Float:witch_dist;
+					float witch_dist;
 					GetEntPropVector(iEntity, Prop_Data, "m_vecAbsOrigin", witch_pos);
 					witch_dist = GetVectorDistance(self_pos, witch_pos);
 					
@@ -1037,16 +1039,16 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		}
 		
 		// Find a tank rock
-		new aTankRock = -1;
-		new Float:rock_min_dist = 100000.0;
-		new Float:rock_pos[3];
+		int aTankRock = -1;
+		float rock_min_dist = 100000.0;
+		float rock_pos[3];
 		if (c_bRock_Enabled && !NeedsTeammateHelp(client)) {
-			for (new iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity)
+			for (int iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity)
 			{
 				if (IsTankRock(iEntity)
 					&& isVisibleToEntity(iEntity, client))
 				{
-					new Float:rock_dist;
+					float rock_dist;
 					GetEntPropVector(iEntity, Prop_Data, "m_vecAbsOrigin", rock_pos);
 					rock_dist = GetVectorDistance(self_pos, rock_pos);
 					
@@ -1068,13 +1070,13 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		*****************************
 		--------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 		
-		new weapon = GetEntDataEnt2(client, g_ActiveWeapon);
+		int weapon = GetEntDataEnt2(client, g_ActiveWeapon);
 		
 		static char AW_Classname[32];
 		if (weapon > MAXPLAYERS) GetEntityClassname(weapon, AW_Classname, sizeof(AW_Classname)); // Exception reported: Entity -1 (-1) is invalid
 		
 		static char main_weapon[32];
-		new slot0 = GetPlayerWeaponSlot(client, 0);
+		int slot0 = GetPlayerWeaponSlot(client, 0);
 		if (slot0 > -1) {			
 			GetEntityClassname(slot0, main_weapon, sizeof(main_weapon));
 		}
@@ -1109,12 +1111,12 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		if (g_bCommonWithinMelee[client]) {
 			if (aCommonInfected < 1) g_bCommonWithinMelee[client] = false;
 			if (aCommonInfected > 0) {
-				new Float:c_pos[3], Float:common_e_pos[3];
+				float c_pos[3], common_e_pos[3];
 				
 				GetClientAbsOrigin(client, c_pos);
 				GetEntPropVector(aCommonInfected, Prop_Data, "m_vecOrigin", common_e_pos);
 				
-				new Float:aimdist = GetVectorDistance(c_pos, common_e_pos);
+				float aimdist = GetVectorDistance(c_pos, common_e_pos);
 				
 				if (aimdist > c_fCI_MeleeRange) g_bCommonWithinMelee[client] = false;
 			}
@@ -1130,8 +1132,8 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		if (aHunterJockey > 0) {
 			if (!g_bDanger[client]) g_bDanger[client] = true;
 			
-			new Float:c_pos[3], Float:e_pos[3];
-			new Float:lookat[3];
+			float c_pos[3], e_pos[3];
+			float lookat[3];
 			
 			GetClientAbsOrigin(client, c_pos);
 			GetClientAbsOrigin(aHunterJockey, e_pos);
@@ -1158,8 +1160,8 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		if (aCapSmoker > 0) { // Shoot even if client invisible the smoker
 			if (!g_bDanger[client]) g_bDanger[client] = true;
 			
-			new Float:c_pos[3], Float:e_pos[3];
-			new Float:lookat[3];
+			float c_pos[3], e_pos[3];
+			float lookat[3];
 			
 			GetClientAbsOrigin(client, c_pos);
 			GetEntPropVector(aCapSmoker, Prop_Data, "m_vecOrigin", e_pos);
@@ -1179,7 +1181,7 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 
 			TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
 			
-			new Float:aimdist = GetVectorDistance(c_pos, e_pos);
+			float aimdist = GetVectorDistance(c_pos, e_pos);
 			
 			if (aimdist < 100.0) buttons |= IN_ATTACK2;
 			else {
@@ -1202,8 +1204,8 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		if (aCap_Survivor > 0) { // Pass if the client and target are "visible" to each other. so aCap Smoker doesn't pass
 			if (!g_bDanger[client]) g_bDanger[client] = true;
 			
-			new Float:c_pos[3], Float:e_pos[3];
-			new Float:lookat[3];
+			float c_pos[3], e_pos[3];
+			float lookat[3];
 			
 			GetClientEyePosition(client, c_pos);
 			GetClientEyePosition(aCap_Survivor, e_pos);
@@ -1214,7 +1216,7 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 				e_pos[2] += -10.0;
 			}
 			
-			new Float:aimdist = GetVectorDistance(c_pos, e_pos);
+			float aimdist = GetVectorDistance(c_pos, e_pos);
 			
 			MakeVectorFromPoints(c_pos, e_pos, lookat);
 			GetVectorAngles(lookat, angles);
@@ -1258,10 +1260,10 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		else if (aCap_Infected > 0 && aCap_Survivor < 1) {
 			if (!g_bDanger[client]) g_bDanger[client] = true;
 			
-			new zombieClass = getZombieClass(aCap_Infected);
+			int zombieClass = getZombieClass(aCap_Infected);
 			
-			new Float:c_pos[3], Float:e_pos[3];
-			new Float:lookat[3];
+			float c_pos[3], e_pos[3];
+			float lookat[3];
 			
 			GetClientEyePosition(client, c_pos);
 			
@@ -1275,7 +1277,7 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 				else if (zombieClass == ZC_HUNTER) e_pos[2] += -14.0;
 			}
 			
-			new Float:aimdist = GetVectorDistance(c_pos, e_pos);
+			float aimdist = GetVectorDistance(c_pos, e_pos);
 			
 			if (zombieClass == ZC_CHARGER && aimdist < 300.0) e_pos[2] += 10.0;
 			
@@ -1330,8 +1332,8 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		*
 		==================================================================================================== */ 
 		if (aTankRock > 1 && !HasValidEnt(client, "m_reviveTarget")) {
-			new Float:c_pos[3], Float:rock_e_pos[3];
-			new Float:lookat[3];
+			float c_pos[3], rock_e_pos[3];
+			float lookat[3];
 			
 			GetClientAbsOrigin(client, c_pos);
 			GetEntPropVector(aTankRock, Prop_Data, "m_vecAbsOrigin", rock_e_pos);
@@ -1346,7 +1348,7 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 				// PrintToChatAll("---");
 			}
 			
-			new Float:aimdist = GetVectorDistance(c_pos, rock_e_pos);
+			float aimdist = GetVectorDistance(c_pos, rock_e_pos);
 			
 			if (aimdist > 40.0 && !isHaveItem(AW_Classname, "weapon_melee")) { //�ߐڂ������Ă��Ȃ��ꍇ
 				TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
@@ -1359,8 +1361,8 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		}
 		
 		if (aWitch > 1) {
-			new Float:c_pos[3], Float:witch_e_pos[3];
-			new Float:lookat[3];
+			float c_pos[3], witch_e_pos[3];
+			float lookat[3];
 			
 			GetClientEyePosition(client, c_pos);
 			GetEntPropVector(aWitch, Prop_Data, "m_vecAbsOrigin", witch_e_pos);
@@ -1373,7 +1375,7 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 			
 			TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
 			
-			new Float:aimdist = GetVectorDistance(c_pos, witch_e_pos);
+			float aimdist = GetVectorDistance(c_pos, witch_e_pos);
 			
 			if (c_bWitch_Shotgun_Control && isHaveItem(AW_Classname, "shotgun")) {
 				if (aimdist < 150.0) buttons |= IN_DUCK;
@@ -1407,21 +1409,21 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 				// Even if aCommonInfected dies and disappears, the Entity may not disappear for a while.(Bot keeps shooting the place)�B Even with InValidEntity(), true appears...
 				// When the entity disappears, m_nNextThinkTick will not advance, so skip that if NextThinkTick has the same value as before.
 				
-				new iNextThinkTick = GetEntProp(aCommonInfected, Prop_Data, "m_nNextThinkTick");
+				int iNextThinkTick = GetEntProp(aCommonInfected, Prop_Data, "m_nNextThinkTick");
 				
 				if (g_Stock_NextThinkTick[client] != iNextThinkTick) // If visible aCommonInfected
 				{
-					new Float:c_pos[3], Float:common_e_pos[3];
-					new Float:lookat[3];
+					float c_pos[3], common_e_pos[3];
+					float lookat[3];
 					
 					GetClientEyePosition(client, c_pos);
 					GetEntPropVector(aCommonInfected, Prop_Data, "m_vecOrigin", common_e_pos);
 					
-					//new Float:height_difference = (c_pos[2] - common_e_pos[2]) - 60.0;
+					//float height_difference = (c_pos[2] - common_e_pos[2]) - 60.0;
 					
 					common_e_pos[2] += 40.0;
 					
-					new Float:aimdist = GetVectorDistance(c_pos, common_e_pos);
+					float aimdist = GetVectorDistance(c_pos, common_e_pos);
 					
 					//common_e_pos[2] += (25.0 + (aimdist * 0.05) - (height_difference * 0.1));
 					
@@ -1429,7 +1431,7 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 					// GetEntPropVector(aCommonInfected, Prop_Data, "m_vecOrigin", common_e_pos);
 					// common_e_pos[2] += -30.0;
 					
-					new iSeq = GetEntProp(aCommonInfected, Prop_Send, "m_nSequence", 2);
+					int iSeq = GetEntProp(aCommonInfected, Prop_Send, "m_nSequence", 2);
 					// Stagger			122, 123, 126, 127, 128, 133, 134
 					// Down Stagger		128, 129, 130, 131
 					// Object Climb (Very Low)	182, 183, 184, 185
@@ -1453,7 +1455,7 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 						g_bCommonWithinMelee[client] = true;
 						
 						static char sub_weapon[16];
-						new slot1 = GetPlayerWeaponSlot(client, 1);
+						int slot1 = GetPlayerWeaponSlot(client, 1);
 						if (slot1 > -1) {			
 							GetEntityClassname(slot1, sub_weapon, sizeof(sub_weapon)); // SubWeapon
 						}
@@ -1465,7 +1467,7 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 						}
 					}
 					
-					if (new_target > 0) {
+					if (int_target > 0) {
 						if (aimdist <= 90.0) TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
 					} else {
 						if (isHaveItem(AW_Classname, "weapon_melee")) {
@@ -1475,7 +1477,7 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 						}
 					}
 					
-					if (new_target < 1 || (new_target > 0 && aimdist <= 90.0)) { // If new_target and common at the same time, prioritize to new_target. Attack only when within 90.0 dist.
+					if (int_target < 1 || (int_target > 0 && aimdist <= 90.0)) { // If int_target and common at the same time, prioritize to int_target. Attack only when within 90.0 dist.
 						if (isHaveItem(AW_Classname, "weapon_melee")) {
 							if (GetRandomInt(0, 6) == 0) {
 								if (aimdist <= 50.0) buttons |= IN_ATTACK2;
@@ -1523,24 +1525,24 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 		
 		/* ====================================================================================================
 		*
-		*   �D��xF : Special Infected and Tank (new_target)
+		*   �D��xF : Special Infected and Tank (int_target)
 		*
 		==================================================================================================== */ 
-		if (new_target > 0) {
-			new Float:c_pos[3], Float:e_pos[3];
-			new Float:lookat[3];
+		if (int_target > 0) {
+			float c_pos[3], e_pos[3];
+			float lookat[3];
 			
 			GetClientAbsOrigin(client, c_pos);
 			
-			new zombieClass = getZombieClass(new_target);
+			int zombieClass = getZombieClass(int_target);
 			
 			if (aCapSmoker > 0) { // Prioritize aCapSmoker
 				GetClientAbsOrigin(aCapSmoker, e_pos);
 				e_pos[2] += -10.0;
 			} else {
-				GetClientAbsOrigin(new_target, e_pos);
+				GetClientAbsOrigin(int_target, e_pos);
 				if (zombieClass == ZC_HUNTER
-					&& (GetClientButtons(new_target) & IN_DUCK)) {
+					&& (GetClientButtons(int_target) & IN_DUCK)) {
 					if (GetVectorDistance(c_pos, e_pos) > 250.0) e_pos[2] += -30.0;
 					else e_pos[2] += -35.0;
 				} else if (zombieClass == ZC_JOCKEY) {
@@ -1552,7 +1554,7 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 			
 			if (zombieClass == ZC_TANK && aTankRock > 0) return Plugin_Continue; // If the Tank and tank rock are visible at the same time, prioritize the tank rock
 			
-			new Float:aimdist = GetVectorDistance(c_pos, e_pos);
+			float aimdist = GetVectorDistance(c_pos, e_pos);
 			
 			if (aimdist < 200.0) {if (!g_bDanger[client]) g_bDanger[client] = true;}
 			
@@ -1581,20 +1583,20 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 			
 			/****************************************************************************************************/
 			
-			new bool:isTargetBoomer = false; // Is new_target Boomer
-			new bool:isBoomer_Shoot_OK = false;
+			bool isTargetBoomer = false;
+			bool isBoomer_Shoot_OK = false;
 			
 			if (c_bSI_IgnoreBoomer && zombieClass == ZC_BOOMER) {
-				new Float:voS_pos[3];
-				for (new s = 1; s <= MaxClients; ++s) {
+				float voS_pos[3];
+				for (int s = 1; s <= MaxClients; ++s) {
 					if (isSurvivor(s)
 						&& IsPlayerAlive(s))
 					{
-						new Float:fVomit = GetEntPropFloat(s, Prop_Send, "m_vomitStart");
+						float fVomit = GetEntPropFloat(s, Prop_Send, "m_vomitStart");
 						if (GetGameTime() - fVomit > 10.0) { // Survivors without vomit
 							GetClientAbsOrigin(s, voS_pos);
 							
-							new Float:dist = GetVectorDistance(voS_pos, e_pos); // Distance between the Survivor without vomit and the Boomer
+							float dist = GetVectorDistance(voS_pos, e_pos); // Distance between the Survivor without vomit and the Boomer
 							if (dist >= c_fSI_IgnoreBoomerRange) { isBoomer_Shoot_OK = true; } // If the survivor without vomit is farther than dist "c_fSI_IgnoreBoomerRange (def: 200)"
 							else { isBoomer_Shoot_OK = false; break; } // If False appears even once, break
 						}
@@ -1603,15 +1605,15 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 				isTargetBoomer = true;
 			}
 			
-			if ((zombieClass == ZC_JOCKEY && g_bShove[client][new_target])
+			if ((zombieClass == ZC_JOCKEY && g_bShove[client][int_target])
 				|| zombieClass == ZC_SMOKER
 				|| (isTargetBoomer && !isBoomer_Shoot_OK))
 			{
-				if (aimdist < 90.0 && !isStagger(new_target)) {
+				if (aimdist < 90.0 && !isStagger(int_target)) {
 					TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
 					buttons |= IN_ATTACK2;
 					if (c_bDebug_Enabled) {
-						PrintToChatAll("\x01[%.2f] \x05%N\x01 new_target shoved: \x04%N (%d)", GetGameTime(), client, new_target, new_target);
+						PrintToChatAll("\x01[%.2f] \x05%N\x01 int_target shoved: \x04%N (%d)", GetGameTime(), client, int_target, int_target);
 						EmitSoundToAll(SOUND_SWING, client);
 					}
 					return Plugin_Changed;
@@ -1622,8 +1624,8 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 				|| (aimdist < 100.0 && isHaveItem(AW_Classname, "weapon_melee")))
 			{
 				if (c_bDebug_Enabled) {
-					if (!isTargetBoomer) PrintToChatAll("\x01[%.2f] \x05%N\x01 new_target: \x04%N (%d)", GetGameTime(), client, new_target, new_target);
-					else PrintToChatAll("\x01[%.2f] \x05%N\x01 new_target: \x04%N (%d) (Shoot: %s)", GetGameTime(), client, new_target, new_target, (isBoomer_Shoot_OK) ? "OK" : "NO");
+					if (!isTargetBoomer) PrintToChatAll("\x01[%.2f] \x05%N\x01 int_target: \x04%N (%d)", GetGameTime(), client, int_target, int_target);
+					else PrintToChatAll("\x01[%.2f] \x05%N\x01 int_target: \x04%N (%d) (Shoot: %s)", GetGameTime(), client, int_target, int_target, (isBoomer_Shoot_OK) ? "OK" : "NO");
 				}
 			
 				if (!isTargetBoomer || (isTargetBoomer && isBoomer_Shoot_OK)) {
@@ -1651,16 +1653,16 @@ stock Action:onSBRunCmd(client, &buttons, Float:vel[3], Float:angles[3])
 *= 		Incapacitated Run Cmd
 *=
 ================================================================================================ */
-stock Action:onSBRunCmd_Incapacitated(client, &buttons, Float:vel[3], Float:angles[3])
+stock Action onSBRunCmd_Incapacitated(int client, int &buttons, float vel[3], float angles[3])
 {
 	if (isIncapacitated(client)) {
-		new aCapper = -1;
-		new Float:min_dist_Cap = 100000.0;
-		new Float:self_pos[3], Float:target_pos[3];
+		int aCapper = -1;
+		float min_dist_Cap = 100000.0;
+		float self_pos[3], target_pos[3];
 		
 		GetClientEyePosition(client, self_pos);
 		if (!NeedsTeammateHelp(client)) {
-			for (new x = 1; x <= MaxClients; ++x) {
+			for (int x = 1; x <= MaxClients; ++x) {
 				// �S������Ă��鐶���҂�T��
 				if (isSurvivor(x)
 					&& NeedsTeammateHelp(x)
@@ -1668,7 +1670,7 @@ stock Action:onSBRunCmd_Incapacitated(client, &buttons, Float:vel[3], Float:angl
 					&& (isVisibleTo(client, x) || isVisibleTo(x, client)))
 				{
 					GetClientAbsOrigin(x, target_pos);
-					new Float:dist = GetVectorDistance(self_pos, target_pos);
+					float dist = GetVectorDistance(self_pos, target_pos);
 					if (dist < min_dist_Cap) {
 						min_dist_Cap = dist;
 						aCapper = x;
@@ -1681,7 +1683,7 @@ stock Action:onSBRunCmd_Incapacitated(client, &buttons, Float:vel[3], Float:angl
 					&& (isVisibleTo(client, x) || isVisibleTo(x, client)))
 				{
 					GetClientAbsOrigin(x, target_pos);
-					new Float:dist = GetVectorDistance(self_pos, target_pos);
+					float dist = GetVectorDistance(self_pos, target_pos);
 					if (dist < min_dist_Cap) {
 						min_dist_Cap = dist;
 						aCapper = x;
@@ -1691,8 +1693,8 @@ stock Action:onSBRunCmd_Incapacitated(client, &buttons, Float:vel[3], Float:angl
 		}
 		
 		if (aCapper > 0) {
-			new Float:c_pos[3], Float:e_pos[3];
-			new Float:lookat[3];
+			float c_pos[3], e_pos[3];
+			float lookat[3];
 			
 			GetClientEyePosition(client, c_pos);
 			GetClientEyePosition(aCapper, e_pos);
@@ -1723,40 +1725,40 @@ stock Action:onSBRunCmd_Incapacitated(client, &buttons, Float:vel[3], Float:angl
 		}
 		
 		
-		new new_target = -1;
-		new aCommonInfected = -1;
+		int int_target = -1;
+		int aCommonInfected = -1;
 		if (aCapper < 1 && !NeedsTeammateHelp(client)) {
-			new Float:min_dist = 100000.0;
-			new Float:ci_pos[3];
+			float min_dist = 100000.0;
+			float ci_pos[3];
 			
-			for (new x = 1; x <= MaxClients; ++x){
+			for (int x = 1; x <= MaxClients; ++x){
 				if (isInfected(x)
 					&& IsPlayerAlive(x)
 					&& (isVisibleTo(client, x) || isVisibleTo(x, client)))
 				{
 					GetClientAbsOrigin(x, target_pos);
-					new Float:dist = GetVectorDistance(self_pos, target_pos);
+					float dist = GetVectorDistance(self_pos, target_pos);
 					if (dist < min_dist) {
 						min_dist = dist;
-						new_target = x;
+						int_target = x;
 						aCommonInfected = -1;
 					}
 				}
 			}
 			
 			if (c_bCI_Enabled) {
-				for (new iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity) {
+				for (int iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity) {
 					if (IsCommonInfected(iEntity)
 						&& GetEntProp(iEntity, Prop_Data, "m_iHealth") > 0
 						&& isVisibleToEntity(iEntity, client))
 					{
 						GetEntPropVector(iEntity, Prop_Data, "m_vecAbsOrigin", ci_pos);
-						new Float:dist = GetVectorDistance(self_pos, ci_pos);
+						float dist = GetVectorDistance(self_pos, ci_pos);
 						
 						if (dist < min_dist) {
 							min_dist = dist;
 							aCommonInfected = iEntity;
-							new_target = -1;
+							int_target = -1;
 						}
 					}
 				}
@@ -1764,8 +1766,8 @@ stock Action:onSBRunCmd_Incapacitated(client, &buttons, Float:vel[3], Float:angl
 		}
 		
 		if (aCommonInfected > 0) {
-			new Float:c_pos[3], Float:common_e_pos[3];
-			new Float:lookat[3];
+			float c_pos[3], common_e_pos[3];
+			float lookat[3];
 			
 			GetClientEyePosition(client, c_pos);
 			GetEntPropVector(aCommonInfected, Prop_Data, "m_vecOrigin", common_e_pos);
@@ -1774,7 +1776,7 @@ stock Action:onSBRunCmd_Incapacitated(client, &buttons, Float:vel[3], Float:angl
 			MakeVectorFromPoints(c_pos, common_e_pos, lookat);
 			GetVectorAngles(lookat, angles);
 			
-			new Float:aimdist = GetVectorDistance(c_pos, common_e_pos);
+			float aimdist = GetVectorDistance(c_pos, common_e_pos);
 			
 			/****************************************************************************************************/
 			
@@ -1788,26 +1790,26 @@ stock Action:onSBRunCmd_Incapacitated(client, &buttons, Float:vel[3], Float:angl
 			return Plugin_Changed;
 		}
 		
-		if (new_target > 0) {
-			new Float:c_pos[3], Float:e_pos[3];
-			new Float:lookat[3];
+		if (int_target > 0) {
+			float c_pos[3], e_pos[3];
+			float lookat[3];
 			
 			GetClientEyePosition(client, c_pos);
-			GetClientEyePosition(new_target, e_pos);
+			GetClientEyePosition(int_target, e_pos);
 			
 			e_pos[2] += -15.0
 			
-			new zombieClass = getZombieClass(new_target);
+			int zombieClass = getZombieClass(int_target);
 			if (zombieClass == ZC_JOCKEY) {
 				e_pos[2] += -30.0;
 			} else if (zombieClass == ZC_HUNTER) {
-				if ((GetClientButtons(new_target) & IN_DUCK) || HasValidEnt(new_target, "m_pounceVictim")) e_pos[2] += -25.0;
+				if ((GetClientButtons(int_target) & IN_DUCK) || HasValidEnt(int_target, "m_pounceVictim")) e_pos[2] += -25.0;
 			}
 			
 			MakeVectorFromPoints(c_pos, e_pos, lookat);
 			GetVectorAngles(lookat, angles);
 			
-			if (c_bDebug_Enabled) PrintToChatAll("\x01[%.2f] \x05%N \x01new target Incapacitated: \x04%N", GetGameTime(), client, new_target);
+			if (c_bDebug_Enabled) PrintToChatAll("\x01[%.2f] \x05%N \x01int target Incapacitated: \x04%N", GetGameTime(), client, int_target);
 			
 			TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
 			
@@ -1827,14 +1829,14 @@ stock Action:onSBRunCmd_Incapacitated(client, &buttons, Float:vel[3], Float:angl
 *=		Events
 *=
 ================================================================================================ */
-public Action:Event_PlayerIncapacitated(Handle:event, const char[] name, bool:dontBroadcast)
+public Action Event_PlayerIncapacitated(Handle event, const char[] name, bool dontBroadcast)
 {
 	if (!g_hEnabled) return Plugin_Handled;
 	
-	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
-	new attackerentid = GetEventInt(event, "attackerentid");
+	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attackerentid = GetEventInt(event, "attackerentid");
 	
-	// new type = GetEventInt(event, "type");
+	// int type = GetEventInt(event, "type");
 	// PrintToChatAll("\x04PlayerIncapacitated");
 	// PrintToChatAll("type %i", type);
 	
@@ -1843,22 +1845,22 @@ public Action:Event_PlayerIncapacitated(Handle:event, const char[] name, bool:do
 		g_iWitch_Process[attackerentid] = WITCH_INCAPACITATED;
 		
 		// PrintToChatAll("attackerentid %i attacked %N", attackerentid, victim);
-		// new health = GetEventInt(event, "health");
-		// new dmg_health = GetEventInt(event, "dmg_health");
+		// int health = GetEventInt(event, "health");
+		// int dmg_health = GetEventInt(event, "dmg_health");
 		// PrintToChatAll("health: %i, damage: %i", health, dmg_health);
 	}
 	
 	return Plugin_Handled;
 }
 
-public Action:Event_PlayerDeath(Handle:event, const char[] name, bool:dontBroadcast)
+public Action Event_PlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 {
 	if (!g_hEnabled) return Plugin_Handled;
 	
-	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
-	new attackerentid = GetEventInt(event, "attackerentid");
+	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attackerentid = GetEventInt(event, "attackerentid");
 	
-	// new type = GetEventInt(event, "type");
+	// int type = GetEventInt(event, "type");
 	// PrintToChatAll("\x04PlayerDeath");
 	// PrintToChatAll("type %i", type);
 	
@@ -1867,8 +1869,8 @@ public Action:Event_PlayerDeath(Handle:event, const char[] name, bool:dontBroadc
 		g_iWitch_Process[attackerentid] = WITCH_KILLED;
 		
 		// PrintToChatAll("attackerentid %i attacked %N", attackerentid, victim);
-		// new health = GetEventInt(event, "health");
-		// new dmg_health = GetEventInt(event, "dmg_health");
+		// int health = GetEventInt(event, "health");
+		// int dmg_health = GetEventInt(event, "dmg_health");
 		// PrintToChatAll("health: %i, damage: %i", health, dmg_health);
 	}
 	
@@ -1878,9 +1880,9 @@ public Action:Event_PlayerDeath(Handle:event, const char[] name, bool:dontBroadc
 	return Plugin_Handled;
 }
 
-public Action:Event_WitchRage(Handle:event, const char[] name, bool:dontBroadcast)
+public Action Event_WitchRage(Handle event, const char[] name, bool dontBroadcast)
 {
-	new attacker = GetClientOfUserId(GetEventInt(event, "userid"));
+	int attacker = GetClientOfUserId(GetEventInt(event, "userid"));
 	
 	if (isSurvivor(attacker)) {
 		// CallBotstoWitch(attacker);
@@ -1888,7 +1890,7 @@ public Action:Event_WitchRage(Handle:event, const char[] name, bool:dontBroadcas
 	}	
 }
 
-public OnEntityCreated(entity, const char[] classname)
+public void OnEntityCreated(int entity, const char[] classname)
 {
 	if (entity >= MaxClients && g_hEnabled && strcmp(classname, "witch") == 0)
 	{
@@ -1896,15 +1898,15 @@ public OnEntityCreated(entity, const char[] classname)
 	}
 }
 
-public OnEntityDestroyed(entity) {
+public void OnEntityDestroyed(int entity) {
 	if(entity == -1) return;
 	static char classname[32];
 	GetEntityClassname(entity, classname, sizeof(classname));
 	
 	if (StrEqual(classname, "witch", false)) {
 		if (g_bWitchActive) {
-			new iWitch_Count = 0;
-			for (new iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity)
+			int iWitch_Count = 0;
+			for (int iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity)
 			{
 				if (IsWitch(iEntity) && GetEntProp(iEntity, Prop_Data, "m_iHealth") > 0 && IsWitchRage(iEntity))
 				{
@@ -1925,18 +1927,18 @@ public OnEntityDestroyed(entity) {
 *=		Stock any
 *=
 ================================================================================================ */
-stock ScriptCommand(client, const char[] command, const char[] arguments, any:...)
+stock void ScriptCommand(int client, const char[] command, const char[] arguments, any ...)
 {
 	static char vscript[PLATFORM_MAX_PATH];
 	VFormat(vscript, sizeof(vscript), arguments, 4);
 	
-	new flags = GetCommandFlags(command);
+	int flags = GetCommandFlags(command);
 	SetCommandFlags(command, flags & ~FCVAR_CHEAT);
 	FakeClientCommand(client, "%s %s", command, vscript);
 	SetCommandFlags(command, flags);
 }
 
-stock L4D2_RunScript(const char[] sCode, any:...)
+stock void L4D2_RunScript(const char[] sCode, any ...)
 {
 	static iScriptLogic = INVALID_ENT_REFERENCE;
 	if(iScriptLogic == INVALID_ENT_REFERENCE || !IsValidEntity(iScriptLogic)) {
@@ -1960,7 +1962,7 @@ stock L4D2_RunScript(const char[] sCode, any:...)
 *   Bool
 *
 */
-stock bool:NeedsTeammateHelp(client)
+stock bool NeedsTeammateHelp(int client)
 {
 	if (HasValidEnt(client, "m_tongueOwner")
 	|| HasValidEnt(client, "m_pounceAttacker")
@@ -1974,7 +1976,7 @@ stock bool:NeedsTeammateHelp(client)
 	return false;
 }
 
-stock bool:NeedsTeammateHelp_ExceptSmoker(client)
+stock bool NeedsTeammateHelp_ExceptSmoker(int client)
 {
 	if (HasValidEnt(client, "m_pounceAttacker")
 	|| HasValidEnt(client, "m_jockeyAttacker")
@@ -1987,7 +1989,7 @@ stock bool:NeedsTeammateHelp_ExceptSmoker(client)
 	return false;
 }
 
-stock bool:CappingSuvivor(client)
+stock bool CappingSuvivor(int client)
 {
 	if (HasValidEnt(client, "m_tongueVictim")
 	|| HasValidEnt(client, "m_pounceVictim")
@@ -2001,20 +2003,20 @@ stock bool:CappingSuvivor(client)
 	return false;
 }
 
-stock bool:HasValidEnt(client, const char[] entprop)
+stock bool HasValidEnt(int client, const char[] entprop)
 {
-	new ent = GetEntPropEnt(client, Prop_Send, entprop);
+	int ent = GetEntPropEnt(client, Prop_Send, entprop);
 	
 	return (ent > 0
 		&& IsClientInGame(ent));
 }
 
-stock bool:IsWitchRage(id) {
+stock bool IsWitchRage(int id) {
 	if (GetEntPropFloat(id, Prop_Send, "m_rage") >= 1.0) return true;
 	return false;
 }
 
-stock bool:IsCommonInfected(iEntity)
+stock bool IsCommonInfected(int iEntity)
 {
 	if (iEntity && IsValidEntity(iEntity))
 	{
@@ -2027,7 +2029,7 @@ stock bool:IsCommonInfected(iEntity)
 	return false;
 }
 
-stock bool:IsWitch(iEntity)
+stock bool IsWitch(int iEntity)
 {
 	if (iEntity && IsValidEntity(iEntity))
 	{
@@ -2039,7 +2041,7 @@ stock bool:IsWitch(iEntity)
 	return false;
 }
 
-stock bool:IsTankRock(iEntity)
+stock bool IsTankRock(int iEntity)
 {
 	if (iEntity && IsValidEntity(iEntity))
 	{
@@ -2051,53 +2053,53 @@ stock bool:IsTankRock(iEntity)
 	return false;
 }
 
-stock bool:isGhost(i)
+stock bool isGhost(int i)
 {
-	return bool:GetEntProp(i, Prop_Send, "m_isGhost");
+	return GetEntProp(i, Prop_Send, "m_isGhost") != 0;
 }
 
-stock bool:isSpecialInfectedBot(i)
+stock bool isSpecialInfectedBot(int i)
 {
 	return i > 0 && i <= MaxClients && IsClientInGame(i) && IsFakeClient(i) && GetClientTeam(i) == 3;
 }
 
-stock bool:isSurvivorBot(i)
+stock bool isSurvivorBot(int i)
 {
 	return isSurvivor(i) && IsFakeClient(i);
 }
 
-stock bool:isInfected(i)
+stock bool isInfected(int i)
 {
 	return i > 0 && i <= MaxClients && IsClientInGame(i) && GetClientTeam(i) == 3 && !isGhost(i);
 }
 
-stock bool:isSurvivor(i)
+stock bool isSurvivor(int i)
 {
 	return i > 0 && i <= MaxClients && IsClientInGame(i) && GetClientTeam(i) == 2;
 }
 
-stock any:getZombieClass(client)
+stock any getZombieClass(int client)
 {
 	return GetEntProp(client, Prop_Send, "m_zombieClass");
 }
 
-stock bool:isIncapacitated(client)
+stock bool isIncapacitated(int client)
 {
 	return GetEntProp(client, Prop_Send, "m_isIncapacitated", 1) == 1;
 }
 
-stock bool:isReloading(client)
+stock bool isReloading(int client)
 {
-	new slot0 = GetPlayerWeaponSlot(client, 0);
+	int slot0 = GetPlayerWeaponSlot(client, 0);
 	if (slot0 > -1) {
 		return GetEntProp(slot0, Prop_Data, "m_bInReload") > 0;
 	}
 	return false;
 }
 
-stock bool:isStagger(client) // Client Only
+stock bool isStagger(int client) // Client Only
 {
-	new Float:staggerPos[3];
+	float staggerPos[3];
 	GetEntPropVector(client, Prop_Send, "m_staggerStart", staggerPos);
 	
 	if (staggerPos[0] != 0.0 && staggerPos[1] != 0.0 && staggerPos[2] != 0.0) return true;
@@ -2105,27 +2107,27 @@ stock bool:isStagger(client) // Client Only
 	return false;
 }
 
-stock bool:isJockeyLeaping(client)
+stock bool isJockeyLeaping(int client)
 {
-	new Float:jockeyVelocity[3];
+	float jockeyVelocity[3];
 	GetEntDataVector(client, g_Velo, jockeyVelocity);
 	if (jockeyVelocity[2] != 0.0) return true;
 	return false;
 }
 
-stock bool:isHaveItem(const char[] FItem, const char[] SItem)
+stock bool isHaveItem(const char[] FItem, const char[] SItem)
 {
 	if (StrContains(FItem, SItem, false) > -1) return true;
 	
 	return false;
 }
 
-stock UseItem(client, const char[] FItem)
+stock void UseItem(int client, const char[] FItem)
 {
 	FakeClientCommand(client, "use %s", FItem);
 }
 
-stock any:PrimaryExtraAmmoCheck(client, weapon_index)
+stock any PrimaryExtraAmmoCheck(int client, int weapon_index)
 {
 	// Offset:
 	// 12: Rifle ALL (Other than M60)
@@ -2148,7 +2150,7 @@ stock any:PrimaryExtraAmmoCheck(client, weapon_index)
 	else if (isHaveItem(sWeaponName, "weapon_sniper")) offset = 40;
 	else if (isHaveItem(sWeaponName, "weapon_grenade_launcher")) offset = 68;
 	
-	new extra_ammo = GetEntData(client, (g_iAmmoOffset + offset));
+	int extra_ammo = GetEntData(client, (g_iAmmoOffset + offset));
 	//PrintToChatAll("%N Gun Name: %s, Offset: %i, ExtraAmmo: %i:", client, sWeaponName, offset, extra_ammo);
 	
 	return extra_ammo;
@@ -2158,30 +2160,30 @@ stock any:PrimaryExtraAmmoCheck(client, weapon_index)
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
-public bool:traceFilter(entity, mask, any:self)
+public bool traceFilter(int entity, int mask, any self)
 {
 	return entity != self;
 }
 
-public bool:TraceRayDontHitPlayers(entity, mask)
+public bool TraceRayDontHitPlayers(int entity, int mask)
 {
 	// Check if the beam hit a player and tell it to keep tracing if it did
 	return (entity <= 0 || entity > MaxClients);
 }
 
 // Determine if the head of the target can be seen from the client
-stock bool:isVisibleTo(client, target)
+stock bool isVisibleTo(int client, int target)
 {
-	new bool:ret = false;
-	new Float:aim_angles[3];
-	new Float:self_pos[3];
+	bool ret = false;
+	float aim_angles[3];
+	float self_pos[3];
 	
 	GetClientEyePosition(client, self_pos);
 	computeAimAngles(client, target, aim_angles);
 	
-	new Handle:trace = TR_TraceRayFilterEx(self_pos, aim_angles, MASK_VISIBLE, RayType_Infinite, traceFilter, client);
+	Handle trace = TR_TraceRayFilterEx(self_pos, aim_angles, MASK_VISIBLE, RayType_Infinite, traceFilter, client);
 	if (TR_DidHit(trace)) {
-		new hit = TR_GetEntityIndex(trace);
+		int hit = TR_GetEntityIndex(trace);
 		if (hit == target) {
 			ret = true;
 		}
@@ -2191,12 +2193,12 @@ stock bool:isVisibleTo(client, target)
 }
 
 /* Determine if the head of the entity can be seen from the client */
-stock bool:isVisibleToEntity(target, client)
+stock bool isVisibleToEntity(int target, int client)
 {
-	new bool:ret = false;
-	new Float:aim_angles[3];
-	new Float:self_pos[3], Float:target_pos[3];
-	new Float:lookat[3];
+	bool ret = false;
+	float aim_angles[3];
+	float self_pos[3], target_pos[3];
+	float lookat[3];
 	
 	GetEntPropVector(target, Prop_Data, "m_vecAbsOrigin", target_pos);
 	GetClientEyePosition(client, self_pos);
@@ -2204,29 +2206,29 @@ stock bool:isVisibleToEntity(target, client)
 	MakeVectorFromPoints(target_pos, self_pos, lookat);
 	GetVectorAngles(lookat, aim_angles);
 	
-	new Handle:trace = TR_TraceRayFilterEx(target_pos, aim_angles, MASK_VISIBLE, RayType_Infinite, traceFilter, target);
+	Handle trace = TR_TraceRayFilterEx(target_pos, aim_angles, MASK_VISIBLE, RayType_Infinite, traceFilter, target);
 	if (TR_DidHit(trace)) {
-		new hit = TR_GetEntityIndex(trace);
+		int hit = TR_GetEntityIndex(trace);
 		if (hit == client) {
 			ret = true;
 		}
 	}
-	CloseHandle(trace);
+	delete trace;
 	return ret;
 }
 
 /* From the client to the target's head, whether it is blocked by mesh */
-stock bool:isInterruptTo(client, target)
+stock bool isInterruptTo(int client, int target)
 {
-	new bool:ret = false;
-	new Float:aim_angles[3];
-	new Float:self_pos[3];
+	bool ret = false;
+	float aim_angles[3];
+	float self_pos[3];
 	
 	GetClientEyePosition(client, self_pos);
 	computeAimAngles(client, target, aim_angles);
-	new Handle:trace = TR_TraceRayFilterEx(self_pos, aim_angles, MASK_SOLID, RayType_Infinite, traceFilter, client);
+	int Handle trace = TR_TraceRayFilterEx(self_pos, aim_angles, MASK_SOLID, RayType_Infinite, traceFilter, client);
 	if (TR_DidHit(trace)) {
-		new hit = TR_GetEntityIndex(trace);
+		int hit = TR_GetEntityIndex(trace);
 		if (hit == target) {
 			ret = true;
 		}
@@ -2236,11 +2238,11 @@ stock bool:isInterruptTo(client, target)
 }
 
 // Calculate the angles from client to target
-stock computeAimAngles(client, target, Float:angles[3], type = 1)
+stock void computeAimAngles(int client, int target, float angles[3], int type = 1)
 {
-	new Float:target_pos[3];
-	new Float:self_pos[3];
-	new Float:lookat[3];
+	float target_pos[3];
+	float self_pos[3];
+	float lookat[3];
 	
 	GetClientEyePosition(client, self_pos);
 	switch (type) {
