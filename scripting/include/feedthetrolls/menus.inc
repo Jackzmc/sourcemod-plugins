@@ -215,10 +215,10 @@ public int ChooseClumsySlotHandler(Menu menu, MenuAction action, int param1, int
 			return;
 		}else if(slot == -1) {
 			for(int i = 0; i <= 4; i++) {
-				ThrowItemToClosestPlayer(client, i);
+				ThrowItemToPlayer(client, param1, i);
 			}
 		} else {
-			ThrowItemToClosestPlayer(client, slot);
+			ThrowItemToPlayer(client, param1, slot);
 		}
 		LogAction(param1, client, "\"%L\" activated troll \"Throw It all\" slot=%d for \"%L\"", param1, slot, client);
 		ShowActivityEx(param1, "[FTT] ", "activated troll \"Throw It All\" for %N. ", client);

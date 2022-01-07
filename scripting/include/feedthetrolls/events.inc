@@ -35,13 +35,18 @@ public Action Timer_CheckSpecial(Handle h, int specialID) {
 
 			TeleportEntity(special, gInstaSpecialSpawnPos, gInstaSpecialSpawnAng, NULL_VECTOR);
 			if(gInstaSpecialInstaKill) {
-				SDKHooks_TakeDamage(special, special, special, 1000.0);
+				SDKHooks_TakeDamage(special, gInstaSpecialTarget, gInstaSpecialTarget, 1000.0);
 			}
 		}
 	} 
 }
 public void Frame_InstaSpawned(int special) {
 	
+}
+public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0)
+		ResetClient(client, true);
 }
 public void OnClientAuthorized(int client, const char[] auth) {
 	if(!IsFakeClient(client)) {
@@ -57,7 +62,6 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 		g_PendingBanTroll[client] = 0;
 	}
 	steamids[client][0] = '\0';
-	ResetClient(client, true);
 	g_iAttackerTarget[client] = 0;
 }
 public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
@@ -100,10 +104,13 @@ public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(user);
 	if(client) {
 		PrintToChatAll("%N has alerted the horde!", client);
-		L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", user, 15000);
+		RequestFrame(RushPlayer, user);
 	}
 	//Ignore car alarms for autopunish
 	lastButtonUser = -1;
+}
+public void RushPlayer(int user) {
+	L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", user, 15000);
 }
 public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	// =========================
@@ -199,9 +206,13 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			CPrintToChatAll("{blue}%N {default}:  %s", client, message);
 		else {
 			CPrintToChat(client, "{blue}%N {default}:  %s", client, message);
+			bool showOriginalToOthers = Trolls[honkID].activeFlagClients[client] & 4 != 0;
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i) && i != client) {
-					CPrintToChat(i, "{blue}%N {default}:  %s", client, message);
+					if(showOriginalToOthers)
+						CPrintToChat(i, "{blue}%N {default}:  %s", client, sArgs);
+					else
+						CPrintToChat(i, "{blue}%N {default}:  %s", client, message);
 				}
 			}
 		}
@@ -389,10 +400,8 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		return Plugin_Continue;
 	}
 	static int invertedTrollIndex;
-	if(invertedTrollIndex == 0) {
-		invertedTrollIndex = GetTrollID("Inverted Controls");
-	}
-	if(Trolls[invertedTrollIndex].IsActive(client)) {
+	if(invertedTrollIndex == 0) invertedTrollIndex = GetTrollID("Inverted Controls");
+ 	if(Trolls[invertedTrollIndex].IsActive(client)) {
 		if(buttons & IN_MOVELEFT || buttons & IN_MOVERIGHT) {
 			vel[1] = -vel[1];
 		}
@@ -425,18 +434,22 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 	if(reverseFF == 0) reverseFF = GetTrollID("Reverse FF");
 	if(attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
 		if(g_PendingBanTroll[attacker] > 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
-			
 			return Plugin_Stop;
 		}
+
 		if(IsTrollActive(victim, "Damage Boost")) {
 			damage * 2;
 			return Plugin_Changed;
-		} else if(Trolls[reverseFF].IsActive(attacker) && attacker != victim && GetClientTeam(attacker) == GetClientTeam(victim)) {
+		} else if(Trolls[reverseFF].IsActive(attacker) && damagetype != DMG_BURN && attacker != victim && GetClientTeam(attacker) == GetClientTeam(victim)) {
 			float returnDmg = damage; //default is 1:1
 			if(Trolls[reverseFF].activeFlagClients[attacker] & 4) {
 				returnDmg /= 2.0;
 			} else if(Trolls[reverseFF].activeFlagClients[attacker] & 2) {
 				returnDmg *= 2.0;
+			} else if(Trolls[reverseFF].activeFlagClients[attacker] & 8) {
+				returnDmg = 0.0;
+			} else if(Trolls[reverseFF].activeFlagClients[attacker] & 16) {
+				returnDmg *= 3.0;
 			}
 			SDKHooks_TakeDamage(attacker, attacker, attacker, returnDmg, damagetype, -1);
 			damage = 0.0;
@@ -449,6 +462,8 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
 	static int honkID;
 	if(honkID == 0) honkID = GetTrollID("Honk / Meow");
+	static int vocalGagID;
+	if(vocalGagID == 0) vocalGagID = GetTrollID("Vocalize Gag");
 	if(lastButtonUser > -1 && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
 		PrintToConsoleAll("CRESCENDO STARTED BY %N", lastButtonUser);
 		#if defined DEBUG
@@ -470,8 +485,13 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 					strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
 				else if(Trolls[honkID].activeFlagClients[entity] & 2)
 					strcopy(sample, sizeof(sample), "custom/meow1.mp3");
-				else return Plugin_Continue;
-			} else if(IsTrollActive(entity, "Vocalize Gag")) {
+				else return Plugin_Changed;
+			} else if(Trolls[vocalGagID].IsActive(entity)) {
+				if(Trolls[vocalGagID].activeFlagClients[entity] & 2) {
+					clients[0] = entity;
+					numClients = 1;
+					return Plugin_Changed;
+				}
 				return Plugin_Handled;
 			}
 		}

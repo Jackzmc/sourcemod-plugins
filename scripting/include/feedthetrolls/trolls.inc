@@ -43,7 +43,7 @@ void SetupTrolls() {
     SetupTroll("Half Primary Ammo", "Cuts their primary reserve ammo in half", TrollMod_Instant);
 
     SetCategory("Chat");
-    SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant | TrollMod_PlayerOnly);
+    SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant);
     index = SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant | TrollMod_PlayerOnly);
     Trolls[index].AddFlagPrompt(false);
     Trolls[index].AddFlag("Only Replace Swears", false);
@@ -51,7 +51,10 @@ void SetupTrolls() {
     Trolls[index].AddFlagPrompt(false);
     Trolls[index].AddFlag("Show Modified to Them", true);
     Trolls[index].AddFlag("Show Original to Them", false);
-    SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
+    index = SetupTroll("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
+    Trolls[index].AddFlagPrompt(false);
+    Trolls[index].AddFlag("Mute for All", true);
+    Trolls[index].AddFlag("Mute For All But Them", false);
     index = SetupTroll("Honk / Meow", "Honk or Meow", TrollMod_Constant);
     Trolls[index].AddCustomFlagPrompt("Choose Sound Type:");
     Trolls[index].AddFlag("Honk", true);
@@ -59,6 +62,7 @@ void SetupTrolls() {
     Trolls[index].AddCustomFlagPrompt("Choose Chat modifier:", false, 1);
     Trolls[index].AddFlag("Show Modified to Them", true);
     Trolls[index].AddFlag("Show Original to Them", false);
+    Trolls[index].AddFlag("Show Modified Only To Them", false);
     SetupTroll("Reversed", "Reserves their message", TrollMod_Constant | TrollMod_PlayerOnly);
 
     SetCategory("Health");
@@ -68,9 +72,11 @@ void SetupTrolls() {
     SetupTroll("KillMeSoftly", "Make player eat or waste pills whenever possible", TrollMod_Instant | TrollMod_Constant);
     index = SetupTroll("Reverse FF", "All damage dealt to a player is reversed", TrollMod_Constant);
     Trolls[index].AddCustomFlagPrompt("Choose Reverse FF", false);
-    Trolls[index].AddFlag("1:1 Ratio", true);
-    Trolls[index].AddFlag("2x Ratio", false);
-    Trolls[index].AddFlag("0.5x Ratio", false);
+    Trolls[index].AddFlag("1:1 Ratio", true); //1 
+    Trolls[index].AddFlag("2x Ratio", false); //2
+    Trolls[index].AddFlag("0.5x Ratio", false); //4
+    Trolls[index].AddFlag("0.0x Ratio (None)", false); //8
+    Trolls[index].AddFlag("3x Ratio", false); //16
 
     SetCategory("Misc");
     SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);

@@ -56,5 +56,14 @@ void SetupsTrollCombos() {
     combo.AddTroll("Reverse FF", .flags=2);
     combo.AddTroll("Vomit Player");
 
+    SetupCombo(combo, "Shut up");
+    combo.AddTroll("Vocalize Gag");
+    combo.AddTroll("Honk / Meow", .flags=1);
+
+    SetupCombo(combo, "Weakness Compels You");
+    combo.AddTroll("No Shove");
+    combo.AddTroll("Dull Melee", .flags=2);
+    combo.AddTroll("Temp Health Quick Drain");
+
     PrintToServer("[FTT] Loaded %d troll combos", combos.Length);
 }
