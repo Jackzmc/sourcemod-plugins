@@ -212,6 +212,15 @@ bool IsAnyPlayerNear(int source, float range) {
 	return false;
 }
 
+void ThrowItemToPlayer(int victim, int target, int slot) {
+	int wpn = GetPlayerWeaponSlot(victim, slot);
+	if(wpn > 0 && (slot != 1 || DoesClientHaveMelee(victim))) {
+		static float pos[3];
+		GetClientAbsOrigin(target, pos);
+		SDKHooks_DropWeapon(victim, wpn, pos);
+	}
+}
+
 void ThrowItemToClosestPlayer(int victim, int slot) {
 	int wpn = GetPlayerWeaponSlot(victim, slot);
 	if(wpn > 0 && (slot != 1 || DoesClientHaveMelee(victim))) {
