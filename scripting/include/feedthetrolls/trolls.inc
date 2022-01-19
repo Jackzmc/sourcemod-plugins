@@ -27,13 +27,16 @@ void SetupTrolls() {
     // Trolls[index].AddFlag("Throw to Admin", true);
     // Trolls[index].AddFlag("Drop At Feet", false);
     // Trolls[index].AddFlag("Drop At Admin", false);
-    index = SetupTroll("Bad Throw", "Player drops throwables on throw, and biles/molotovs themselves", TrollMod_Constant | TrollMod_PlayerOnly);
+    index = SetupTroll("Bad Throw", "Player drops throwables on throw, and biles/molotovs themselves", TrollMod_Constant);
     Trolls[index].AddFlagPrompt(true);
     Trolls[index].AddFlag("Biles", true);
     Trolls[index].AddFlag("Molotovs", true);
     Trolls[index].AddFlag("Pipebombs", true);
     SetupTroll("No Pickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", TrollMod_Constant);
-    SetupTroll("UziRules", "Picking up a weapon gives them a UZI instead", TrollMod_Constant);
+    index = SetupTroll("UziRules / AwpSmells", "Picking up a weapon gives them a UZI or AWP instead", TrollMod_Constant);
+    Trolls[index].AddFlagPrompt(false);
+    Trolls[index].AddFlag("UZI Only", true);
+    Trolls[index].AddFlag("AWP Only", false);
     SetupTroll("Primary Disable", "Player cannot pickup any weapons, only melee/pistols", TrollMod_Constant);
     index = SetupTroll("Dull Melee", "Player's melee weapon does 0 damage (based on %). Headshots still work", TrollMod_Constant);
     Trolls[index].AddFlagPrompt(false);
@@ -44,7 +47,7 @@ void SetupTrolls() {
 
     SetCategory("Chat");
     SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant);
-    index = SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant | TrollMod_PlayerOnly);
+    index = SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
     Trolls[index].AddFlagPrompt(false);
     Trolls[index].AddFlag("Only Replace Swears", false);
     Trolls[index].AddFlag("Replace Full Messages", true);
@@ -63,7 +66,8 @@ void SetupTrolls() {
     Trolls[index].AddFlag("Show Modified to Them", true);
     Trolls[index].AddFlag("Show Original to Them", false);
     Trolls[index].AddFlag("Show Modified Only To Them", false);
-    SetupTroll("Reversed", "Reserves their message", TrollMod_Constant | TrollMod_PlayerOnly);
+    SetupTroll("Reversed", "Reserves their message", TrollMod_Constant);
+    SetupTroll("Voice Mute", "Mutes from voice", TrollMod_Constant);
 
     SetCategory("Health");
     SetupTroll("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant);
@@ -83,16 +87,16 @@ void SetupTrolls() {
     SetupTroll("Slow Speed", "Sets player speed to 0.8x of normal speed", TrollMod_Constant);
     SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
     SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
-    SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant | TrollMod_PlayerOnly);
-    SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant | TrollMod_PlayerOnly);
+    SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
+    SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant);
     SetupTroll("Stagger", "Like a slap, but different", TrollMod_Instant);
-    index = SetupTroll("Meta: Inverse", "Uhm you are not supposed to see this...", TrollMod_Instant | TrollMod_PlayerOnly);
+    index = SetupTroll("Meta: Inverse", "Uhm you are not supposed to see this...", TrollMod_Instant);
     Trolls[index].hidden = true;
     Trolls[index].AddFlagPrompt(false);
     Trolls[index].AddFlag("100%", true);
     Trolls[index].AddFlag("50%", false);
     Trolls[index].AddFlag("10%", false);
-    //INFO: UP MAX_TROLLS when adding new trolls!
+
     
 
     // Initialize the default flag values to -1
@@ -129,16 +133,16 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
     else if(StrEqual(troll.name, "Half Primary Ammo")) {
         int current = GetPrimaryReserveAmmo(victim);
         SetPrimaryReserveAmmo(victim, current / 2);
-    } else if(StrEqual(troll.name, "UziRules")) {
+    } else if(StrEqual(troll.name, "UziRules / AwpSmells")) {
         DisableTroll(victim, "No Pickup");
         DisableTroll(victim, "Primary Disable");
         SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
     } else if(StrEqual(troll.name, "Primary Disable")) {
-        DisableTroll(victim, "UziRules");
+        DisableTroll(victim, "UziRules / AwpSmells");
         DisableTroll(victim, "No Pickup");
         SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
     } else if(StrEqual(troll.name, "No Pickup")) {
-        DisableTroll(victim, "UziRules");
+        DisableTroll(victim, "UziRules / AwpSmells");
         DisableTroll(victim, "Primary Disable");
         SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
     } else if(StrEqual(troll.name, "CameTooEarly")) {
@@ -189,6 +193,8 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
         L4D2_SpitterPrj(victim, pos, ang);
     } else if(StrEqual(troll.name, "Stagger")) {
         L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
+    } else if(StrEqual(troll.name, "Voice Mute")) {
+        BaseComm_SetClientMute(victim, !isActive);
     } else if(modifier != TrollMod_Constant) {
         PrintToServer("[FTT] Warn: Possibly invalid troll, no apply action defined for \"%s\"", troll.name);
         #if defined DEBUG

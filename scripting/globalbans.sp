@@ -62,7 +62,7 @@ public void OnClientAuthorized(int client, const char[] auth) {
     if(!StrEqual(auth, "BOT", true)) {
         static char query[256], ip[32];
         GetClientIP(client, ip, sizeof(ip));
-        Format(query, sizeof(query), "SELECT `reason`, `steamid`, `expired` FROM `bans` WHERE `steamid` = 'STEAM_%:%:%s' OR ip = '?'", auth[10], ip);
+        Format(query, sizeof(query), "SELECT `reason`, `steamid`, `expired` FROM `bans` WHERE `steamid` LIKE 'STEAM_%:%:%s' OR ip = '?'", auth[10], ip);
         g_db.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
     }
 }
@@ -114,13 +114,13 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
     static char query[255];
     static char expiresDate[64];
     if(time > 0) {
-        Format(expiresDate, sizeof(expiresDate), "%d", GetTime() + (time * 60000));
-    }else{
+        Format(expiresDate, sizeof(expiresDate), "%d", GetTime() + (time * 60));
+    } else {
         Format(expiresDate, sizeof(expiresDate), "NULL");
     }
     Format(query, sizeof(query), "INSERT INTO bans"
         ..."(steamid, ip, reason, expires, executor, ip_banned)"
-        ..."VALUES ('%s', '%s', '%s', %s, '%s', 0)",
+        ..."VALUES ('%s', '%s', '%s', FROM_UNIXTIME(%s), '%s', 0)",
         identity,
         ip,
         reason,
@@ -180,7 +180,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
                     g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);
                     g_db.Query(DB_OnBanQuery, query);
                 }else{
-                    DeleteBan(steamid);
+                    PrintChatToAdmins("%N has a previously expired ban of reason \"%s\"", client, reason);
                 }
             }
         }

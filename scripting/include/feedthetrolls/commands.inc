@@ -213,9 +213,11 @@ public Action Command_ResetUser(int client, int args) {
 		}
 
 		for (int i = 0; i < target_count; i++) {
+			if(IsAnyTrollActive(target_list[i])) {
+				LogAction(client, target_list[i], "\"%L\" reset all troll effects for \"%L\"", client, target_list[i]);
+				ShowActivityEx(client, "[FTT] ", "reset troll effects for \"%N\". ", target_list[i]);
+			}
 			ResetClient(target_list[i], true);
-			LogAction(client, target_list[i], "\"%L\" reset all troll effects for \"%L\"", client, target_list[i]);
-			ShowActivityEx(client, "[FTT] ", "reset troll effects for \"%N\". ", target_list[i]);
 		}
 	}
 	return Plugin_Handled;
@@ -494,38 +496,6 @@ public Action Command_MarkPendingTroll(int client, int args) {
 	return Plugin_Handled;
 }
 
-public Action Command_MarkNoob(int client, int args) {
-	if(args == 0) {
-		ReplyToCommand(client, "sm_noob <player>");
-		return Plugin_Handled;
-	}
-	static char target_name[MAX_TARGET_LENGTH];
-	GetCmdArg(1, target_name, sizeof(target_name));
-
-	int target_list[MAXPLAYERS], target_count;
-	bool tn_is_ml;
-	if ((target_count = ProcessTargetString(
-		target_name,
-		client,
-		target_list,
-		1,
-		COMMAND_FILTER_NO_MULTI, /* Only allow alive players */
-		target_name,
-		sizeof(target_name),
-		tn_is_ml)) <= 0
-	) {
-		/* This function replies to the admin with a failure message */
-		ReplyToTargetError(client, target_count);
-		return Plugin_Handled;
-	}
-	int target = target_list[0];
-	//Todo: Check if marked as noob or not, undo if so, add if not
-
-	ShowActivityEx(client, "[FTT] ", "marked %N as a noob", target_name);
-	LogAction(client, target, "\"%L\" marked \"%L\" as a noob", client, target);
-	return Plugin_Handled;
-}
-
 public Action Command_FeedTheTrollMenu(int client, int args) {
 	ReplyToCommand(client, "sm_ftl [player(s)] - Lists all the active trolls on players. Will show flag names if a player is specified.");
 	ReplyToCommand(client, "sm_ftm - Lists all available trolls & descriptions");
@@ -534,5 +504,49 @@ public Action Command_FeedTheTrollMenu(int client, int args) {
 	ReplyToCommand(client, "sm_ftt - Shows this text");
 	ReplyToCommand(client, "sm_ftc - Will apply a punishment to the last crescendo/event activator");
 	ReplyToCommand(client, "sm_mark - Marks the user to be banned on disconnect, prevents their FF.");
+	return Plugin_Handled;
+}
+
+public Action Command_BotsAttack(int client, int args) {
+	if(args > 0) {
+		static char arg1[32], arg2[4];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+
+		int targetHP;
+		if(StringToIntEx(arg2, targetHP) == 0 || targetHP < 0 || targetHP > 100) {
+			ReplyToCommand(client, "Invalid target HP value. Must be between 0 and 100");
+			return Plugin_Handled;
+		}
+
+		int target_list[MAXPLAYERS], target_count;
+		static char target_name[MAX_TARGET_LENGTH];
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			1,
+			COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_MULTI,
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		int target = target_list[0];
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && IsFakeClient(i) && GetClientTeam(i) == 2) {
+				if(!SetBotTarget(target, i, targetHP, 80)) {
+					ReplyToCommand(client, "%N could not target %s", i, target_name);
+				}
+			}
+		}
+		ShowActivity(client, "set all bots to attack %s", target_name);
+	} else {
+		ReplyToCommand(client, "syntax: sm_bots_attack <target player> [target-hp]");
+	}
 	return Plugin_Handled;
 }

@@ -23,6 +23,9 @@ ConVar hShoveFailChance;
 ConVar hAutoPunishExpire;
 ConVar hMagnetTargetMode;
 ConVar hBadThrowHitSelf;
+ConVar hBotReverseFFDefend;
+ConVar hSbFriendlyFire;
+
 
 bool g_bPendingItemGive[MAXPLAYERS+1];
 
@@ -43,6 +46,10 @@ int gInstaSpecialMagnet[MAXPLAYERS+1];
 
 char steamids[MAXPLAYERS+1][64];
 
+int shootAtTarget[MAXPLAYERS+1];
+int shootAtTargetLoops[MAXPLAYERS+1];
+int shootAtTargetHP[MAXPLAYERS+1];
+
 #include <feedthetrolls/base>
 #include <feedthetrolls/trolls>
 #include <feedthetrolls/combos>
@@ -52,3 +59,4 @@ char steamids[MAXPLAYERS+1][64];
 #include <feedthetrolls/events>
 #include <feedthetrolls/timers>
 #include <feedthetrolls/menus>
+

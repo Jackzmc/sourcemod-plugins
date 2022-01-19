@@ -35,7 +35,7 @@ static Handle hDHookSetModel = null, hModelPrefCookie;
 static ConVar hCookiesEnabled;
 static bool isLateLoad, cookieModelsSet, isL4D1Survivors;
 static int survivors;
-static bool IsTemporarilyL4D2[MAXPLAYERS]; //Use index 0 to state if its activated
+static bool IsTemporarilyL4D2[MAXPLAYERS];
 static char currentMap[16];
 Handle cookieModelTimer;
 
@@ -289,11 +289,8 @@ public void OnMapStart() {
 	}
 	
 	GetCurrentMap(currentMap, sizeof(currentMap));
-	if(StrEqual(currentMap, "c6m3_port")) {
-		HookEvent("door_open", Event_DoorOpen);
-	}
-
 }
+
 //Either use preferred model OR find the least-used.
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	if(hCookiesEnabled.IntValue > 0)
@@ -344,12 +341,17 @@ public Action Timer_SetAllCookieModels(Handle h) {
 
 public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(StrEqual(currentMap, "c6m1_riverbank") && GetClientTeam(client) == 2) {
-		//If player died as l4d1 character on first map, revert it
-		RevertL4D1Survivor(client);
-	}else if(StrEqual(currentMap, "c6m3_port") && GetClientTeam(client) == 2) {
-		//If player not swapped (joined, or via prev. map, switch)
-		RequestFrame(Frame_SwapSurvivor, client);
+	if(client > 0 && client <= MaxClients && GetClientTeam(client) == 2) {
+		if(StrEqual(currentMap, "c6m1_riverbank")) {
+			//If player died as l4d1 character on first map, revert it
+			RevertSwappedSurvivor(client);
+		}else if(StrEqual(currentMap, "c6m3_port")) {
+			//If player not swapped (joined, or via prev. map, switch)
+			if(IsTemporarilyL4D2[client])
+				RequestFrame(Frame_RevertSwappedSurvivor, client);
+			else
+				RequestFrame(Frame_SwapSurvivor, client);
+		}
 	}
 }
 public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
@@ -357,46 +359,46 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	if(StrEqual(currentMap, "c6m3_port") || StrEqual(currentMap, "c6m1_riverbank")) {
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		if(client > 0 && GetClientTeam(client) == 2) {
-			SwapL4D1Survivor(client);
+			SwapL4D1Survivor(client, false);
 		}
 	}
 	return Plugin_Continue;
 }
-
-public void Event_DoorOpen(Event event, const char[] name, bool dontBroadcast) {
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && !IsTemporarilyL4D2[i]) {
-			SwapL4D1Survivor(i);
-		}
+public void OnClientPutInServer(int client) {
+	if(GetClientTeam(client) == 2 && StrEqual(currentMap, "c6m3_port")) {
+		
 	}
-	UnhookEvent("door_open", Event_DoorOpen);
 }
+
 //On finale start: Set back to their L4D1 character.
 public Action Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
 	if(StrEqual(currentMap, "c6m3_port")) {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-				RevertL4D1Survivor(i);
+				RevertSwappedSurvivor(i);
 			}
 		}
 	}
 }
 public void Frame_SwapSurvivor(int client) {
-	SwapL4D1Survivor(client);
+	SwapL4D1Survivor(client, true);
 }
-public void Frame_RevertSurvivor(int client) {
-	RevertL4D1Survivor(client);
+public void Frame_RevertSwappedSurvivor(int client) {
+	RevertSwappedSurvivor(client);
 }
 
-void SwapL4D1Survivor(int client) {
+void SwapL4D1Survivor(int client, bool showMessage) {
 	int playerType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
 	//If character is L4D1 Character (4: bill, etc..) then swap
 	if(playerType > 3) {
 		SetEntProp(client, Prop_Send, "m_survivorCharacter", playerType - 4);
 		IsTemporarilyL4D2[client] = true;
+		if(showMessage && GetUserAdmin(client) != INVALID_ADMIN_ID) {
+			PrintToChat(client, "Your survivor is temporarily swapped. Please do not change back, it should auto-revert after the elevator is done. This is to prevent a game bug with L4D1 Survivors on this map.");
+		}
 	}
 }
-void RevertL4D1Survivor(int client) {
+void RevertSwappedSurvivor(int client) {
 	if(IsTemporarilyL4D2[client]) {
 		int playerType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
 		SetEntProp(client, Prop_Send, "m_survivorCharacter", playerType + 4);

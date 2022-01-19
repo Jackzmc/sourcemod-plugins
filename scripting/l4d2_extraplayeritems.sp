@@ -118,7 +118,7 @@ public void OnPluginStart() {
 	HookEvent("round_freeze_end",   Event_RoundFreezeEnd);
 	HookEvent("tank_spawn", 		Event_TankSpawn);
 
-	hExtraItemBasePercentage = CreateConVar("l4d2_extraitem_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
+	hExtraItemBasePercentage = CreateConVar("l4d2_extraitems_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hAddExtraKits 			 = CreateConVar("l4d2_extraitems_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits, 1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
 	hUpdateMinPlayers		 = CreateConVar("l4d2_extraitems_updateminplayers", "1", "Should the plugin update abm\'s cvar min_players convar to the player count?\n 0 -> NO, 1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
 	hMinPlayersSaferoomDoor  = CreateConVar("l4d2_extraitems_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -442,8 +442,17 @@ public void Frame_SetupNewClient(int client) {
 	}
 	static float spawnPos[3];
 	// TODO: Fix null
-	if(GetCenterPositionInSurvivorFlow(client, spawnPos))
+	if(GetIdealPositionInSurvivorFlow(client, spawnPos))
 		TeleportEntity(client, spawnPos, NULL_VECTOR, NULL_VECTOR);
+	CreateTimer(1.5, Timer_RemoveInvincibility, client);
+	SDKHook(client, SDKHook_OnTakeDamage, OnInvincibleDamageTaken);
+}
+public Action Timer_RemoveInvincibility(Handle h, int client) {
+	SDKUnhook(client, SDKHook_OnTakeDamage, OnInvincibleDamageTaken);
+}
+public Action OnInvincibleDamageTaken(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
+	damage = 0.0;
+	return Plugin_Stop;
 }
 public Action Timer_GiveClientKit(Handle hdl, int user) {
 	int client = GetClientOfUserId(user);
@@ -736,8 +745,8 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 		GetEntityClassname(primaryWeapon, classname, sizeof(classname));
 
 		if(!weaponMaxClipSizes.GetValue(classname, ammo)) {
-			if(StrEqual(classname, "weapon_grenade_launcher", true)) ammo = 1;
-			else if(StrEqual(classname, "weapon_rifle_m60", true)) ammo = 150;
+			if(StrEqual(classname[7], "grenade_launcher", true)) ammo = 1;
+			else if(StrEqual(classname[7], "rifle_m60", true)) ammo = 150;
 			else {
 				int currentAmmo = GetEntProp(primaryWeapon, Prop_Send, "m_iClip1");
 				if(currentAmmo > 10) ammo = 10;
@@ -1124,13 +1133,13 @@ stock void RunVScriptLong(const char[] sCode, any ...) {
 }
 
 // Gets a position (from a nav area)
-stock bool GetCenterPositionInSurvivorFlow(int target, float pos[3]) {
+stock bool GetIdealPositionInSurvivorFlow(int target, float pos[3]) {
 	static float ang[3];
 	int client = GetHighestFlowSurvivor(target);
 	if(client > 0) {
 		GetClientAbsOrigin(client, pos);
 		GetClientAbsAngles(client, ang);
-		pos[2] = -pos[2];
+		ang[2] = -ang[2];
 		TR_TraceRayFilter(pos, ang, MASK_SHOT, RayType_Infinite, Filter_GroundOnly);
 		if(TR_DidHit()) {
 			TR_GetEndPosition(pos);
@@ -1174,9 +1183,10 @@ stock int GetHighestFlowSurvivor(int ignoreTarget = 0) {
 		float highestFlow = L4D2Direct_GetFlowDistance(client);
 		for(int i = 1; i <= MaxClients; i++) {
 			if(ignoreTarget != i && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-				if(L4D2Direct_GetFlowDistance(i) > highestFlow) {
+				float dist = L4D2Direct_GetFlowDistance(i);
+				if(dist > highestFlow) {
 					client = i;
-					highestFlow = L4D2Direct_GetFlowDistance(i);
+					highestFlow = dist;
 				}
 			}
 		}

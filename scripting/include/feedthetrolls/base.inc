@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 33
+    #define MAX_TROLLS 34
 #endif
 
 enum trollModifier {
@@ -224,7 +224,7 @@ void ResetClient(int victim, bool wipe = true) {
             Trolls[i].activeFlagClients[victim] = -1;
         }
     }
-
+    BaseComm_SetClientMute(victim, false);
     SetEntityGravity(victim, 1.0);
     SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
     SDKUnhook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);

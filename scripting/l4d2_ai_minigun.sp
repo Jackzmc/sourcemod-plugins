@@ -108,7 +108,7 @@ public Action Command_SpawnMinigunBot(int client, int args) {
 
 		int survivor = GetClientOfUserId(SpawnSurvivor(vPos, vAng, model, true));
 		if(survivor > 0) {
-			GiveClientWeapon(survivor, "rifle_ak47", true);
+			GiveClientWeaponLasers(survivor, "rifle_ak47");
 		}else{
 			ReplyToCommand(client, "Failed to spawn survivor.");
 		}
@@ -152,7 +152,7 @@ public Action Command_SpawnHoldoutBot(int client, int args) {
 
 		int survivor = SpawnSurvivor(vPos, vAng, model, false);
 		if(survivor > 0) {
-			GiveClientWeapon(survivor, wpn, true);
+			GiveClientWeaponLasers(survivor, wpn);
 			SetEntProp(survivor, Prop_Send, "m_survivorCharacter", survivorId);
 		}else{
 			ReplyToCommand(client, "Failed to spawn survivor.");

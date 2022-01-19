@@ -249,3 +249,122 @@ void DropItem(int victim, int slot) {
 		SDKHooks_DropWeapon(victim, wpn, NULL_VECTOR);
 	}
 }
+
+stock void AddInFrontOf(float fVecOrigin[3], float fVecAngle[3], float fUnits, float fOutPut[3])
+{
+	float fVecView[3]; GetViewVector(fVecAngle, fVecView);
+	
+	fOutPut[0] = fVecView[0] * fUnits + fVecOrigin[0];
+	fOutPut[1] = fVecView[1] * fUnits + fVecOrigin[1];
+	fOutPut[2] = fVecView[2] * fUnits + fVecOrigin[2];
+}
+stock void GetViewVector(float fVecAngle[3], float fOutPut[3])
+{
+	fOutPut[0] = Cosine(fVecAngle[1] / (180 / FLOAT_PI));
+	fOutPut[1] = Sine(fVecAngle[1] / (180 / FLOAT_PI));
+	fOutPut[2] = -Sine(fVecAngle[0] / (180 / FLOAT_PI));
+}
+stock void LookAtClient(int iClient, int iTarget) {
+	static float fTargetPos[3]; 
+	static float fTargetAngles[3]; 
+	static float fClientPos[3]; 
+	static float fFinalPos[3];
+	
+	GetClientEyePosition(iClient, fClientPos);
+	GetClientEyePosition(iTarget, fTargetPos);
+	GetClientEyeAngles(iTarget, fTargetAngles);
+	
+	float fVecFinal[3];
+	AddInFrontOf(fTargetPos, fTargetAngles, 7.0, fVecFinal);
+	MakeVectorFromPoints(fClientPos, fVecFinal, fFinalPos);
+	
+	GetVectorAngles(fFinalPos, fFinalPos);
+
+	TeleportEntity(iClient, NULL_VECTOR, fFinalPos, NULL_VECTOR);
+}
+
+
+stock int GetClientRealHealth(int client) {
+	//First filter -> Must be a valid client, successfully in-game and not an spectator (The dont have health).
+	if(!client
+	|| !IsValidEntity(client)
+	|| !IsClientInGame(client)
+	|| !IsPlayerAlive(client)
+	|| IsClientObserver(client))
+	{
+		return -1;
+	}
+	
+	//If the client is not on the survivors team, then just return the normal client health.
+	if(GetClientTeam(client) != 2)
+	{
+		return GetClientHealth(client);
+	}
+	
+	//First, we get the amount of temporal health the client has
+	float buffer = GetEntPropFloat(client, Prop_Send, "m_healthBuffer");
+	
+	//We declare the permanent and temporal health variables
+	float TempHealth;
+	int PermHealth = GetClientHealth(client);
+	
+	//In case the buffer is 0 or less, we set the temporal health as 0, because the client has not used any pills or adrenaline yet
+	if(buffer <= 0.0)
+	{
+		TempHealth = 0.0;
+	}
+	
+	//In case it is higher than 0, we proceed to calculate the temporl health
+	else
+	{
+		//This is the difference between the time we used the temporal item, and the current time
+		float difference = GetGameTime() - GetEntPropFloat(client, Prop_Send, "m_healthBufferTime");
+		
+		//We get the decay rate from this convar (Note: Adrenaline uses this value)
+		float decay = GetConVarFloat(FindConVar("pain_pills_decay_rate"));
+		
+		//This is a constant we create to determine the amount of health. This is the amount of time it has to pass
+		//before 1 Temporal HP is consumed.
+		float constant = 1.0/decay;
+		
+		//Then we do the calcs
+		TempHealth = buffer - (difference / constant);
+	}
+	
+	//If the temporal health resulted less than 0, then it is just 0.
+	if(TempHealth < 0.0)
+	{
+		TempHealth = 0.0;
+	}
+	
+	//Return the value
+	return RoundToFloor(PermHealth + TempHealth);
+}  
+
+
+/// Returns TRUE if set, FALSE if not (if no weapon to shoot)
+bool SetBotTarget(int bot, int target, int targetHP, int loops = 15) {
+	if(shootAtTarget[target] == bot) {
+		return false;
+	} else if(shootAtTarget[target] > 0) {
+		return false;
+	}
+	LookAtClient(target, bot);
+	int weapon = GetPlayerWeaponSlot(target, 0);
+	if(weapon > -1) {
+		shootAtTarget[target] = bot;
+		shootAtTargetLoops[target] = loops;
+		shootAtTargetHP[bot] = targetHP;
+		int ammo = GetEntProp(weapon, Prop_Send, "m_iClip1");
+		DataPack pack = new DataPack();
+		// Reverse target and bot:
+		pack.WriteCell(target);
+		pack.WriteCell(bot);
+		pack.WriteCell(weapon);
+		pack.WriteCell(ammo);
+		CreateTimer(0.1, Timer_ShootReverse, pack, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+		return true;
+	} else {
+		return false;
+	}
+}

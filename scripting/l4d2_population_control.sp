@@ -176,7 +176,7 @@ public Action Hook_SpawnPost(int entity) {
 // }
 
 public void OnEntityDestroyed(int entity) {
-	if(commonType[entity] > 0) {
+	if(entity > 0 && entity <= 2048 && commonType[entity] > 0) {
 		commonType[entity] = 0;
 		if(commonType[entity] == 2) {
 			--clownCommonsSpawned;

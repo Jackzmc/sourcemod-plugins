@@ -21,6 +21,7 @@ public Plugin myinfo =
 #define TANK_CLASS_ID 8
 
 static int tankChooseVictimTicks[MAXPLAYERS+1]; //Per tank
+static int tankChosenVictim[MAXPLAYERS+1];
 static int totalTankDamage[MAXPLAYERS+1]; //Per survivor
 static ArrayList clients;
 
@@ -45,17 +46,17 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	if(++tankChooseVictimTicks[attacker] >= 200) {
 		tankChooseVictimTicks[attacker] = 0;
 		clients.Clear();
-		float tankPos[3], clientPos[3];
+		static float tankPos[3], clientPos[3];
 		GetClientAbsOrigin(attacker, tankPos);
 
 		for(int i = 1; i <= MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && !IsPlayerIncapacitated(i)) {
 				//If a player does less than 50 damage, and has green health add them to list
 				if(totalTankDamage[i] < 100 && GetClientHealth(i) > 40) {
 					GetClientAbsOrigin(i, clientPos);
 					float dist = GetVectorDistance(clientPos, tankPos);
 					// Only add targets who are far enough away from tank
-					if(dist > 5000.0) {
+					if(dist > 3000.0) {
 						PrintToConsoleAll("Adding player %N to possible victim list. Dist=%f, Dmg=%d", i, dist, totalTankDamage[i]);
 						int index = clients.Push(i);
 						clients.Set(index, dist, 1);
@@ -67,10 +68,19 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 		if(clients.Length == 0) return Plugin_Continue;
 
 		clients.SortCustom(Sort_TankTargetter);
-		/*curTarget = clients.Get(0);*/
+		curTarget = clients.Get(0);
+		tankChosenVictim[attacker] = curTarget;
 		PrintToConsoleAll("[TankPriority] Player Selected to target: %N", curTarget);
 		//TODO: Possibly clear totalTankDamage
-		//return Plugin_Changed;
+		return Plugin_Changed;
+	}
+	if(tankChosenVictim[attacker] > 0) {
+		if(IsClientConnected(tankChosenVictim[attacker]) && IsClientInGame(tankChosenVictim[attacker])) {
+			curTarget = tankChosenVictim[attacker];
+			return Plugin_Changed;
+		} else {
+			tankChosenVictim[attacker] = 0;
+		}
 	}
 	return Plugin_Continue;
 }
@@ -104,4 +114,8 @@ public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) 
 	if(tank > 0 && IsFakeClient(tank)) { 
 		tankChooseVictimTicks[tank] = -20;
 	}
+}
+
+bool IsPlayerIncapacitated(int client) {
+    return (GetEntProp(client, Prop_Send, "m_isIncapacitated") == 1);
 }

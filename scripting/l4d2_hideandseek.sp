@@ -406,7 +406,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 }
 
 
-public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) { 
+public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) { 
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(!gameOver && client && GetClientTeam(client) == 2) {
 		int alive = 0;
@@ -435,7 +435,6 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 			}
 		}
 	}
-	return Plugin_Continue;
 }
 
 public void OnClientPutInServer(int client) {
@@ -447,7 +446,7 @@ public void OnClientPutInServer(int client) {
 	}
 }
 
-public Action Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
+public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && client > 0 && currentSeeker != client) {
 		static char item[32];
@@ -469,11 +468,9 @@ public Action Event_ItemPickup(Event event, const char[] name, bool dontBroadcas
 			}
 		}
 	}
-	return Plugin_Continue;
-
 }
 
-public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
+public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
 	if(hasSpawnpoint) {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
@@ -483,11 +480,10 @@ public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 	}
 	SetupEntities();
 	CreateTimer(15.0, Timer_RoundStart);
-	return Plugin_Continue;
 
 }
 
-public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
+public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	currentSeeker = 0;
 	static float tpLoc[3];
 	for(int i = 1; i <= MaxClients; i++) {
@@ -508,8 +504,6 @@ public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 			isPendingPlay[i] = false;
 		}
 	}
-	return Plugin_Continue;
-
 }
 
 public Action Timer_CheckPlayers(Handle h) {

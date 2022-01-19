@@ -5,6 +5,7 @@ public void OnMapEnd() {
 	UnhookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
 }
 public void OnMapStart() {
+	if(hBotReverseFFDefend.IntValue > 0) hSbFriendlyFire.BoolValue = true;
 	AddFileToDownloadsTable("sound/custom/meow1.mp3");
 	PrecacheSound("custom/meow1.mp3");	
 
@@ -18,6 +19,9 @@ public void OnMapStart() {
 }
 public void OnClientPutInServer(int client) {
 	g_PendingBanTroll[client] = 0;
+	shootAtTarget[client] = 0;
+	if(IsTrollActive(client, "Voice Mute"))
+		BaseComm_SetClientMute(client, true);
 	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
 }
 public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
@@ -35,13 +39,14 @@ public Action Timer_CheckSpecial(Handle h, int specialID) {
 
 			TeleportEntity(special, gInstaSpecialSpawnPos, gInstaSpecialSpawnAng, NULL_VECTOR);
 			if(gInstaSpecialInstaKill) {
-				SDKHooks_TakeDamage(special, gInstaSpecialTarget, gInstaSpecialTarget, 1000.0);
+				RequestFrame(Frame_Boom, special);
 			}
 		}
 	} 
 }
-public void Frame_InstaSpawned(int special) {
-	
+public void Frame_Boom(int special) {
+	SDKHooks_TakeDamage(special, special, special, 1000.0);
+	gInstaSpecialInstaKill = false;
 }
 public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
@@ -63,6 +68,9 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 	}
 	steamids[client][0] = '\0';
 	g_iAttackerTarget[client] = 0;
+	shootAtTarget[client] = 0;
+	shootAtTargetLoops[client] = 0;
+	shootAtTargetHP[client] = 0;
 }
 public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
@@ -70,7 +78,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 		int target = GetClientOfUserId(g_iAttackerTarget[client]);
 		gInstaSpecialMagnet[target]--;
 		if(gInstaSpecialMagnet[target] == 0) {
-			PrintToServer("[FTT] gInstaSpecialMagnet droped below 0");
+			PrintToServer("[FTT] gInstaSpecialMagnet dropped below 0");
 			gInstaSpecialMagnet[target] = 0;
 		}
 	}
@@ -113,15 +121,13 @@ public void RushPlayer(int user) {
 	L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", user, 15000);
 }
 public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
-	// =========================
-	// OVERRIDE VICTIM
-	// =========================
 	static int spMagnetID, tankMagnetID;
 	if(spMagnetID == 0) spMagnetID = GetTrollID("Special Magnet");
 	if(tankMagnetID == 0) tankMagnetID = GetTrollID("Tank Magnet");
 
 	if(hMagnetChance.FloatValue < GetRandomFloat()) return Plugin_Continue;
 	L4D2Infected class = view_as<L4D2Infected>(GetEntProp(attacker, Prop_Send, "m_zombieClass"));
+	// Check for any existing victims
 	int existingTarget = GetClientOfUserId(g_iAttackerTarget[attacker]);
 	if(existingTarget > 0 && IsPlayerAlive(existingTarget)) {
 		if(gInstaSpecialMagnet[existingTarget] > 0) {
@@ -136,20 +142,23 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 		}
 	}
 
+	// If no existing target, find closest valid victim
 	float closestDistance, survPos[3], spPos[3];
 	GetClientAbsOrigin(attacker, spPos); 
 	int closestClient = -1;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 			//Ignore incapped players if turned on:
-			if(IsPlayerIncapped(i)) {
-				if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2) || (class !=  L4D2Infected_Tank && hMagnetTargetMode.IntValue & 1)) continue;
-			}
+			
 			
 			if(class == L4D2Infected_Tank && Trolls[tankMagnetID].IsActive(i) || (class != L4D2Infected_Tank && Trolls[spMagnetID].IsActive(i))) {
 				if(class == L4D2Infected_Tank) {
 					if(!WillMagnetRun(Trolls[tankMagnetID], i)) return Plugin_Continue;
 				} else if(!WillMagnetRun(Trolls[spMagnetID], i)) return Plugin_Continue;
+
+				if(IsPlayerIncapped(i)) {
+					if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2) || (class !=  L4D2Infected_Tank && hMagnetTargetMode.IntValue & 1)) continue;
+				}
 
 				GetClientAbsOrigin(i, survPos);
 				float dist = GetVectorDistance(survPos, spPos, true);
@@ -160,7 +169,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 			}
 		}
 	}
-	
+	// If found, set, else just let game decide
 	if(closestClient > 0) {
 		g_iAttackerTarget[attacker] = GetClientUserId(closestClient);
 		curTarget = closestClient;
@@ -179,20 +188,24 @@ bool WillMagnetRun(const Troll troll, int i) {
 		cChance = 0.1;
 	return GetRandomFloat() <= cChance;
 }
+
 public Action L4D2_OnEntityShoved(int client, int entity, int weapon, float vecDir[3], bool bIsHighPounce) {
 	if(client > 0 && client <= MaxClients && IsTrollActive(client, "No Shove") && hShoveFailChance.FloatValue > GetRandomFloat()) {
 		return Plugin_Handled;
 	}
 	return Plugin_Continue;
 }
+
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
-	if(sArgs[0] == '@') return Plugin_Continue;
+	if(sArgs[0] == '@') return Plugin_Continue; //Ignore admin chat
+
 	static int honkID;
 	static int profanityID;
 	if(honkID == 0) honkID = GetTrollID("Honk / Meow");
 	if(profanityID == 0) profanityID = GetTrollID("No Profanity");
 
 	if(Trolls[honkID].IsActive(client) && Trolls[honkID].activeFlagClients[client] & 1) {
+		// Honk Processing
 		static char strings[32][7];
 		int words = ExplodeString(sArgs, " ", strings, sizeof(strings), 5);
 		for(int i = 0; i < words; i++) {
@@ -308,8 +321,8 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		CPrintToChatAll("{blue}%N {default}:  %s", client, newMessage);
 		return Plugin_Handled;
 	}else if(Trolls[profanityID].IsActive(client)) {
-		static char strings[32][MAX_PHRASE_LENGTH];
-		ArrayList phrases;
+		char strings[32][MAX_PHRASE_LENGTH];
+		static ArrayList phrases;
 		bool foundWord = false;
 		int words = ExplodeString(sArgs, " ", strings, 32, MAX_PHRASE_LENGTH);
 		// Replace all swear words
@@ -324,14 +337,17 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		char[] message = new char[length];
 
 		if(foundWord) {
+			// Found at least one word, keep modified intact
 			ImplodeStrings(strings, 32, " ", message, length);
-		} else if(Trolls[profanityID].activeFlagClients[client] & 2) { //Replace full messages if flag enabled
+		} else if(Trolls[profanityID].activeFlagClients[client] & 2) { 
+			// Replace full message content if flag enabled
 			if(!fullMessagePhraseList) {
 				PrintToServer("[FTT] Error: Could not find full message phrases!!!");
 				return Plugin_Continue;
 			}
 			fullMessagePhraseList.GetString(GetRandomInt(0, fullMessagePhraseList.Length - 1), message, MAX_PHRASE_LENGTH);
 		} else {
+			// Flag off, keep original text
 			return Plugin_Continue;
 		}
 
@@ -351,6 +367,8 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	}
 	return Plugin_Continue;
 }
+static char SMG[8] = "smg";
+static char AWP[16] = "sniper_awp";
 
 public Action Event_ItemPickup(int client, int weapon) {
 	if(IsTrollActive(client, "No Pickup")) {
@@ -358,38 +376,45 @@ public Action Event_ItemPickup(int client, int weapon) {
 	}else{
 		static char wpnName[64];
 		GetEdictClassname(weapon, wpnName, sizeof(wpnName));
-		if(StrContains(wpnName, "rifle") > -1 
-			|| StrContains(wpnName, "smg") > -1 
-			|| StrContains(wpnName, "weapon_grenade_launcher") > -1 
-			|| StrContains(wpnName, "sniper") > -1
+		if(strcmp(wpnName[7], "rifle") >= 0
+			|| strcmp(wpnName[7], "smg") >= 0 
+			|| StrEqual(wpnName[7], "grenade_launcher")
+			|| strcmp(wpnName[7], "sniper") > -1
 			|| StrContains(wpnName, "shotgun") > -1
 		) {
+			static int UziRulesIndex;
+			if(UziRulesIndex == 0) UziRulesIndex = GetTrollID("UziRules / AwpSmells");
 			//If 4: Only UZI, if 5: Can't switch.
-			if(IsTrollActive(client, "UziRules")) {
+			if(Trolls[UziRulesIndex].IsActive(client)) {
+				static char comp[16]; 
+				if(Trolls[UziRulesIndex].activeFlagClients[client] & 1)
+					strcopy(comp, sizeof(comp), SMG);
+				else
+					strcopy(comp, sizeof(comp), AWP);
 				static char currentWpn[32];
 				GetClientWeaponName(client, 0, currentWpn, sizeof(currentWpn));
-				if(StrEqual(wpnName, "weapon_smg", true)) {
+				if(StrEqual(wpnName[7], comp)) {
 					return Plugin_Continue;
-				} else if(StrEqual(currentWpn, "weapon_smg", true)) {
+				} else if(StrEqual(currentWpn[7], comp)) {
 					return Plugin_Stop;
-				}else{
+				} else {
 					int flags = GetCommandFlags("give");
 					SetCommandFlags("give", flags & ~FCVAR_CHEAT);
-					FakeClientCommand(client, "give smg");
+					FakeClientCommand(client, "give %s", comp);
 					SetCommandFlags("give", flags);
 					return Plugin_Stop;
 				}
-			}else if(IsTrollActive(client, "Primary Disable")) {
+			} else if(IsTrollActive(client, "Primary Disable")) {
 				return Plugin_Stop;
 			}
-			return Plugin_Continue;
-		}else{
-			return Plugin_Continue;
 		}
+
+		return Plugin_Continue;
 	}
 }
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
+	// If 'KillMeSoftly' activated:
 	if(g_bPendingItemGive[client] && !(buttons & IN_ATTACK2)) {
 		int target = GetClientAimTarget(client, true);
 		if(target > -1) {
@@ -399,6 +424,24 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		}
 		return Plugin_Continue;
 	}
+
+	if (shootAtTarget[client] > 0 && (buttons & IN_ATTACK) == 0)  {
+		// If so, block their crouching (+duck)
+		if(GetClientAimTarget(client, true) == shootAtTarget[client]) {
+			if(!IsActorBusy(client))
+				PerformScene(client, "PlayerLaugh");
+			buttons |= IN_ATTACK;
+			return Plugin_Changed;
+		} else {
+			if(!IsClientConnected(shootAtTarget[client])) {
+				shootAtTarget[client] = 0;
+			} else {
+				LookAtClient(client, shootAtTarget[client]);
+			}
+		}
+    }
+
+	// Inverted control code:
 	static int invertedTrollIndex;
 	if(invertedTrollIndex == 0) invertedTrollIndex = GetTrollID("Inverted Controls");
  	if(Trolls[invertedTrollIndex].IsActive(client)) {
@@ -432,7 +475,9 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 	//Stop FF from marked:
 	static int reverseFF;
 	if(reverseFF == 0) reverseFF = GetTrollID("Reverse FF");
-	if(attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
+	if(GetClientTeam(attacker) == 4 && IsFakeClient(attacker)) return Plugin_Stop;
+	if(attacker > 0 && victim <= MaxClients && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
+		if(shootAtTarget[attacker] == victim) return Plugin_Continue;
 		if(g_PendingBanTroll[attacker] > 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
 			return Plugin_Stop;
 		}
@@ -455,15 +500,33 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 			damage = 0.0;
 			return Plugin_Changed;
 		}
+
+		if(damagetype & DMG_BURN || damagetype & DMG_BLAST) return Plugin_Continue;
+		if(hBotReverseFFDefend.IntValue > 0 && IsFakeClient(attacker) && shootAtTarget[attacker] == 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) return Plugin_Stop;
+		if(attacker != victim && hBotReverseFFDefend.IntValue > 0 && hBotReverseFFDefend.IntValue == 2 || GetUserAdmin(attacker) == INVALID_ADMIN_ID) {
+			if(IsFakeClient(victim) && !IsFakeClient(attacker) && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
+
+				if(shootAtTarget[victim] == attacker) {
+					shootAtTargetHP[attacker] -= RoundFloat(damage);
+					shootAtTargetLoops[victim] += 4;
+					return Plugin_Continue;
+				} else if(shootAtTarget[victim] > 0) {
+					// Don't switch, wait for timer to stop
+					return Plugin_Continue;
+				}
+				SetBotTarget(attacker, victim, GetClientRealHealth(attacker) - RoundFloat(damage));
+			}
+		}
 	}
 	return Plugin_Continue;
 }
 
 public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
 	static int honkID;
-	if(honkID == 0) honkID = GetTrollID("Honk / Meow");
 	static int vocalGagID;
+	if(honkID == 0) honkID = GetTrollID("Honk / Meow");
 	if(vocalGagID == 0) vocalGagID = GetTrollID("Vocalize Gag");
+	
 	if(lastButtonUser > -1 && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
 		PrintToConsoleAll("CRESCENDO STARTED BY %N", lastButtonUser);
 		#if defined DEBUG
@@ -500,10 +563,14 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 }
 
 public Action Event_WitchVictimSet(Event event, const char[] name, bool dontBroadcast) {
+	static int witchTrollID;
+	if(witchTrollID == 0) witchTrollID = GetTrollID("Witch Magnet");
+
 	int witch = event.GetInt("witchid");
 	float closestDistance, survPos[3], witchPos[3];
 	GetEntPropVector(witch, Prop_Send, "m_vecOrigin", witchPos); 
 	int closestClient = -1;
+
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 			//Ignore incapped players if hWitchIgnoreIncapp turned on:
@@ -511,7 +578,7 @@ public Action Event_WitchVictimSet(Event event, const char[] name, bool dontBroa
 				continue;
 			}
 			
-			if(IsTrollActive(i, "Witch Magnet")) {
+			if(Trolls[witchTrollID].IsActive(i)) {
 				GetClientAbsOrigin(i, survPos);
 				float dist = GetVectorDistance(survPos, witchPos, true);
 				if(closestClient == -1 || dist < closestDistance) {
@@ -538,6 +605,7 @@ public void OnEntityCreated(int entity, const char[] classname) {
 		RequestFrame(EntityCreateCallback, entity);
 	}
 }
+
 void EntityCreateCallback(int entity) {
 	if(!HasEntProp(entity, Prop_Send, "m_hOwnerEntity") || !IsValidEntity(entity)) return;
 	static char class[16];
@@ -584,7 +652,6 @@ void EntityCreateCallback(int entity) {
 	}
 }
 
-//Dull Melee
 public Action L4D2_MeleeGetDamageForVictim(int client, int weapon, int victim, float &damage) {
 	static int dullMeleeID;
 	if(!dullMeleeID) dullMeleeID = GetTrollID("Dull Melee");

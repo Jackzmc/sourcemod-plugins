@@ -108,3 +108,32 @@ public Action Timer_InstaFailed(Handle h) {
 		gInstaSpecialTarget = 0;
 	}
 }
+
+public Action Timer_ShootReverse(Handle h, DataPack pack) {
+	pack.Reset();
+	int attacker = pack.ReadCell();
+	int target = pack.ReadCell();
+	int weapon = pack.ReadCell();
+	int ammo = pack.ReadCell();
+	
+
+	if(!IsClientConnected(target) || !IsClientConnected(attacker) || attacker > MaxClients || target > MaxClients) return Plugin_Stop;
+	static float targetPos[3], botAngles[3], botPosition[3];
+	GetClientAbsOrigin(attacker, targetPos);
+	GetClientAbsAngles(attacker, botAngles);
+	GetClientAbsOrigin(attacker, botPosition);
+
+	botAngles[1] = RadToDeg(ArcTangent2( botPosition[1] - targetPos[1], botPosition[0] - targetPos[0])) + 180.0;
+	TeleportEntity(attacker, NULL_VECTOR, botAngles, NULL_VECTOR);	
+	shootAtTargetLoops[attacker]--;
+	if(IsValidEntity(weapon))
+		SetEntProp(weapon, Prop_Send, "m_iClip1", ammo);
+	if(shootAtTargetLoops[attacker] > 0 && GetClientRealHealth(target) > shootAtTargetHP[target]) {
+		return Plugin_Continue;
+	} else {
+		shootAtTargetLoops[attacker] = 0;
+		shootAtTarget[attacker] = 0;
+		shootAtTargetHP[target] = 0;
+		return Plugin_Stop;
+	}
+}

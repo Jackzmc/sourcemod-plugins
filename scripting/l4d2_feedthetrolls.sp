@@ -13,6 +13,7 @@
 #include <left4dhooks>
 #include <sceneprocessor>
 #include <l4d2_behavior>
+#include <basecomm>
 #include <ftt>
 #include <multicolors>
 #include <activitymonitor>
@@ -66,6 +67,13 @@ public void OnPluginStart() {
 	hMagnetTargetMode   = CreateConVar("sm_ftt_magnet_targetting", "6", "How does the specials target players. Add bits together\n0=Incapped are ignored, 1=Specials targets incapped, 2=Tank targets incapped 4=Witch targets incapped");
 	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.65", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
 	hBadThrowHitSelf    = CreateConVar("sm_ftt_badthrow_fail_chance", "1", "The % chance that on a throw, they will instead hit themselves. 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
+	hBotReverseFFDefend = CreateConVar("sm_ftt_bot_defend", "1", "Should bots defend themselves?\n0 = OFF\n1 = Will retaliate against non-admins\n2 = Anyone", FCVAR_NONE, true, 0.0, true, 2.0);
+
+	hSbFriendlyFire = FindConVar("sb_friendlyfire");
+	if(hBotReverseFFDefend.IntValue > 0) hSbFriendlyFire.BoolValue = true;
+
+
+	hBotReverseFFDefend.AddChangeHook(Change_BotDefend);
 
 	RegAdminCmd("sm_ftl",  Command_ListTheTrolls, ADMFLAG_KICK, "Lists all the trolls currently ingame.");
 	RegAdminCmd("sm_ftm",  Command_ListModes,     ADMFLAG_KICK, "Lists all the troll modes and their description");
@@ -80,7 +88,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_insta", Command_InstaSpecial, ADMFLAG_KICK, "Spawns a special that targets them, close to them.");
 	RegAdminCmd("sm_instaface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
 	RegAdminCmd("sm_inface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
-	RegAdminCmd("sm_noob", Command_MarkNoob, ADMFLAG_KICK, "Marks a player as a noob. stored in a database");
+	RegAdminCmd("sm_bots_attack", Command_BotsAttack, ADMFLAG_CHEATS, "Instructs all bots to attack a player until they have X health.");
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
@@ -93,7 +101,10 @@ public void OnPluginStart() {
 
 	AutoExecConfig(true, "l4d2_feedthetrolls");
 
-	
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i))
+			SDKHook(i, SDKHook_OnTakeDamage, Event_TakeDamage);
+	}
 }
 ///////////////////////////////////////////////////////////////////////////////
 // CVAR CHANGES
@@ -105,6 +116,10 @@ public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const cha
 		delete hThrowTimer;
 		hThrowTimer = CreateTimer(convar.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
+}
+
+public void Change_BotDefend(ConVar convar, const char[] oldValue, const char[] newValue) {
+	hSbFriendlyFire.IntValue = convar.IntValue != 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

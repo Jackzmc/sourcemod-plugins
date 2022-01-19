@@ -57,7 +57,7 @@ public Action Command_AddNoteDisconnected(int client, int args) {
 	}
 	Menu menu = new Menu(Menu_Disconnected);
 	menu.SetTitle("Add Note For Disconnected");
-	for(int i = lastPlayers.Length + 1; i >= 0; i--) {
+	for(int i = lastPlayers.Length - 1; i >= 0; i--) {
 		PlayerData data;
 		lastPlayers.GetArray(i, data, sizeof(data));
 		menu.AddItem(data.id, data.name);
@@ -76,7 +76,7 @@ public int Menu_Disconnected(Menu menu, MenuAction action, int client, int item)
 }
 
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
-	if(WaitingForNotePlayer == client) {
+	if(client > 0 && WaitingForNotePlayer == client) {
 		WaitingForNotePlayer = 0;
 		static char buffer[32];
 		GetClientAuthId(client, AuthId_Steam2, buffer, sizeof(buffer));
@@ -181,7 +181,7 @@ bool ConnectDB() {
 }
 
 public Action Event_FirstSpawn(Event event, const char[] name, bool dontBroadcast) {
-	int client = GetClientUserId(event.GetInt("userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && client <= MaxClients && !IsFakeClient(client)) {
 		static char auth[32];
 		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
@@ -223,9 +223,9 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
     }
 	//initialize variables
 	int client = GetClientOfUserId(data); 
-	if(client && results.RowCount > 0) {
+	if(client > 0 && results.RowCount > 0) {
 		static char noteCreator[32];
-		PrintChatToAdmins("Notes for %s", client);
+		PrintChatToAdmins("Notes for %N", client);
 		while(results.FetchRow()) {
 			results.FetchString(0, reason, sizeof(reason));
 			results.FetchString(1, noteCreator, sizeof(noteCreator));
