@@ -157,21 +157,18 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	int closestClient = -1;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-			if(class == L4D2Infected_Tank && Trolls[tankMagnetID].IsActive(i) || (class != L4D2Infected_Tank && Trolls[spMagnetID].IsActive(i))) {
-				if(class == L4D2Infected_Tank) {
-					if(!WillMagnetRun(Trolls[tankMagnetID], i)) continue;
-				} else if(!WillMagnetRun(Trolls[spMagnetID], i)) continue;
+			if(class == L4D2Infected_Tank && Trolls[tankMagnetID].IsActive(i) && !WillMagnetRun(Trolls[tankMagnetID], i)) continue;
+			else if(class != L4D2Infected_Tank && Trolls[spMagnetID].IsActive(i) && !WillMagnetRun(Trolls[spMagnetID], i)) continue;
 
-				if(IsPlayerIncapped(i)) {
-					if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2 == 0) || (class !=  L4D2Infected_Tank && hMagnetTargetMode.IntValue & 1 == 0)) continue;
-				}
+			if(IsPlayerIncapped(i)) {
+				if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2 == 0) || (class !=  L4D2Infected_Tank && hMagnetTargetMode.IntValue & 1 == 0)) continue;
+			}
 
-				GetClientAbsOrigin(i, survPos);
-				float dist = GetVectorDistance(survPos, spPos, true);
-				if(closestClient == -1 || dist < closestDistance) {
-					closestDistance = dist;
-					closestClient = i;
-				}
+			GetClientAbsOrigin(i, survPos);
+			float dist = GetVectorDistance(survPos, spPos, true);
+			if(closestClient == -1 || dist < closestDistance) {
+				closestDistance = dist;
+				closestClient = i;
 			}
 		}
 	}
