@@ -74,15 +74,24 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 }
 public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(client > 0 && g_iAttackerTarget[client] > 0) {
-		int target = GetClientOfUserId(g_iAttackerTarget[client]);
-		gInstaSpecialMagnet[target]--;
-		if(gInstaSpecialMagnet[target] == 0) {
-			PrintToServer("[FTT] gInstaSpecialMagnet dropped below 0");
-			gInstaSpecialMagnet[target] = 0;
+	if(client > 0) {
+		if(g_iAttackerTarget[client] > 0) {
+			int target = GetClientOfUserId(g_iAttackerTarget[client]);
+			gInstaSpecialMagnet[target]--;
+			if(gInstaSpecialMagnet[target] == 0) {
+				PrintToServer("[FTT] gInstaSpecialMagnet dropped below 0");
+				gInstaSpecialMagnet[target] = 0;
+			}
+			g_iAttackerTarget[client] = 0;
+		} else {
+			for(int i = 1; i <= MaxClients; i++) { 
+				if(g_iAttackerTarget[i] == client) {
+					g_iAttackerTarget[i] = 0;
+					break;
+				}
+			}
 		}
 	}
-	g_iAttackerTarget[client] = 0;
 }
 public Action Event_WeaponReload(int weapon) {
 	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwner");
@@ -136,7 +145,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 		} else if(class == L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 2) && WillMagnetRun(Trolls[tankMagnetID], existingTarget)) {
 			curTarget = existingTarget;
 			return Plugin_Changed;
-		}else if((!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 1) && WillMagnetRun(Trolls[spMagnetID], existingTarget)) {
+		}else if(class != L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 1) && WillMagnetRun(Trolls[spMagnetID], existingTarget)) {
 			curTarget = existingTarget;
 			return Plugin_Changed;
 		}
@@ -148,16 +157,13 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	int closestClient = -1;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-			//Ignore incapped players if turned on:
-			
-			
 			if(class == L4D2Infected_Tank && Trolls[tankMagnetID].IsActive(i) || (class != L4D2Infected_Tank && Trolls[spMagnetID].IsActive(i))) {
 				if(class == L4D2Infected_Tank) {
-					if(!WillMagnetRun(Trolls[tankMagnetID], i)) return Plugin_Continue;
-				} else if(!WillMagnetRun(Trolls[spMagnetID], i)) return Plugin_Continue;
+					if(!WillMagnetRun(Trolls[tankMagnetID], i)) continue;
+				} else if(!WillMagnetRun(Trolls[spMagnetID], i)) continue;
 
 				if(IsPlayerIncapped(i)) {
-					if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2) || (class !=  L4D2Infected_Tank && hMagnetTargetMode.IntValue & 1)) continue;
+					if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2 == 0) || (class !=  L4D2Infected_Tank && hMagnetTargetMode.IntValue & 1 == 0)) continue;
 				}
 
 				GetClientAbsOrigin(i, survPos);
@@ -173,6 +179,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	if(closestClient > 0) {
 		g_iAttackerTarget[attacker] = GetClientUserId(closestClient);
 		curTarget = closestClient;
+		PrintToConsoleAll("[FTT] New target for %d: %N", attacker, curTarget);
 		return Plugin_Changed;
 	}
 	return Plugin_Continue;
@@ -475,7 +482,7 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 	//Stop FF from marked:
 	static int reverseFF;
 	if(reverseFF == 0) reverseFF = GetTrollID("Reverse FF");
-	if(GetClientTeam(attacker) == 4 && IsFakeClient(attacker)) return Plugin_Stop;
+	if(attacker > 0 && attacker <= MaxClients && GetClientTeam(attacker) == 4 && IsFakeClient(attacker)) return Plugin_Stop;
 	if(attacker > 0 && victim <= MaxClients && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
 		if(shootAtTarget[attacker] == victim) return Plugin_Continue;
 		if(g_PendingBanTroll[attacker] > 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {

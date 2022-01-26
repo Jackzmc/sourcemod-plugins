@@ -51,9 +51,9 @@ public void OnPluginStart() {
 	hSuicideAction = CreateConVar("l4d2_suicide_action", "3", "How should a suicider be punished?\n0 = No action (No message), 1 = Kick, 2 = Instant Ban, 3 = Ban on disconnect", FCVAR_NONE, true, 0.0, true, 3.0);
 	hSuicideLimit = CreateConVar("l4d2_suicide_limit", "1", "How many attempts does a new joined player have until action is taken for suiciding?", FCVAR_NONE, true, 0.0);
 	// Reverse FF Auto Scale
-	hFFAutoScaleAmount = CreateConVar("l4d2_tk_auto_ff_rate", "0.01", "The rate at which auto reverse-ff is scaled by.", FCVAR_NONE, true, 0.0);
+	hFFAutoScaleAmount = CreateConVar("l4d2_tk_auto_ff_rate", "0.02", "The rate at which auto reverse-ff is scaled by.", FCVAR_NONE, true, 0.0);
 	hFFAutoScaleMaxRatio = CreateConVar("l4d2_tk_auto_ff_max_ratio", "5.0", "The maximum amount that the reverse ff can go. 0.0 for unlimited", FCVAR_NONE, true, 0.0);
-	hFFAutoScaleForgivenessAmount = CreateConVar("l4d2_tk_auto_ff_forgive_rate", "0.02", "This amount times amount of minutes since last ff is removed from ff rate", FCVAR_NONE, true, 0.0);
+	hFFAutoScaleForgivenessAmount = CreateConVar("l4d2_tk_auto_ff_forgive_rate", "0.03", "This amount times amount of minutes since last ff is removed from ff rate", FCVAR_NONE, true, 0.0);
 	hFFAutoScaleIgnoreAdmins = CreateConVar("l4d2_tk_auto_ff_ignore_admins", "1", "Should automatic reverse ff ignore admins? 0 = Admins are subjected\n1 = Admins are excempt", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	AutoExecConfig(true, "l4d2_tkstopper");
@@ -186,7 +186,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
 	if(damage > 0.0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0 && attacker != victim) {
 		if(GetClientTeam(victim) != GetClientTeam(attacker) || attacker == victim) return Plugin_Continue;
-		else if(damagetype & DMG_BURN && IsFakeClient(attacker)) {
+		else if(damagetype & DMG_BURN && IsFakeClient(attacker) && GetClientTeam(attacker) == 2) {
 			// Ignore damage from fire caused by bots (players who left after causing fire)
 			damage = 0.0;
 			return Plugin_Changed;

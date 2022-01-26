@@ -67,17 +67,15 @@ public Action Cmd_VGag(int client, int args) {
 				client,
 				target_list,
 				MAXPLAYERS,
-				COMMAND_FILTER_ALIVE, /* Only allow alive players */
+				COMMAND_FILTER_ALIVE,
 				target_name,
 				sizeof(target_name),
 				tn_is_ml)) <= 0)
 		{
-			/* This function replies to the admin with a failure message */
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		for (int i = 0; i < target_count; i++)
-		{
+		for (int i = 0; i < target_count; i++) {
             int playerIndex = gaggedPlayers[client].FindValue(target_list[i]);
             if(playerIndex > -1) {
                 gaggedPlayers[client].Erase(playerIndex);
