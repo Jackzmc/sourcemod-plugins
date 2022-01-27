@@ -154,7 +154,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
             KickClient(client, "Could not authenticate at this time.");
             LogMessage("Could not connect to database to authorize user '%N' (#%d)", client, user);
         }
-    }else{
+    } else {
         //No failure, check the data.
         if(results.RowCount > 0 && client) {
             results.FetchRow();
@@ -164,23 +164,22 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
             bool expired = results.FetchInt(2) == 1;
             if(results.IsFieldNull(2)) {
                 DeleteBan(steamid);
-            }else{
+            } else {
                 results.FetchString(0, reason, sizeof(reason), reasonResult);
                 if(!expired) {
                     if(hKickType.IntValue > 0) {
                         if(reasonResult == DBVal_Data)
-                            KickClient(client, "You have been banned: %s", reason);
+                            KickClient(client, "You have been banned:\n%s", reason);
                         else
                             KickClient(client, "You have been banned from this server.");
+                        static char query[128];
+                        g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);
+                        g_db.Query(DB_OnBanQuery, query);
                     } else {
                         PrintChatToAdmins("%N was banned from this server for: \"%s\"", client, reason);
-                        return;
                     }
-                    static char query[128];
-                    g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);
-                    g_db.Query(DB_OnBanQuery, query);
-                }else{
-                    PrintChatToAdmins("%N has a previously expired ban of reason \"%s\"", client, reason);
+                } else {
+                    PrintChatToAdmins("%N was previously banned for \"%s\"", client, reason);
                 }
             }
         }
