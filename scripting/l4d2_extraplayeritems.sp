@@ -37,6 +37,7 @@
 #include <left4dhooks>
 #include <l4d_info_editor>
 #include <jutils>
+#include <l4d2_weapon_stocks>
 
 #define L4D2_WEPUPGFLAG_NONE            (0 << 0)
 #define L4D2_WEPUPGFLAG_INCENDIARY      (1 << 0)
@@ -47,6 +48,10 @@
 #define AMMOPACK_USERS 1
 
 #define TANK_CLASS_ID 8
+
+// configurable:
+#define PLAYER_DROP_TIMEOUT_SECONDS 120000.0
+
 
 /* 5+ Tank Improvement 
 Every X amount of L4D2_OnChooseVictim() calls,
@@ -71,22 +76,59 @@ public Plugin myinfo =
 	url = ""
 };
 
-static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime;
+static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance;
 static int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
+static int currentChapter;
 static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound;
 static ArrayList ammoPacks;
 static Handle updateHudTimer;
 static char gamemode[32];
 
+static bool allowTankSplit = true;
+
+enum State {
+	State_Empty,
+	State_PendingEmpty,
+	State_Active
+}
+
 enum struct PlayerData {
 	bool itemGiven; //Is player being given an item (such that the next pickup event is ignored)
 	bool isUnderAttack; //Is the player under attack (by any special)
-	bool active;
+	State state;
+}
+
+enum struct PlayerInventory {
+	int timestamp;
+	bool isAlive;
+
+	WeaponId itemID[6]; //int -> char?
+	bool lasers;
+	char meleeID[32];
+
+	int primaryHealth;
+	int tempHealth;
+
+	char model[64];
+	int survivorType;
 }
 
 PlayerData playerData[MAXPLAYERS+1];
 
+/*
+TODO:
+1. Save player inventory on:
+	a. Disconnect (saferoom disconnect too)
+	b. Periodically?
+2. On new map join (OnClientPutInServer¿) check following item matches:
+	a. primary weapon
+	b. secondary weapon (excl melee)
+If a || b != saved items, then their character was dropped/swapped
+Restore from saved inventory
+*/
+
 static StringMap weaponMaxClipSizes;
+static StringMap pInv;
 
 static char HUD_SCRIPT[] = "ExtraPlayerHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG } } }; HUDSetLayout( ExtraPlayerHUD ); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.78, 0.3, 0.3 ); g_ModeScript";
 
@@ -111,6 +153,7 @@ public void OnPluginStart() {
 	}
 
 	weaponMaxClipSizes = new StringMap();
+	pInv = new StringMap();
 	ammoPacks = new ArrayList(2); //<int entityID, ArrayList clients>
 	
 	HookEvent("player_spawn", 		Event_PlayerSpawn);
@@ -122,11 +165,12 @@ public void OnPluginStart() {
 	HookEvent("round_end", 			Event_RoundEnd);
 	HookEvent("map_transition", 	Event_MapTransition);
 	HookEvent("game_start", 		Event_GameStart);
+	HookEvent("game_end", 			Event_GameStart);
 	HookEvent("round_freeze_end",   Event_RoundFreezeEnd);
 	HookEvent("tank_spawn", 		Event_TankSpawn);
 
 	//Special Event Tracking
-	HookEvent("player_disconnect", Event_PlayerDisconnect);
+	HookEvent("player_team", Event_PlayerTeam);
 
 	HookEvent("charger_carry_start", Event_ChargerCarry);
 	HookEvent("charger_carry_end", Event_ChargerCarry);
@@ -150,8 +194,9 @@ public void OnPluginStart() {
 	hSaferoomDoorWaitSeconds = CreateConVar("l4d2_extraitems_doorunlock_wait", "55", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
 	hSaferoomDoorAutoOpen 	 = CreateConVar("l4d2_extraitems_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
 	hEPIHudState 			 = CreateConVar("l4d2_extraitems_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 2.0);
-	hExtraFinaleTank 		 = CreateConVar("l4d2_extraitems_extra_finale_tank", "1", "0 = Normal tank spawning, 1 = Two tanks spawn on second stage (half health)", FCVAR_NONE, true, 0.0, true, 1.0);
-	cvDropDisconnectTime     = CreateConVar("l4d2_extraitems_disconnect_time", "120", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
+	hExtraFinaleTank 		 = CreateConVar("l4d2_extraitems_extra_tanks", "3", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 3.0);
+	hSplitTankChance 		 = CreateConVar("l4d2_extraitems_splittank_chance", "0.5", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 1.0);
+	cvDropDisconnectTime     = CreateConVar("l4d2_extraitems_disconnect_time", "120.0", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
 
 	hEPIHudState.AddChangeHook(Cvar_HudStateChange);
 	
@@ -196,6 +241,22 @@ public void OnPluginStart() {
 		RegAdminCmd("sm_epi_items", Command_RunExtraItems, ADMFLAG_CHEATS);
 	#endif
 
+	CreateTimer(10.0, Timer_ForceUpdateInventories, _, TIMER_REPEAT);
+}
+
+public Action Timer_ForceUpdateInventories(Handle h) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+			GetPlayerInventory(i);
+		}
+	}
+	return Plugin_Continue;
+}
+
+public void OnClientPutInServer(int client) {
+	if(!IsFakeClient(client) && GetClientTeam(client) == 2 && !StrEqual(gamemode, "hideandseek")) {
+		CreateTimer(0.2, Timer_CheckInventory, client);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -348,7 +409,7 @@ int extraTankHP;
 FinaleStage finaleStage;
 
 public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
-	if(finaleType == FINALE_STARTED && abmExtraCount > 4 && hExtraFinaleTank.BoolValue) {
+	if(finaleType == FINALE_STARTED && abmExtraCount > 4) {
 		finaleStage = Stage_FinaleActive;
 		PrintToConsoleAll("[EPI] Finale started and over threshold");
 	} else if(finaleType == FINALE_TANK) {
@@ -367,45 +428,42 @@ public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) 
 	int user = event.GetInt("userid");
 	int tank = GetClientOfUserId(user);
 	if(tank > 0 && IsFakeClient(tank) && abmExtraCount > 4 && hExtraFinaleTank.BoolValue) { 
-		if(finaleStage == Stage_FinaleTank2) {
+		if(finaleStage == Stage_FinaleTank2 && allowTankSplit && hExtraFinaleTank.IntValue & 2) {
 			PrintToConsoleAll("[EPI] Second tank spawned, setting health.");
 			// Sets health in half, sets finaleStage to health
 			CreateTimer(5.0, Timer_SpawnFinaleTank, user);
 		} else if(finaleStage == Stage_FinaleDuplicatePending) {
 			PrintToConsoleAll("[EPI] Third & final tank spawned");
 			RequestFrame(Frame_SetExtraTankHealth, user);
-		} else if(finaleStage == Stage_Inactive && GetSurvivorsCount() > 6) {
-			PrintToConsoleAll("[EPI] Creating a split tank");
+		} else if(finaleStage == Stage_Inactive && allowTankSplit && hExtraFinaleTank.IntValue & 1 && GetSurvivorsCount() > 6) {
 			finaleStage = Stage_TankSplit;
-			// Half their HP, assign half to self and for next tank
-			int hp = GetEntProp(tank, Prop_Send, "m_iHealth") / 2;
-			SetEntProp(tank, Prop_Send, "m_iHealth", hp);
-			extraTankHP = hp;
-			CreateTimer(11.0, Timer_SplitTank, user);
+			if(GetRandomFloat() <= hSplitTankChance.FloatValue) {
+				// Half their HP, assign half to self and for next tank
+				int hp = GetEntProp(tank, Prop_Send, "m_iHealth") / 2;
+				PrintToConsoleAll("[EPI] Creating a split tank (hp=%d)", hp);
+				extraTankHP = hp;
+				CreateTimer(0.2, Timer_SetHealth, user);
+				CreateTimer(11.0, Timer_SpawnSplitTank, user);
+			}
 			// Then, summon the next tank
 		} else if(finaleStage == Stage_TankSplit) {
-
+			CreateTimer(0.2, Timer_SetHealth, user);
 		}
 	}
 }
 public Action Timer_SpawnFinaleTank(Handle t, int user) {
-	if(finaleStage == Stage_TankSplit) {
+	if(finaleStage == Stage_FinaleTank2) {
 		ServerCommand("sm_forcespecial tank");
 		finaleStage = Stage_Inactive;
 	}
 }
-public Action Timer_SplitTank(Handle t, int user) {
-	int tank = GetClientOfUserId(user);
-	if(tank > 0 && finaleStage == Stage_Inactive) {
-		finaleStage = Stage_TankSplit;
-		// Half their HP, assign half to self and for next tank
-		int hp = GetEntProp(tank, Prop_Send, "m_iHealth") / 2;
-		SetEntProp(tank, Prop_Send, "m_iHealth", hp);
-		extraTankHP = hp;
-		// Then, summon the next tank
-		ServerCommand("sm_forcespecial tank");
-	} else {
-		finaleStage = Stage_Inactive;
+public Action Timer_SpawnSplitTank(Handle t, int user) {
+	ServerCommand("sm_forcespecial tank");
+}
+public Action Timer_SetHealth(Handle h, int user) {
+	int client = GetClientOfUserId(user);
+	if(client > 0 ) {
+		SetEntProp(client, Prop_Send, "m_iHealth", extraTankHP);
 	}
 }
 
@@ -437,8 +495,12 @@ public Action Event_GameStart(Event event, const char[] name, bool dontBroadcast
 	extraKitsStarted = 0;
 	abmExtraCount = 4;
 	hMinPlayers.IntValue = 4;
+	currentChapter = 0;
+	pInv.Clear();
+	for(int i = 1; i <= MaxClients; i++) {
+		playerData[i].state = State_Empty;
+	}
 	return Plugin_Continue;
-
 }
 
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) { 
@@ -447,7 +509,7 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 		CreateTimer(1.5, Timer_RemoveInvincibility, client);
 		SDKHook(client, SDKHook_OnTakeDamage, OnInvincibleDamageTaken);
 		if(!IsFakeClient(client)) {
-			playerData[client].active = true;
+			playerData[client].state = State_Active;
 			if(L4D_IsFirstMapInScenario() && !firstGiven) {
 				//Check if all clients are ready, and survivor count is > 4. 
 				if(AreAllClientsReady()) {
@@ -470,11 +532,12 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 				// TODO: Check if Timer_UpdateMinPlayers is needed, or if this works:
 				// Never decrease abmExtraCount
 				int newCount = GetRealSurvivorsCount();
-				if(newCount > abmExtraCount) {
+				if(newCount > abmExtraCount && abmExtraCount > 4) {
 					abmExtraCount = newCount;
+					hMinPlayers.IntValue = abmExtraCount;
 				}
 				// If 5 survivors, then set them up, TP them.
-				if(abmExtraCount > 4) {
+				if(newCount > 4) {
 					RequestFrame(Frame_SetupNewClient, client);
 				}
 			}
@@ -516,27 +579,64 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 
 }
 
-public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
-	int userid = event.GetInt("userid");
-	int client = GetClientOfUserId(userid);
-	if(client > 0 && !IsFakeClient(client)) {
-		DataPack pack = new DataPack();
-		pack.WriteCell(userid);
-		pack.WriteCell(client);
-		CreateDataTimer(cvDropDisconnectTime.FloatValue, Timer_DropSurvivor, pack);
+public Action Timer_CheckInventory(Handle h, int client) {
+	if(IsClientConnected(client) && IsClientInGame(client) && GetClientTeam(client) == 2 && DoesInventoryDiffer(client)) {
+		PrintToConsoleAll("[EPI] Detected mismatch inventory for %N, restoring", client);
+		RestoreInventory(client);
 	}
 }
 
-public Action Timer_DropSurvivor(Handle h, DataPack pack) {
-	int userid = pack.ReadCell();
-	int client = GetClientOfUserId(userid);
-	// Check if player is not connected, if not, drop their existing status
-	if(client == 0) {
-		client = pack.ReadCell();
-		if(client == 0) //In the case that someone took their client index, don't inactivate them:
-			playerData[client].active = false;
+public void OnClientDisconnect(int client) {
+	if(GetClientTeam(client) == 2 && !IsFakeClient(client))
+		SaveInventory(client);
+}
+
+public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast) {
+	if(event.GetBool("disconnect")) {
+		int userid = event.GetInt("userid");
+		int client = GetClientOfUserId(userid);
+		int team = event.GetInt("team");
+		if(client > 0 && !event.GetBool("isbot") && team == 2) {
+			playerData[client].state = State_PendingEmpty;
+			/*DataPack pack;
+			CreateDataTimer(cvDropDisconnectTime.FloatValue, Timer_DropSurvivor, pack);
+			pack.WriteCell(userid);
+			pack.WriteCell(client);*/
+			CreateTimer(cvDropDisconnectTime.FloatValue, Timer_DropSurvivor, client);
+		}
 	}
 }
+
+public Action Timer_DropSurvivor(Handle h, int client) {
+	if(playerData[client].state == State_PendingEmpty) {
+		playerData[client].state = State_Empty;
+		PrintToConsoleAll("[EPI] Dropping survivor %d. hMinPlayers-pre:%d", client, hMinPlayers.IntValue);
+		hMinPlayers.IntValue = --abmExtraCount;
+		if(hMinPlayers.IntValue  < 4) {
+			hMinPlayers.IntValue = 4;
+			PrintToConsoleAll("[EPI!!] hMinPlayers dropped below 4. This is a bug, please report to jackz.");
+			PrintToServer("[EPI!!] hMinPlayers dropped below 4. This is a bug, please report to jackz.");
+		}
+		DropDroppedInventories();
+	}
+}
+
+/*public Action Timer_DropSurvivor(Handle h, DataPack pack) {
+	pack.Reset();
+	int userid = pack.ReadCell();
+	int client = pack.ReadCell();
+	// If the userid occupying client index is diff (or 0)
+	if(GetClientOfUserId(userid) != client) {
+		// If player was not replaced
+		if(!IsClientConnected(client)) {
+			PrintToConsoleAll("Dropping disconnected player after inactivity. UID:%d, index:%d, new MinPlayers: %d", userid, client, hMinPlayers.IntValue-1);
+			//playerData[client].active = false;
+			abmExtraCount--;
+			hMinPlayers.IntValue--;
+		}
+	}
+	DropDroppedInventories();
+}*/
 
 /////////////////////////////////////////
 /////// Events
@@ -560,11 +660,41 @@ public Action L4D_OnIsTeamFull(int team, bool &full) {
 	return Plugin_Continue;
 }
 
+char TIER1_WEAPONS[5][] = {
+	"shotgun_chrome",
+	"pumpshotgun",
+	"smg",
+	"smg_silenced",
+	"smg_mp5"
+};
+
+char TIER2_WEAPONS[9][] = {
+	"autoshotgun",
+	"rifle_ak47",
+	"sniper_military",
+	"rifle_sg552",
+	"rifle_desert",
+	"sniper_scout",
+	"rifle",
+	"hunting_rifle",
+	"shotgun_spas"
+};
+
 public void Frame_SetupNewClient(int client) {
 	if(!DoesClientHaveKit(client)) {
 		int item = GivePlayerItem(client, "weapon_first_aid_kit");
 		EquipPlayerWeapon(client, item);
 	}
+
+	static char weapon[32];
+	if(currentChapter == 1 || (currentChapter == 2 && GetRandomFloat() < 0.3)) {
+		Format(weapon, sizeof(weapon), "weapon_%s", TIER1_WEAPONS[GetRandomInt(0,4)]);
+	} else {
+		Format(weapon, sizeof(weapon), "weapon_%s", TIER2_WEAPONS[GetRandomInt(0,8)]);
+	}
+
+	// Find a suitable weapon to spawn with
+
 
 	// static float spawnPos[3];
 	// if(GetIdealPositionInSurvivorFlow(client, spawnPos))
@@ -618,14 +748,28 @@ public void OnMapStart() {
 	}else if(!L4D_IsFirstMapInScenario()) {
 		//Re-set value incase it reset.
 		//hMinPlayers.IntValue = abmExtraCount;
+		currentChapter++;
 	}else if(L4D_IsMissionFinalMap()) {
 		//Add extra kits for finales
+		static char curMap[64];
+		GetCurrentMap(curMap, sizeof(curMap));
+
+		if(StrEqual(curMap, "c4m5_milltown_escape")) {
+			allowTankSplit = false;
+		} else {
+			allowTankSplit = true;
+		}
+
 		int extraKits = GetSurvivorsCount() - 4;
 		if(extraKits > 0) {
 			extraKitsAmount += extraKits;
 			extraKitsStarted = extraKitsAmount;
 		}
+		currentChapter++;
+	} else {
+		currentChapter++;
 	}
+	
 
 	if(!isLateLoaded) {
 		isLateLoaded = false;
@@ -690,7 +834,7 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 			float averageTeamHP = GetAverageHP();
 			if(averageTeamHP <= 30.0) extraPlayers += (extraPlayers / 2); //if perm. health < 30, give an extra 4 on top of the extra
 			else if(averageTeamHP <= 50.0) extraPlayers = (extraPlayers / 3); //if the team's average health is less than 50 (permament) then give another
-			//Chance to get 1-2 extra kits (might need to be nerfed or restricted to > 50 HP)
+			//Chance to get an extra kit (might need to be nerfed or restricted to > 50 HP)
 			if(GetRandomFloat() < 0.3 && averageTeamHP <= 80.0) ++extraPlayers;
 
 
@@ -701,6 +845,8 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 				extraKitsAmount = extraPlayers;
 				
 			extraKitsStarted = extraKitsAmount;
+
+			hMinPlayers.IntValue = abmExtraCount;
 			PrintToConsoleAll("CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
 			PrintToServer("Player entered saferoom. Providing %d extra kits", extraKitsAmount);
 		}
@@ -917,11 +1063,11 @@ public Action Timer_UpdateHud(Handle h) {
 			}
 			//TOOD: Move to bool instead of ent prop
 			if(!IsPlayerAlive(i)) 
-				Format(data, sizeof(data), "Dead");
+				Format(data, sizeof(data), "xx");
 			else if(GetEntProp(i, Prop_Send, "m_bIsOnThirdStrike") == 1) 
-				Format(data, sizeof(data), "+%d b&&w %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
+				Format(data, sizeof(data), "+%d b&w %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
 			else if(GetEntProp(i, Prop_Send, "m_isIncapacitated") == 1) {
-				Format(data, sizeof(data), "+%d (down)", health);
+				Format(data, sizeof(data), "+%d --", health);
 			}else{
 				Format(data, sizeof(data), "+%d %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
 			}
@@ -994,6 +1140,108 @@ public void PopulateItems() {
 /////////////////////////////////////
 /// Stocks
 ////////////////////////////////////
+// enum struct PlayerData {
+// 	bool itemGiven; //Is player being given an item (such that the next pickup event is ignored)
+// 	bool isUnderAttack; //Is the player under attack (by any special)
+// 	bool active;
+
+// 	WeaponId itemID[6]; //int -> char?
+// 	bool lasers;
+// 	char meleeID[32];
+
+
+// 	int primaryHealth;
+// 	int tempHealth;
+
+// 	char model[32];
+// }
+
+void DropDroppedInventories() {
+	StringMapSnapshot snapshot = pInv.Snapshot();
+	static PlayerInventory inv;
+	static char buffer[32];
+	int time = GetTime();
+	for(int i = 0; i < snapshot.Length; i++) {
+		snapshot.GetKey(i, buffer, sizeof(buffer));
+		pInv.GetArray(buffer, inv, sizeof(inv));
+		if(time - inv.timestamp > PLAYER_DROP_TIMEOUT_SECONDS) {
+			pInv.Remove(buffer);
+		}
+	}
+}
+void SaveInventory(int client) {
+
+	PlayerInventory inventory;
+	inventory.timestamp = GetTime();
+	inventory.isAlive = IsPlayerAlive(client);
+
+	inventory.primaryHealth = GetClientHealth(client);
+	GetClientModel(client, inventory.model, 64);
+	inventory.survivorType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
+
+	int weapon;
+	static char buffer[32];
+	for(int i = 5; i >= 0; i--) {
+		weapon = GetPlayerWeaponSlot(client, i);
+		inventory.itemID[i] = IdentifyWeapon(weapon);
+	}
+	if(inventory.itemID[0] != WEPID_MELEE && inventory.itemID[0] != WEPID_NONE)
+		inventory.lasers = GetEntProp(weapon, Prop_Send, "m_upgradeBitVec") == 4;
+	
+	GetClientAuthId(client, AuthId_Steam3, buffer, sizeof(buffer));
+	pInv.SetArray(buffer, inventory, sizeof(inventory));
+}
+
+void RestoreInventory(int client) {
+	static char buffer[32];
+	GetClientAuthId(client, AuthId_Steam3, buffer, sizeof(buffer));
+	PlayerInventory inventory;
+	pInv.GetArray(buffer, inventory, sizeof(inventory));
+
+	PrintToConsoleAll("[debug:RINV] health=%d primaryID=%d secondID=%d throw=%d kit=%d pill=%d surv=%d", inventory.primaryHealth, inventory.itemID[0], inventory.itemID[1], inventory.itemID[2], inventory.itemID[3], inventory.itemID[4], inventory.itemID[5], inventory.survivorType);
+
+	return;
+	SetEntityModel(client, inventory.model);
+	SetEntProp(client, Prop_Send, "m_survivorCharacter", inventory.survivorType);
+
+	if(inventory.isAlive) {
+		SetEntProp(client, Prop_Send, "m_iHealth", inventory.primaryHealth);
+
+		int weapon;
+		for(int i = 5; i >= 0; i--) {
+			WeaponId id = inventory.itemID[i];
+			if(id != WEPID_NONE) {
+				if(id == WEPID_MELEE)
+					GetWeaponName(id, buffer, sizeof(buffer));
+				else 
+					GetMeleeWeaponName(id, buffer, sizeof(buffer));
+				weapon = GiveClientWeapon(client, buffer);
+			}
+		}
+		if(inventory.lasers) {
+			SetEntProp(weapon, Prop_Send, "m_upgradeBitVec", 4);
+		}
+	}
+
+	GetClientAuthId(client, AuthId_Steam3, buffer, sizeof(buffer));
+	pInv.Remove(buffer);
+}
+
+bool DoesInventoryDiffer(int client) {
+	static char buffer[32];
+	GetClientAuthId(client, AuthId_Steam3, buffer, sizeof(buffer));
+	PlayerInventory inventory;
+	if(!pInv.GetArray(buffer, inventory, sizeof(inventory)) || inventory.timestamp == 0) {
+		return false;
+	}
+
+	WeaponId currentPrimary = IdentifyWeapon(GetPlayerWeaponSlot(client, 0));
+	WeaponId currentSecondary = IdentifyWeapon(GetPlayerWeaponSlot(client, 1));
+	WeaponId storedPrimary = inventory.itemID[0];
+	WeaponId storedSecondary = inventory.itemID[1];
+
+	return currentPrimary != storedPrimary || currentSecondary != storedSecondary;
+}
 
 stock int FindFirstSurvivor() {
 	for(int i = 1; i <= MaxClients; i++) {
@@ -1029,6 +1277,16 @@ stock int GetSurvivorsCount() {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			++count;
+		}
+	}
+	return count;
+}
+
+stock int GetActiveCount() {
+	int count;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && playerData[i].state == State_Active) {
+			count++;
 		}
 	}
 	return count;
@@ -1167,19 +1425,33 @@ int FindCabinetIndex(int cabinetId) {
 }
 
 void GetPlayerInventory(int client) {
-	char item[16];
-	GetClientWeaponName(client, 2, item, sizeof(item));
-	items[client].throwable[0] = CharToUpper(item[7]);
-	items[client].throwable[1] = '\0';
+	static char item[16];
+	if(GetClientWeaponName(client, 2, item, sizeof(item))) {
+		items[client].throwable[0] = CharToUpper(item[7]);
+		if(items[client].throwable[0] == 'V') {
+			items[client].throwable[0] = 'B'; //Replace [V]omitjar with [B]ile
+		}
+		items[client].throwable[1] = '\0';
+	} else {
+		items[client].throwable[0] = '\0';
+	}
 
 	if(GetClientWeaponName(client, 3, item, sizeof(item))) {
 		items[client].usable[0] = CharToUpper(item[7]);
+		items[client].usable[1] = '\0';
+		if(items[client].throwable[0] == 'F') {
+			items[client].throwable[0] = '+'; //Replace [V]omitjar with [B]ile
+		}
+	} else {
+		items[client].usable[0] = '-';
 		items[client].usable[1] = '\0';
 	}
 
 	if(GetClientWeaponName(client, 4, item, sizeof(item))) {
 		items[client].consumable[0] = CharToUpper(item[7]);
 		items[client].consumable[1] = '\0';
+	} else {
+		items[client].consumable[0] = '\0';
 	}
 }
 

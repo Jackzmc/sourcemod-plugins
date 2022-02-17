@@ -17,6 +17,7 @@
 #include <ftt>
 #include <multicolors>
 #include <activitymonitor>
+#include <l4d_anti_rush>
 
 
 public Plugin myinfo = 
@@ -28,8 +29,6 @@ public Plugin myinfo =
 	url = ""
 };
 
-//TODO: Make bots target player. Possibly automatic . See https://i.jackz.me/2021/05/NVIDIA_Share_2021-05-05_19-36-51.png
-//TODO: Friendly trolling VS punishment trolling
 //TODO: Trolls: Force take pills, Survivor Bot Magnet
 
 
@@ -68,11 +67,11 @@ public void OnPluginStart() {
 	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.65", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
 	hBadThrowHitSelf    = CreateConVar("sm_ftt_badthrow_fail_chance", "1", "The % chance that on a throw, they will instead hit themselves. 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
 	hBotReverseFFDefend = CreateConVar("sm_ftt_bot_defend", "1", "Should bots defend themselves?\n0 = OFF\n1 = Will retaliate against non-admins\n2 = Anyone", FCVAR_NONE, true, 0.0, true, 2.0);
+	hBotDefendChance = CreateConVar("sm_ftt_bot_defend_chance", "0.75", "% Chance bots will defend themselves.", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	hSbFriendlyFire = FindConVar("sb_friendlyfire");
+
 	if(hBotReverseFFDefend.IntValue > 0) hSbFriendlyFire.BoolValue = true;
-
-
 	hBotReverseFFDefend.AddChangeHook(Change_BotDefend);
 
 	RegAdminCmd("sm_ftl",  Command_ListTheTrolls, ADMFLAG_KICK, "Lists all the trolls currently ingame.");
@@ -84,7 +83,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_mark", Command_MarkPendingTroll, ADMFLAG_KICK, "Marks a player as to be banned on disconnect");
 	RegAdminCmd("sm_ftp",  Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
 	RegAdminCmd("sm_ftc",  Command_ApplyComboTrolls, ADMFLAG_KICK, "Applies predefined combinations of trolls");
-	RegAdminCmd("sm_witch_attack", Command_WitchAttack,   ADMFLAG_CHEATS, "Makes all witches target a player");
+	RegAdminCmd("sm_witch_attack", Command_WitchAttack, ADMFLAG_CHEATS, "Makes all witches target a player");
 	RegAdminCmd("sm_insta", Command_InstaSpecial, ADMFLAG_KICK, "Spawns a special that targets them, close to them.");
 	RegAdminCmd("sm_instaface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
 	RegAdminCmd("sm_inface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
@@ -118,6 +117,7 @@ public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const cha
 	}
 }
 
+// Turn on bot FF if bot defend enabled
 public void Change_BotDefend(ConVar convar, const char[] oldValue, const char[] newValue) {
 	hSbFriendlyFire.IntValue = convar.IntValue != 0;
 }
@@ -180,7 +180,7 @@ bool IsPlayerFarDistance(int client, float distance) {
 		}
 	}
 	float difference = highestFlow - secondHighestFlow;
-	PrintToConsoleAll("Flow Check | Player=%N Flow=%f Delta=%f", farthestClient, highestFlow, difference);
+	PrintToConsoleAll("Flow Check | Player1=%N Flow1=%f Delta=%f", farthestClient, highestFlow, difference);
 	PrintToConsoleAll("Flow Check | Player2=%N Flow2=%f", secondClient, secondHighestFlow);
 	return client == farthestClient && difference > distance;
 }

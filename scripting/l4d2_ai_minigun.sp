@@ -212,6 +212,7 @@ stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] m
 	TeleportEntity(bot_client_id, vPos, NULL_VECTOR, NULL_VECTOR);
 	
 	SetEntityModel(bot_client_id, model); //set entity model to custom survivor model
+	CreateTimer(6.0, Timer_Move, bot_user_id);
 	return bot_user_id;
 }
 void AvoidCharacter(int type, bool avoid) {

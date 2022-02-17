@@ -55,8 +55,14 @@ public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast)
 		}
 	}
 }
+/*
+Dropped BabybackRibs from server (Disconnect by user.)                                                                  L 02/16/2022 - 10:38:53: [SM] Exception reported: No valid ban method flags specified                                   L 02/16/2022 - 10:38:53: [SM] Blaming: L4D2FFKickProtection.smx                                                         L 02/16/2022 - 10:38:53: [SM] Call stack trace:                                                                         L 02/16/2022 - 10:38:53: [SM]   [0] BanClient                                                                           L 02/16/2022 - 10:38:53: [SM]   [1] Line 78, s:\Jackz\Documents\Sourcepawn\scripting\L4D2FFKickProtection.sp::VoteStart Potential vote being called                                                                                             Client "Andean Brain Surgeon" connected (70.112.126.195:27005).                                                         String Table dictionary for downloadables should be rebuilt, only found 39 of 51 strings in dictionary                  String Table dictionary for soundprecache  */
 
 public Action VoteStart(int client, const char[] command, int argc) {
+	if(!IsClientInGame(client)) {
+		PrintToServer("Preventing vote from user not in game: %N", client);
+		return Plugin_Handled;
+	}
 	if(GetClientCount(true) == 0 || client == 0) return Plugin_Handled; //prevent votes while server is empty or if server tries calling vote
 	if(argc >= 1) {
 		static char issue[32];
@@ -67,7 +73,7 @@ public Action VoteStart(int client, const char[] command, int argc) {
 			static char option[32];
 			GetCmdArg(2, option, sizeof(option));
 
-			if(strlen(option) < 1) { //empty userid/console can't call votes
+			if(strlen(option) > 1) { //empty userid/console can't call votes
 				int target = GetClientOfUserId(StringToInt(option));
 				if(target == 0) return Plugin_Continue; //invalid, pass it through
 				AdminId callerAdmin = GetUserAdmin(client);

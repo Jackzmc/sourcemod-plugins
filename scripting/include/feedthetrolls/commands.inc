@@ -250,6 +250,7 @@ public Action Command_ApplyUser(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
+
 		if(args == 2) {
 			static char key[32];
 			for(int i = 0; i < categories.Length; i++) {
@@ -261,7 +262,10 @@ public Action Command_ApplyUser(int client, int args) {
 				}
 			} 
 			ReplyToCommand(client, "[FTT] Unknown category: '%s'", arg2);
+		} else if(args == 1) {
+			SetupCategoryMenu(client, GetClientUserId(target_list[0]));
 		}
+		
 		SilentMenuSelected[client] = false;
 		SetupCategoryMenu(client, target_list[0]);
 	}
@@ -453,9 +457,8 @@ public Action Command_MarkPendingTroll(int client, int args) {
 		menu.SetTitle("Choose a troll to mark");
 		static char userid[8], display[16];
 		for(int i = 1; i < MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
-				AdminId admin = GetUserAdmin(i);
-				if(admin == INVALID_ADMIN_ID) {
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i)) {
+				if(GetUserAdmin(i) == INVALID_ADMIN_ID) {
 					Format(userid, sizeof(userid), "%d", GetClientUserId(i));
 					GetClientName(i, display, sizeof(display));
 					menu.AddItem(userid, display);
@@ -487,9 +490,9 @@ public Action Command_MarkPendingTroll(int client, int args) {
 			return Plugin_Handled;
 		}
 		int target = target_list[0];
-		if(GetClientTeam(target) == 2) {
+		if (GetClientTeam(target) == 2) {
 			ToggleMarkPlayer(client, target);
-		}else{
+		} else {
 			ReplyToCommand(client, "Player does not exist or is not a survivor.");
 		}
 	}

@@ -62,7 +62,7 @@ public void OnClientAuthorized(int client, const char[] auth) {
     if(!StrEqual(auth, "BOT", true)) {
         static char query[256], ip[32];
         GetClientIP(client, ip, sizeof(ip));
-        Format(query, sizeof(query), "SELECT `reason`, `steamid`, `expired` FROM `bans` WHERE `steamid` LIKE 'STEAM_%:%:%s' OR ip = '?'", auth[10], ip);
+        g_db.Format(query, sizeof(query), "SELECT `reason`, `steamid`, `expired` FROM `bans` WHERE `steamid` LIKE 'STEAM_%%:%%:%s' OR ip = '%s'", auth[10], ip);
         g_db.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
     }
 }
@@ -82,7 +82,7 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
         }else{
             Format(expiresDate, sizeof(expiresDate), "NULL");
         }
-        Format(query, sizeof(query), "INSERT INTO bans"
+        g_db.Format(query, sizeof(query), "INSERT INTO bans"
             ..."(steamid, reason, expires, executor, ip_banned)"
             ..."VALUES ('%s', '%s', %s, '%s', 0)",
             identity,
@@ -100,15 +100,19 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
 
 public Action OnBanClient(int client, int time, int flags, const char[] reason, const char[] kick_message, const char[] command, any source) {
     char executor[32], identity[32], ip[32];
-    if(source > 0 && source <= MaxClients) {
-        GetClientAuthId(source, AuthId_Steam2, executor, sizeof(executor));
+    GetClientAuthId(client, AuthId_Steam2, identity, sizeof(identity));
+
+    DataPack pack;
+    if(source > 0 && source <= MaxClients && IsClientConnected(source) && GetClientAuthId(source, AuthId_Steam2, executor, sizeof(executor))) {
+        pack = new DataPack();
+        pack.WriteString(identity);
+        pack.WriteCell(source);
     }else{
         executor = "CONSOLE";
     }
 
     if(GetUserAdmin(client) != INVALID_ADMIN_ID) return Plugin_Stop; 
 
-    GetClientAuthId(client, AuthId_Steam2, identity, sizeof(identity));
     GetClientIP(client, ip, sizeof(ip));
 
     static char query[255];
@@ -118,7 +122,8 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
     } else {
         Format(expiresDate, sizeof(expiresDate), "NULL");
     }
-    Format(query, sizeof(query), "INSERT INTO bans"
+
+    g_db.Format(query, sizeof(query), "INSERT INTO bans"
         ..."(steamid, ip, reason, expires, executor, ip_banned)"
         ..."VALUES ('%s', '%s', '%s', FROM_UNIXTIME(%s), '%s', 0)",
         identity,
@@ -128,7 +133,7 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
         executor
     );
 
-    g_db.Query(DB_OnBanQuery, query);
+    g_db.Query(DB_OnBanQuery, query, pack);
     return Plugin_Continue;
 }
 
@@ -154,19 +159,19 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
             KickClient(client, "Could not authenticate at this time.");
             LogMessage("Could not connect to database to authorize user '%N' (#%d)", client, user);
         }
-    }else{
+    } else {
         //No failure, check the data.
-        if(results.RowCount > 0 && client) {
-            results.FetchRow();
+        if(client > 0 && results.FetchRow()) { //Is there a ban found?
             static char reason[128], steamid[64];
             DBResult reasonResult;
             results.FetchString(1, steamid, sizeof(steamid));
-            bool expired = results.FetchInt(2) == 1;
-            if(results.IsFieldNull(2)) {
+            bool expired = results.FetchInt(2) == 1; //Check if computed column 'expired' is true
+            if(results.IsFieldNull(2)) { //If expired null, delete i guess. lol
                 DeleteBan(steamid);
-            }else{
+            } else {
                 results.FetchString(0, reason, sizeof(reason), reasonResult);
                 if(!expired) {
+                    LogMessage("%N is banned: %s", client, reason);
                     if(hKickType.IntValue > 0) {
                         if(reasonResult == DBVal_Data)
                             KickClient(client, "You have been banned: %s", reason);
@@ -179,7 +184,9 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
                     static char query[128];
                     g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);
                     g_db.Query(DB_OnBanQuery, query);
-                }else{
+                } else {
+                    LogMessage("%N was previously banned: %s", client, reason);
+                    // User was previously banned
                     PrintChatToAdmins("%N has a previously expired ban of reason \"%s\"", client, reason);
                 }
             }
@@ -197,6 +204,19 @@ void DeleteBan(const char[] steamid) {
 public void DB_OnBanQuery(Database db, DBResultSet results, const char[] error, any data) {
     if(db == INVALID_HANDLE || results == null) {
         LogError("DB_OnBanQuery returned error: %s", error);
+        DataPack pack = data;
+        if(pack != null) {
+            pack.Reset();
+            static char id[32];
+            pack.ReadString(id, sizeof(id));
+            int source = pack.ReadCell();
+
+            if(StrContains(error, "Duplicate entry") > 0) {
+                PrintToChat(source, "Could not ban \"%s\", as they were previously banned. Please edit the ban manually on the website (or yell at jackz).", id);
+            } else {
+                PrintToChat(source, "Could not ban \"%s\" due to an error: %s", id, error);
+            }
+        }
     }
 }
 

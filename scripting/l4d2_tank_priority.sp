@@ -57,7 +57,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 					float dist = GetVectorDistance(clientPos, tankPos);
 					// Only add targets who are far enough away from tank
 					if(dist > 3000.0) {
-						PrintToConsoleAll("Adding player %N to possible victim list. Dist=%f, Dmg=%d", i, dist, totalTankDamage[i]);
+						PrintToConsoleAll("[TankPriority/debug] Adding player %N to possible victim list. Dist=%f Dmg=%d", i, dist, totalTankDamage[i]);
 						int index = clients.Push(i);
 						clients.Set(index, dist, 1);
 					}
@@ -74,8 +74,9 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 		//TODO: Possibly clear totalTankDamage
 		return Plugin_Changed;
 	}
+	
 	if(tankChosenVictim[attacker] > 0) {
-		if(IsClientConnected(tankChosenVictim[attacker]) && IsClientInGame(tankChosenVictim[attacker])) {
+		if(IsClientConnected(tankChosenVictim[attacker]) && IsClientInGame(tankChosenVictim[attacker]) && IsPlayerAlive(tankChosenVictim[attacker]) && !IsPlayerIncapacitated(tankChosenVictim[attacker])) {
 			curTarget = tankChosenVictim[attacker];
 			return Plugin_Changed;
 		} else {

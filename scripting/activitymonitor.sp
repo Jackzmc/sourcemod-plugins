@@ -39,6 +39,8 @@ static EngineVersion g_Game;
 
 //L4d2 Specific
 static char L4D2_ZDifficulty[16];
+//Generic
+static char currentGamemode[32];
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
@@ -58,7 +60,7 @@ public void OnPluginStart() {
 	}
 
 	hLogCvarChanges = CreateConVar("sm_activitymonitor_log_cvar", "0", "Should this plugin log cvar changes (when using sm_cvar from console)");
-	ConVar hServerID = CreateConVar("sm_activitymonitor_id", "", "The name to use for the 'server' column");
+	ConVar hServerID = CreateConVar("sm_activitymonitor_id", "", "The name to use for the 'server' column", FCVAR_DONTRECORD);
 	hServerID.GetString(serverID, sizeof(serverID));
 	hServerID.AddChangeHook(CVAR_ServerIDChanged);
 
@@ -71,15 +73,29 @@ public void OnPluginStart() {
 		zDifficulty.GetString(L4D2_ZDifficulty, sizeof(L4D2_ZDifficulty));
 		CVAR_DifficultyChanged(zDifficulty, "", L4D2_ZDifficulty);
 		zDifficulty.AddChangeHook(CVAR_DifficultyChanged);
+
+		zDifficulty.GetString(L4D2_ZDifficulty, sizeof(L4D2_ZDifficulty));
+		CVAR_DifficultyChanged(zDifficulty, "", L4D2_ZDifficulty);
+		zDifficulty.AddChangeHook(CVAR_DifficultyChanged);
 	}
+
+	ConVar mpGamemode = FindConVar("mp_gamemode");
+	if(mpGamemode != null) {
+		mpGamemode.GetString(currentGamemode, sizeof(currentGamemode));
+		mpGamemode.AddChangeHook(CVAR_GamemodeChanged);
+	}
+
 
 	if(!lateLoaded) {
 		AddLog("INFO", "", "", "Server has started up");
 	}
 
 	pushTimer = CreateTimer(60.0, Timer_PushLogs, _, TIMER_REPEAT);
-
 	// AutoExecConfig(true, "activitymonitor");
+}
+
+public void OnPluginEnd() {
+	TriggerTimer(pushTimer, true);
 }
 
 public void OnMapStart() {
@@ -88,12 +104,16 @@ public void OnMapStart() {
 	if(!StrEqual(lastMap, curMap)) {
 		strcopy(lastMap, sizeof(lastMap), curMap);
 		if(g_Game == Engine_Left4Dead2 || g_Game == Engine_Left4Dead)
-			Format(curMap, sizeof(curMap), "Map changed to %s (%s)", curMap, L4D2_ZDifficulty);
+			Format(curMap, sizeof(curMap), "Map changed to %s (%s %s)", curMap, L4D2_ZDifficulty, currentGamemode);
 		else
-			Format(curMap, sizeof(curMap), "Map changed to %s", curMap);
+			Format(curMap, sizeof(curMap), "Map changed to %s (%s)", curMap, currentGamemode);
 		AddLog("INFO", "", "", curMap);
 	}
 	TriggerTimer(pushTimer, true);
+}
+
+public void CVAR_GamemodeChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
+	strcopy(currentGamemode, sizeof(currentGamemode), newValue);
 }
 
 public void CVAR_ServerIDChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
@@ -131,6 +151,7 @@ public Action Timer_PushLogs(Handle h) {
 	static char query[1024];
 	static Log log;
 	int length = logs.Length;
+	Transaction transaction = new Transaction();
 	if(length > 0) {
 		for(int i = 0; i < length; i++) {
 			logs.GetArray(i, log, sizeof(log));
@@ -142,26 +163,30 @@ public Action Timer_PushLogs(Handle h) {
 				log.targetSteamID,
 				log.message
 			);
-			g_db.Query(SQL_Callback, query, _, DBPrio_Low);
+			// g_db.Query(DB_PushLogsCB, query, _, DBPrio_Low);
+			transaction.AddQuery(query);
 		}
-		// Incase a new item was added while pushing, don't clear it:
 		logs.Resize(logs.Length - length);
 	}
+	g_db.Execute(transaction, _, SQL_TransactionFailed, length, DBPrio_Low);
 }
-public void SQL_Callback(Database db, DBResultSet results, const char[] error, any data) {
+public void DB_PushLogsCB(Database db, DBResultSet results, const char[] error, any data) {
 	if(results == null) PrintToServer("[ACTM] Log error: %s", error);
+}
+public void SQL_TransactionFailed(Database db, any data, int numQueries, const char[] error, int failIndex, any[] queryData) {
+	PrintToServer("[ActivityMonitor] Push failure: %s at query %d/%d", error, failIndex, numQueries);
 }
 
 public void Event_Connection(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && !IsFakeClient(client)) {
 		static char clientName[32];
-		GetClientAuthId(client, AuthId_Steam2, clientName, sizeof(clientName));
-		if((name[7] == 'f')) {
-			//connection
-			AddLog("JOIN", clientName, "", "");
-		} else {
-			AddLog("QUIT", clientName, "", "");
+		if(GetClientAuthId(client, AuthId_Steam2, clientName, sizeof(clientName))) {
+			if(name[7] == 'f') {
+				AddLog("JOIN", clientName, "", "");
+			} else {
+				AddLog("QUIT", clientName, "", "");
+			}
 		}
 	}
 }
@@ -198,7 +223,7 @@ public void Event_L4D2_Death(Event event, const char[] name, bool dontBroadcast)
 		if(IsFakeClient(victim)) GetClientName(victim, victimName, sizeof(victimName));
 		else GetClientAuthId(victim, AuthId_Steam2, victimName, sizeof(victimName));
 
-		if(attacker > 0) { 
+		if(attacker > 0 && attacker != victim) { 
 			if(IsFakeClient(attacker)) GetClientName(attacker, attackerName, sizeof(attackerName));
 			else GetClientAuthId(attacker, AuthId_Steam2, attackerName, sizeof(attackerName));
 
@@ -220,7 +245,7 @@ public void Event_L4D2_Incapped(Event event, const char[] name, bool dontBroadca
 		if(IsFakeClient(victim)) GetClientName(victim, victimName, sizeof(victimName));
 		else GetClientAuthId(victim, AuthId_Steam2, victimName, sizeof(victimName));
 
-		if(attacker > 0) {
+		if(attacker > 0 && attacker != victim) {
 			if(IsFakeClient(attacker)) GetClientName(attacker, attackerName, sizeof(attackerName));
 			else GetClientAuthId(attacker, AuthId_Steam2, attackerName, sizeof(attackerName));
 

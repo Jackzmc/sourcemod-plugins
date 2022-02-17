@@ -322,8 +322,9 @@ public void StopItemGive(int client) {
 
 void SetupCategoryMenu(int client, int victimUserID) {
 	Menu categoryMenu = new Menu(ChooseCategoryHandler);
-	static char category[64], id[8];
-	Format(category, sizeof(category), "%N: Choose troll category", GetClientOfUserId(victimUserID));
+	static char category[64], id[16];
+	// Title with [ in name cause failure
+	Format(category, sizeof(category), "Choose troll category");
 	categoryMenu.SetTitle(category);
 
 	Format(id, sizeof(id), "%d|-1", victimUserID);
@@ -365,7 +366,7 @@ void ShowTrollCombosMenu(int client, int victimUserID) {
 void ShowTrollMenu(int client, bool isComboList) {
 	Menu menu = isComboList ? new Menu(ChoosePlayerHandlerForCombos) : new Menu(ChoosePlayerHandler);
 	menu.SetTitle("Choose a player to troll");
-	static char userid[8], display[32];
+	static char userid[8], display[64];
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
 			IntToString(GetClientUserId(i), userid, sizeof(userid));

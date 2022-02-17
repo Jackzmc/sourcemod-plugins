@@ -11,15 +11,40 @@
 #include <jutils>
 #include <left4dhooks>
 
-bool lateLoaded, isFinaleEnding;
-bool isPlayerTroll[MAXPLAYERS+1], isImmune[MAXPLAYERS+1], isUnderAttack[MAXPLAYERS+1];
-int iJoinTime[MAXPLAYERS+1];
-int iIdleStartTime[MAXPLAYERS+1];
-int iLastFFTime[MAXPLAYERS+1];
-int iJumpAttempts[MAXPLAYERS+1];
+enum {
+	Immune_None,
+	Immune_TK = 1,
+	Immune_RFF = 2
+}
 
-float playerTotalDamageFF[MAXPLAYERS+1];
-float autoFFScaleFactor[MAXPLAYERS+1];
+bool lateLoaded, isFinaleEnding;
+// bool isPlayerTroll[MAXPLAYERS+1], isUnderAttack[MAXPLAYERS+1];
+// ImmunityFlag immunityFlags[MAXPLAYERS+1];
+// int iJoinTime[MAXPLAYERS+1];
+// int iIdleStartTime[MAXPLAYERS+1];
+// int iLastFFTime[MAXPLAYERS+1];
+// int iJumpAttempts[MAXPLAYERS+1];
+
+// float playerTotalDamageFF[MAXPLAYERS+1];
+// float autoFFScaleFactor[MAXPLAYERS+1];
+
+enum struct PlayerData {
+	int joinTime;
+	int idleStartTime;
+	int lastFFTime;
+	int jumpAttempts;
+
+	float TKDamageBuffer;
+	float totalDamageFF;
+	float autoRFFScaleFactor;
+
+	bool isTroll;
+	bool underAttack;
+
+	int immunityFlags;
+}
+
+PlayerData pData[MAXPLAYERS+1];
 
 ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime, hTKAction, hSuicideAction, hSuicideLimit, hFFAutoScaleAmount, hFFAutoScaleForgivenessAmount, hFFAutoScaleMaxRatio, hFFAutoScaleIgnoreAdmins;
 
@@ -43,17 +68,17 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
-	hForgivenessTime = CreateConVar("l4d2_tk_forgiveness_time", "15", "The minimum amount of time to pass (in seconds) where a player's previous accumulated FF is forgiven", FCVAR_NONE, true, 0.0);
-	hBanTime = CreateConVar("l4d2_tk_bantime", "120", "How long in minutes should a player be banned for? 0 for permanently",  FCVAR_NONE, true, 0.0);
+	hForgivenessTime = CreateConVar("l4d2_tk_forgiveness_time", "15", "The minimum amount of time to pass (in seconds) where a player's previous accumulated teamkiller-detection FF is forgiven", FCVAR_NONE, true, 0.0);
+	hBanTime = CreateConVar("l4d2_tk_bantime", "60", "How long in minutes should a player be banned for? 0 for permanently",  FCVAR_NONE, true, 0.0);
 	hThreshold = CreateConVar("l4d2_tk_ban_ff_threshold", "75.0", "How much damage does a player need to do before being instantly banned",  FCVAR_NONE, true, 0.0);
-	hJoinTime = CreateConVar("l4d2_tk_ban_join_time", "2", "Upto how many minutes should any new player be subjected to instant bans on any FF",  FCVAR_NONE, true, 0.0);
+	hJoinTime = CreateConVar("l4d2_tk_ban_join_time", "2", "Upto how many minutes should any new player's ff be disabled? Used for jump attempts detection. also",  FCVAR_NONE, true, 0.0);
 	hTKAction = CreateConVar("l4d2_tk_action", "3", "How should the TK be punished?\n0 = No action (No message), 1 = Kick, 2 = Instant Ban, 3 = Ban on disconnect", FCVAR_NONE, true, 0.0, true, 3.0);
 	hSuicideAction = CreateConVar("l4d2_suicide_action", "3", "How should a suicider be punished?\n0 = No action (No message), 1 = Kick, 2 = Instant Ban, 3 = Ban on disconnect", FCVAR_NONE, true, 0.0, true, 3.0);
 	hSuicideLimit = CreateConVar("l4d2_suicide_limit", "1", "How many attempts does a new joined player have until action is taken for suiciding?", FCVAR_NONE, true, 0.0);
 	// Reverse FF Auto Scale
 	hFFAutoScaleAmount = CreateConVar("l4d2_tk_auto_ff_rate", "0.02", "The rate at which auto reverse-ff is scaled by.", FCVAR_NONE, true, 0.0);
 	hFFAutoScaleMaxRatio = CreateConVar("l4d2_tk_auto_ff_max_ratio", "5.0", "The maximum amount that the reverse ff can go. 0.0 for unlimited", FCVAR_NONE, true, 0.0);
-	hFFAutoScaleForgivenessAmount = CreateConVar("l4d2_tk_auto_ff_forgive_rate", "0.03", "This amount times amount of minutes since last ff is removed from ff rate", FCVAR_NONE, true, 0.0);
+	hFFAutoScaleForgivenessAmount = CreateConVar("l4d2_tk_auto_ff_forgive_rate", "0.05", "This amount times amount of minutes since last ff is removed from ff rate", FCVAR_NONE, true, 0.0);
 	hFFAutoScaleIgnoreAdmins = CreateConVar("l4d2_tk_auto_ff_ignore_admins", "1", "Should automatic reverse ff ignore admins? 0 = Admins are subjected\n1 = Admins are excempt", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	AutoExecConfig(true, "l4d2_tkstopper");
@@ -79,8 +104,9 @@ public void OnPluginStart() {
 	HookEvent("bot_player_replace", Event_BotToPlayer);
 
 
-	RegAdminCmd("sm_ignore", Command_IgnorePlayer, ADMFLAG_KICK, "Makes a player immune for any anti trolling detection for a session");
+	RegAdminCmd("sm_ignore", Command_IgnorePlayer, ADMFLAG_KICK, "Makes a player immune for any anti trolling detection or reverse-ff for a session");
 	RegAdminCmd("sm_tkinfo", Command_TKInfo, ADMFLAG_KICK, "Debug info for TKSTopper");
+	RegAdminCmd("sm_review", Command_TKInfo, ADMFLAG_KICK, "Review FF info for a player");
 
 	if(lateLoaded) {
 		for(int i = 1; i <= MaxClients; i++) {
@@ -96,7 +122,7 @@ public void OnPluginStart() {
 public Action Event_ChargerCarry(Event event, const char[] name, bool dontBroadcast) {
 	int victim = GetClientOfUserId(event.GetInt("victim"));
 	if(victim) {
-		isUnderAttack[victim] = StrEqual(name, "charger_carry_start");
+		pData[victim].underAttack = StrEqual(name, "charger_carry_start");
 	}
 	return Plugin_Continue; 
 }
@@ -104,7 +130,7 @@ public Action Event_ChargerCarry(Event event, const char[] name, bool dontBroadc
 public Action Event_HunterPounce(Event event, const char[] name, bool dontBroadcast) {
 	int victim = GetClientOfUserId(event.GetInt("victim"));
 	if(victim) {
-		isUnderAttack[victim] = StrEqual(name, "lunge_pounce");
+		pData[victim].underAttack = StrEqual(name, "lunge_pounce");
 	}
 	return Plugin_Continue; 
 }
@@ -112,14 +138,14 @@ public Action Event_HunterPounce(Event event, const char[] name, bool dontBroadc
 public Action Event_SmokerChoke(Event event, const char[] name, bool dontBroadcast) {
 	int victim = GetClientOfUserId(event.GetInt("victim"));
 	if(victim) {
-		isUnderAttack[victim] = StrEqual(name, "choke_start");
+		pData[victim].underAttack = StrEqual(name, "choke_start");
 	}
 	return Plugin_Continue; 
 }
 public Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcast) {
 	int victim = GetClientOfUserId(event.GetInt("victim"));
 	if(victim) {
-		isUnderAttack[victim] = StrEqual(name, "jockey_ride");
+		pData[victim].underAttack = StrEqual(name, "jockey_ride");
 	}
 	return Plugin_Continue; 
 }
@@ -134,14 +160,14 @@ public Action Event_BotToPlayer(Event event, const char[] name, bool dontBroadca
 
 	// If a player has been idle for over 600s (10 min), reset to them "just joined"
 	// Purpose: Some trolls idle till end and then attack @ escape, or "gain trust"
-	if(GetTime() - iIdleStartTime[player] >= 600) {
-		iJoinTime[player] = GetTime();
+	if(GetTime() - pData[player].idleStartTime >= 600) {
+		pData[player].joinTime = GetTime();
 	}
 	return Plugin_Continue; 
 }
 public Action Event_PlayerToBot(Event event, char[] name, bool dontBroadcast) {
 	int player = GetClientOfUserId(event.GetInt("player"));
-	iIdleStartTime[player] = GetTime(); 
+	pData[player].idleStartTime = GetTime();
 	return Plugin_Continue; 
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -150,8 +176,8 @@ public Action Event_PlayerToBot(Event event, char[] name, bool dontBroadcast) {
 public void Event_FinaleVehicleReady(Event event, const char[] name, bool dontBroadcast) {
 	isFinaleEnding = true;
 	for(int i = 1; i <= MaxClients; i++) {
-		if(isPlayerTroll[i] && IsClientConnected(i) && IsClientInGame(i)) {
-			PrintChatToAdmins("Note: %N is still marked as troll and will be banned after this game. Use /ignore to ignore them.", i);
+		if(pData[i].isTroll && IsClientConnected(i) && IsClientInGame(i)) {
+			PrintChatToAdmins("Note: %N is still marked as troll and will be banned after this game. Use \"/ignore <player> tk\" to ignore them.", i);
 		}
 	}
 }
@@ -161,38 +187,60 @@ public void OnMapEnd() {
 }
 
 public void OnClientPutInServer(int client) {
-	iJoinTime[client] = GetTime();
-	iLastFFTime[client] = GetTime();
+	pData[client].joinTime = pData[client].idleStartTime = GetTime();
 	SDKHook(client, SDKHook_OnTakeDamage, Event_OnTakeDamage);
+}
+
+public void OnClientPostAdminCheck(int client) {
+	if(GetUserAdmin(client) != INVALID_ADMIN_ID) {
+		pData[client].immunityFlags = Immune_TK | Immune_RFF;
+	}
 }
 
 // Called on map changes, so only reset some variables:
 public void OnClientDisconnect(int client) {
-	playerTotalDamageFF[client] = 0.0;
-	isUnderAttack[client] = false;
-	iJumpAttempts[client] = 0;
+	pData[client].TKDamageBuffer = 0.0;
+	pData[client].jumpAttempts = 0;
+	pData[client].underAttack = false;
 }
 
 // Only clear things when they fully left on their own accord:
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(client > 0 && isPlayerTroll[client]) {
-		BanClient(client, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
+	if(client > 0 && !IsFakeClient(client) && GetClientTeam(client) <= 2) {
+		if (pData[client].isTroll) {
+			BanClient(client, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
+			pData[client].isTroll = false;
+			pData[client].autoRFFScaleFactor = 0.0;
+			pData[client].totalDamageFF = 0.0;
+		}
+
+		float minutesSinceiLastFFTime = (GetTime() - pData[client].lastFFTime) / 60.0;
+		float activeRate = pData[client].autoRFFScaleFactor - (minutesSinceiLastFFTime * hFFAutoScaleForgivenessAmount.FloatValue);
+		if(activeRate < 0.0) activeRate = 0.0;
+		PrintToConsoleAll("[TKStopper] FF Summary for %N:", client);
+		PrintToConsoleAll("\t\t%.2f TK-FF buffer (%.2f total ff) | %.3f (buf %f) rFF rate | lastff %.1f min ago | %d suicide jumps", 
+			pData[client].TKDamageBuffer, 
+			pData[client].totalDamageFF, 
+			activeRate, 
+			pData[client].autoRFFScaleFactor, 
+			minutesSinceiLastFFTime, 
+			pData[client].jumpAttempts
+		);
 	}
-	isPlayerTroll[client] = false;
-	autoFFScaleFactor[client] = 0.0;
 }
 
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
-	if(damage > 0.0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0 && attacker != victim) {
-		if(GetClientTeam(victim) != GetClientTeam(attacker) || attacker == victim) return Plugin_Continue;
+	if(damage > 0.0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
+		if(GetClientTeam(victim) != GetClientTeam(attacker) || attacker == victim) 
+			return Plugin_Continue;
 		else if(damagetype & DMG_BURN && IsFakeClient(attacker) && GetClientTeam(attacker) == 2) {
 			// Ignore damage from fire caused by bots (players who left after causing fire)
 			damage = 0.0;
 			return Plugin_Changed;
 		}
 		// Otherwise if attacker was ignored or is a bot, stop here and let vanilla handle it
-		else if(isImmune[attacker] || IsFakeClient(attacker)) return Plugin_Continue;
+		else if(pData[attacker].immunityFlags & Immune_TK || IsFakeClient(attacker)) return Plugin_Continue;
 
 		bool isAdmin = GetUserAdmin(attacker) != INVALID_ADMIN_ID;
 		
@@ -200,24 +248,23 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		//if(IsFakeClient(victim) && !HasEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") || GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) return Plugin_Continue;
 		
 		// Stop all damage early if already marked as troll
-		if(isPlayerTroll[attacker]) {
-			SDKHooks_TakeDamage(attacker, attacker, attacker, autoFFScaleFactor[attacker] * damage);
-
+		if(pData[attacker].isTroll) {
+			SDKHooks_TakeDamage(attacker, attacker, attacker, pData[attacker].autoRFFScaleFactor * damage);
 			return Plugin_Stop;
 		}
 		// Allow vanilla-damage if being attacked by special (example, charger carry)
-		if(isUnderAttack[victim]) return Plugin_Continue;
+		if(pData[victim].underAttack) return Plugin_Continue;
 	
 		// Is damage not caused by fire or pipebombs?
 		bool isDamageDirect = damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0;
 		int time = GetTime();
 		// If is a fall within first 2 minutes, do appropiate action
-		if(!isAdmin && damagetype & DMG_FALL && attacker == victim && damage > 0.0 && time - iJoinTime[victim] <= hJoinTime.IntValue * 60) {
-			iJumpAttempts[victim]++;
+		if(!isAdmin && damagetype & DMG_FALL && attacker == victim && damage > 0.0 && time - pData[victim].joinTime <= hJoinTime.IntValue * 60) {
+			pData[victim].jumpAttempts++;
 			float pos[3];
 			GetNearestPlayerPosition(victim, pos);
 			PrintToConsoleAdmins("%N within join time (%d min), attempted to fall");
-			if(iJumpAttempts[victim] > hSuicideLimit.IntValue) {
+			if(pData[victim].jumpAttempts > hSuicideLimit.IntValue) {
 				if(hSuicideAction.IntValue == 1) {
 					LogMessage("[NOTICE] Kicking %N for suicide attempts", victim, hBanTime.IntValue);
 					NotifyAllAdmins("[Notice]  Kicking %N for suicide attempts", victim, hBanTime.IntValue);
@@ -228,60 +275,78 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 					BanClient(victim, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Suicide fall attempts", "Troll", "TKStopper");
 				} else if(hSuicideAction.IntValue == 3) {
 					LogMessage("[NOTICE] %N will be banned for suicide attempts for %d minutes. ", victim, hBanTime.IntValue);
-					NotifyAllAdmins("[Notice] %N will be banned for suicide attempts for %d minutes. Use /ignore <player> to make them immune.", victim, hBanTime.IntValue);
-					isPlayerTroll[victim] = true;
+					NotifyAllAdmins("[Notice] %N will be banned for suicide attempts for %d minutes. Use \"/ignore <player> tk\" to make them immune.", victim, hBanTime.IntValue);
+					pData[victim].isTroll = true;
 				}
 			}
 		}
+		if(attacker == victim) return Plugin_Continue;
 
 		// Forgive player based on threshold, resetting accumlated damage
-		if(time - iLastFFTime[attacker] > hForgivenessTime.IntValue) {
-			playerTotalDamageFF[attacker] = 0.0;
+		if(time - pData[attacker].lastFFTime > hForgivenessTime.IntValue) {
+			pData[attacker].TKDamageBuffer = 0.0;
 		}
-		playerTotalDamageFF[attacker] += damage;
+		pData[attacker].TKDamageBuffer += damage;
+		pData[attacker].totalDamageFF += damage;
 
 		// Auto reverse ff logic
-		iLastFFTime[attacker] = time;
-		if(isDamageDirect && (!hFFAutoScaleIgnoreAdmins.BoolValue || !isAdmin)) {
+		int prevFFTime = pData[attacker].lastFFTime;
+		pData[attacker].lastFFTime = time; 
+		// If not immune to RFF, damage is direct, _or admin shit_
+		if(~pData[attacker].immunityFlags & Immune_RFF && isDamageDirect && (!hFFAutoScaleIgnoreAdmins.BoolValue || !isAdmin)) {
 			// Decrement any forgiven ratio (computed on demand)
-			float minutesSinceiLastFFTime = (time - iLastFFTime[attacker]) / 60.0;
-			autoFFScaleFactor[attacker] -= minutesSinceiLastFFTime * hFFAutoScaleForgivenessAmount.FloatValue;
-			if(autoFFScaleFactor[attacker] < 0.0) {
-				autoFFScaleFactor[attacker] = 0.0;
+			float minutesSinceiLastFFTime = (time - pData[attacker].lastFFTime) / 60.0;
+			pData[attacker].autoRFFScaleFactor -= minutesSinceiLastFFTime * hFFAutoScaleForgivenessAmount.FloatValue;
+			if(pData[attacker].autoRFFScaleFactor < 0.0) {
+				pData[attacker].autoRFFScaleFactor = 0.0;
 			}
 			// Then calculate a new reverse ff ratio
-			autoFFScaleFactor[attacker] += hFFAutoScaleAmount.FloatValue * damage;
-			if(isPlayerTroll[attacker]) {
-				autoFFScaleFactor[attacker] *= 2;
+			pData[attacker].autoRFFScaleFactor += hFFAutoScaleAmount.FloatValue * damage;
+			if(pData[attacker].isTroll) {
+				pData[attacker].autoRFFScaleFactor *= 2;
 			}
 			
-			if(!isPlayerTroll[attacker] && hFFAutoScaleMaxRatio.FloatValue > 0.0 && autoFFScaleFactor[attacker] > hFFAutoScaleMaxRatio.FloatValue) {
-				autoFFScaleFactor[attacker] = hFFAutoScaleMaxRatio.FloatValue;
+			// Cap max damage only for non-trolls
+			if(!pData[attacker].isTroll && hFFAutoScaleMaxRatio.FloatValue > 0.0 && pData[attacker].autoRFFScaleFactor > hFFAutoScaleMaxRatio.FloatValue) {
+				pData[attacker].autoRFFScaleFactor = hFFAutoScaleMaxRatio.FloatValue;
 			}
 		}
+		pData[attacker].lastFFTime = time;
 		
 		// Check for excessive friendly fire damage in short timespan
-		if(!isAdmin && playerTotalDamageFF[attacker] > hThreshold.IntValue && !isFinaleEnding && isDamageDirect) {
-			LogAction(-1, attacker, "Excessive FF (%.2f HP) (%.2f RFF Rate)", playerTotalDamageFF[attacker], autoFFScaleFactor[attacker]);
+		// If not immune to TK, if over TK threshold, not when escaping, and direct damage
+		if(~pData[attacker].immunityFlags & Immune_TK && pData[attacker].TKDamageBuffer > hThreshold.IntValue && !isFinaleEnding && isDamageDirect) {
+			float diffJoinMin = (float(GetTime()) - float(pData[attacker].joinTime)) / 60.0;
+			float lastFFMin = (float(GetTime()) - float(prevFFTime)) / 60.0;
+			LogAction(-1, attacker, "Excessive FF (%.2f HP/%.2f total) (%.2f RFF Rate) (joined %.1fm ago) (%.1fmin last FF)", 
+				pData[attacker].TKDamageBuffer, 
+				pData[attacker].totalDamageFF, 
+				pData[attacker].autoRFFScaleFactor, 
+				diffJoinMin, 
+				lastFFMin
+			);
 			if(hTKAction.IntValue == 1) {
-				LogMessage("[NOTICE] Kicking %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
-				NotifyAllAdmins("[Notice] Kicking %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				LogMessage("[TKStopper] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
+				NotifyAllAdmins("[Notice] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
 				KickClient(attacker, "Excessive FF");
 			} else if(hTKAction.IntValue == 2) {
-				LogMessage("[NOTICE] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
-				NotifyAllAdmins("[Notice] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
+				LogMessage("[TKStopper] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
+				NotifyAllAdmins("[Notice] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
 				BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF", "Excessive Friendly Fire", "TKStopper");
 			} else if(hTKAction.IntValue == 3) {
-				LogMessage("[NOTICE] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. ", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
-				NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. Use /ignore <player> to make them immune.", attacker, playerTotalDamageFF[attacker], hBanTime.IntValue);
-				isPlayerTroll[attacker] = true;
+				LogMessage("[TKStopper] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. ", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
+				NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. Use \"/ignore <player> tk\" to make them immune.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
+				pData[attacker].isTroll = true;
 			}
 			damage = 0.0;
 			return Plugin_Handled;
 		}
-
+		
 		// Modify damages based on criteria		
-		if(iJumpAttempts[victim] > 0 || L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) || time - iJoinTime[attacker] <= hJoinTime.IntValue * 60) {
+		if(pData[victim].jumpAttempts > 0 
+			|| L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) 
+			|| time - pData[attacker].joinTime <= hJoinTime.IntValue * 60
+		) {
 			/* 
 			If the amount of seconds since they joined is <= the minimum join time cvar (min) threshold
 				or if the player is in a saferoom
@@ -291,17 +356,19 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 			damage = 0.0;
 			return Plugin_Handled;
 		}else if(isFinaleEnding) {
-			// Keep admins immune if escape vehicle out
-			if(isAdmin) return Plugin_Continue;
+			// Keep admins immune if escape vehicle out, or if victim is a bot
+			if(isAdmin || IsFakeClient(victim)) return Plugin_Continue;
 			SDKHooks_TakeDamage(attacker, attacker, attacker, damage * 2.0);
 			damage = 0.0;
 			return Plugin_Changed;
-		}else if(isDamageDirect) { // Ignore fire and propane damage, mistakes can happen
+		}else if(isDamageDirect && !isAdmin && pData[attacker].autoRFFScaleFactor > 0.3) { // Ignore fire and propane damage, mistakes can happen
 			// Apply their reverse ff damage, and have victim take a decreasing amount
-			SDKHooks_TakeDamage(attacker, attacker, attacker, autoFFScaleFactor[attacker] * damage);
-			if(isPlayerTroll[attacker]) return Plugin_Stop;
-			if(autoFFScaleFactor[attacker] > 1.0)
-				damage /= autoFFScaleFactor[attacker];
+			SDKHooks_TakeDamage(attacker, attacker, attacker, pData[attacker].autoRFFScaleFactor * damage);
+			if(pData[attacker].isTroll) return Plugin_Stop;
+			else if(pData[attacker].immunityFlags & Immune_RFF) return Plugin_Continue;
+
+			if(pData[attacker].autoRFFScaleFactor > 1.0)
+				damage /= pData[attacker].autoRFFScaleFactor;
 			else
 				damage /= 2.0;
 			return Plugin_Changed;
@@ -314,25 +381,99 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 
 public Action Command_TKInfo(int client, int args) {
 	int time = GetTime();
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
-			float minutesSinceiLastFFTime = (time - iLastFFTime[i]) / 60.0;
-			float activeRate = autoFFScaleFactor[i] - (minutesSinceiLastFFTime * hFFAutoScaleForgivenessAmount.FloatValue);
-			if(activeRate < 0.0) {
-				activeRate = 0.0;
-			} 
-			ReplyToCommand(client, "%N: %f TK-FF buffer | %.3f (buf %f), reverse FF rate | last ff %.1f min ago | %d suicide jumps", i, playerTotalDamageFF[i], activeRate, autoFFScaleFactor[i], minutesSinceiLastFFTime,  iJumpAttempts[i]);
+	if(args > 0) {
+		static char arg1[32];
+		GetCmdArg(1, arg1, sizeof(arg1));
+
+		static char target_name[MAX_TARGET_LENGTH];
+		int target_list[1], target_count;
+		bool tn_is_ml;
+
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			1,
+			COMMAND_FILTER_NO_MULTI, 
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		|| target_count == 0) {
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		int target = target_list[0];
+		ReplyToCommand(client, "FF Review for '%N':", target);
+		if(pData[target].isTroll) {
+			ReplyToCommand(client, "- will be banned on disconnect for TK -", target);
+		}
+		if(pData[target].immunityFlags == Immune_TK) {
+			ReplyToCommand(client, "Immunity: Teamkiller Detection", target);
+		} else if(pData[target].immunityFlags == Immune_RFF) {
+			ReplyToCommand(client, "Immunity: Auto reverse-ff", target);
+		} else if(view_as<int>(pData[target].immunityFlags) > 0) {
+			ReplyToCommand(client, "Immunity: Teamkiller Detection, Auto reverse-ff", target);
+		} else {
+			ReplyToCommand(client, "Immunity: (none, use /ignore <player> [immunity] to toggle)", target);
+		}
+		float minutesSinceiLastFFTime = (time - pData[target].lastFFTime) / 60.0;
+		float activeRate = pData[target].autoRFFScaleFactor - (minutesSinceiLastFFTime * hFFAutoScaleForgivenessAmount.FloatValue);
+		if(activeRate < 0.0) activeRate = 0.0;
+		
+		ReplyToCommand(client, "Total FF Damage: %.1f (%.1f min ago last ff)", pData[target].totalDamageFF, minutesSinceiLastFFTime);
+		if(~pData[target].immunityFlags & Immune_TK)
+			ReplyToCommand(client, "Recent FF (TKDetectBuff): %.1f", pData[target].TKDamageBuffer);
+		if(~pData[target].immunityFlags & Immune_RFF)
+			ReplyToCommand(client, "Auto Reverse-FF: %.1f return rate", activeRate);
+		ReplyToCommand(client, "Attempted suicide jumps: %d", pData[target].jumpAttempts);
+	} else {
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
+				float minutesSinceiLastFFTime = (time - pData[i].lastFFTime) / 60.0;
+				float activeRate = pData[i].autoRFFScaleFactor - (minutesSinceiLastFFTime * hFFAutoScaleForgivenessAmount.FloatValue);
+				if(activeRate < 0.0) {
+					activeRate = 0.0;
+				} 
+				ReplyToCommand(client, "%20N: %.2f TK-FF buf (%.2f total) | %.3f (buf %f) rFF rate | lastff %.1f min ago | %d suicide jumps", 
+					i, 
+					pData[i].TKDamageBuffer, 
+					pData[i].totalDamageFF, 
+					activeRate, 
+					pData[i].autoRFFScaleFactor, 
+					minutesSinceiLastFFTime, 
+					pData[i].jumpAttempts
+				);
+			}
 		}
 	}
 	return Plugin_Handled;
 }
 
+
 public Action Command_IgnorePlayer(int client, int args) {
-	char arg1[32];
+	char arg1[32], arg2[16];
 	GetCmdArg(1, arg1, sizeof(arg1));
+	GetCmdArg(2, arg2, sizeof(arg2));
+
+	if(args < 2) {
+		ReplyToCommand(client, "Usage: sm_ignore <player> <tk/teamkill/rff/reverseff>");
+		return Plugin_Handled;
+	}
+
+	int flags = 0;
+	if(StrEqual(arg2, "tk") || StrEqual(arg2, "teamkill")) {
+		flags = Immune_TK;
+	} else if(StrEqual(arg2, "all") || StrEqual(arg2, "a")) {
+		flags = Immune_TK | Immune_RFF;
+	} else if(StrEqual(arg2, "reverseff") || StrEqual(arg2, "rff")) {
+		flags = Immune_RFF;
+	} else {
+		ReplyToCommand(client, "Usage: sm_ignore <player> <tk/teamkill/rff/reverseff>");
+		return Plugin_Handled;
+	}
 
 	char target_name[MAX_TARGET_LENGTH];
-	int target_list[1], target_count;
+	int target_list[MAXPLAYERS+1], target_count;
 	bool tn_is_ml;
 
 	if ((target_count = ProcessTargetString(
@@ -349,23 +490,38 @@ public Action Command_IgnorePlayer(int client, int args) {
 		return Plugin_Handled;
 	}
 
-	for(int i = 0; i < target_count; i++) {
+	for (int i = 0; i < target_count; i++) {
 		int target = target_list[i];
-		if(GetUserAdmin(target) != INVALID_ADMIN_ID) {
+		if (GetUserAdmin(target) != INVALID_ADMIN_ID) {
 			ReplyToCommand(client, "%N is an admin and is already immune.");
-		}else{
-			if(isImmune[target]) {
+			return Plugin_Handled;
+		}
+
+		if (flags & Immune_TK) {
+			if (pData[target].immunityFlags & Immune_TK) {
 				LogAction(client, target, "\"%L\" re-enabled teamkiller detection for \"%L\"",  client, target);
 				ShowActivity2(client, "[FTT] ", "%N has re-enabled teamkiller detection for %N", client, target);
 			} else {
 				LogAction(client, target, "\"%L\" ignored teamkiller detection for \"%L\"",  client, target);
 				ShowActivity2(client, "[FTT] ", "%N has ignored teamkiller detection for %N", client, target);
 			}
-			isImmune[target] = !isImmune[target];
-		}
-		isPlayerTroll[target] = false;
-	}
+			pData[target].immunityFlags ^= Immune_TK;
+		} 
 
+		if (flags & Immune_RFF) {
+			if (pData[target].immunityFlags & Immune_RFF) {
+				LogAction(client, target, "\"%L\" re-enabled auto reverse friendly-fire for \"%L\"",  client, target);
+				ShowActivity2(client, "[FTT] ", "%N has re-enabled auto reverse friendly-fire for %N", client, target);
+			} else {
+				LogAction(client, target, "\"%L\" disabled auto reverse friendly-fire for \"%L\"",  client, target);
+				ShowActivity2(client, "[FTT] ", "%N has disabled auto reverse friendly-fire for %N", client, target);
+				pData[target].autoRFFScaleFactor = 0.0;
+			}
+			pData[target].immunityFlags ^= Immune_RFF;
+		}
+
+		pData[target].isTroll = false;
+	}
 	return Plugin_Handled;
 }
 
@@ -390,8 +546,8 @@ stock bool GetNearestPlayerPosition(int client, float pos[3]) {
 	return lowestID > 0;
 }
 
+static char buffer[254];
 stock void PrintChatToAdmins(const char[] format, any ...) {
-	char buffer[254];
 	VFormat(buffer, sizeof(buffer), format, 2);
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
@@ -405,7 +561,6 @@ stock void PrintChatToAdmins(const char[] format, any ...) {
 }
 
 stock void PrintToConsoleAdmins(const char[] format, any ...) {
-	char buffer[254];
 	VFormat(buffer, sizeof(buffer), format, 2);
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
