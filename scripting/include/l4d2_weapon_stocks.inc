@@ -3,12 +3,13 @@
 #endif
 #define l4d2_weapons_inc_
 
-#define GETWEAPONNAME(%0) (IsValidWeaponId(WeaponId:(%0)) ? (WeaponNames[_:(%0)]) : "")
-#define GETLONGWEAPONNAME(%0) (IsValidWeaponId(WeaponId:(%0)) ? (LongWeaponNames[_:(%0)]) : "")
-#define GETMELEEWEAPONNAME(%0) (IsValidWeaponId(MeleeWeaponId:(%0)) ? (MeleeWeaponNames[_:(%0)]) : "")
-#define GETLONGMELEEWEAPONNAME(%0) (IsValidWeaponId(MeleeWeaponId:(%0)) ? (LongMeleeWeaponNames[_:(%0)]) : "")
-#define GETWEAPONMODEL(%0) (HasValidWeaponModel(WeaponId:(%0)) ? (WeaponModels[_:(%0)]) : "")
-#define GETMELEEWEAPONMODEL(%0) (HasValidWeaponModel(MeleeWeaponId:(%0)) ? (MeleeWeaponModels[_:(%0)]) : "")
+#define GETWEAPONNAME(%0) (IsValidWeaponId(WeaponId (%0)) ? (WeaponNames[(%0)]) : "")
+#define GETLONGWEAPONNAME(%0) (IsValidWeaponId(WeaponId (%0)) ? (LongWeaponNames[(%0)]) : "")
+#define GETMELEEWEAPONNAME(%0) (IsValidWeaponId(MeleeWeaponId (%0)) ? (MeleeWeaponNames[(%0)]) : "")
+#define GETLONGMELEEWEAPONNAME(%0) (IsValidWeaponId(MeleeWeaponId (%0)) ? (LongMeleeWeaponNames[(%0)]) : "")
+#define GETWEAPONMODEL(%0) (HasValidWeaponModel(WeaponId (%0)) ? (WeaponModels[(%0)]) : "")
+#define GETMELEEWEAPONMODEL(%0) (HasValidWeaponModel(MeleeWeaponId (%0)) ? (MeleeWeaponModels[(%0)]) : "")
+
 
 // Weapon ID enumerations.
 // These values are *NOT* arbitrary! 
@@ -92,8 +93,7 @@ enum MeleeWeaponId
 };
 
 // Weapon names for each of the weapons, used in identification.
-const char WeaponNames[sizeof(WeaponId)][] =
-{
+char WeaponNames[56][] = {
     "weapon_none", "weapon_pistol", "weapon_smg",                                            // 0
     "weapon_pumpshotgun", "weapon_autoshotgun", "weapon_rifle",                              // 3
     "weapon_hunting_rifle", "weapon_smg_silenced", "weapon_shotgun_chrome",                  // 6
@@ -116,8 +116,7 @@ const char WeaponNames[sizeof(WeaponId)][] =
 };
 
 // Long weapon names
-const char LongWeaponNames[WeaponId][] = 
-{
+char LongWeaponNames[56][] = {
     "None", "Pistol", "Uzi", // 0
     "Pump", "Autoshotgun", "M-16", // 3
     "Hunting Rifle", "Mac", "Chrome", // 6
@@ -160,7 +159,7 @@ char MeleeWeaponNames[MeleeWeaponId][] =
 };
 
 // Long melee weapon names
-const char LongMeleeWeaponNames[MeleeWeaponId][] =
+char LongMeleeWeaponNames[MeleeWeaponId][] =
 {
     "None",
     "Knife",
@@ -181,8 +180,7 @@ const char LongMeleeWeaponNames[MeleeWeaponId][] =
 
 // World weapon models for each of the weapons. Useful for making new weapon spawns.
 // Some models are left blank because no single model can be given, the model is known or none exist.
-const char WeaponModels[WeaponId][] =
-{
+char WeaponModels[56][] = {
     "",
     "/w_models/weapons/w_pistol_B.mdl",
     "/w_models/weapons/w_smg_uzi.mdl",
@@ -241,7 +239,7 @@ const char WeaponModels[WeaponId][] =
     ""
 };
 
-const char MeleeWeaponModels[MeleeWeaponId][] =
+char MeleeWeaponModels[15][] =
 {
     "",
     "/w_models/weapons/w_knife_t.mdl",
@@ -260,8 +258,7 @@ const char MeleeWeaponModels[MeleeWeaponId][] =
     "/weapons/melee/w_tonfa.mdl"
 };
 
-const int WeaponSlots[WeaponId] =
-{
+int WeaponSlots[56] = {
     -1, // WEPID_NONE
     1,  // WEPID_PISTOL
     0,  // WEPID_SMG
@@ -335,17 +332,16 @@ static Handle hMeleeWeaponModelsTrie = INVALID_HANDLE;
 
 stock void InitWeaponNamesTrie() {
     hWeaponNamesTrie = CreateTrie();
-    for(new i = 0; i < _:WeaponId; i++)
-    {
-        SetTrieValue(hWeaponNamesTrie, WeaponNames[WeaponId:i], i);
+    for(int i = 0; i < view_as<int>(WeaponId); i++) {
+        SetTrieValue(hWeaponNamesTrie, WeaponNames[i], i);
     }
 
     hMeleeWeaponNamesTrie = CreateTrie();
     hMeleeWeaponModelsTrie = CreateTrie();
-    for (new i = 0; i < _:MeleeWeaponId; ++i)
+    for (int i = 0; i < view_as<int>(MeleeWeaponId); ++i)
     {
-        SetTrieValue(hMeleeWeaponNamesTrie, MeleeWeaponNames[MeleeWeaponId:i], i);
-        SetTrieString(hMeleeWeaponModelsTrie, MeleeWeaponModels[MeleeWeaponId:i], MeleeWeaponNames[MeleeWeaponId:i]);
+        SetTrieValue(hMeleeWeaponNamesTrie, MeleeWeaponNames[i], i);
+        SetTrieString(hMeleeWeaponModelsTrie, MeleeWeaponModels[i], MeleeWeaponNames[i]);
     }
 }
 
@@ -356,13 +352,12 @@ stock void InitWeaponNamesTrie() {
  * @param wepid        WeaponId to check for validity
  * @return True if wepid is valid, false otherwise.
  */
-stock bool IsValidWeaponId({WeaponId, MeleeWeaponId} wepid, tagType = tagof(wepid))
-{
-    if (tagType == tagof(MeleeWeaponId))
-    {
-        return MeleeWeaponId:wepid >= WEPID_MELEE_NONE && MeleeWeaponId:wepid < MeleeWeaponId;
-    }
-    return wepid >= WEPID_NONE && wepid < WeaponId;
+stock bool IsValidWeaponId(WeaponId wepid){
+    return wepid != WEPID_NONE;
+}
+
+stock bool IsValidMeleeWeaponId(MeleeWeaponId wepid) {
+    return MeleeWeaponId:wepid >= WEPID_MELEE_NONE && MeleeWeaponId:wepid < MeleeWeaponId;
 }
 
 /**
@@ -371,8 +366,7 @@ stock bool IsValidWeaponId({WeaponId, MeleeWeaponId} wepid, tagType = tagof(wepi
  * @param wepid     WeaponId to get the slot for.
  * @return Slot number (0-4) or -1 for invalid WeaponId or no slot
  */
-stock int GetSlotFromWeaponId(WeaponId wepid)
-{
+stock int GetSlotFromWeaponId(WeaponId wepid) {
     return IsValidWeaponId(wepid) ? WeaponSlots[wepid] : -1;
 }
 
@@ -383,13 +377,14 @@ stock int GetSlotFromWeaponId(WeaponId wepid)
  * @param wepid        WeaponId to check for a known weapon model for.
  * @return True if a valid weapon model exists for wepid, false otherwise.
  */
-stock bool:HasValidWeaponModel({WeaponId, MeleeWeaponId}:wepid, tagType = tagof(wepid))
-{
-    if (tagType == tagof(MeleeWeaponId))
-    {
+stock bool HasValidWeaponModel(WeaponId wepid) {
+    return IsValidWeaponId(wepid) && WeaponModels[wepid][0] != '\0';
+}
+
+stock bool HasValidMeleeWeaponModel(MeleeWeaponId wepid) {
+    if (tagType == tagof(MeleeWeaponId)) {
         return IsValidWeaponId(MeleeWeaponId:wepid) && MeleeWeaponModels[MeleeWeaponId:wepid][0] != '\0';
     }
-    return IsValidWeaponId(wepid) && WeaponModels[wepid][0] != '\0';
 }
 
 /**
@@ -398,16 +393,13 @@ stock bool:HasValidWeaponModel({WeaponId, MeleeWeaponId}:wepid, tagType = tagof(
  * @param weaponName    Weapon name string to look up Id from
  * @return                The corresponding WeaponId if found, else WEPID_NONE
  */
-stock WeaponId WeaponNameToId(const char weaponName[])
-{
-    new WeaponID:id;
-    if(hWeaponNamesTrie == INVALID_HANDLE)
-    {
+stock WeaponId WeaponNameToId(const char[] weaponName) {
+    int id;
+    if(hWeaponNamesTrie == INVALID_HANDLE) {
         InitWeaponNamesTrie();
     }
-    if(GetTrieValue(hWeaponNamesTrie, weaponName, id))
-    {
-        return WeaponId:id;
+    if(GetTrieValue(hWeaponNamesTrie, weaponName, id)) {
+        return view_as<WeaponId>(id);
     }
     return WEPID_NONE;
 }
@@ -420,16 +412,12 @@ stock WeaponId WeaponNameToId(const char weaponName[])
  * @param length        Max length which can be written to the buffer.
  * @return                Number of bytes written to buffer, or 0 for invalid weaponId.
  */
-stock GetWeaponName({WeaponId, MeleeWeaponId}:wepid, String:nameBuffer[], length, tagType = tagof(wepid))
-{
-    if (tagType == tagof(MeleeWeaponId))
-    {
-        strcopy(nameBuffer, length, GETMELEEWEAPONNAME(wepid));
-    }
-    else
-    {
-        strcopy(nameBuffer, length, GETWEAPONNAME(wepid));
-    }
+stock int GetWeaponName(WeaponId wepid, char[] nameBuffer, int length) {
+    return IsValidWeaponId(wepid) ? strcopy(nameBuffer, length, WeaponNames[wepid]) : 0;
+}
+
+stock int GetMeleeWeaponName(WeaponId wepid, char[] nameBuffer, int length) {
+    return IsValidWeaponId(wepid) ? strcopy(nameBuffer, length, MeleeWeaponNames[wepid]) : 0;
 }
 
 /**
@@ -440,16 +428,12 @@ stock GetWeaponName({WeaponId, MeleeWeaponId}:wepid, String:nameBuffer[], length
  * @param length        Max length which can be written to the buffer.
  * @return                Number of bytes written to buffer, or 0 for invalid weaponId.
  */
-stock GetLongWeaponName({WeaponId, MeleeWeaponId}:wepid, String:nameBuffer[], length, tagType = tagof(wepid))
-{
-    if (tagType == tagof(MeleeWeaponId))
-    {
-        strcopy(nameBuffer, length, GETLONGMELEEWEAPONNAME(wepid));
-    }
-    else
-    {
-        strcopy(nameBuffer, length, GETLONGWEAPONNAME(wepid));
-    }
+stock int GetLongWeaponName(WeaponId wepid, char[] nameBuffer, int length) {
+    strcopy(nameBuffer, length, GETLONGMELEEWEAPONNAME(wepid));
+}
+
+stock int GetLongMeleeWeaponName(WeaponId wepid, char[] nameBuffer, int length) {
+    strcopy(nameBuffer, length, GETLONGWEAPONNAME(wepid));
 }
     
 /**
@@ -461,16 +445,12 @@ stock GetLongWeaponName({WeaponId, MeleeWeaponId}:wepid, String:nameBuffer[], le
  * @param length        Max length which can be written to the buffer.
  * @return                Number of bytes written to buffer, or 0 for invalid weaponid or no weapon model available.
  */
-stock GetWeaponModel({WeaponId, MeleeWeaponId}:wepid, String:modelBuffer[], length, tagType = tagof(wepid))
-{
-    if (tagType == tagof(MeleeWeaponId))
-    {
-        strcopy(modelBuffer, length, GETMELEEWEAPONMODEL(wepid));
-    }
-    else
-    {
-        strcopy(modelBuffer, length, GETWEAPONMODEL(wepid));
-    }
+stock int GetWeaponModel(MeleeWeaponId wepid, char[] modelBuffer, int length) {
+    strcopy(modelBuffer, length, GETWEAPONMODEL(wepid));
+}
+
+stock int GetMeleeWeaponModel(MeleeWeaponId wepid, char[] modelBuffer, int length) {
+    strcopy(modelBuffer, length, GETMELEEWEAPONMODEL(wepid));
 }
 
 /**
@@ -480,26 +460,21 @@ stock GetWeaponModel({WeaponId, MeleeWeaponId}:wepid, String:modelBuffer[], leng
  * @param entity        Index of entity to identify
  * @return WeaponID for the entity if it is a weapon, WEPID_NONE otherwise
  */
-stock WeaponId:IdentifyWeapon(entity)
-{
-    if(!entity || !IsValidEntity(entity) || !IsValidEdict(entity))
-    {
+stock WeaponId IdentifyWeapon(int entity) {
+    if(!entity || !IsValidEntity(entity) || !IsValidEdict(entity)) {
         return WEPID_NONE;
     }
-    decl String:class[64];
-    if(!GetEdictClassname(entity, class, sizeof(class)))
-    {
+    static char class[64];
+    if(!GetEdictClassname(entity, class, sizeof(class))) {
         return WEPID_NONE;
     }
 
-    if(StrEqual(class, "weapon_spawn"))
-    {
-        return WeaponId:GetEntProp(entity,Prop_Send,"m_weaponID");
+    if(StrEqual(class, "weapon_spawn")) {
+        return view_as<WeaponId>(GetEntProp(entity ,Prop_Send, "m_weaponID"));
     }
 
-    new len = strlen(class);
-    if(len-6 > 0 && StrEqual(class[len-6], "_spawn"))
-    {
+    int len = strlen(class);
+    if(len-6 > 0 && StrEqual(class[len-6], "_spawn")) {
         class[len-6]='\0';
         return WeaponNameToId(class);
     }
@@ -508,41 +483,30 @@ stock WeaponId:IdentifyWeapon(entity)
 }
 
 // Helper function used for getting an entity's internal melee name
-stock bool:GetMeleeWeaponNameFromEntity(entity, String:buffer[], length) {
-    decl String:classname[64];
-    if (! GetEdictClassname(entity, classname, sizeof(classname)))
-    {
+stock bool GetMeleeWeaponNameFromEntity(int entity, char[] buffer, int length) {
+    static char classname[64];
+    if (!GetEdictClassname(entity, classname, sizeof(classname))) {
         return false;
     }
 
-    if (StrEqual(classname, "weapon_melee_spawn"))
-    {
-        if (hMeleeWeaponModelsTrie == INVALID_HANDLE)
-        {
+    if (StrEqual(classname, "weapon_melee_spawn")) {
+        if (hMeleeWeaponModelsTrie == INVALID_HANDLE) {
             InitWeaponNamesTrie();
         }
 
-        decl String:sModelName[128];
+        static char sModelName[128];
         GetEntPropString(entity, Prop_Data, "m_ModelName", sModelName, sizeof(sModelName));
 
         // Strip models directory
-        if (strncmp(sModelName, "models/", 7, false) == 0)
-        {
+        if (strncmp(sModelName, "models/", 7, false) == 0) {
             strcopy(sModelName, sizeof(sModelName), sModelName[6]);
         }
 
-        if (GetTrieString(hMeleeWeaponModelsTrie, sModelName, buffer, length))
-        {
-            return true;
-        }
-        return false;
-    }
-    else if (StrEqual(classname, "weapon_melee"))
-    {
+        return GetTrieString(hMeleeWeaponModelsTrie, sModelName, buffer, length)
+    } else if (StrEqual(classname, "weapon_melee")) {
         GetEntPropString(entity, Prop_Data, "m_strMapSetScriptName", buffer, length);
         return true;
     }
-
     return false;
 }
 
@@ -553,28 +517,23 @@ stock bool:GetMeleeWeaponNameFromEntity(entity, String:buffer[], length) {
  * @param entity        Index of entity to identify
  * @return MeleeWeaponId for the entity if it is a weapon, WEPID_MELEE_NONE otherwise
  */
-stock MeleeWeaponId:IdentifyMeleeWeapon(entity)
-{
-    if (IdentifyWeapon(entity) != WEPID_MELEE)
-    {
+stock MeleeWeaponId IdentifyMeleeWeapon(int entity) {
+    if (IdentifyWeapon(entity) != WEPID_MELEE) {
         return WEPID_MELEE_NONE;
     }
 
-    decl String:sName[128];
-    if (! GetMeleeWeaponNameFromEntity(entity, sName, sizeof(sName)))
-    {
+    static char sName[128];
+    if (! GetMeleeWeaponNameFromEntity(entity, sName, sizeof(sName))) {
         return WEPID_MELEE_NONE;
     }
 
-    if (hMeleeWeaponNamesTrie == INVALID_HANDLE)
-    {
+    if (hMeleeWeaponNamesTrie == INVALID_HANDLE) {
         InitWeaponNamesTrie();
     }
 
-    new id;
-    if(GetTrieValue(hMeleeWeaponNamesTrie, sName, id))
-    {
-        return MeleeWeaponId:id;
+    int id;
+    if(GetTrieValue(hMeleeWeaponNamesTrie, sName, id)) {
+        return id;
     }
     return WEPID_MELEE_NONE;
 }
@@ -590,7 +549,7 @@ stock MeleeWeaponId:IdentifyMeleeWeapon(entity)
  * @param model            World model to use for the weapon spawn
  * @return entity of the new weapon spawn, or -1 on errors.
  */
-stock ConvertWeaponSpawn(entity, WeaponId:wepid, count=5, const String:model[] = "")
+stock int ConvertWeaponSpawn(int entity, WeaponId wepid, int count = 5, const char model[] = "")
 {
     if(!IsValidEntity(entity)) return -1;
     if(!IsValidWeaponId(wepid)) return -1;
@@ -609,12 +568,9 @@ stock ConvertWeaponSpawn(entity, WeaponId:wepid, count=5, const String:model[] =
     SetEntProp(entity, Prop_Send, "m_weaponID", wepid);
 
     decl String:buf[64];
-    if(model[0] == '\0')
-    {
+    if(model[0] == '\0') {
         SetEntityModel(entity, model);
-    }
-    else
-    {
+    } else {
         GetWeaponModel(wepid, buf, sizeof(buf));
         SetEntityModel(entity, buf);
     }

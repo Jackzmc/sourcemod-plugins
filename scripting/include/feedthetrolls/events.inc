@@ -138,16 +138,30 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	L4D2Infected class = view_as<L4D2Infected>(GetEntProp(attacker, Prop_Send, "m_zombieClass"));
 	// Check for any existing victims
 	int existingTarget = GetClientOfUserId(g_iAttackerTarget[attacker]);
-	if(existingTarget > 0 && IsPlayerAlive(existingTarget)) {
-		if(gInstaSpecialMagnet[existingTarget] > 0) {
-			curTarget = existingTarget;
-			return Plugin_Changed;
-		} else if(class == L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 2) && WillMagnetRun(Trolls[tankMagnetID], existingTarget)) {
-			curTarget = existingTarget;
-			return Plugin_Changed;
-		}else if(class != L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 1) && WillMagnetRun(Trolls[spMagnetID], existingTarget)) {
-			curTarget = existingTarget;
-			return Plugin_Changed;
+	if(existingTarget > 0) {
+		if(IsPlayerAlive(existingTarget)) {
+			// Insta-specials ALWAYS target
+			if(gInstaSpecialMagnet[existingTarget] > 0) {
+				curTarget = existingTarget;
+				return Plugin_Changed;
+			} 
+			// Stop targetting if no longer magnetted:
+			if(class == L4D2Infected_Tank) {
+				if(!Trolls[tankMagnetID].IsActive(existingTarget) || !WillMagnetRun(Trolls[tankMagnetID], existingTarget)) return Plugin_Continue;
+			} else if(class != L4D2Infected_Tank) {
+				if(!Trolls[spMagnetID].IsActive(existingTarget) || !WillMagnetRun(Trolls[spMagnetID], existingTarget)) return Plugin_Continue;
+			}
+
+			// Only set target based on incap rules:
+			if(class == L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 2) && WillMagnetRun(Trolls[tankMagnetID], existingTarget)) {
+				curTarget = existingTarget;
+				return Plugin_Changed;
+			}else if(class != L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 1) && WillMagnetRun(Trolls[spMagnetID], existingTarget)) {
+				curTarget = existingTarget;
+				return Plugin_Changed;
+			}
+		} else {
+			g_iAttackerTarget[attacker] = 0;
 		}
 	}
 
@@ -157,12 +171,17 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	int closestClient = -1;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-			if(class == L4D2Infected_Tank && Trolls[tankMagnetID].IsActive(i) && !WillMagnetRun(Trolls[tankMagnetID], i)) continue;
-			else if(class != L4D2Infected_Tank && Trolls[spMagnetID].IsActive(i) && !WillMagnetRun(Trolls[spMagnetID], i)) continue;
+			if(class == L4D2Infected_Tank) {
+				if(!Trolls[tankMagnetID].IsActive(i) || !WillMagnetRun(Trolls[tankMagnetID], i)) continue;
+			} else if(class != L4D2Infected_Tank) {
+				if(!Trolls[spMagnetID].IsActive(i) || !WillMagnetRun(Trolls[spMagnetID], i)) continue;
+			}
 
 			if(IsPlayerIncapped(i)) {
 				if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2 == 0) || (class !=  L4D2Infected_Tank && hMagnetTargetMode.IntValue & 1 == 0)) continue;
 			}
+
+			PrintToConsoleAll("[FTT/Debug] Adding possible magnet victim %N for %N", i, attacker);
 
 			GetClientAbsOrigin(i, survPos);
 			float dist = GetVectorDistance(survPos, spPos, true);
@@ -176,14 +195,14 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	if(closestClient > 0) {
 		g_iAttackerTarget[attacker] = GetClientUserId(closestClient);
 		curTarget = closestClient;
-		PrintToConsoleAll("[FTT] New target for %d: %N", attacker, curTarget);
 		return Plugin_Changed;
 	}
 	return Plugin_Continue;
 }
 
 bool WillMagnetRun(const Troll troll, int i) {
-	if(troll.activeFlagClients[i] == 0) return true;
+	if(troll.activeFlagClients[i] == 0) return false;
+
 	float cChance = 1.0;
 	//Skip first bit as it is ('Always')
 	if(troll.activeFlagClients[i] & 2) // 2nd: 50%
@@ -422,6 +441,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	if(g_bPendingItemGive[client] && !(buttons & IN_ATTACK2)) {
 		int target = GetClientAimTarget(client, true);
 		if(target > -1) {
+			ClientCommand(client, "slot5");
 			buttons |= IN_ATTACK2;
 			RequestFrame(StopItemGive, client);
 			return Plugin_Changed;
@@ -509,16 +529,17 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 		if(hBotReverseFFDefend.IntValue > 0 && IsFakeClient(attacker) && shootAtTarget[attacker] == 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) return Plugin_Stop;
 		if(attacker != victim && hBotReverseFFDefend.IntValue > 0 && hBotReverseFFDefend.IntValue == 2 || GetUserAdmin(attacker) == INVALID_ADMIN_ID) {
 			if(IsFakeClient(victim) && !IsFakeClient(attacker) && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
-
-				if(shootAtTarget[victim] == attacker) {
-					shootAtTargetHP[attacker] -= RoundFloat(damage);
-					shootAtTargetLoops[victim] += 4;
-					return Plugin_Continue;
-				} else if(shootAtTarget[victim] > 0) {
-					// Don't switch, wait for timer to stop
-					return Plugin_Continue;
+				if(hBotDefendChance.IntValue >= GetRandomFloat()) {
+					if(shootAtTarget[victim] == attacker) {
+						shootAtTargetHP[attacker] -= RoundFloat(damage);
+						shootAtTargetLoops[victim] += 4;
+						return Plugin_Continue;
+					} else if(shootAtTarget[victim] > 0) {
+						// Don't switch, wait for timer to stop
+						return Plugin_Continue;
+					}
+					SetBotTarget(attacker, victim, GetClientRealHealth(attacker) - RoundFloat(damage));
 				}
-				SetBotTarget(attacker, victim, GetClientRealHealth(attacker) - RoundFloat(damage));
 			}
 		}
 	}
@@ -531,7 +552,7 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 	if(honkID == 0) honkID = GetTrollID("Honk / Meow");
 	if(vocalGagID == 0) vocalGagID = GetTrollID("Vocalize Gag");
 	
-	if(lastButtonUser > -1 && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
+	if(lastButtonUser > -1 && !IsFakeClient(lastButtonUser) && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
 		PrintToConsoleAll("CRESCENDO STARTED BY %N", lastButtonUser);
 		#if defined DEBUG
 		PrintToChatAll("CRESCENDO STARTED BY %N", lastButtonUser);
@@ -570,10 +591,9 @@ public Action Event_WitchVictimSet(Event event, const char[] name, bool dontBroa
 	static int witchTrollID;
 	if(witchTrollID == 0) witchTrollID = GetTrollID("Witch Magnet");
 
-	int witch = event.GetInt("witchid");
+	int witch = event.GetInt("witchid"), closestClient = -1;
 	float closestDistance, survPos[3], witchPos[3];
 	GetEntPropVector(witch, Prop_Send, "m_vecOrigin", witchPos); 
-	int closestClient = -1;
 
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
@@ -681,4 +701,17 @@ int FindClosestVisibleClient(int source) {
 
 public bool TraceEntityFilterPlayer(int entity, int mask, any data) {
 	return data != entity && entity <= MaxClients && GetClientTeam(entity) == 2 && IsPlayerAlive(entity);
+}
+
+float iLastAntiRushEvent[MAXPLAYERS+1];
+public Action OnAntiRush(int client, int &type, float distance) {
+	PrintToConsoleAll("[FTT] Antirush: %N (dist=%d) (GameTime=%f)", client, distance, GetGameTime());
+	if(type == 3 && IsPlayerAlive(client) && !IsPlayerIncapped(client)) {
+		if(GetGameTime() - iLastAntiRushEvent[client] > 30.0) {
+			int special = GetRandomInt(0,6);
+			iLastAntiRushEvent[client] = GetGameTime();
+			SpawnSpecialNear(client, special);
+			PrintToConsoleAll("[FTT] Spawning anti-rush special on %N (dist=%f) (special=%d)", client, distance, special);
+		}
+	}
 }

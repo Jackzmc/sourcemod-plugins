@@ -40,8 +40,9 @@ public void OnPluginStart() {
 	PluginCvarTimeout = CreateConVar("l4d_rts_timeout", "30", "How long will the server stay disconnected from matchmaking? 0 - never restore matchmaking connection", 0, true, 0.0, true, 300.0);
 	PluginCvarImmuneLevel = CreateConVar("l4d_rts_immunelevel", "1", "Any player >= to this level will cancel the lobby vote.", 0);
 
-	RegAdminCmd("sm_rts", Command_MakeReservation, ADMFLAG_BAN, "Free the server from all players, then reserve it.");
-	RegAdminCmd("sm_cr", Command_CancelReservation, ADMFLAG_BAN, "Cancel reservation and make server public again.");
+	RegAdminCmd("sm_rts", Command_MakeReservation, ADMFLAG_KICK, "Free the server from all players, then reserve it.");
+	RegAdminCmd("sm_cr", Command_CancelReservation, ADMFLAG_KICK, "Cancel reservation and make server public again.");
+	RegAdminCmd("sm_forcelobby", Command_ForceLobby, ADMFLAG_BAN, "Force call vote to return to lobby");
 	
 	SteamGroupExclusiveCvar	= FindConVar("sv_steamgroup_exclusive");
 	SearchKeyCvar = FindConVar("sv_search_key");
@@ -66,6 +67,17 @@ public void OnMapEnd() {
 
 public void OnMapStart() {
 	isMapChange = false;
+}
+
+public Action Command_ForceLobby(int client, int args) {
+	Handle bf = StartMessageOne("VoteStart", client, USERMSG_RELIABLE);
+	BfWriteByte(bf, 0);
+	BfWriteByte(bf, client);
+	BfWriteString(bf, "returntolobby");
+	BfWriteString(bf, "");
+	BfWriteString(bf, "");
+	EndMessage();
+	PassVote();
 }
 
 public Action Command_MakeReservation(int client, int args) {

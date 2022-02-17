@@ -25,6 +25,7 @@ ConVar hMagnetTargetMode;
 ConVar hBadThrowHitSelf;
 ConVar hBotReverseFFDefend;
 ConVar hSbFriendlyFire;
+ConVar hBotDefendChance;
 
 
 bool g_bPendingItemGive[MAXPLAYERS+1];

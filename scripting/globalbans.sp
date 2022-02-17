@@ -174,12 +174,14 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
                     LogMessage("%N is banned: %s", client, reason);
                     if(hKickType.IntValue > 0) {
                         if(reasonResult == DBVal_Data)
-                            KickClient(client, "You have been banned: %s", reason);
+                            KickClient(client, "You have been banned:\n%s", reason);
                         else
                             KickClient(client, "You have been banned from this server.");
+                        static char query[128];
+                        g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);
+                        g_db.Query(DB_OnBanQuery, query);
                     } else {
                         PrintChatToAdmins("%N was banned from this server for: \"%s\"", client, reason);
-                        return;
                     }
                     static char query[128];
                     g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);

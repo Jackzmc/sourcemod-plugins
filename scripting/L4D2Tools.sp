@@ -1,7 +1,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-//#define DEBUG
+#define DEBUG 1
 
 #define PLUGIN_VERSION "1.0"
 
@@ -22,7 +22,8 @@ static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1], reserveMode;
 static bool isHighPingIdle[MAXPLAYERS+1], isL4D1Survivors;
 static Handle hTakeOverBot, hGoAwayFromKeyboard;
-static char lastSound[MAXPLAYERS+1][64];
+static StringMap SteamIDs;
+static char lastSound[MAXPLAYERS+1][64], gamemode[32];
 
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
 
@@ -66,7 +67,6 @@ public void OnPluginStart() {
 	hFinaleTimer 	= CreateConVar("sm_time_finale", "0.0", "Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales", FCVAR_NONE, true, 0.0, true, 2.0);
 	hFFNotice    	= CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
 	hPingDropThres 	= CreateConVar("sm_autoidle_ping_max", "0.0", "The highest ping a player can have until they will automatically go idle.\n0=OFF, Min is 30", FCVAR_NONE, true, 0.0, true, 1000.0);
-	hMPGamemode  = FindConVar("mp_gamemode");
 	hForceSurvivorSet = FindConVar("l4d_force_survivorset");
 
 	hFFNotice.AddChangeHook(CVC_FFNotice);
@@ -75,6 +75,12 @@ public void OnPluginStart() {
 	}
 
 	LasersUsed = new ArrayList(1, 0);
+	SteamIDs = new StringMap();
+
+	ConVar hGamemode = FindConVar("mp_gamemode"); 
+	hGamemode.GetString(gamemode, sizeof(gamemode));
+	hGamemode.AddChangeHook(Event_GamemodeChange);
+	Event_GamemodeChange(hGamemode, gamemode, gamemode);
 
 	HookEvent("player_use", Event_PlayerUse);
 	HookEvent("round_end", Event_RoundEnd);
@@ -111,25 +117,48 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_perms", Command_SetServerPermissions, ADMFLAG_KICK, "Sets the server's permissions.");
 	RegAdminCmd("sm_permissions", Command_SetServerPermissions, ADMFLAG_KICK, "Sets the server's permissions.");
 	RegConsoleCmd("sm_pmodels", Command_ListClientModels, "Lists all player's models");
+	RegAdminCmd("sm_skipoutro", Command_SkipOutro, ADMFLAG_KICK, "Skips the outro");
 
 	CreateTimer(8.0, Timer_CheckPlayerPings, _, TIMER_REPEAT);
 }
 
+public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
+	cvar.GetString(gamemode, sizeof(gamemode));
+}
+
 public void OnClientConnected(int client) {
 	if(!IsFakeClient(client) && reserveMode == 1) {
-		PrintToChatAll("%N is connecting", client);
+		PrintChatToAdmins("%N is connecting", client);
 	}
 }
 
+stock void PrintChatToAdmins(const char[] format, any ...) {
+	char buffer[254];
+	VFormat(buffer, sizeof(buffer), format, 2);
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			AdminId admin = GetUserAdmin(i);
+			if(admin != INVALID_ADMIN_ID) {
+				PrintToChat(i, "%s", buffer);
+			}
+		}
+	}
+	PrintToServer("%s", buffer);
+}
+
+
 public void OnClientPostAdminCheck(int client) {
 	if(!IsFakeClient(client)) {
-		if(reserveMode == 2) {
-			if(GetUserAdmin(client) == INVALID_ADMIN_ID) {
+		static char auth[32];
+		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
+		if(reserveMode == 3 || (reserveMode == 2 && GetUserAdmin(client) == INVALID_ADMIN_ID)) {
+			int index;
+			if(!SteamIDs.GetValue(auth, index)) {
 				KickClient(client, "Sorry, server is reserved");
+				return;
 			}
-		}else if(reserveMode == 3) {
-			KickClient(client, "Sorry, server is reserved");
 		}
+		SteamIDs.SetValue(auth, client);
 	}
 }
 
@@ -139,7 +168,7 @@ public Action Command_SetServerPermissions(int client, int args) {
 		GetCmdArg(1, arg1, sizeof(arg1));
 		if(StrEqual(arg1, "public", false)) {
 			reserveMode = 0;
-		}else if(StrContains(arg1, "notice", false) > -1) {
+		}else if(StrContains(arg1, "noti", false) > -1) {
 			reserveMode = 1;
 		}else if(StrContains(arg1, "admin", false) > -1) {
 			reserveMode = 2;
@@ -158,6 +187,7 @@ public Action Command_SetServerPermissions(int client, int args) {
 
 
 public Action Timer_CheckPlayerPings(Handle timer) {
+	if(StrEqual(gamemode, "hideandseek")) return Plugin_Continue;
 	if(hPingDropThres.IntValue != 0) {
 		for (int i = 1; i <= MaxClients; i++ ) {
 			if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && IsPlayerAlive(i) && GetClientTeam(i) > 1) {
@@ -256,7 +286,14 @@ public Action Command_SwapPlayer(int client, int args) {
 	return Plugin_Handled;
 }
 
-//TODO: Implement idle bot support
+public Action Command_SkipOutro(int client, int args) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			ClientCommand(i, "skipouttro");
+		}
+	}
+	return Plugin_Handled;
+}
 public Action Command_ListClientModels(int client, int args) {
 	char model[64];
 	for(int i = 1; i <= MaxClients; i++) {
@@ -359,7 +396,23 @@ public Action Command_SetClientModel(int client, int args) {
 		GetCmdArg(2, arg2, sizeof(arg2));
 		GetCmdArg(3, arg3, sizeof(arg3));
 
-		char modelPath[64];
+		// If args sm_model <survivor> -> sm_model <self> <model>
+		static char modelPath[64];
+		if(args == 1) {
+			int modelID = GetSurvivorId(arg1, false);
+			if(modelID != -1) {
+				int team = GetClientTeam(client);
+				if(team != 2 && team != 4) {
+					ReplyToCommand(client, "You must be a survivor.");
+					return Plugin_Handled;
+				}
+				GetSurvivorModel(modelID, modelPath, sizeof(modelPath));
+				if(isL4D1Survivors && hForceSurvivorSet != null && hForceSurvivorSet.IntValue < 2) modelID = GetSurvivorId(arg2, true);
+				SetCharacter(client, modelID, modelPath, false);
+				return Plugin_Handled;
+			}
+		}
+
 		int modelID = GetSurvivorId(arg2, false);
 		if(modelID == -1) {
 			ReplyToCommand(client, "Invalid survivor type entered. Case-sensitive, full name required.");
@@ -386,39 +439,41 @@ public Action Command_SetClientModel(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		int target;
 		for (int i = 0; i < target_count; i++) {
-			target = target_list[i];
+			int target = target_list[i];
 			bool keepModel = StrEqual(arg3, "keep", false);
 			if(IsClientConnected(target) && IsClientInGame(target) && IsPlayerAlive(target)) {
 				int team = GetClientTeam(target_list[i]);
 				if(team == 2 || team == 4) {
-					SetEntProp(target, Prop_Send, "m_survivorCharacter", modelID);
-					SetEntityModel(target, modelPath);
-					if (IsFakeClient(target)) {
-						char name[32];
-						GetSurvivorName(target, name, sizeof(name));
-						SetClientInfo(target, "name", name);
-					}
-					UpdatePlayerIdentity(target, view_as<Character>(modelID), keepModel);
-
-					DataPack pack = new DataPack();
-					pack.WriteCell(GetClientUserId(target));
-					for(int slot = 0; slot <= 1; slot++) {
-						int weapon = GetPlayerWeaponSlot(target, slot);
-						if( weapon > 0 ) {
-							SDKHooks_DropWeapon(target, weapon, NULL_VECTOR);
-							pack.WriteCell(EntIndexToEntRef(weapon)); // Save last held weapon to switch back
-
-						}
-					}
-					CreateTimer(0.1, Timer_RequipWeapon, pack);
-
+					SetCharacter(target, modelID, modelPath, keepModel);
 				}
 			}
 		}
 	}
 	return Plugin_Handled;
+}
+
+void SetCharacter(int target, int modelID, char[] modelPath, bool keepModel) {
+	SetEntProp(target, Prop_Send, "m_survivorCharacter", modelID);
+	SetEntityModel(target, modelPath);
+	if (IsFakeClient(target)) {
+		char name[32];
+		GetSurvivorName(target, name, sizeof(name));
+		SetClientInfo(target, "name", name);
+	}
+	UpdatePlayerIdentity(target, view_as<Character>(modelID), keepModel);
+
+	DataPack pack = new DataPack();
+	pack.WriteCell(GetClientUserId(target));
+	for(int slot = 0; slot <= 1; slot++) {
+		int weapon = GetPlayerWeaponSlot(target, slot);
+		if( weapon > 0 ) {
+			SDKHooks_DropWeapon(target, weapon, NULL_VECTOR);
+			pack.WriteCell(EntIndexToEntRef(weapon)); // Save last held weapon to switch back
+
+		}
+	}
+	CreateTimer(0.1, Timer_RequipWeapon, pack);
 }
 
 public Action Cmd_SetSurvivor(int client, int args) {
@@ -492,6 +547,11 @@ public void OnClientDisconnect(int client) {
 		TeleportEntity(botDropMeleeWeapon[client], pos, NULL_VECTOR, NULL_VECTOR);
 		botDropMeleeWeapon[client] = -1;
 	}
+	if(!IsFakeClient(client)) {
+		static char auth[32];
+		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
+		SteamIDs.Remove(auth);
+	}
 }
 int disabledItem[2048];
 //Can also probably prevent kit drop to pick them up 
@@ -515,11 +575,11 @@ public Action Timer_AllowKitPickup(Handle h, int entity) {
 }
 public void OnMapStart() {
 	AddFileToDownloadsTable("sound/custom/meow1.mp3");
-	PrecacheSound("sound/custom/meow1.mp3");
+	PrecacheSound("custom/meow1.mp3");
 	AddFileToDownloadsTable("sound/custom/xen_teleport.mp3");
-	PrecacheSound("sound/custom/xen_teleport.mp3");
+	PrecacheSound("custom/xen_teleport.mp3");
 	AddFileToDownloadsTable("sound/custom/mariokartmusic.mp3");
-	PrecacheSound("sound/custom/mariokartmusic.mp3");	
+	PrecacheSound("custom/mariokartmusic.mp3");	
 	
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
@@ -544,7 +604,7 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
 	int bot = GetClientOfUserId(event.GetInt("bot"));
 	if(StrEqual(name, "player_bot_replace")) {
-		//Bot replaced player
+		//Bot replaced player, hook any drop events
 		SDKHook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 	}else{
 		//Player replaced a bot
@@ -562,10 +622,10 @@ public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroad
 	}
 }
 public Action Event_OnWeaponDrop(int client, int weapon) {
-	if(!IsValidEntity(weapon)) return Plugin_Continue;
-	char wpn[32];
+	if(!IsValidEntity(weapon) || !IsFakeClient(client)) return Plugin_Continue;
+	static char wpn[32];
 	GetEdictClassname(weapon, wpn, sizeof(wpn));
-	if(IsFakeClient(client) && StrEqual(wpn, "weapon_melee") && GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
+	if(StrEqual(wpn, "weapon_melee") && GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
 		#if defined DEBUG 0
 		PrintToServer("Bot %N dropped melee weapon %s", client, wpn);
 		#endif
@@ -607,9 +667,7 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 			EquipPlayerWeapon(client, botDropMeleeWeapon[client]);
 			botDropMeleeWeapon[client] = -1;
 		}
-		char currentGamemode[16];
-		hMPGamemode.GetString(currentGamemode, sizeof(currentGamemode));
-		if(StrEqual(currentGamemode, "tankrun", false)) {
+		if(StrEqual(gamemode, "tankrun", false)) {
 			if(!IsFakeClient(client)) {
 				CreateTimer(1.0, Timer_TPBots, client, TIMER_FLAG_NO_MAPCHANGE);
 			}
@@ -724,15 +782,6 @@ stock int GetAnyValidClient() {
 		}
 	}
 	return -1;
-}
-
-stock int GetRealClient(int client) {
-	if(IsFakeClient(client)) {
-		int realPlayer = GetClientOfUserId(GetEntProp(client, Prop_Send, "m_humanSpectatorUserID"));
-		return realPlayer > 0 ? realPlayer : -1;
-	}else{
-		return client;
-	}
 }
 
 stock int GetIdleBot(int client) {

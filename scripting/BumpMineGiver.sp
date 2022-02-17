@@ -95,7 +95,7 @@ public Action Command_GiveOthersBMP(int client, int args) {
 				client,
 				target_list,
 				MAXPLAYERS,
-				COMMAND_FILTER_ALIVE, /* Only allow alive players */
+				COMMAND_FILTER_ALIVE,
 				target_name,
 				sizeof(target_name),
 				tn_is_ml)) <= 0)

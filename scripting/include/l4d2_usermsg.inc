@@ -1,7 +1,7 @@
 enum PZDamage_Type {
-	PZDamage_Killed,
+	PZDamage_Killed, //0
 	PZDamage_Incapped,
-	PZDamage_Killed2,
+	PZDamage_Killed2, //2
 	PZDamage_Revived,
 	PZDamage_Progress,
 	PZDamage_DestroyedCan,
