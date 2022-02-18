@@ -60,7 +60,7 @@ public void OnClientAuthorized(int client, const char[] auth) {
 }
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(g_PendingBanTroll[client] > 0) {
+	if(client > 0 && g_PendingBanTroll[client] > 0) {
 		if(!IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID) {
 			BanIdentity(steamids[client], 0, BANFLAG_AUTHID, "Marked as Troll", "ftt", GetClientOfUserId(g_PendingBanTroll[client]));
 		}
@@ -525,7 +525,10 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 			return Plugin_Changed;
 		}
 
-		if(damagetype & DMG_BURN || damagetype & DMG_BLAST) return Plugin_Continue;
+		if(damagetype & DMG_BURN || damagetype & DMG_BLAST) {
+			if(IsFakeClient(attacker)) return Plugin_Handled;
+			else return Plugin_Continue;
+		}
 		if(hBotReverseFFDefend.IntValue > 0 && IsFakeClient(attacker) && shootAtTarget[attacker] == 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) return Plugin_Stop;
 		if(attacker != victim && hBotReverseFFDefend.IntValue > 0 && hBotReverseFFDefend.IntValue == 2 || GetUserAdmin(attacker) == INVALID_ADMIN_ID) {
 			if(IsFakeClient(victim) && !IsFakeClient(attacker) && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
@@ -552,7 +555,7 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 	if(honkID == 0) honkID = GetTrollID("Honk / Meow");
 	if(vocalGagID == 0) vocalGagID = GetTrollID("Vocalize Gag");
 	
-	if(lastButtonUser > -1 && !IsFakeClient(lastButtonUser) && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
+	if(lastButtonUser > 0 && IsClientConnected(lastButtonUser) && !IsFakeClient(lastButtonUser) && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
 		PrintToConsoleAll("CRESCENDO STARTED BY %N", lastButtonUser);
 		#if defined DEBUG
 		PrintToChatAll("CRESCENDO STARTED BY %N", lastButtonUser);
