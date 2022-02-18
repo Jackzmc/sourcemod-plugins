@@ -39,9 +39,9 @@ public Action Command_InstaSpecial(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		int specialType = GetSpecialType(arg2);
+		SpecialType specialType = GetSpecialType(arg2);
 		static float pos[3];
-		if(specialType == -1) {
+		if(specialType == Special_Invalid) {
 			ReplyToCommand(client, "Unknown special \"%s\"", arg2);
 			return Plugin_Handled;
 		}
@@ -108,9 +108,9 @@ public Action Command_InstaSpecialFace(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		int specialType = GetSpecialType(arg2);
+		SpecialType specialType = GetSpecialType(arg2);
 		static float pos[3];
-		if(specialType == -1) {
+		if(specialType == Special_Invalid) {
 			ReplyToCommand(client, "Unknown special \"%s\"", arg2);
 			return Plugin_Handled;
 		}
