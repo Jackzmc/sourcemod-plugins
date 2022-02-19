@@ -36,11 +36,13 @@ public void OnPluginStart() {
 	forceKickFFThreshold = CreateConVar("sm_votekick_force_threshold","30.0","The threshold of amount of FF to then automatically kick.\n0: Any attempted damage\n -1: No auto kick.\n>0: When FF count > this", FCVAR_NONE, true, -1.0);
 }
 
+int iJoinTime[MAXPLAYERS+1];
 public void OnClientPutInServer(int client) {
 	int team = GetClientTeam(client);
 	if(team == 2) {
 		SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamage);
 	}
+	iJoinTime[client] = GetTime();
 }
 
 public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast) {
@@ -56,8 +58,13 @@ public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast)
 	}
 }
 /*
-Dropped BabybackRibs from server (Disconnect by user.)                                                                  L 02/16/2022 - 10:38:53: [SM] Exception reported: No valid ban method flags specified                                   L 02/16/2022 - 10:38:53: [SM] Blaming: L4D2FFKickProtection.smx                                                         L 02/16/2022 - 10:38:53: [SM] Call stack trace:                                                                         L 02/16/2022 - 10:38:53: [SM]   [0] BanClient                                                                           L 02/16/2022 - 10:38:53: [SM]   [1] Line 78, s:\Jackz\Documents\Sourcepawn\scripting\L4D2FFKickProtection.sp::VoteStart Potential vote being called                                                                                             Client "Andean Brain Surgeon" connected (70.112.126.195:27005).                                                         String Table dictionary for downloadables should be rebuilt, only found 39 of 51 strings in dictionary                  String Table dictionary for soundprecache  */
-
+Dropped BabybackRibs from server (Disconnect by user.)                                                                  
+L 02/16/2022 - 10:38:53: [SM] Exception reported: No valid ban method flags specified                                   
+L 02/16/2022 - 10:38:53: [SM] Blaming: L4D2FFKickProtection.smx                                                        
+ L 02/16/2022 - 10:38:53: [SM] Call stack trace:                                                                         
+ L 02/16/2022 - 10:38:53: [SM]   [0] BanClient                                                                           
+ L 02/16/2022 - 10:38:53: [SM]   [1] Line 78, s:\Jackz\Documents\Sourcepawn\scripting\L4D2FFKickProtection.sp::VoteStart Potential vote being called                                                                                             
+*/
 public Action VoteStart(int client, const char[] command, int argc) {
 	if(!IsClientInGame(client)) {
 		PrintToServer("Preventing vote from user not in game: %N", client);
@@ -80,8 +87,13 @@ public Action VoteStart(int client, const char[] command, int argc) {
 				AdminId targetAdmin = GetUserAdmin(target);
 				if(targetAdmin != INVALID_ADMIN_ID) { //Only run if vote is against an admin
 					PrintToChat(target, "%N has attempted to vote kick you.", client);
-					if(callerAdmin == INVALID_ADMIN_ID) { //If vote starter is not an admin, ban their ass
-						BanClient(client, 0, 0, "Attempted Vote Kick Admin", "Dick-Be-Gone", "noFF");
+					for(int i = 1; i <= MaxClients; i++) {
+						if(target != i && IsClientConnected(i) && IsClientInGame(i) && GetUserAdmin(i) != INVALID_ADMIN_ID) {
+							PrintToChat(i, "%N attempted to vote-kick %N", client, target);
+						}
+					}
+					if(callerAdmin == INVALID_ADMIN_ID && GetTime() - iJoinTime[client] <= 120) {
+						KickClient(client, "No.");
 					}
 					return Plugin_Handled;
 				}

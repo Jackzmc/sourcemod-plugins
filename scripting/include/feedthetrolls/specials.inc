@@ -1,12 +1,23 @@
 char SPECIAL_NAMES[][] = {
 	"Smoker", "Boomer", "Hunter", "Spitter", "Jockey", "Charger", "Witch", "Tank"
 };
+enum SpecialType {
+	Special_Invalid = -1,
+	Special_Smoker = 0,
+	Special_Boomer,
+	Special_Hunter,
+	Special_Spitter,
+	Special_Jockey,
+	Special_Charger,
+	Special_Witch,
+	Special_Tank
+}
 
-stock int GetSpecialType(const char[] input) {
+stock SpecialType GetSpecialType(const char[] input) {
 	for(int i = 0; i < 8; i++) {
-		if(strcmp(SPECIAL_NAMES[i], input, false) == 0) return i + 1;
+		if(strcmp(SPECIAL_NAMES[i], input, false) == 0) return view_as<SpecialType>(i + 1);
 	}
-	return -1;
+	return Special_Invalid;
 }
 
 stock bool FindSuitablePosition(int target, const float pos[3], float outputPos[3], float minDistance = 19000.0, int tries = 100) {
@@ -25,7 +36,7 @@ stock bool FindSuitablePosition(int target, const float pos[3], float outputPos[
 	return false;
 }
 
-float GetIdealMinDistance(int specialType) {
+float GetIdealMinDistance(SpecialType specialType) {
 	switch(specialType) {
 		// /*Boomer*/ case 2: return 1200.0;
 		/*Charger*/ case 6: return 19500.0;
@@ -36,20 +47,19 @@ float GetIdealMinDistance(int specialType) {
 	}
 }
 
-bool SpawnSpecialInFace(int target, int specialType) {
-	if(specialType > 8) return false;
+bool SpawnSpecialInFace(int target, SpecialType specialType) {
 	static float pos[3], ang[3];
 	static float testPos[3];
 	testPos = pos;
 	GetClientAbsOrigin(target, pos);
 	GetClientEyeAngles(target, ang);
-	if(specialType == 2) 
+	if(specialType == Special_Boomer) 
 		gInstaSpecialInstaKill = true;
-	if(specialType != 5 && specialType != 2) { //If not jockey/hunter find a suitable area that is at least 5 m away
+	if(specialType != Special_Jockey && specialType != Special_Hunter) { //If not jockey/hunter find a suitable area that is at least 5 m away
 		float minDistance = GetIdealMinDistance(specialType);
 		GetHorizontalPositionFromOrigin(pos, ang, minDistance, testPos);
 		if(!FindSuitablePosition(target, pos, testPos, minDistance, 100)) {
-			L4D_GetRandomPZSpawnPosition(target, specialType, 10, testPos);
+			L4D_GetRandomPZSpawnPosition(target, view_as<int>(specialType), 10, testPos);
 		}
 		pos = testPos;
 	} else { // Else spawn a little bit off, and above (above for jockeys)
@@ -62,12 +72,11 @@ bool SpawnSpecialInFace(int target, int specialType) {
 	return SpawnSpecialInternal(specialType, target, pos, NULL_VECTOR) != -1;
 }
 
-bool SpawnSpecialNear(int target, int specialType) {
+bool SpawnSpecialNear(int target, SpecialType type) {
 	gInstaSpecialInstaKill = false;
-	if(specialType > 8) return false;
 	static float pos[3];
-	if(L4D_GetRandomPZSpawnPosition(target, specialType, 10, pos)) {
-		return SpawnSpecialInternal(specialType, target, pos, NULL_VECTOR) != -1;
+	if(L4D_GetRandomPZSpawnPosition(target, view_as<int>(type), 10, pos)) {
+		return SpawnSpecialInternal(type, target, pos, NULL_VECTOR) != -1;
 	}
 	return false;
 }
@@ -81,10 +90,10 @@ void BypassLimit() {
 	}
 }
 
-int SpawnSpecialInternal(int type, int target, float pos[3], float ang[3]) {
-	if(type <= 6) {
+int SpawnSpecialInternal(SpecialType type, int target, float pos[3], float ang[3]) {
+	if(view_as<int>(type) <= 6) {
 		// Bypass limit:
-		gInstaSpecialType = type;
+		gInstaSpecialType = view_as<int>(type);
 		gInstaSpecialTarget = GetClientUserId(target);
 		gInstaSpecialSpawnPos = pos;
 		gInstaSpecialSpawnAng = pos;
@@ -94,16 +103,16 @@ int SpawnSpecialInternal(int type, int target, float pos[3], float ang[3]) {
 			ChangeClientTeam(bot, 3);
 			CreateTimer(0.1, Timer_KickBot, bot);
 		}
-		CheatCommand(target, "z_spawn_old", SPECIAL_NAMES[type-1], "auto");
+		CheatCommand(target, "z_spawn_old", SPECIAL_NAMES[view_as<int>(type) = -1], "auto");
 		return 0;
 	}
-	else if(type == 7) {
+	else if(type == Special_Witch) {
 		int witch = L4D2_SpawnWitch(pos, ang);
 		if(witch != -1)
 			SetWitchTarget(witch, target);
 		return witch;
 	}
-	else if(type == 8) {
+	else if(type == Special_Tank) {
 		// BypassLimit();
 		int tank = L4D2_SpawnTank(pos, ang);
 		if(tank <= 0 || !IsClientConnected(tank)) return -1;
@@ -114,8 +123,24 @@ int SpawnSpecialInternal(int type, int target, float pos[3], float ang[3]) {
 	else return -1;
 }
 
-/* TODO: Bypass limit:
- Spawn special auto, far away, mark with global vars:
-	1. special type (check)
-	2. its target
-	3. float[3] to TP it to
+stock bool GetGroundBehind(int client, float vPos[3], float vAng[3]) {
+	GetClientAbsOrigin(client, vPos);
+	vAng = vPos;
+	vAng[2] += 5.0;
+	vPos[2] -= 500.0;
+
+	Handle trace = TR_TraceRayFilterEx(vAng, vPos, MASK_SHOT, RayType_EndPoint, RayFilter_NonClient);
+	if(!TR_DidHit(trace)) {
+		delete trace;
+		return false;
+	}
+	TR_GetEndPosition(vPos, trace);
+	delete trace;
+
+	GetClientAbsAngles(client, vAng);
+	return true;
+}
+
+stock bool RayFilter_NonClient(int entity, int contentsMask) {
+	return entity > MaxClients;
+}

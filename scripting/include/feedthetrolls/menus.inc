@@ -31,18 +31,23 @@ public int Insta_SpecialHandler(Menu menu, MenuAction action, int client, int pa
 		ExplodeString(info, "|", str, 3, 8, false);
 		int target = GetClientOfUserId(StringToInt(str[0]));
 		bool inFace = StrEqual(str[1], "1");
-		int special = StringToInt(str[2]);
+		int specialInt = StringToInt(str[2]);
+		if(specialInt < 0 || specialInt > 8) {
+			ReplyToCommand(client, "Invalid special id");
+			return;
+		}
+		SpecialType special = view_as<SpecialType>(specialInt);
 		if(inFace) {
 			if(SpawnSpecialInFace(target, special)) {
-				LogAction(client, target, "\"%L\" spawned Insta-%s™ on \"%L\"", client, SPECIAL_NAMES[special-1], target);
-				ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ on %N", SPECIAL_NAMES[special-1], target);
+				LogAction(client, target, "\"%L\" spawned Insta-%s™ on \"%L\"", client, SPECIAL_NAMES[specialInt-1], target);
+				ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ on %N", SPECIAL_NAMES[specialInt-1], target);
 			} else {
 				ReplyToCommand(client, "Could not spawn special.");
 			}
 		} else {
 			if(SpawnSpecialNear(target, special)) {
-				LogAction(client, target, "\"%L\" spawned Insta-%s™ near \"%L\"", client, SPECIAL_NAMES[special-1], target);
-				ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ near %N", SPECIAL_NAMES[special-1], target);
+				LogAction(client, target, "\"%L\" spawned Insta-%s™ near \"%L\"", client, SPECIAL_NAMES[specialInt-1], target);
+				ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ near %N", SPECIAL_NAMES[specialInt-1], target);
 			} else {
 				ReplyToCommand(client, "Could not spawn special.");
 			}

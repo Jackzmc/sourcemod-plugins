@@ -30,11 +30,15 @@ public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast
 }
 public Action Timer_CheckSpecial(Handle h, int specialID) {
 	int special = GetClientOfUserId(specialID);
+	// Check if new player is the spawned special:
 	if(special > 0 && gInstaSpecialType > -1 && IsFakeClient(special) && GetClientTeam(special) == 3) {
 		int type = GetEntProp(special, Prop_Send, "m_zombieClass");
+		// Verify type of special is spawned special
 		if(type == gInstaSpecialType) {
 			gInstaSpecialType = -1;
+			// Set special to only attack them:
 			g_iAttackerTarget[special] = gInstaSpecialTarget;
+			// Incremenet count of specials targetting player:
 			gInstaSpecialMagnet[GetClientOfUserId(gInstaSpecialTarget)]++;
 
 			TeleportEntity(special, gInstaSpecialSpawnPos, gInstaSpecialSpawnAng, NULL_VECTOR);
@@ -95,9 +99,8 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 }
 public Action Event_WeaponReload(int weapon) {
 	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwner");
-	if(IsTrollActive(client, "Gun Jam")) {
-		float dec = GetRandomFloat(0.0, 1.0);
-		if(FloatCompare(dec, 0.50) == -1) { //10% chance gun jams
+	if(client > 0 &&  IsTrollActive(client, "Gun Jam")) {
+		if(GetRandomFloat() < 0.10) { //10% chance gun jams
 			return Plugin_Stop;
 		}
 	}
@@ -140,7 +143,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	int existingTarget = GetClientOfUserId(g_iAttackerTarget[attacker]);
 	if(existingTarget > 0) {
 		if(IsPlayerAlive(existingTarget)) {
-			// Insta-specials ALWAYS target
+			// Insta-specials ALWAYS target, if target has any attackers remaining
 			if(gInstaSpecialMagnet[existingTarget] > 0) {
 				curTarget = existingTarget;
 				return Plugin_Changed;
@@ -711,7 +714,7 @@ public Action OnAntiRush(int client, int &type, float distance) {
 	PrintToConsoleAll("[FTT] Antirush: %N (dist=%d) (GameTime=%f)", client, distance, GetGameTime());
 	if(type == 3 && IsPlayerAlive(client) && !IsPlayerIncapped(client)) {
 		if(GetGameTime() - iLastAntiRushEvent[client] > 30.0) {
-			int special = GetRandomInt(0,6);
+			SpecialType special = view_as<SpecialType>(GetRandomInt(0,6));
 			iLastAntiRushEvent[client] = GetGameTime();
 			SpawnSpecialNear(client, special);
 			PrintToConsoleAll("[FTT] Spawning anti-rush special on %N (dist=%f) (special=%d)", client, distance, special);
