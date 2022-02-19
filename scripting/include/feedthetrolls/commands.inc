@@ -553,3 +553,32 @@ public Action Command_BotsAttack(int client, int args) {
 	}
 	return Plugin_Handled;
 }
+
+public Action Command_Stagger(int client, int args) {
+	if(args > 0) {
+		static char arg1[32];
+		GetCmdArg(1, arg1, sizeof(arg1));
+
+		int target_list[1], target_count;
+		static char target_name[MAX_TARGET_LENGTH];
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			1,
+			COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_MULTI,
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		L4D_StaggerPlayer(target_list[0], target_list[0], NULL_VECTOR);
+	} else {
+		ReplyToCommand(client, "syntax: sm_stagger <target player>");
+	}
+	return Plugin_Handled;
+}
