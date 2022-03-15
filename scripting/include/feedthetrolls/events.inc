@@ -35,15 +35,20 @@ public Action Timer_CheckSpecial(Handle h, int specialID) {
 		int type = GetEntProp(special, Prop_Send, "m_zombieClass");
 		// Verify type of special is spawned special
 		if(type == gInstaSpecialType) {
-			gInstaSpecialType = -1;
-			// Set special to only attack them:
-			g_iAttackerTarget[special] = gInstaSpecialTarget;
-			// Incremenet count of specials targetting player:
-			gInstaSpecialMagnet[GetClientOfUserId(gInstaSpecialTarget)]++;
+			// Ignore 'ManualDirectorBot' or abm bots
+			static char buf[32];
+			GetClientName(special, buf, sizeof(buf));
+			if(StrContains(buf, "bot", false) == -1) {
+				gInstaSpecialType = -1;
+				// Set special to only attack them:
+				g_iAttackerTarget[special] = gInstaSpecialTarget;
+				// Incremenet count of specials targetting player:
+				gInstaSpecialMagnet[GetClientOfUserId(gInstaSpecialTarget)]++;
 
-			TeleportEntity(special, gInstaSpecialSpawnPos, gInstaSpecialSpawnAng, NULL_VECTOR);
-			if(gInstaSpecialInstaKill) {
-				RequestFrame(Frame_Boom, special);
+				TeleportEntity(special, gInstaSpecialSpawnPos, gInstaSpecialSpawnAng, NULL_VECTOR);
+				if(gInstaSpecialInstaKill) {
+					RequestFrame(Frame_Boom, special);
+				}
 			}
 		}
 	} 
@@ -80,6 +85,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0) {
 		if(g_iAttackerTarget[client] > 0) {
+			// If special died, clear & subtract one from counter
 			int target = GetClientOfUserId(g_iAttackerTarget[client]);
 			gInstaSpecialMagnet[target]--;
 			if(gInstaSpecialMagnet[target] == 0) {
@@ -88,6 +94,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 			}
 			g_iAttackerTarget[client] = 0;
 		} else {
+			// If player died, stop the targetting
 			for(int i = 1; i <= MaxClients; i++) { 
 				if(g_iAttackerTarget[i] == client) {
 					g_iAttackerTarget[i] = 0;
@@ -124,12 +131,12 @@ public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(user);
 	if(client) {
 		PrintToChatAll("%N has alerted the horde!", client);
-		RequestFrame(RushPlayer, user);
+		CreateTimer(0.5, RushPlayer, user);
 	}
 	//Ignore car alarms for autopunish
 	lastButtonUser = -1;
 }
-public void RushPlayer(int user) {
+public Action RushPlayer(Handle h, int user) {
 	L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", user, 15000);
 }
 public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
@@ -159,7 +166,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 			if(class == L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 2) && WillMagnetRun(Trolls[tankMagnetID], existingTarget)) {
 				curTarget = existingTarget;
 				return Plugin_Changed;
-			}else if(class != L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 1) && WillMagnetRun(Trolls[spMagnetID], existingTarget)) {
+			} else if(class != L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 1) && WillMagnetRun(Trolls[spMagnetID], existingTarget)) {
 				curTarget = existingTarget;
 				return Plugin_Changed;
 			}
@@ -181,14 +188,15 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 			}
 
 			if(IsPlayerIncapped(i)) {
-				if((class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2 == 0) || (class !=  L4D2Infected_Tank && hMagnetTargetMode.IntValue & 1 == 0)) continue;
+				if(class == L4D2Infected_Tank && hMagnetTargetMode.IntValue & 2 == 0) continue;
+				if(class !=  L4D2Infected_Tank && hMagnetTargetMode.IntValue & 1 == 0) continue;
 			}
 
 			PrintToConsoleAll("[FTT/Debug] Adding possible magnet victim %N for %N", i, attacker);
 
 			GetClientAbsOrigin(i, survPos);
 			float dist = GetVectorDistance(survPos, spPos, true);
-			if(closestClient == -1 || dist < closestDistance) {
+			if(dist < closestDistance || closestClient == -1) {
 				closestDistance = dist;
 				closestClient = i;
 			}
@@ -397,10 +405,29 @@ static char SMG[8] = "smg";
 static char AWP[16] = "sniper_awp";
 
 public Action Event_ItemPickup(int client, int weapon) {
-	if(IsTrollActive(client, "No Pickup")) {
-		return Plugin_Stop;
-	}else{
-		static char wpnName[64];
+	static int NoPickupIndex;
+	if(NoPickupIndex == 0) NoPickupIndex = GetTrollID("No Pickup");
+	static char wpnName[64];
+	if(Trolls[NoPickupIndex].IsActive(client)) {
+		int flags = Trolls[NoPickupIndex].activeFlagClients[client];
+		if(flags & 1 && GetPlayerWeaponSlot(client, view_as<int>(L4DWeaponSlot_Primary)) == weapon) {
+			// No Primary
+			return Plugin_Stop;
+		} else if(flags & 2 && StrEqual(wpnName, "weapon_melee")) {
+			// No melee 
+			return Plugin_Stop;
+		} else if(flags & 4 && GetPlayerWeaponSlot(client,  view_as<int>(L4DWeaponSlot_Grenade)) == weapon) {
+			// No throwables
+			return Plugin_Stop;
+		} else if(flags & 8 && StrEqual(wpnName, "weapon_first_aid_kit")) {
+			// No Kits
+			return Plugin_Stop;
+		} else if(flags & 16 && GetPlayerWeaponSlot(client,  view_as<int>(L4DWeaponSlot_Pills)) == weapon) {
+			// No Pills / Adr
+			return Plugin_Stop;
+		}
+		return Plugin_Continue;
+	} else {
 		GetEdictClassname(weapon, wpnName, sizeof(wpnName));
 		if(strcmp(wpnName[7], "rifle") >= 0
 			|| strcmp(wpnName[7], "smg") >= 0 
