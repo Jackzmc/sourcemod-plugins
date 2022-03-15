@@ -163,15 +163,11 @@ public Action Timer_PushLogs(Handle h) {
 				log.targetSteamID,
 				log.message
 			);
-			// g_db.Query(DB_PushLogsCB, query, _, DBPrio_Low);
 			transaction.AddQuery(query);
 		}
 		logs.Resize(logs.Length - length);
 	}
 	g_db.Execute(transaction, _, SQL_TransactionFailed, length, DBPrio_Low);
-}
-public void DB_PushLogsCB(Database db, DBResultSet results, const char[] error, any data) {
-	if(results == null) PrintToServer("[ACTM] Log error: %s", error);
 }
 public void SQL_TransactionFailed(Database db, any data, int numQueries, const char[] error, int failIndex, any[] queryData) {
 	PrintToServer("[ActivityMonitor] Push failure: %s at query %d/%d", error, failIndex, numQueries);
