@@ -32,7 +32,13 @@ void SetupTrolls() {
     Trolls[index].AddFlag("Biles", true);
     Trolls[index].AddFlag("Molotovs", true);
     Trolls[index].AddFlag("Pipebombs", true);
-    SetupTroll("No Pickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", TrollMod_Constant);
+    index = SetupTroll("No Pickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", TrollMod_Constant);
+    Trolls[index].AddFlagPrompt(true);
+    Trolls[index].AddFlag("No Primary", false);
+    Trolls[index].AddFlag("No Melee", false);
+    Trolls[index].AddFlag("No Throwables", false);
+    Trolls[index].AddFlag("No Kits", false);
+    Trolls[index].AddFlag("No Pills / Adr", false);
     index = SetupTroll("UziRules / AwpSmells", "Picking up a weapon gives them a UZI or AWP instead", TrollMod_Constant);
     Trolls[index].AddFlagPrompt(false);
     Trolls[index].AddFlag("UZI Only", true);

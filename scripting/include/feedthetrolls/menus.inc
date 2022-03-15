@@ -347,7 +347,7 @@ void SetupCategoryMenu(int client, int victimUserID) {
 void ShowTrollCombosMenu(int client, int victimUserID) {
 	Menu comboMenu = new Menu(ChooseComboHandler);
 	static char id[32];
-	Format(id, sizeof(id), "%N: Choose troll combo", GetClientOfUserId(victimUserID));
+	Format(id, sizeof(id), "Choose troll combo");
 	comboMenu.SetTitle(id);
 
 	static TrollCombo combo;

@@ -164,10 +164,9 @@ public Action Command_WitchAttack(int client, int args) {
 			int witch = INVALID_ENT_REFERENCE;
 			while ((witch = FindEntityByClassname(witch, "witch")) != INVALID_ENT_REFERENCE) {
 				SetWitchTarget(witch, target);
-
-				ShowActivityEx(client, "[FTT] ", "set all witches to target %s", target_name);
-				LogAction(client, target, "\"%L\" set all witches to attack \"%L\"", client, target);
 			}
+			ShowActivityEx(client, "[FTT] ", "set all witches to target %s", target_name);
+			LogAction(client, target, "\"%L\" set all witches to attack %s", client, target_name);
 		}else{
 			ReplyToTargetError(client, target_count);
 		}
