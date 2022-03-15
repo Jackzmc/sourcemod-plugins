@@ -74,27 +74,26 @@ stock int GetSurvivorId(const char[] str, bool isL4D1 = false) {
 			return possibleNumber;
 		}
 	}else if(possibleNumber == 0) {
-		/*
-		L4D2:
-			0 - Nick, 4 - Bill, 5 - Zoey, 6 - Francis, 7 - Louis
-		L4D1:
-			0 - Bill, 1 - Zoey, 2 - Louis, 3 - Francis
-		*/
-		if(StrEqual(str, "nick", false)) return 0;
-		else if(StrEqual(str, "rochelle", false)) return 1;
-		else if(StrEqual(str, "coach", false)) return 2;
-		else if(StrEqual(str, "ellis", false)) return 3;
-		if(isL4D1) {
-			if(StrEqual(str, "bill", false)) return 0;
-			else if(StrEqual(str, "zoey", false)) return 1;
-			else if(StrEqual(str, "francis", false)) return 3;
-			else if(StrEqual(str, "louis", false)) return 2;
-		}else{
-			if(StrEqual(str, "bill", false)) return 4;
-			else if(StrEqual(str, "zoey", false)) return 5;
-			else if(StrEqual(str, "francis", false)) return 6;
-			else if(StrEqual(str, "louis", false)) return 7;
+		int survivorId;
+		char s = CharToLower(s);
+		if(s == 'b') {
+			survivorId = isL4D1 ? 0 : 4;
+		} else if(s == 'z') {
+			survivorId = isL4D1 ? 1 : 5;
+		} else if(s == 'l') {
+			survivorId = isL4D1 ? 2 : 7;
+		} else if(s == 'f') {
+			survivorId = isL4D1 ? 3 : 6;
+		} else if(s == 'n') {
+			survivorId = 0;
+		} else if(s == 'r') {
+			survivorId = 1;
+		} else if(s == 'e') {
+			survivorId = 3;
+		} else if(s == 'c') {
+			survivorId = 2;
 		}
+		return survivorId;
 	}
 	return -1;
 }

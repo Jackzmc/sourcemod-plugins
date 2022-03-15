@@ -171,7 +171,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
             } else {
                 results.FetchString(0, reason, sizeof(reason), reasonResult);
                 if(!expired) {
-                    LogMessage("%N is banned: %s", client, reason);
+                    LogAction(-1, client, "%N is banned from server: \"%s\"", client, reason);
                     if(hKickType.IntValue > 0) {
                         if(reasonResult == DBVal_Data)
                             KickClient(client, "You have been banned:\n%s", reason);
@@ -187,7 +187,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
                     g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);
                     g_db.Query(DB_OnBanQuery, query);
                 } else {
-                    LogMessage("%N was previously banned: %s", client, reason);
+                    LogAction(-1, client, "%N was previously banned from server: \"%s\"", client, reason);
                     // User was previously banned
                     PrintChatToAdmins("%N has a previously expired ban of reason \"%s\"", client, reason);
                 }
