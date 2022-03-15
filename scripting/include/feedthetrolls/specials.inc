@@ -3,7 +3,7 @@ char SPECIAL_NAMES[][] = {
 };
 enum SpecialType {
 	Special_Invalid = -1,
-	Special_Smoker = 0,
+	Special_Smoker = 1,
 	Special_Boomer,
 	Special_Hunter,
 	Special_Spitter,
@@ -20,7 +20,7 @@ stock SpecialType GetSpecialType(const char[] input) {
 	return Special_Invalid;
 }
 
-stock bool FindSuitablePosition(int target, const float pos[3], float outputPos[3], float minDistance = 19000.0, int tries = 100) {
+stock bool FindSuitablePosition(const float pos[3], float outputPos[3], float minDistance = 19000.0, int tries = 100) {
 	outputPos = pos;
 	for(int i = tries; i > 0; i--) {
 		// int nav = L4D_GetNearestNavArea(pos);
@@ -39,9 +39,9 @@ stock bool FindSuitablePosition(int target, const float pos[3], float outputPos[
 float GetIdealMinDistance(SpecialType specialType) {
 	switch(specialType) {
 		// /*Boomer*/ case 2: return 1200.0;
-		/*Charger*/ case 6: return 19500.0;
-		/*Smoker*/ case 1: return 20000.0;
-	
+		case Special_Charger: return 19510.0;
+		case Special_Smoker: return 20000.0;
+		case Special_Spitter: return 15000.0;
 		default:
 			return 12000.0;
 	}
@@ -51,23 +51,26 @@ bool SpawnSpecialInFace(int target, SpecialType specialType) {
 	static float pos[3], ang[3];
 	static float testPos[3];
 	testPos = pos;
+
 	GetClientAbsOrigin(target, pos);
 	GetClientEyeAngles(target, ang);
+
 	if(specialType == Special_Boomer) 
 		gInstaSpecialInstaKill = true;
-	if(specialType != Special_Jockey && specialType != Special_Hunter) { //If not jockey/hunter find a suitable area that is at least 5 m away
+
+	if(specialType == Special_Jockey || specialType == Special_Boomer) { // Else spawn a little bit off, and above (above for jockeys)
+		pos[2] += 25.0;
+		pos[0] += 5.0;
+	} else { //If not jockey/hunter find a suitable area that is at least 5 m away
 		float minDistance = GetIdealMinDistance(specialType);
 		GetHorizontalPositionFromOrigin(pos, ang, minDistance, testPos);
-		if(!FindSuitablePosition(target, pos, testPos, minDistance, 100)) {
+		if(!FindSuitablePosition(pos, testPos, minDistance, 100)) {
 			L4D_GetRandomPZSpawnPosition(target, view_as<int>(specialType), 10, testPos);
 		}
 		pos = testPos;
-	} else { // Else spawn a little bit off, and above (above for jockeys)
-		pos[2] += 10.0;
-		pos[0] += 5.0;
-	}
+	} 
 	pos[2] += 1.0;
-	NegateVector(ang);
+	// NegateVector(ang);
 
 	return SpawnSpecialInternal(specialType, target, pos, NULL_VECTOR) != -1;
 }
@@ -103,7 +106,7 @@ int SpawnSpecialInternal(SpecialType type, int target, float pos[3], float ang[3
 			ChangeClientTeam(bot, 3);
 			CreateTimer(0.1, Timer_KickBot, bot);
 		}
-		CheatCommand(target, "z_spawn_old", SPECIAL_NAMES[view_as<int>(type) = -1], "auto");
+		CheatCommand(target, "z_spawn_old", SPECIAL_NAMES[view_as<int>(type) - 1], "auto");
 		return 0;
 	}
 	else if(type == Special_Witch) {
@@ -124,17 +127,20 @@ int SpawnSpecialInternal(SpecialType type, int target, float pos[3], float ang[3
 }
 
 stock bool GetGroundBehind(int client, float vPos[3], float vAng[3]) {
-	GetClientAbsOrigin(client, vPos);
-	vAng = vPos;
-	vAng[2] += 5.0;
-	vPos[2] -= 500.0;
-
-	Handle trace = TR_TraceRayFilterEx(vAng, vPos, MASK_SHOT, RayType_EndPoint, RayFilter_NonClient);
+	GetClientEyePosition(client, vPos);
+	GetClientEyeAngles(client, vAng);
+	vAng[1] -= 180.0; //Flip to behind
+	vAng[2] = 35.0; //Angle downwards
+	// vPos[2] -= 500.0;
+	float minmax[3] = { 35.0, 35.0, 32.0 };
+	Handle trace = TR_TraceHullFilterEx(vPos, vAng, minmax, minmax, MASK_SOLID, RayFilter_NonClient);
 	if(!TR_DidHit(trace)) {
 		delete trace;
 		return false;
 	}
 	TR_GetEndPosition(vPos, trace);
+	vPos[2] += 32.0;
+	// FindSuitablePosition(vPos, vPos, 100.0, 100);
 	delete trace;
 
 	GetClientAbsAngles(client, vAng);
@@ -142,5 +148,15 @@ stock bool GetGroundBehind(int client, float vPos[3], float vAng[3]) {
 }
 
 stock bool RayFilter_NonClient(int entity, int contentsMask) {
-	return entity > MaxClients;
+	if (entity < 1 || entity > MaxClients) {
+		if (IsValidEntity(entity)) {
+			static char eClass[128];
+			if (GetEntityClassname(entity, eClass, sizeof(eClass))) {
+				if (strcmp(eClass, "prop_physics") >= 0)
+					return false;
+			}
+			return true;
+		}
+	}
+	return false;
 }
