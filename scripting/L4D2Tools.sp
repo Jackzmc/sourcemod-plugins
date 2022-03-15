@@ -17,6 +17,28 @@ char ReserveLevels[4][] = {
 	"Public", "Watch", "Admin-Only", "Private"
 };
 
+char MODELS[8][] = {
+	"models/survivors/survivor_gambler.mdl",
+	"models/survivors/survivor_producer.mdl",
+	"models/survivors/survivor_mechanic.mdl",
+	"models/survivors/survivor_coach.mdl",
+	"models/survivors/survivor_namvet.mdl",
+	"models/survivors/survivor_teenangst.mdl",
+	"models/survivors/survivor_biker.mdl",
+	"models/survivors/survivor_manager.mdl"
+};
+
+enum L4DModelId {
+	Model_Nick,
+	Model_Rochelle,
+	Model_Ellis,
+	Model_Coach,
+	Model_Bill,
+	Model_Zoey,
+	Model_Francis,
+	Model_Louis
+}
+
 static ArrayList LasersUsed;
 static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres, hForceSurvivorSet;
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1], reserveMode;
@@ -389,91 +411,144 @@ public Action Command_StopSound(int client, int args) {
 }
 public Action Command_SetClientModel(int client, int args) {
 	if(args < 1) {
-		ReplyToCommand(client, "Usage: sm_model <player> <model> [keep]");
-	}else{
-		char arg1[32], arg2[16], arg3[8];
+		ReplyToCommand(client, "Usage: sm_model <model> [player] ['keep']");
+	} else {
+		static char arg1[2], arg2[16], arg3[8];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		GetCmdArg(2, arg2, sizeof(arg2));
 		GetCmdArg(3, arg3, sizeof(arg3));
+		
+		int survivorId;
+		L4DModelId modelId;
 
-		// If args sm_model <survivor> -> sm_model <self> <model>
-		static char modelPath[64];
-		if(args == 1) {
-			int modelID = GetSurvivorId(arg1, false);
-			if(modelID != -1) {
-				int team = GetClientTeam(client);
-				if(team != 2 && team != 4) {
-					ReplyToCommand(client, "You must be a survivor.");
-					return Plugin_Handled;
-				}
-				GetSurvivorModel(modelID, modelPath, sizeof(modelPath));
-				if(isL4D1Survivors && hForceSurvivorSet != null && hForceSurvivorSet.IntValue < 2) modelID = GetSurvivorId(arg2, true);
-				SetCharacter(client, modelID, modelPath, false);
+		bool isL4D1 = isL4D1Survivors && hForceSurvivorSet != null && hForceSurvivorSet.IntValue < 2;
+
+		char s = CharToLower(arg1[0]);
+		if(s == 'b') {
+			survivorId = isL4D1 ? 0 : 4;
+			modelId = Model_Bill;
+		} else if(s == 'z') {
+			survivorId = isL4D1 ? 1 : 5;
+			modelId = Model_Zoey;
+		} else if(s == 'l') {
+			survivorId = isL4D1 ? 2 : 7;
+			modelId = Model_Louis;
+		} else if(s == 'f') {
+			survivorId = isL4D1 ? 3 : 6;
+			modelId = Model_Francis;
+		} else if(s == 'n') {
+			survivorId = 0;
+			modelId = Model_Nick;
+			if(isL4D1) PrintToChat(client, "Note: Only models for L4D2 characters are supported in L4D1 maps.");
+		} else if(s == 'r') {
+			survivorId = 1;
+			modelId = Model_Rochelle;
+			if(isL4D1) PrintToChat(client, "Note: Only models for L4D2 characters are supported in L4D1 maps.");
+		} else if(s== 'e') {
+			survivorId = 3;
+			modelId = Model_Ellis;
+			if(isL4D1) PrintToChat(client, "Note: Only models for L4D2 characters are supported in L4D1 maps.");
+		} else if(s == 'c') {
+			survivorId = 2;
+			modelId = Model_Coach;
+			if(isL4D1) PrintToChat(client, "Note: Only models for L4D2 characters are supported in L4D1 maps.");
+		} else {
+			ReplyToCommand(client, "Unknown survivor \"%s\". Syntax changed: model <survivor> [player or none for self]", arg1);
+			return Plugin_Handled;
+		}
+		
+		bool keep = StrEqual(arg2, "keep", false) || StrEqual(arg3, "keep", false);
+
+		if(args > 1) {
+			char target_name[1];
+			int target_list[MAXPLAYERS], target_count;
+			bool tn_is_ml;
+			if ((target_count = ProcessTargetString(
+					arg2,
+					client,
+					target_list,
+					MAXPLAYERS,
+					COMMAND_FILTER_ALIVE,
+					target_name,
+					sizeof(target_name),
+					tn_is_ml)) <= 0)
+			{
+				/* This function replies to the admin with a failure message */
+				ReplyToTargetError(client, target_count);
 				return Plugin_Handled;
 			}
-		}
-
-		int modelID = GetSurvivorId(arg2, false);
-		if(modelID == -1) {
-			ReplyToCommand(client, "Invalid survivor type entered. Case-sensitive, full name required.");
-			return Plugin_Handled;
-		}
-		GetSurvivorModel(modelID, modelPath, sizeof(modelPath));
-		//Convert the l4d1 survivors to proper l4d1 ID if game is l4d1
-		if(isL4D1Survivors && hForceSurvivorSet != null && hForceSurvivorSet.IntValue < 2) modelID = GetSurvivorId(arg2, true);
-
-		char target_name[MAX_TARGET_LENGTH];
-		int target_list[MAXPLAYERS], target_count;
-		bool tn_is_ml;
-		if ((target_count = ProcessTargetString(
-				arg1,
-				client,
-				target_list,
-				MAXPLAYERS,
-				COMMAND_FILTER_CONNECTED,
-				target_name,
-				sizeof(target_name),
-				tn_is_ml)) <= 0)
-		{
-			/* This function replies to the admin with a failure message */
-			ReplyToTargetError(client, target_count);
-			return Plugin_Handled;
-		}
-		for (int i = 0; i < target_count; i++) {
-			int target = target_list[i];
-			bool keepModel = StrEqual(arg3, "keep", false);
-			if(IsClientConnected(target) && IsClientInGame(target) && IsPlayerAlive(target)) {
-				int team = GetClientTeam(target_list[i]);
+			for (int i = 0; i < target_count; i++) {
+				int target = target_list[i];
+				int team = GetClientTeam(target);
 				if(team == 2 || team == 4) {
-					SetCharacter(target, modelID, modelPath, keepModel);
+					SetCharacter(target, survivorId, modelId, keep);
 				}
 			}
+		} else {
+			SetCharacter(client, survivorId, modelId, keep);
 		}
 	}
 	return Plugin_Handled;
 }
 
-void SetCharacter(int target, int modelID, char[] modelPath, bool keepModel) {
-	SetEntProp(target, Prop_Send, "m_survivorCharacter", modelID);
-	SetEntityModel(target, modelPath);
+void SetCharacter(int target, int survivorIndex, L4DModelId modelIndex, bool keepModel) {
+	SetEntProp(target, Prop_Send, "m_survivorCharacter", survivorIndex);
+	SetEntityModel(target, MODELS[view_as<int>(modelIndex)]);
 	if (IsFakeClient(target)) {
 		char name[32];
 		GetSurvivorName(target, name, sizeof(name));
 		SetClientInfo(target, "name", name);
 	}
-	UpdatePlayerIdentity(target, view_as<Character>(modelID), keepModel);
+	UpdatePlayerIdentity(target, view_as<Character>(survivorIndex), keepModel);
 
 	DataPack pack = new DataPack();
 	pack.WriteCell(GetClientUserId(target));
-	for(int slot = 0; slot <= 1; slot++) {
-		int weapon = GetPlayerWeaponSlot(target, slot);
-		if( weapon > 0 ) {
+	bool dualWield = false;
+	for(int slot = 0; slot <= 4; slot++) {
+		int weapon = AddWeaponSlot(target, slot, pack);
+		if(weapon > 0) {
+			if(slot == 1 && HasEntProp(weapon, Prop_Send, "m_isDualWielding")) {
+				dualWield = GetEntProp(weapon, Prop_Send, "m_isDualWielding") == 1;
+				SetEntProp(weapon, Prop_Send, "m_isDualWielding", 0); 
+			}
 			SDKHooks_DropWeapon(target, weapon, NULL_VECTOR);
-			pack.WriteCell(EntIndexToEntRef(weapon)); // Save last held weapon to switch back
-
 		}
 	}
+	pack.WriteCell(dualWield);
 	CreateTimer(0.1, Timer_RequipWeapon, pack);
+}
+
+int AddWeaponSlot(int target, int slot, DataPack pack) {
+	int weapon = GetPlayerWeaponSlot(target, slot);
+	if( weapon > 0 ) {
+		pack.WriteCell(EntIndexToEntRef(weapon)); // Save last held weapon to switch back
+		return weapon;
+	} else {
+		pack.WriteCell(-1); // Save last held weapon to switch back
+		return -1;
+	}
+}
+
+public Action Timer_RequipWeapon(Handle hdl, DataPack pack) {
+	pack.Reset();
+	int client = GetClientOfUserId(pack.ReadCell());
+	if(client == 0) return;
+
+	int weapon, pistolSlotItem = -1;
+
+	for(int slot = 0; slot <= 4; slot++) {
+		weapon = pack.ReadCell();
+		if(EntRefToEntIndex(weapon) != INVALID_ENT_REFERENCE) {
+			if(slot == 1) {
+				pistolSlotItem = weapon;
+			}
+			EquipPlayerWeapon(client, weapon);
+		}
+	}
+	bool isDualWield = pack.ReadCell() == 1;
+	if(isDualWield && pistolSlotItem != -1 && HasEntProp(pistolSlotItem, Prop_Send, "m_isDualWielding")) {
+		SetEntProp(pistolSlotItem, Prop_Send, "m_isDualWielding", 1);
+	}
 }
 
 public Action Cmd_SetSurvivor(int client, int args) {
@@ -515,26 +590,10 @@ public Action Cmd_SetSurvivor(int client, int args) {
 	return Plugin_Handled;
 }
 
-public Action Timer_RequipWeapon(Handle hdl, DataPack pack) {
-	pack.Reset();
-	int client = GetClientOfUserId(pack.ReadCell());
-	if(client == 0) return;
-
-	int weapon;
-	
-	while( pack.IsReadable() )
-	{
-		weapon = pack.ReadCell();
-		if( EntRefToEntIndex(weapon) != INVALID_ENT_REFERENCE ) {
-			EquipPlayerWeapon(client, weapon);
-		}
-	}
-}
-
 public Action VGUIMenu(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init) {
-	char buffer[5];
+	static char buffer[5];
 	BfReadString(bf, buffer, sizeof(buffer));
-	return StrEqual(buffer, "info") ? Plugin_Handled : Plugin_Continue;
+	return strcmp(buffer, "info") == 0 ? Plugin_Handled : Plugin_Continue;
 }  
 public void OnClientPutInServer(int client) {
 	if(!IsFakeClient(client))
