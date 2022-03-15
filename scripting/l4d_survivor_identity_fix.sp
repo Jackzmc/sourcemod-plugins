@@ -308,13 +308,12 @@ public void Frame_CheckClient(int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0 && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
 		int survivorThreshold = hCookiesEnabled.IntValue == 1 ? 4 : 0;
-		if(++survivors > survivorThreshold && g_iPendingCookieModel[client] > 0) {
+		if(++survivors > survivorThreshold) {
 			//A model is set: Fetched from cookie
-			CreateTimer(0.2, Timer_SetClientModel, client);
-			if(cookieModelTimer != null && !cookieModelsSet) {
-				delete cookieModelTimer;
-			}else{
-				cookieModelTimer = CreateTimer(20.0, Timer_SetAllCookieModels);
+			if(g_iPendingCookieModel[client]) {
+				CreateTimer(0.2, Timer_SetClientModel, client);
+			} else {
+				CreateTimer(0.2, Timer_SetAllCookieModels);
 			}
 		}else{
 			//Model was not set: Use least-used survivor.
@@ -329,9 +328,9 @@ public Action Timer_SetClientModel(Handle timer, int client) {
 	g_iPendingCookieModel[client] = 0;
 }
 public Action Timer_SetAllCookieModels(Handle h) {
-	cookieModelsSet = true;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && g_iPendingCookieModel[i] && GetClientTeam(i) == 2) {
+			// TODO: Proper implement
 			SetEntityModel(i, survivor_models[g_iPendingCookieModel[i] - 1]);
 			SetEntProp(i, Prop_Send, "m_survivorCharacter", g_iPendingCookieModel[i] - 1);
 		}
@@ -425,10 +424,10 @@ public Action Cmd_SetSurvivor(int client, int args) {
 			ReplyToCommand(client, "Your survivor preference set to %s", survivor_names[number]);
 			return Plugin_Handled;
 		}else{
-			int type = GetSurvivorId(arg1, false);
+			int type = GetSurvivorId(arg1, false); // Use false to have every character have unique id
 			if(type > -1) {
 				strcopy(g_Models[client], 64, survivor_models[type]);
-				if(isL4D1Survivors) type = GetSurvivorId(arg1, true);
+				if(isL4D1Survivors) type = GetSurvivorId(arg1, true); // Then fetch the correct ids for the survivorCharacter
 				SetEntProp(client, Prop_Send, "m_survivorCharacter", type);
 			}
 		}
@@ -445,7 +444,7 @@ int Menu_ChooseSurvivor(Menu menu, MenuAction action, int activator, int item) {
 		ReplyToCommand(activator, "Your survivor preference has been reset");
 	}else{
 		/*strcopy(g_Models[client], 64, survivor_models[type]);
-		if(isL4D1Survivors) type = GetSurvivorId(arg1, true);
+		if(isL4D1Survivors) type = GetSurvivorId(str, true);
 		SetEntProp(client, Prop_Send, "m_survivorCharacter", type);*/
 		SetClientCookie(activator, hModelPrefCookie, info);
 		ReplyToCommand(activator, "Your survivor preference set to %s", survivor_names[StringToInt(info) - 1]);
@@ -499,33 +498,22 @@ public int Native_SetPlayerModel(Handle plugin, int numParams) {
 }
 
 stock int GetSurvivorId(const char str[16], bool isL4D1 = false) {
-	int possibleNumber = StringToInt(str, 10);
-	if(strlen(str) == 1) {
-		if(possibleNumber <= 7 && possibleNumber >= 0) {
-			return possibleNumber;
-		}
-	}else if(possibleNumber == 0) {
-		/*
-		L4D2:
-			0 - Nick, 4 - Bill, 5 - Zoey, 6 - Francis, 7 - Louis
-		L4D1:
-			0 - Bill, 1 - Zoey, 2 - Louis, 3 - Francis
-		*/
-		if(StrEqual(str, "nick", false)) return 0;
-		else if(StrEqual(str, "rochelle", false)) return 1;
-		else if(StrEqual(str, "coach", false)) return 2;
-		else if(StrEqual(str, "ellis", false)) return 3;
-		if(isL4D1) {
-			if(StrEqual(str, "bill", false)) return 0;
-			else if(StrEqual(str, "zoey", false)) return 1;
-			else if(StrEqual(str, "francis", false)) return 3;
-			else if(StrEqual(str, "louis", false)) return 2;
-		}else{
-			if(StrEqual(str, "bill", false)) return 4;
-			else if(StrEqual(str, "zoey", false)) return 5;
-			else if(StrEqual(str, "francis", false)) return 6;
-			else if(StrEqual(str, "louis", false)) return 7;
-		}
+	if(str[0] == 'b') {
+		return isL4D1 ? 0 : 4;
+	} else if(str[0] == 'z') {
+		return isL4D1 ? 1 : 5;
+	} else if(str[0] == 'l') {
+		return isL4D1 ? 2 : 7;
+	} else if(str[0] == 'f') {
+		return isL4D1 ? 3 : 6;
+	} else if(str[0] == 'n') {
+		return 0;
+	} else if(str[0] == 'r') {
+		return 1;
+	} else if(str[0] == 'e') {
+		return 3;
+	} else if(str[0] == 'c') {
+		return 2;
 	}
 	return -1;
 }
