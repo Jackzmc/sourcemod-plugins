@@ -292,6 +292,7 @@ public int ChooseTrollFlagHandler(Menu menu, MenuAction action, int param1, int 
 		static TrollFlagPrompt prompt;
 		// If told to go to next prompt, find the next VALID prompt
 		// Valid prompt is one where the required flags for it, are active
+
 		if(isDone || index == -1) {
 			int nextIndex = GetNextPrompt(troll, flags, index);
 			// If there is a prompt available, show it, else fall down 
@@ -506,7 +507,7 @@ int GetNextPrompt(Troll troll, int flags, int currentPrompt = 0) {
 	if(currentPrompt + 1 == troll.flagPrompts.Length) return -1;
 	for(int i = currentPrompt + 1; i < troll.flagPrompts.Length; i++) {
 		troll.GetFlagPrompt(i, prompt);
-		if(prompt.requireFlags & flags) {
+		if(flags & prompt.requireFlags == prompt.requireFlags) {
 			return i;
 		}
 	}

@@ -412,19 +412,19 @@ public Action Event_ItemPickup(int client, int weapon) {
 		int flags = Trolls[NoPickupIndex].activeFlagClients[client];
 		if(flags & 1 && GetPlayerWeaponSlot(client, view_as<int>(L4DWeaponSlot_Primary)) == weapon) {
 			// No Primary
-			return Plugin_Stop;
-		} else if(flags & 2 && StrEqual(wpnName, "weapon_melee")) {
+			return Plugin_Handled;
+		} else if(flags & 2 && GetEntityClassname(weapon, wpnName, sizeof(wpnName))  && StrEqual(wpnName, "weapon_melee")) {
 			// No melee 
-			return Plugin_Stop;
+			return Plugin_Handled;
 		} else if(flags & 4 && GetPlayerWeaponSlot(client,  view_as<int>(L4DWeaponSlot_Grenade)) == weapon) {
 			// No throwables
-			return Plugin_Stop;
-		} else if(flags & 8 && StrEqual(wpnName, "weapon_first_aid_kit")) {
+			return Plugin_Handled;
+		} else if(flags & 8 && GetEntityClassname(weapon, wpnName, sizeof(wpnName))  && StrEqual(wpnName, "weapon_first_aid_kit")) {
 			// No Kits
-			return Plugin_Stop;
+			return Plugin_Handled;
 		} else if(flags & 16 && GetPlayerWeaponSlot(client,  view_as<int>(L4DWeaponSlot_Pills)) == weapon) {
 			// No Pills / Adr
-			return Plugin_Stop;
+			return Plugin_Handled;
 		}
 		return Plugin_Continue;
 	} else {

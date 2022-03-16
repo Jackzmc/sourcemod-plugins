@@ -28,8 +28,8 @@ enum trollFlag {
 
 StringMap trollKV;
 char trollIds[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
-char DEFAULT_FLAG_PROMPT_MULTIPLE[] = "Choose flags (Multiple)";
-char DEFAULT_FLAG_PROMPT[] = "Choose flags";
+char DEFAULT_FLAG_PROMPT_MULTIPLE[] = "Enable options (Multiple)";
+char DEFAULT_FLAG_PROMPT[] = "Select an option";
 bool SilentMenuSelected[MAXPLAYERS+1];
 
 static int g_trollAddPromptIndex;
