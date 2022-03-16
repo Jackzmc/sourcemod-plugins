@@ -124,11 +124,12 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
     }
 
     g_db.Format(query, sizeof(query), "INSERT INTO bans"
-        ..."(steamid, ip, reason, expires, executor, ip_banned)"
+        ..."(steamid, ip, reason, public_message, expires, executor, ip_banned)"
         ..."VALUES ('%s', '%s', '%s', FROM_UNIXTIME(%s), '%s', 0)",
         identity,
         ip,
         reason,
+        kick_message,
         expiresDate,
         executor
     );
