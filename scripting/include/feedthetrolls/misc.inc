@@ -370,9 +370,10 @@ bool SetBotTarget(int bot, int target, int targetHP, int loops = 15) {
 }
 
 // Taken from https://forums.alliedmods.net/showthread.php?t=220132&page=2
-stock void ExplodeProjectile(int entity) {
-    SetEntProp(entity, Prop_Data, "m_takedamage", 2);
-    SetEntProp(entity, Prop_Data, "m_iHealth", 1);
-    SDKHooks_TakeDamage(entity, 0, 0, 1.0);
-    SetEntProp(entity, Prop_Data, "m_nNextThinkTick", 1); //for smoke
+stock void ExplodeProjectile(int entity, bool smoke = true) {
+	SetEntProp(entity, Prop_Data, "m_takedamage", 2);
+	SetEntProp(entity, Prop_Data, "m_iHealth", 1);
+	SDKHooks_TakeDamage(entity, 0, 0, 1.0);
+	if(smoke)
+		SetEntProp(entity, Prop_Data, "m_nNextThinkTick", 1); //for smoke
 }  

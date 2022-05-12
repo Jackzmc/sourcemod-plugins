@@ -486,7 +486,6 @@ public Action Event_ItemPickup(int client, int weapon) {
 			}
 		}
 	} else if(Trolls[SpicyGasIndex].IsActive(client)) {
-		PrintToChat(client, "spice active");
 		if(GetEntityClassname(weapon, wpnName, sizeof(wpnName))) {
 			float max = 1.0;
 			if(Trolls[SpicyGasIndex].activeFlagClients[client] & 2) max = 0.5;
@@ -495,7 +494,7 @@ public Action Event_ItemPickup(int client, int weapon) {
 				if(StrEqual(wpnName, "weapon_gascan")) {
 					AcceptEntityInput(weapon, "Ignite", client, client);
 				} else if(StrEqual(wpnName, "weapon_propanetank") || StrEqual(wpnName, "weapon_oxygentank")) {
-					ExplodeProjectile(weapon);
+					ExplodeProjectile(weapon, false);
 				}
 			}
 		}
@@ -568,10 +567,6 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 	if(reverseFF == 0) reverseFF = GetTrollID("Reverse FF");
 	if(attacker > 0 && attacker <= MaxClients && GetClientTeam(attacker) == 4 && IsFakeClient(attacker)) return Plugin_Continue;
 
-	if (victim > 0 && victim <= MaxClients && damagetype != 263168 && damagetype != 265216) {
-		PrintToChat(victim, "you are in spit.");
-	}
-	
 	if(attacker > 0 && victim <= MaxClients && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
 		if(shootAtTarget[attacker] == victim) return Plugin_Continue;
 		if(g_PendingBanTroll[attacker] > 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {

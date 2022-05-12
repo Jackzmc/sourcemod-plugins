@@ -239,7 +239,6 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
     } else if(StrEqual(troll.name, "Amazon Special Combo")) {
         SpecialSpawnFlags spawnFlag = Special_Anywhere;
         if(flags & (1 << 8)) spawnFlag = Special_OnTarget;
-        PrintToChatAll("spawnFlag: %d", spawnFlag);
         for(int i = 1; i < 7; i++) {
             if(flags & (1 << i)) {
                 SpawnSpecialForTarget(view_as<SpecialType>(i), victim, spawnFlag);
