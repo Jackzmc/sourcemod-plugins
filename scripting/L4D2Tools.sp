@@ -16,6 +16,13 @@
 char ReserveLevels[4][] = {
 	"Public", "Watch", "Admin-Only", "Private"
 };
+enum ReserveMode {
+	Reserve_None = 0,
+	Reserve_Watch,
+	Reserve_AdminOnly,
+	Reserve_Private
+}
+
 
 char MODELS[8][] = {
 	"models/survivors/survivor_gambler.mdl",
@@ -41,7 +48,8 @@ enum L4DModelId {
 
 static ArrayList LasersUsed;
 static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres, hForceSurvivorSet;
-static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1], reserveMode;
+static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1];
+ReserveMode reserveMode;
 static bool isHighPingIdle[MAXPLAYERS+1], isL4D1Survivors;
 static Handle hTakeOverBot, hGoAwayFromKeyboard;
 static StringMap SteamIDs;
@@ -149,7 +157,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 }
 
 public void OnClientConnected(int client) {
-	if(!IsFakeClient(client) && reserveMode == 1) {
+	if(!IsFakeClient(client) && reserveMode == Reserve_Watch) {
 		PrintChatToAdmins("%N is connecting", client);
 	}
 }
@@ -173,7 +181,7 @@ public void OnClientPostAdminCheck(int client) {
 	if(!IsFakeClient(client)) {
 		static char auth[32];
 		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
-		if(reserveMode == 3 || (reserveMode == 2 && GetUserAdmin(client) == INVALID_ADMIN_ID)) {
+		if(reserveMode == Reserve_Private || (reserveMode == Reserve_AdminOnly && GetUserAdmin(client) == INVALID_ADMIN_ID)) {
 			int index;
 			if(!SteamIDs.GetValue(auth, index)) {
 				KickClient(client, "Sorry, server is reserved");
@@ -189,13 +197,20 @@ public Action Command_SetServerPermissions(int client, int args) {
 		char arg1[32];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		if(StrEqual(arg1, "public", false)) {
-			reserveMode = 0;
+			reserveMode = Reserve_None;
 		}else if(StrContains(arg1, "noti", false) > -1) {
-			reserveMode = 1;
+			reserveMode = Reserve_Watch;
 		}else if(StrContains(arg1, "admin", false) > -1) {
-			reserveMode = 2;
+			reserveMode = Reserve_AdminOnly;
 		}else if(StrEqual(arg1, "private", false)) {
-			reserveMode = 3;
+			reserveMode = Reserve_Private;
+			static char auth[32];
+			for(int i = 1; i <= MaxClients; i++) {
+				if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
+					GetClientAuthId(i, AuthId_Steam2, auth, sizeof(auth));
+					SteamIDs.SetValue(auth, i);
+				}
+			}
 		}else {
 			ReplyToCommand(client, "Usage: sm_reserve [public/notify/admin/private] or no arguments to view current reservation.");
 			return Plugin_Handled;
@@ -368,6 +383,7 @@ public Action Command_PlaySound(int client, int args) {
 				ReplyToCommand(client, "Playing '%s' to %N %s", arg2, target, arg3);
 			}
 		}
+		ShowActivity2(client, target_name, "\"%L\" playing sound \"%s\" to \"%L\"", client, arg2, target_name);
 	}
 	return Plugin_Handled;
 }
@@ -642,9 +658,7 @@ public void OnMapStart() {
 	
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
-	char output[2];
-	L4D2_GetVScriptOutput("Director.GetSurvivorSet()", output, sizeof(output));
-	isL4D1Survivors = StringToInt(output) == 1;
+	isL4D1Survivors = L4D2_GetSurvivorSetMap() == 1;
 }
 
 public void OnSceneStageChanged(int scene, SceneStages stage) {
