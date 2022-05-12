@@ -20,6 +20,17 @@
 #include <l4d_anti_rush>
 
 
+/*
+TODO IDEAS:
+1. [x] Instant pipebomb explosion
+2. [x] Spicy gas (instant ignite), ignite propane/gas canisters
+3. [x] Amazon Special Combo (flags, choose combinations) (NEED QUEUE)
+4. Random weapons (on interval, possible second option of random capacity)
+5. [x] Slippery shoes (periodic stagger, or on certain events)
+6. (on hold) Sticky goo (slow user down in goo, or freezes)
+7. Follow goo
+*/
+
 public Plugin myinfo = 
 {
 	name = "L4D2 Feed The Trolls", 
@@ -46,6 +57,8 @@ public void OnPluginStart() {
 	LoadPhrases();
 	SetupTrolls();
 	SetupsTrollCombos();
+
+	g_spSpawnQueue = new ArrayList(sizeof(SpecialSpawnRequest));
 
 	// Witch target overwrite stuff:
 
@@ -96,14 +109,19 @@ public void OnPluginStart() {
 	HookEvent("player_death", Event_PlayerDeath);
 	HookEvent("triggered_car_alarm", Event_CarAlarm);
 	HookEvent("witch_harasser_set", Event_WitchVictimSet);
+	HookEvent("door_open", Event_DoorToggle);
+	HookEvent("door_close", Event_DoorToggle);
+	HookEvent("adrenaline_used", Event_SecondaryHealthUsed);
+	HookEvent("pills_used", Event_SecondaryHealthUsed);
 	
 	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 
 	AutoExecConfig(true, "l4d2_feedthetrolls");
 
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i))
+		if(IsClientConnected(i) && IsClientInGame(i)) {
 			SDKHook(i, SDKHook_OnTakeDamage, Event_TakeDamage);
+		}
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////

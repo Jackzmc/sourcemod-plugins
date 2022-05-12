@@ -1,6 +1,4 @@
-char SPECIAL_NAMES[][] = {
-	"Smoker", "Boomer", "Hunter", "Spitter", "Jockey", "Charger", "Witch", "Tank"
-};
+
 enum SpecialType {
 	Special_Invalid = -1,
 	Special_Smoker = 1,
@@ -11,6 +9,104 @@ enum SpecialType {
 	Special_Charger,
 	Special_Witch,
 	Special_Tank
+}
+
+
+enum struct SpecialSpawnRequest {
+	SpecialType type;
+	int targetUserId;
+	float position[3];
+	float angle[3];
+	int flags;
+}
+
+ArrayList g_spSpawnQueue;
+
+// Finds position, sends to SpawnSpecialAtPosition
+// target client index
+stock bool SpawnSpecialForTarget(SpecialType specialType, int target, SpecialSpawnFlags spawnFlags = Special_Anywhere) {
+	static float pos[3];
+	int internalFlags = 0;
+	if(spawnFlags == Special_OnTarget) {
+		static float ang[3];
+		static float testPos[3];
+		testPos = pos;
+
+		GetClientAbsOrigin(target, pos);
+		GetClientEyeAngles(target, ang);
+
+		if(specialType == Special_Boomer) 
+			internalFlags |= view_as<int>(SPI_KillOnSpawn);
+
+		if(specialType == Special_Jockey || specialType == Special_Boomer) { // Else spawn a little bit off, and above (above for jockeys)
+			pos[2] += 25.0;
+			pos[0] += 5.0;
+		} else { //If not jockey/hunter find a suitable area that is at least 5 m away
+			float minDistance = GetIdealMinDistance(specialType);
+			GetHorizontalPositionFromOrigin(pos, ang, minDistance, testPos);
+			if(!FindSuitablePosition(pos, testPos, minDistance, 100)) {
+				L4D_GetRandomPZSpawnPosition(target, view_as<int>(specialType), 10, testPos);
+			}
+			pos = testPos;
+		} 
+		pos[2] += 1.0;
+		return SpawnSpecialAtPosition(specialType, pos, ang, target, internalFlags);
+	} else {
+		if(L4D_GetRandomPZSpawnPosition(target, view_as<int>(specialType), 10, pos)) {
+			return SpawnSpecialAtPosition(specialType, pos, NULL_VECTOR, target, internalFlags);
+		}
+	}
+	return false;
+}
+
+// Target is optional
+stock bool SpawnSpecialAtPosition(SpecialType special, const float destination[3], const float angle[3], int target = 0, int flags) {
+	SpecialSpawnRequest request;
+	request.type = special;
+	if(target)
+		request.targetUserId = GetClientUserId(target);
+	request.flags = flags;
+	request.position = destination;
+	request.angle = angle;
+	g_spSpawnQueue.PushArray(request);
+	if(!spIsActive) ProcessSpecialQueue();
+	return true;
+}
+
+SpecialSpawnRequest spActiveRequest;
+
+bool ProcessSpecialQueue() {
+	if(g_spSpawnQueue.Length > 0) {
+		if(g_spSpawnQueue.GetArray(0, spActiveRequest, sizeof(spActiveRequest))) {
+			spIsActive = true;
+		}
+		g_spSpawnQueue.Erase(0);
+
+		int target = GetClientOfUserId(spActiveRequest.targetUserId);
+		if(view_as<int>(spActiveRequest.type) <= 6) {
+			// CreateTimer(2.0, Timer_CheckSpecialSpawn, spCurrentId);
+			int bot = CreateFakeClient("FTTSpecialBot");
+			if (bot != 0) {
+				ChangeClientTeam(bot, 3);
+				CreateTimer(0.1, Timer_KickBot, bot);
+			}
+			CheatCommand(target, "z_spawn_old", SPECIAL_NAMES[view_as<int>(spActiveRequest.type) - 1], "auto");
+		} else if(spActiveRequest.type == Special_Witch) {
+			int witch = L4D2_SpawnWitch(spActiveRequest.position, spActiveRequest.angle);
+			if(witch != -1)
+				SetWitchTarget(witch, target);
+			return ProcessSpecialQueue();
+		} else if(spActiveRequest.type == Special_Tank) {
+			// BypassLimit();
+			int tank = L4D2_SpawnTank(spActiveRequest.position, spActiveRequest.angle);
+			if(tank > 0 && IsClientConnected(tank))
+				g_iAttackerTarget[tank] = spActiveRequest.targetUserId;
+			return ProcessSpecialQueue();
+		}
+		return true;
+	}
+	spIsActive = false;
+	return false;
 }
 
 stock SpecialType GetSpecialType(const char[] input) {
@@ -45,85 +141,6 @@ float GetIdealMinDistance(SpecialType specialType) {
 		default:
 			return 12000.0;
 	}
-}
-
-bool SpawnSpecialInFace(int target, SpecialType specialType) {
-	static float pos[3], ang[3];
-	static float testPos[3];
-	testPos = pos;
-
-	GetClientAbsOrigin(target, pos);
-	GetClientEyeAngles(target, ang);
-
-	if(specialType == Special_Boomer) 
-		gInstaSpecialInstaKill = true;
-
-	if(specialType == Special_Jockey || specialType == Special_Boomer) { // Else spawn a little bit off, and above (above for jockeys)
-		pos[2] += 25.0;
-		pos[0] += 5.0;
-	} else { //If not jockey/hunter find a suitable area that is at least 5 m away
-		float minDistance = GetIdealMinDistance(specialType);
-		GetHorizontalPositionFromOrigin(pos, ang, minDistance, testPos);
-		if(!FindSuitablePosition(pos, testPos, minDistance, 100)) {
-			L4D_GetRandomPZSpawnPosition(target, view_as<int>(specialType), 10, testPos);
-		}
-		pos = testPos;
-	} 
-	pos[2] += 1.0;
-	// NegateVector(ang);
-
-	return SpawnSpecialInternal(specialType, target, pos, NULL_VECTOR) != -1;
-}
-
-bool SpawnSpecialNear(int target, SpecialType type) {
-	gInstaSpecialInstaKill = false;
-	static float pos[3];
-	if(L4D_GetRandomPZSpawnPosition(target, view_as<int>(type), 10, pos)) {
-		return SpawnSpecialInternal(type, target, pos, NULL_VECTOR) != -1;
-	}
-	return false;
-}
-
-// doesnt seem to work with l4dhooks methods
-void BypassLimit() {
-	int bot = CreateFakeClient("Infected Bot");
-	if (bot != 0) {
-		ChangeClientTeam(bot, 3);
-		CreateTimer(0.1, Timer_KickBot, bot);
-	}
-}
-
-int SpawnSpecialInternal(SpecialType type, int target, float pos[3], float ang[3]) {
-	if(view_as<int>(type) <= 6) {
-		// Bypass limit:
-		gInstaSpecialType = view_as<int>(type);
-		gInstaSpecialTarget = GetClientUserId(target);
-		gInstaSpecialSpawnPos = pos;
-		gInstaSpecialSpawnAng = pos;
-		CreateTimer(2.0, Timer_InstaFailed);
-		int bot = CreateFakeClient("ManualDirectorBot");
-		if (bot != 0) {
-			ChangeClientTeam(bot, 3);
-			CreateTimer(0.1, Timer_KickBot, bot);
-		}
-		CheatCommand(target, "z_spawn_old", SPECIAL_NAMES[view_as<int>(type) - 1], "auto");
-		return 0;
-	}
-	else if(type == Special_Witch) {
-		int witch = L4D2_SpawnWitch(pos, ang);
-		if(witch != -1)
-			SetWitchTarget(witch, target);
-		return witch;
-	}
-	else if(type == Special_Tank) {
-		// BypassLimit();
-		int tank = L4D2_SpawnTank(pos, ang);
-		if(tank <= 0 || !IsClientConnected(tank)) return -1;
-		if(tank != -1)
-			g_iAttackerTarget[tank] = GetClientUserId(target);
-		return tank;
-	}
-	else return -1;
 }
 
 stock bool GetGroundBehind(int client, float vPos[3], float vAng[3]) {

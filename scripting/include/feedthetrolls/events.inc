@@ -15,6 +15,9 @@ public void OnMapStart() {
 	PrecacheSound("player/footsteps/clown/concrete1.wav");
 	PrecacheSound("weapons/ceda_jar/ceda_jar_explode.wav");
 	PrecacheSound("weapons/molotov/molotov_detonate_1.wav");
+
+	g_spSpawnQueue.Clear();
+	spIsActive = false;
 	//CreateTimer(30.0, Timer_AutoPunishCheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 public void OnClientPutInServer(int client) {
@@ -26,36 +29,47 @@ public void OnClientPutInServer(int client) {
 }
 public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
-	CreateTimer(0.1, Timer_CheckSpecial, userid);
+	if(spIsActive)
+		CreateTimer(0.1, Timer_CheckSpecial, userid);
+}
+public void Event_DoorToggle(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client && Trolls[slipperyShoesIndex].IsActive(client) && Trolls[slipperyShoesIndex].activeFlagClients[client] & 2) { 
+		L4D_StaggerPlayer(client, client, NULL_VECTOR);
+	}
+}
+public void Event_SecondaryHealthUsed(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client && Trolls[slipperyShoesIndex].IsActive(client) && Trolls[slipperyShoesIndex].activeFlagClients[client] & 8) { 
+		L4D_StaggerPlayer(client, client, NULL_VECTOR);
+	}
 }
 public Action Timer_CheckSpecial(Handle h, int specialID) {
 	int special = GetClientOfUserId(specialID);
 	// Check if new player is the spawned special:
-	if(special > 0 && gInstaSpecialType > -1 && IsFakeClient(special) && GetClientTeam(special) == 3) {
-		int type = GetEntProp(special, Prop_Send, "m_zombieClass");
-		// Verify type of special is spawned special
-		if(type == gInstaSpecialType) {
-			// Ignore 'ManualDirectorBot' or abm bots
+	if(spIsActive && special > 0 && IsFakeClient(special) && GetClientTeam(special) == 3) {
+		SpecialType type = view_as<SpecialType>(GetEntProp(special, Prop_Send, "m_zombieClass"));
+		if(type == spActiveRequest.type) {
+			// Ignore any fake clients with 'Bot' in name
 			static char buf[32];
 			GetClientName(special, buf, sizeof(buf));
 			if(StrContains(buf, "bot", false) == -1) {
-				gInstaSpecialType = -1;
-				// Set special to only attack them:
-				g_iAttackerTarget[special] = gInstaSpecialTarget;
-				// Incremenet count of specials targetting player:
-				gInstaSpecialMagnet[GetClientOfUserId(gInstaSpecialTarget)]++;
+				if(spActiveRequest.targetUserId)
+					g_iAttackerTarget[special] = spActiveRequest.targetUserId;
+				gInstaSpecialMagnet[GetClientOfUserId(spActiveRequest.targetUserId)]++;
 
-				TeleportEntity(special, gInstaSpecialSpawnPos, gInstaSpecialSpawnAng, NULL_VECTOR);
-				if(gInstaSpecialInstaKill) {
+				TeleportEntity(special, spActiveRequest.position, spActiveRequest.angle, NULL_VECTOR);
+				if(spActiveRequest.flags & view_as<int>(SPI_KillOnSpawn)) {
 					RequestFrame(Frame_Boom, special);
 				}
+
+				ProcessSpecialQueue();
 			}
 		}
-	} 
+ 	}
 }
 public void Frame_Boom(int special) {
 	SDKHooks_TakeDamage(special, special, special, 1000.0);
-	gInstaSpecialInstaKill = false;
 }
 public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
@@ -135,6 +149,12 @@ public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
 	}
 	//Ignore car alarms for autopunish
 	lastButtonUser = -1;
+}
+public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client) {
+		g_iInSpit[client] = true;
+	}
 }
 public Action RushPlayer(Handle h, int user) {
 	L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", user, 15000);
@@ -407,6 +427,11 @@ static char AWP[16] = "sniper_awp";
 public Action Event_ItemPickup(int client, int weapon) {
 	static int NoPickupIndex;
 	if(NoPickupIndex == 0) NoPickupIndex = GetTrollID("No Pickup");
+	static int SpicyGasIndex;
+	if(SpicyGasIndex == 0) SpicyGasIndex = GetTrollID("Spicy Gas");
+	static int UziRulesIndex;
+	if(UziRulesIndex == 0) UziRulesIndex = GetTrollID("UziRules / AwpSmells");
+	
 	static char wpnName[64];
 	if(Trolls[NoPickupIndex].IsActive(client)) {
 		int flags = Trolls[NoPickupIndex].activeFlagClients[client];
@@ -425,9 +450,10 @@ public Action Event_ItemPickup(int client, int weapon) {
 		} else if(flags & 16 && GetPlayerWeaponSlot(client,  view_as<int>(L4DWeaponSlot_Pills)) == weapon) {
 			// No Pills / Adr
 			return Plugin_Handled;
+		} else if(flags & 32 && GetEntityClassname(weapon, wpnName, sizeof(wpnName))  && StrEqual(wpnName, "weapon_gascan")) {
+			return Plugin_Handled;
 		}
-		return Plugin_Continue;
-	} else {
+	} else if(Trolls[UziRulesIndex].IsActive(client) || IsTrollActive(client, "Primary Disable")) {
 		GetEdictClassname(weapon, wpnName, sizeof(wpnName));
 		if(strcmp(wpnName[7], "rifle") >= 0
 			|| strcmp(wpnName[7], "smg") >= 0 
@@ -435,8 +461,6 @@ public Action Event_ItemPickup(int client, int weapon) {
 			|| strcmp(wpnName[7], "sniper") > -1
 			|| StrContains(wpnName, "shotgun") > -1
 		) {
-			static int UziRulesIndex;
-			if(UziRulesIndex == 0) UziRulesIndex = GetTrollID("UziRules / AwpSmells");
 			//If 4: Only UZI, if 5: Can't switch.
 			if(Trolls[UziRulesIndex].IsActive(client)) {
 				static char comp[16]; 
@@ -461,9 +485,22 @@ public Action Event_ItemPickup(int client, int weapon) {
 				return Plugin_Stop;
 			}
 		}
-
-		return Plugin_Continue;
+	} else if(Trolls[SpicyGasIndex].IsActive(client)) {
+		PrintToChat(client, "spice active");
+		if(GetEntityClassname(weapon, wpnName, sizeof(wpnName))) {
+			float max = 1.0;
+			if(Trolls[SpicyGasIndex].activeFlagClients[client] & 2) max = 0.5;
+			else if(Trolls[SpicyGasIndex].activeFlagClients[client] & 4) max = 0.1;
+			if(GetRandomFloat() <= max) {
+				if(StrEqual(wpnName, "weapon_gascan")) {
+					AcceptEntityInput(weapon, "Ignite", client, client);
+				} else if(StrEqual(wpnName, "weapon_propanetank") || StrEqual(wpnName, "weapon_oxygentank")) {
+					ExplodeProjectile(weapon);
+				}
+			}
+		}
 	}
+	return Plugin_Continue;
 }
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
@@ -529,17 +566,29 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 	//Stop FF from marked:
 	static int reverseFF;
 	if(reverseFF == 0) reverseFF = GetTrollID("Reverse FF");
-	if(attacker > 0 && attacker <= MaxClients && GetClientTeam(attacker) == 4 && IsFakeClient(attacker)) return Plugin_Stop;
+	if(attacker > 0 && attacker <= MaxClients && GetClientTeam(attacker) == 4 && IsFakeClient(attacker)) return Plugin_Continue;
+
+	if (victim > 0 && victim <= MaxClients && damagetype != 263168 && damagetype != 265216) {
+		PrintToChat(victim, "you are in spit.");
+	}
+	
 	if(attacker > 0 && victim <= MaxClients && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
 		if(shootAtTarget[attacker] == victim) return Plugin_Continue;
 		if(g_PendingBanTroll[attacker] > 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
 			return Plugin_Stop;
 		}
 
+		
+
+		if(damage > 0.0 && victim != attacker && Trolls[slipperyShoesIndex].IsActive(victim) && Trolls[slipperyShoesIndex].activeFlagClients[victim] & 16) { 
+			L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
+		}
+
 		if(IsTrollActive(victim, "Damage Boost")) {
 			damage * 2;
 			return Plugin_Changed;
 		} else if(Trolls[reverseFF].IsActive(attacker) && damagetype != DMG_BURN && attacker != victim && GetClientTeam(attacker) == GetClientTeam(victim)) {
+			
 			float returnDmg = damage; //default is 1:1
 			if(Trolls[reverseFF].activeFlagClients[attacker] & 4) {
 				returnDmg /= 2.0;
@@ -668,9 +717,7 @@ void EntityCreateCallback(int entity) {
 	static char class[16];
 
 	static int badThrowID;
-	if(badThrowID == 0) {
-		badThrowID = GetTrollID("Bad Throw");
-	}
+	if(badThrowID == 0) badThrowID = GetTrollID("Bad Throw");
 
 	GetEntityClassname(entity, class, sizeof(class));
 	int entOwner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
@@ -701,9 +748,15 @@ void EntityCreateCallback(int entity) {
 					AcceptEntityInput(entity, "Kill");
 				}
 			} else if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_3) && StrContains(class, "pipe_bomb", true) > -1) {
-				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue)
+				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
 					TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
+					ExplodeProjectile(entity);
+				}
 				SpawnItem("pipe_bomb", pos);
+			}
+		} else if(Trolls[slipperyShoesIndex].IsActive(entOwner)) {
+			if(Trolls[slipperyShoesIndex].activeFlagClients[entOwner] & 4) {
+				L4D_StaggerPlayer(entOwner, entOwner, NULL_VECTOR);
 			}
 		}
 	}
@@ -738,13 +791,12 @@ public bool TraceEntityFilterPlayer(int entity, int mask, any data) {
 
 float iLastAntiRushEvent[MAXPLAYERS+1];
 public Action OnAntiRush(int client, int &type, float distance) {
-	PrintToConsoleAll("[FTT] Antirush: %N (dist=%d) (GameTime=%f)", client, distance, GetGameTime());
 	if(type == 3 && IsPlayerAlive(client) && !IsPlayerIncapped(client)) {
 		if(GetGameTime() - iLastAntiRushEvent[client] > 30.0) {
-			SpecialType special = view_as<SpecialType>(GetRandomInt(0,6));
+			SpecialType special = view_as<SpecialType>(GetRandomInt(1,6));
 			iLastAntiRushEvent[client] = GetGameTime();
-			SpawnSpecialNear(client, special);
-			PrintToConsoleAll("[FTT] Spawning anti-rush special on %N (dist=%f) (special=%d)", client, distance, special);
+			SpawnSpecialForTarget(special, client);
+			PrintToConsoleAll("[FTT] Spawning anti-rush special on %N (dist=%f) (special=%N)", client, distance, SPECIAL_NAMES[view_as<int>(special)-1]);
 		}
 	}
 }

@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 34
+    #define MAX_TROLLS 37
 #endif
 
 enum trollModifier {
@@ -35,6 +35,10 @@ bool SilentMenuSelected[MAXPLAYERS+1];
 static int g_trollAddPromptIndex;
 ArrayList gRandomClients;
 
+char SPECIAL_NAMES[][] = {
+	"Smoker", "Boomer", "Hunter", "Spitter", "Jockey", "Charger", "Witch", "Tank"
+};
+
 enum struct TrollFlagPrompt {
     char promptText[MAX_TROLL_FLAG_LENGTH];
     int flags;
@@ -51,6 +55,15 @@ enum struct TrollFlagPrompt {
             strcopy(prompt, maxlength, DEFAULT_FLAG_PROMPT);
         }
     }
+}
+
+int GetIndexFromPower(int powerOfTwo) {
+    for(int i = 0; i < 16; i++) {
+        if(1 << i == powerOfTwo) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 enum struct Troll {
@@ -112,9 +125,11 @@ enum struct Troll {
     int AddFlag(const char[] name, bool defaultOn) {
         if(this.flagNames == null) this.flagNames = new ArrayList(MAX_TROLL_FLAG_LENGTH);
 
+        // Check if flag already added
         int flagIndex = this.GetFlagIndex(name);
         if(flagIndex == -1) flagIndex = this.flagNames.PushString(name);
         
+        // Grab the prompt
         static TrollFlagPrompt prompt;
         this.flagPrompts.GetArray(g_trollAddPromptIndex, prompt);
 
@@ -346,20 +361,33 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
             ShowActivityEx(activator, "[FTT] ", "deactivated troll \"%s\" on %N. ", troll.name, victim);
             LogAction(activator, victim, "\"%L\" deactivated troll \"%s\" on \"%L\"", activator, troll.name, victim);
         } else {
+            static char flagName[MAX_TROLL_FLAG_LENGTH];
+            if(flags > 0 && flags & flags - 1 == 0) {
+                // Get the flag name if there is only one flag set
+                troll.GetFlagName(GetIndexFromPower(flags), flagName, sizeof(flagName));
+            }
             if(modifier & TrollMod_Constant) {
                 if(flags > 0) {
-                    ShowActivityEx(activator, "[FTT] ", "activated constant troll \"%s\" (%d) for %N. ", troll.name, flags, victim);
+                    if(flagName[0] != '\0') {
+                        ShowActivityEx(activator, "[FTT] ", "activated constant troll \"%s\" (%s) for %N. ", troll.name, flagName, victim);
+                    } else {
+                        ShowActivityEx(activator, "[FTT] ", "activated constant troll \"%s\" (%d) for %N. ", troll.name, flags, victim);
+                    }
                 } else
                     ShowActivityEx(activator, "[FTT] ", "activated constant troll \"%s\" for %N. ", troll.name, victim);
-            } else if(flags > 0) 
-				ShowActivityEx(activator, "[FTT] ", "activated troll \"%s\" (%d) for %N. ", troll.name, flags, victim);
-            else 
+            } else if(flags > 0) {
+                if(flagName[0] != '\0') {
+				    ShowActivityEx(activator, "[FTT] ", "activated troll \"%s\" (%s) for %N. ", troll.name, flagName, victim);
+                } else {
+				    ShowActivityEx(activator, "[FTT] ", "activated troll \"%s\" (%d) for %N. ", troll.name, flags, victim);
+                }
+            } else
 				ShowActivityEx(activator, "[FTT] ", "activated troll \"%s\" for %N. ", troll.name, victim);
             
             LogAction(activator, victim, "\"%L\" activated troll \"%s\" (%d) for \"%L\"", activator, troll.name, flags, victim);
         }
     } else {
-        ReplyToCommand(activator, "apply troll \"%s\" flags=%d on %N", troll.name, flags, victim);
+        ReplyToCommand(activator, "ftt: Applied Troll \"%s\" on %N with flags=%d", troll.name, victim, flags);
     }
     // Toggle on flags for client, if it's not a single run.
     if(modifier & TrollMod_Constant) {

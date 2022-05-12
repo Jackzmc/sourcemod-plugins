@@ -1,5 +1,7 @@
 // UP THE VALUE 'MAX_TROLLS' in base.inc before adding new ones!
 
+int slipperyShoesIndex = 0;
+
 void SetupTrolls() {
     trollKV = new StringMap();
     categories = new ArrayList(ByteCountToCells(16));
@@ -7,6 +9,7 @@ void SetupTrolls() {
     int index;
     SetupTroll("Reset User", "Resets the user, removes all troll effects", TrollMod_Instant);
 
+    /// CATEGORY: Magnets
     SetCategory("Magnets");
     index = SetupTroll("Special Magnet", "Attracts ALL specials to any alive target with this troll enabled", TrollMod_Constant);
     AddMagnetFlags(index);
@@ -14,13 +17,23 @@ void SetupTrolls() {
     AddMagnetFlags(index);
     index = SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
 
+    /// CATEGORY: Infected
     SetCategory("Infected");
     SetupTroll("Swarm", "Swarms a player with zombies. Requires swarm plugin", TrollMod_Instant | TrollMod_Constant);
     SetupTroll("Vomit Player", "Shortcut to sm_vomitplayer. vomits the player.", TrollMod_Instant);
     SetupTroll("Inface Special", "Shortcut to sm_inface", TrollMod_Instant);
     SetupTroll("Insta Special", "Shortcut to sm_insta", TrollMod_Instant);
     SetupTroll("Goo", "Spawns a spitter puddle underneath them", TrollMod_Instant);
+    index = SetupTroll("Amazon Special Combo", "Choose multiple different specials to spawn", TrollMod_Instant);
+    Trolls[index].AddFlagPrompt(true);
+    for(int i = 0; i < 8; i++) {
+        Trolls[index].AddFlag(SPECIAL_NAMES[i], false); // 1 << 7 max
+    }
+    Trolls[index].AddFlagPrompt(false);
+    Trolls[index].AddFlag("Spawn On Face", false); // 1 << 8
+    Trolls[index].AddFlag("Spawn Near", false); // 1 << 9
 
+    // CATEGORY: Items
     SetCategory("Items");
     index = SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
     //Can't add directly, is custom troll: 
@@ -32,6 +45,11 @@ void SetupTrolls() {
     Trolls[index].AddFlag("Biles", true);
     Trolls[index].AddFlag("Molotovs", true);
     Trolls[index].AddFlag("Pipebombs", true);
+    index = SetupTroll("Spicy Gas", "Gascans player picks up just ignite. Magic.", TrollMod_Constant);
+    Trolls[index].AddFlagPrompt(false);
+    Trolls[index].AddFlag("Always (100%)", false);
+    Trolls[index].AddFlag("Half Time (50%)", true);
+    Trolls[index].AddFlag("Rare (10%)", false);
     index = SetupTroll("No Pickup", "Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop", TrollMod_Constant);
     Trolls[index].AddFlagPrompt(true);
     Trolls[index].AddFlag("No Primary", false);
@@ -39,6 +57,7 @@ void SetupTrolls() {
     Trolls[index].AddFlag("No Throwables", true);
     Trolls[index].AddFlag("No Kits", true);
     Trolls[index].AddFlag("No Pills / Adr", true);
+    Trolls[index].AddFlag("No GASCANS", true);
     index = SetupTroll("UziRules / AwpSmells", "Picking up a weapon gives them a UZI or AWP instead", TrollMod_Constant);
     Trolls[index].AddFlagPrompt(false);
     Trolls[index].AddFlag("UZI Only", true);
@@ -51,6 +70,7 @@ void SetupTrolls() {
     Trolls[index].AddFlag("Rare (10%)", false);
     SetupTroll("Half Primary Ammo", "Cuts their primary reserve ammo in half", TrollMod_Instant);
 
+    /// CATEGORY: Chat
     SetCategory("Chat");
     SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant);
     index = SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
@@ -75,6 +95,7 @@ void SetupTrolls() {
     SetupTroll("Reversed", "Reserves their message", TrollMod_Constant);
     SetupTroll("Voice Mute", "Mutes from voice", TrollMod_Constant);
 
+    /// CATEGORY: Health
     SetCategory("Health");
     SetupTroll("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant);
     SetupTroll("Temp Health Quick Drain", "Makes a player's temporarily health drain very quickly", TrollMod_Constant);
@@ -87,15 +108,28 @@ void SetupTrolls() {
     Trolls[index].AddFlag("0.5x Ratio", false); //4
     Trolls[index].AddFlag("0.0x Ratio (None)", false); //8
     Trolls[index].AddFlag("3x Ratio", false); //16
+    Trolls[index].AddFlag("-2x Ratio", false); //16
 
-    SetCategory("Misc");
-    SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
+    /// CATEGORY: Movement
+    SetCategory("Movement");
     SetupTroll("Slow Speed", "Sets player speed to 0.8x of normal speed", TrollMod_Constant);
     SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
-    SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
-    SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
     SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant);
     SetupTroll("Stagger", "Like a slap, but different", TrollMod_Instant);
+    index = SetupTroll("Slippery Shoes", "Periodically stumbles around.", TrollMod_Constant);
+    Trolls[index].AddFlagPrompt(true);
+    Trolls[index].AddFlag("Periodically", true);
+    Trolls[index].AddFlag("When using doors", false);
+    Trolls[index].AddFlag("On throwable use", false);
+    Trolls[index].AddFlag("On pills/adrenaline use", false);
+    Trolls[index].AddFlag("On zombie bite", false);
+    slipperyShoesIndex = index;
+
+    /// CATEGORY: MISC
+    SetCategory("Misc");
+    SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
+    SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
+    SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
     index = SetupTroll("Meta: Inverse", "Uhm you are not supposed to see this...", TrollMod_Instant);
     Trolls[index].hidden = true;
     Trolls[index].AddFlagPrompt(false);
@@ -142,7 +176,6 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
     } else if(StrEqual(troll.name, "UziRules / AwpSmells")) {
         DisableTroll(victim, "No Pickup");
         DisableTroll(victim, "Primary Disable");
-        SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
     } else if(StrEqual(troll.name, "Primary Disable")) {
         DisableTroll(victim, "UziRules / AwpSmells");
         DisableTroll(victim, "No Pickup");
@@ -201,6 +234,17 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
         L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
     } else if(StrEqual(troll.name, "Voice Mute")) {
         BaseComm_SetClientMute(victim, !isActive);
+    } else if(StrEqual(troll.name, "Spicy Gas")) {
+        SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
+    } else if(StrEqual(troll.name, "Amazon Special Combo")) {
+        SpecialSpawnFlags spawnFlag = Special_Anywhere;
+        if(flags & (1 << 8)) spawnFlag = Special_OnTarget;
+        PrintToChatAll("spawnFlag: %d", spawnFlag);
+        for(int i = 1; i < 7; i++) {
+            if(flags & (1 << i)) {
+                SpawnSpecialForTarget(view_as<SpecialType>(i), victim, spawnFlag);
+            }
+        }
     } else if(modifier != TrollMod_Constant) {
         PrintToServer("[FTT] Warn: Possibly invalid troll, no apply action defined for \"%s\"", troll.name);
         #if defined DEBUG

@@ -13,10 +13,6 @@ public Action Command_InstaSpecial(int client, int args) {
 		menu.ExitButton = true;
 		menu.Display(client, 0);
 	} else {
-		if(gInstaSpecialType > -1) {
-			ReplyToCommand(client, "Please wait for last Insta to spawn.");
-			return Plugin_Handled;
-		}
 		char arg1[32], arg2[32] = "jockey";
 		GetCmdArg(1, arg1, sizeof(arg1));
 		if(args >= 2) {
@@ -49,7 +45,7 @@ public Action Command_InstaSpecial(int client, int args) {
 		for (int i = 0; i < target_count; i++) {
 			int target = target_list[i];
 			if(GetClientTeam(target) == 2) {
-				if(SpawnSpecialNear(target, specialType)) {
+				if(SpawnSpecialForTarget(specialType, target)) {
 					LogAction(client, target, "\"%L\" spawned Insta-%s™ nearby \"%L\"", client, arg2, target);
 					successes++;
 				} else {
@@ -82,10 +78,6 @@ public Action Command_InstaSpecialFace(int client, int args) {
 		menu.ExitButton = true;
 		menu.Display(client, 0);
 	} else {
-		if(gInstaSpecialType > -1) {
-			ReplyToCommand(client, "Please wait for last Insta to spawn.");
-			return Plugin_Handled;
-		}
 		char arg1[32], arg2[32] = "jockey";
 		GetCmdArg(1, arg1, sizeof(arg1));
 		if(args >= 2) {
@@ -118,7 +110,7 @@ public Action Command_InstaSpecialFace(int client, int args) {
 		for (int i = 0; i < target_count; i++) {
 			int target = target_list[i];
 			if(GetClientTeam(target) == 2) {
-				if(SpawnSpecialInFace(target, specialType)) {
+				if(SpawnSpecialForTarget(specialType, target, Special_OnTarget)) {
 					LogAction(client, target, "\"%L\" spawned Insta-%s™ at player \"%L\"", client, arg2, target);
 					successes++;
 				} else {

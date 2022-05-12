@@ -38,14 +38,14 @@ public int Insta_SpecialHandler(Menu menu, MenuAction action, int client, int pa
 		}
 		SpecialType special = view_as<SpecialType>(specialInt);
 		if(inFace) {
-			if(SpawnSpecialInFace(target, special)) {
+			if(SpawnSpecialForTarget(special, target, Special_OnTarget)) {
 				LogAction(client, target, "\"%L\" spawned Insta-%s™ on \"%L\"", client, SPECIAL_NAMES[specialInt-1], target);
 				ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ on %N", SPECIAL_NAMES[specialInt-1], target);
 			} else {
 				ReplyToCommand(client, "Could not spawn special.");
 			}
 		} else {
-			if(SpawnSpecialNear(target, special)) {
+			if(SpawnSpecialForTarget(special, target)) {
 				LogAction(client, target, "\"%L\" spawned Insta-%s™ near \"%L\"", client, SPECIAL_NAMES[specialInt-1], target);
 				ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ near %N", SPECIAL_NAMES[specialInt-1], target);
 			} else {
@@ -488,7 +488,7 @@ void ShowThrowItAllMenu(int client, int userid) {
 	}
 	
 	// Grab all the items the player has, add to menu
-	for(int slot = 0; slot <= 4; slot++) {
+	for(int slot = 0; slot <= 5; slot++) {
 		int item = GetPlayerWeaponSlot(victim, slot);
 		if(item > -1) {
 			GetEdictClassname(item, itmName, sizeof(itmName));
