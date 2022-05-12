@@ -29,6 +29,14 @@
 //Sets abmExtraCount to this value if set
 // #define DEBUG_FORCE_PLAYERS 7
 
+
+#define EXTRA_TANK_MIN_SEC 2.0
+#define EXTRA_TANK_MAX_SEC 20.0
+
+
+
+/// DONT CHANGE
+
 #define PLUGIN_VERSION "1.0"
 
 #include <sourcemod>
@@ -53,13 +61,6 @@
 #define PLAYER_DROP_TIMEOUT_SECONDS 120000.0
 
 
-/* 5+ Tank Improvement 
-Every X amount of L4D2_OnChooseVictim() calls,
-if a player has done < Y amount since last call
-Add to a list
-Find the closest player in that list & target
-*/
-
 enum struct PlayerItems {
 	char throwable[2];
 	char usable[2];
@@ -79,7 +80,7 @@ public Plugin myinfo =
 static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance;
 static int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
 static int currentChapter;
-static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound;
+static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound, areItemsPopulated;
 static ArrayList ammoPacks;
 static Handle updateHudTimer;
 static char gamemode[32];
@@ -130,7 +131,10 @@ Restore from saved inventory
 static StringMap weaponMaxClipSizes;
 static StringMap pInv;
 
-static char HUD_SCRIPT[] = "ExtraPlayerHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG } } }; HUDSetLayout( ExtraPlayerHUD ); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.78, 0.3, 0.3 ); g_ModeScript";
+static char HUD_SCRIPT_DATA[] = "ExtraPlayerHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };g_ModeScript";
+
+static char HUD_SCRIPT_CLEAR[] = "ExtraPlayerHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( ExtraPlayerHUD );HUDPlace( g_ModeScript.HUD_RIGHT_BOT,0.72,0.78,0.3,0.3);g_ModeScript";
+
 
 #define CABINET_ITEM_BLOCKS 4
 enum struct Cabinet {
@@ -208,7 +212,7 @@ public void OnPluginStart() {
 	if(isLateLoaded) {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-				GetPlayerInventory(i);
+				UpdatePlayerInventory(i);
 				SDKHook(i, SDKHook_WeaponEquip, Event_Pickup);
 			}
 		}
@@ -217,6 +221,7 @@ public void OnPluginStart() {
 		abmExtraCount = count;
 		int threshold = hEPIHudState.IntValue == 1 ? 5 : 0;
 		if(hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
+			PrintToServer("[EPI] Creating new hud timer");
 			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
 		}
 	}
@@ -247,7 +252,7 @@ public void OnPluginStart() {
 public Action Timer_ForceUpdateInventories(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-			GetPlayerInventory(i);
+			UpdatePlayerInventory(i);
 		}
 	}
 	return Plugin_Continue;
@@ -307,12 +312,12 @@ public void OnPluginEnd() {
 ///////////////////////////////////////////////////////////////////////////////
 public void Cvar_HudStateChange(ConVar convar, const char[] oldValue, const char[] newValue) {
 	if(convar.IntValue == 0 && updateHudTimer != null) {
-		CloseHandle(updateHudTimer);
-		updateHudTimer = null;
+		delete updateHudTimer;
 	}else {
 		int count = GetRealSurvivorsCount();
-		int threshold = hEPIHudState.IntValue == 1 ? 5 : 0;
+		int threshold = hEPIHudState.IntValue == 1 ? 4 : 0;
 		if(convar.IntValue > 0 && count > threshold && updateHudTimer == null) {
+			PrintToServer("[EPI] Creating new hud timer");
 			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
 		}
 	}
@@ -431,7 +436,8 @@ public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) 
 		if(finaleStage == Stage_FinaleTank2 && allowTankSplit && hExtraFinaleTank.IntValue & 2) {
 			PrintToConsoleAll("[EPI] Second tank spawned, setting health.");
 			// Sets health in half, sets finaleStage to health
-			CreateTimer(5.0, Timer_SpawnFinaleTank, user);
+			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
+			CreateTimer(duration, Timer_SpawnFinaleTank, user);
 		} else if(finaleStage == Stage_FinaleDuplicatePending) {
 			PrintToConsoleAll("[EPI] Third & final tank spawned");
 			RequestFrame(Frame_SetExtraTankHealth, user);
@@ -443,7 +449,7 @@ public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) 
 				PrintToConsoleAll("[EPI] Creating a split tank (hp=%d)", hp);
 				extraTankHP = hp;
 				CreateTimer(0.2, Timer_SetHealth, user);
-				CreateTimer(11.0, Timer_SpawnSplitTank, user);
+				CreateTimer(GetRandomFloat(10.0, 18.0), Timer_SpawnSplitTank, user);
 			}
 			// Then, summon the next tank
 		} else if(finaleStage == Stage_TankSplit) {
@@ -574,7 +580,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	if(hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
 		updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
 	}
-	GetPlayerInventory(client);
+	UpdatePlayerInventory(client);
 	return Plugin_Continue;
 
 }
@@ -586,17 +592,14 @@ public Action Timer_CheckInventory(Handle h, int client) {
 	}
 }
 
-public void OnClientDisconnect(int client) {
-	if(GetClientTeam(client) == 2 && !IsFakeClient(client))
-		SaveInventory(client);
-}
-
 public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast) {
 	if(event.GetBool("disconnect")) {
 		int userid = event.GetInt("userid");
 		int client = GetClientOfUserId(userid);
 		int team = event.GetInt("team");
-		if(client > 0 && !event.GetBool("isbot") && team == 2) {
+		if(client > 0 && team == 2) { //TODO: re-add && !event.GetBool("isbot") 
+			SaveInventory(client);
+			PrintToServer("debug: Player %N (index %d, uid %d) now pending empty", client, client, userid);
 			playerData[client].state = State_PendingEmpty;
 			/*DataPack pack;
 			CreateDataTimer(cvDropDisconnectTime.FloatValue, Timer_DropSurvivor, pack);
@@ -610,9 +613,10 @@ public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast)
 public Action Timer_DropSurvivor(Handle h, int client) {
 	if(playerData[client].state == State_PendingEmpty) {
 		playerData[client].state = State_Empty;
+		PrintToServer("[EPI] Dropping survivor %d. hMinPlayers-pre:%d", client, hMinPlayers.IntValue);
 		PrintToConsoleAll("[EPI] Dropping survivor %d. hMinPlayers-pre:%d", client, hMinPlayers.IntValue);
 		hMinPlayers.IntValue = --abmExtraCount;
-		if(hMinPlayers.IntValue  < 4) {
+		if(hMinPlayers.IntValue < 4) {
 			hMinPlayers.IntValue = 4;
 			PrintToConsoleAll("[EPI!!] hMinPlayers dropped below 4. This is a bug, please report to jackz.");
 			PrintToServer("[EPI!!] hMinPlayers dropped below 4. This is a bug, please report to jackz.");
@@ -645,7 +649,7 @@ public Action Timer_DropSurvivor(Handle h, int client) {
 public Action Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0) {
-		GetPlayerInventory(client);
+		UpdatePlayerInventory(client);
 	}
 	return Plugin_Continue;
 
@@ -798,6 +802,8 @@ public void OnMapStart() {
 
 	playersLoadedIn = 0;
 	finaleStage = Stage_Inactive;
+
+	L4D2_RunScript(HUD_SCRIPT_CLEAR);
 }
 
 
@@ -855,6 +861,7 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 
 public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	if(!isFailureRound) isFailureRound = true;
+	areItemsPopulated = false;
 	return Plugin_Continue;
 }
 
@@ -1032,20 +1039,23 @@ void UnlockDoor(int entity, int flag) {
 		}
 		firstSaferoomDoorEntity = -1;
 	}
-	PopulateItems();
+	if(!areItemsPopulated)
+		PopulateItems();
 }
 
 public Action Timer_UpdateHud(Handle h) {
 	if(StrEqual(gamemode, "hideandseek")) return Plugin_Stop;
 	int threshold = hEPIHudState.IntValue == 1 ? 4 : 0;
 	if(hEPIHudState.IntValue == 0 || abmExtraCount <= threshold) {
-		L4D2_RunScript("ExtraPlayerHUD <- { Fields = { } }; HUDSetLayout(ExtraPlayerHUD); HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.77, 0.25, 0.2); g_ModeScript");
+		PrintToServer("[EPI] Less than threshold, stopping hud timer");
+		L4D2_RunScript(HUD_SCRIPT_CLEAR);
 		updateHudTimer = null;
 		return Plugin_Stop;
 	}
-	char players[512];
-	char data[32];
-	char prefix[16];
+	static char players[512];
+	static char data[32];
+	static char prefix[16];
+	players[0] = '\0';
 	for(int i = 1; i <= MaxClients; i++) { 
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			data[0] = '\0';
@@ -1074,7 +1084,7 @@ public Action Timer_UpdateHud(Handle h) {
 			Format(players, sizeof(players), "%s%s %s\\n", players, prefix, data);
 		}
 	}
-	RunVScriptLong(HUD_SCRIPT, players);
+	RunVScriptLong(HUD_SCRIPT_DATA, players);
 	return Plugin_Continue;
 }
 
@@ -1085,6 +1095,8 @@ public Action Timer_UpdateHud(Handle h) {
 public void PopulateItems() {
 	int survivors = GetRealSurvivorsCount();
 	if(survivors <= 4) return;
+
+	areItemsPopulated = true;
 
 	//Generic Logic
 	float percentage = hExtraItemBasePercentage.FloatValue * survivors;
@@ -1424,7 +1436,7 @@ int FindCabinetIndex(int cabinetId) {
 	return -1;
 }
 
-void GetPlayerInventory(int client) {
+void UpdatePlayerInventory(int client) {
 	static char item[16];
 	if(GetClientWeaponName(client, 2, item, sizeof(item))) {
 		items[client].throwable[0] = CharToUpper(item[7]);
@@ -1465,7 +1477,7 @@ stock void RunVScriptLong(const char[] sCode, any ...) {
 		DispatchSpawn(iScriptLogic);
 	}
 	
-	static char sBuffer[1024];
+	static char sBuffer[2048];
 	VFormat(sBuffer, sizeof(sBuffer), sCode, 2);
 	
 	SetVariantString(sBuffer);
