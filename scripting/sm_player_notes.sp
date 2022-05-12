@@ -69,7 +69,7 @@ public Action Command_AddNoteDisconnected(int client, int args) {
 public int Menu_Disconnected(Menu menu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
 		menu.GetItem(item, menuNoteTarget, sizeof(menuNoteTarget));
-		PrintToChat(client, "Enter a note for %s:", menuNoteTarget);
+		PrintToChat(client, "Enter a note in the chat for %s: (or 'cancel' to cancel)", menuNoteTarget);
 		WaitingForNotePlayer = client;
 	} else if (action == MenuAction_End)	
 		delete menu;
@@ -78,13 +78,17 @@ public int Menu_Disconnected(Menu menu, MenuAction action, int client, int item)
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
 	if(client > 0 && WaitingForNotePlayer == client) {
 		WaitingForNotePlayer = 0;
-		static char buffer[32];
-		GetClientAuthId(client, AuthId_Steam2, buffer, sizeof(buffer));
-		DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", menuNoteTarget, buffer, sArgs);
-		DB.Query(DB_AddNote, query);
-		LogAction(client, -1, "\"%L\" added note for \"%s\": \"%s\"", client, menuNoteTarget, sArgs);
-		Format(buffer, sizeof(buffer), "%N: ", client);
-		ShowActivity2(client, buffer, "added a note for %s: \"%s\"", menuNoteTarget, sArgs);
+		if(StrEqual(sArgs, "cancel", false)) {
+			PrintToChat(client, "Note cancelled.");
+		} else {
+			static char buffer[32];
+			GetClientAuthId(client, AuthId_Steam2, buffer, sizeof(buffer));
+			DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", menuNoteTarget, buffer, sArgs);
+			DB.Query(DB_AddNote, query);
+			LogAction(client, -1, "\"%L\" added note for \"%s\": \"%s\"", client, menuNoteTarget, sArgs);
+			Format(buffer, sizeof(buffer), "%N: ", client);
+			ShowActivity2(client, buffer, "added a note for %s: \"%s\"", menuNoteTarget, sArgs);
+		}
 		return Plugin_Stop;
 	}
 	return Plugin_Continue;
@@ -92,13 +96,13 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 public Action Command_AddNote(int client, int args) {
 	if(args < 2) {
-		ReplyToCommand(client, "Syntax: sm_note <player> <note>");
+		ReplyToCommand(client, "Syntax: sm_note <player> <note> or if they have disconnected use sm_notedisconnected");
 	} else {
 		static char target_name[MAX_TARGET_LENGTH];
 		GetCmdArg(1, target_name, sizeof(target_name));
 		GetCmdArg(2, reason, sizeof(reason));
 
-		int target_list[MAXPLAYERS], target_count;
+		int target_list[1], target_count;
 		bool tn_is_ml;
 		if ((target_count = ProcessTargetString(
 			target_name,
