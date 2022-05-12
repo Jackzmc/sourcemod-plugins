@@ -70,7 +70,7 @@ public Action VoteStart(int client, const char[] command, int argc) {
 		PrintToServer("Preventing vote from user not in game: %N", client);
 		return Plugin_Handled;
 	}
-	if(GetClientCount(true) == 0 || client == 0) return Plugin_Handled; //prevent votes while server is empty or if server tries calling vote
+	if(GetClientCount(true) == 0 || client == 0 || client >= MaxClients) return Plugin_Handled; //prevent votes while server is empty or if server tries calling vote
 	if(argc >= 1) {
 		static char issue[32];
 
@@ -86,7 +86,6 @@ public Action VoteStart(int client, const char[] command, int argc) {
 				AdminId callerAdmin = GetUserAdmin(client);
 				AdminId targetAdmin = GetUserAdmin(target);
 				if(targetAdmin != INVALID_ADMIN_ID) { //Only run if vote is against an admin
-					PrintToChat(target, "%N has attempted to vote kick you.", client);
 					for(int i = 1; i <= MaxClients; i++) {
 						if(target != i && IsClientConnected(i) && IsClientInGame(i) && GetUserAdmin(i) != INVALID_ADMIN_ID) {
 							PrintToChat(i, "%N attempted to vote-kick %N", client, target);
@@ -94,6 +93,9 @@ public Action VoteStart(int client, const char[] command, int argc) {
 					}
 					if(callerAdmin == INVALID_ADMIN_ID && GetTime() - iJoinTime[client] <= 120) {
 						KickClient(client, "No.");
+						PrintToChat(target, "%N has attempted to vote kick you and was kicked.", client);
+					} else {
+						PrintToChat(target, "%N has attempted to vote kick you.", client);
 					}
 					return Plugin_Handled;
 				}
