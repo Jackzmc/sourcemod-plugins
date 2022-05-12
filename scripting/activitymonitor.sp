@@ -181,7 +181,10 @@ public void Event_Connection(Event event, const char[] name, bool dontBroadcast)
 			if(name[7] == 'f') {
 				AddLog("JOIN", clientName, "", "");
 			} else {
-				AddLog("QUIT", clientName, "", "");
+				static char reason[64];
+				event.GetString("reason", reason, sizeof(reason));
+				Format(reason, sizeof(reason), "left: \"%s\"", reason);
+				AddLog("QUIT", clientName, "", reason);
 			}
 		}
 	}
@@ -229,10 +232,8 @@ public void Event_L4D2_Death(Event event, const char[] name, bool dontBroadcast)
 		}
 	}
 }
-//Jackz was incapped by Jockey
-//Jackz was incapped (by world/zombie)
-//Jackz was incapped by Disgruntled Pea
-//Ellis was incapped [by ...]
+//Player was incapped by Jockey
+//Player was incapped 	(by world/zombie, no msg)
 public void Event_L4D2_Incapped(Event event, const char[] name, bool dontBroadcast) {
 	int victim = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
