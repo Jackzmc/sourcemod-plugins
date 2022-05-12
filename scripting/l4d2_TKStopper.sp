@@ -33,8 +33,9 @@ enum struct PlayerData {
 	int idleStartTime;
 	int lastFFTime;
 	int jumpAttempts;
-	int ffCount;
 
+	int ffCount;
+	int totalFFCount;
 	float TKDamageBuffer;
 	float totalDamageFF;
 	float autoRFFScaleFactor;
@@ -225,7 +226,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 			PrintToConsoleAll("\t\t%.2f TK-FF buffer (%.2f total ff, %d freq.) | %.3f (buf %f) rFF rate | lastff %.1f min ago | %d suicide jumps", 
 				pData[client].TKDamageBuffer, 
 				pData[client].totalDamageFF, 
-				pData[client].ffCount,
+				pData[client].totalFFCount,
 				activeRate, 
 				pData[client].autoRFFScaleFactor, 
 				minutesSinceiLastFFTime, 
@@ -237,6 +238,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 		pData[client].totalDamageFF = 0.0;
 		pData[client].ffCount = 0;
 		pData[client].immunityFlags = 0;
+		pData[client].totalFFCount = 0;
 	}
 }
 
@@ -298,6 +300,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		}
 		pData[attacker].TKDamageBuffer += damage;
 		pData[attacker].totalDamageFF += damage;
+		pData[attacker].totalFFCount++;
 		pData[attacker].ffCount++;
 
 		// Auto reverse ff logic
@@ -305,14 +308,20 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		pData[attacker].lastFFTime = time; 
 		// If not immune to RFF, damage is direct, _or admin shit_
 		if(~pData[attacker].immunityFlags & Immune_RFF && isDamageDirect) {
-			// Decrement any forgiven ratio (computed on demand)
 			float minutesSinceiLastFFTime = (time - pData[attacker].lastFFTime) / 60.0;
 			pData[attacker].autoRFFScaleFactor -= minutesSinceiLastFFTime * hFFAutoScaleForgivenessAmount.FloatValue;
+			// Decrement any accumlated ff 'counts'
+			int ffCountMinutes = RoundFloat(minutesSinceiLastFFTime / 10.0);
+			pData[attacker].ffCount -= (ffCountMinutes * 2);
+			if(pData[attacker].ffCount < 0) {
+				pData[attacker].ffCount = 0;
+			}
+			// Decrement any forgiven ratio (computed on demand)
 			if(pData[attacker].autoRFFScaleFactor < 0.0) {
 				pData[attacker].autoRFFScaleFactor = 0.0;
 			}
 			// Then calculate a new reverse ff ratio
-			pData[attacker].autoRFFScaleFactor += hFFAutoScaleAmount.FloatValue * damage;
+			pData[attacker].autoRFFScaleFactor += hFFAutoScaleAmount.FloatValue * damage * (pData[attacker].ffCount*0.25);
 			if(pData[attacker].isTroll) {
 				pData[attacker].autoRFFScaleFactor *= 2;
 			}
@@ -348,7 +357,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 			} else if(hTKAction.IntValue == 2) {
 				LogMessage("[TKStopper] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
 				NotifyAllAdmins("[Notice] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
-				BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF (Auto)", "Excessive Friendly Fire", "TKStopper");
+				BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF (Auto)", "Excessive Friendly Fire (Automatic)", "TKStopper");
 			} else if(hTKAction.IntValue == 3) {
 				LogMessage("[TKStopper] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. ", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
 				NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. Use \"/ignore <player> tk\" to make them immune.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
@@ -380,10 +389,10 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 			return Plugin_Changed;
 		}else if(isDamageDirect && pData[attacker].autoRFFScaleFactor > 0.3) { // Ignore fire and propane damage, mistakes can happen
 			// Apply their reverse ff damage, and have victim take a decreasing amount
-			SDKHooks_TakeDamage(attacker, attacker, attacker, pData[attacker].autoRFFScaleFactor * damage);
 			if(pData[attacker].isTroll) return Plugin_Stop;
 			else if(pData[attacker].immunityFlags & Immune_RFF) return Plugin_Continue;
 
+			SDKHooks_TakeDamage(attacker, attacker, attacker, pData[attacker].autoRFFScaleFactor * damage);
 			if(pData[attacker].autoRFFScaleFactor > 1.0)
 				damage /= pData[attacker].autoRFFScaleFactor;
 			else
@@ -435,12 +444,12 @@ public Action Command_TKInfo(int client, int args) {
 		}
 		float minutesSinceiLastFFTime = GetLastFFMinutes(target);
 		float activeRate = GetActiveRate(target);
-		ReplyToCommand(client, "FF Frequency: %d", pData[target].ffCount);
-		ReplyToCommand(client, "Total FF Damage: %.1f (%.1f min ago last ff)", pData[target].totalDamageFF, minutesSinceiLastFFTime);
+		ReplyToCommand(client, "FF Frequency: %d (active %d, %d forgotten)", pData[target].totalFFCount, pData[target].ffCount, (pData[target].totalFFCount - pData[target].ffCount));
+		ReplyToCommand(client, "Total FF Damage: %.1f HP (%.1f min ago last ff)", pData[target].totalDamageFF, minutesSinceiLastFFTime);
 		if(~pData[target].immunityFlags & Immune_TK)
 			ReplyToCommand(client, "Recent FF (TKDetectBuff): %.1f", pData[target].TKDamageBuffer);
 		if(~pData[target].immunityFlags & Immune_RFF)
-			ReplyToCommand(client, "Auto Reverse-FF: %.1f return rate", activeRate);
+			ReplyToCommand(client, "Auto Reverse-FF: %.1fx return rate", activeRate);
 		ReplyToCommand(client, "Attempted suicide jumps: %d", pData[target].jumpAttempts);
 	} else {
 		for(int i = 1; i <= MaxClients; i++) {
@@ -450,10 +459,12 @@ public Action Command_TKInfo(int client, int args) {
 				if(activeRate < 0.0) {
 					activeRate = 0.0;
 				} 
-				ReplyToCommand(client, "%20N: %.2f TK-FF buf (%.2f total) | %.3f (buf %f) rFF rate | lastff %.1f min ago | %d suicide jumps", 
-					i, 
+				PrintToConsoleAll("%20N: %.1f TK-FF buf (%.2f total ff, %d freq., inter %d) | %.3f (buf %f) rFF rate | lastff %.1f min ago | %d suicide jumps", 
+					i,
 					pData[i].TKDamageBuffer, 
 					pData[i].totalDamageFF, 
+					pData[i].totalFFCount,
+					pData[i].ffCount,
 					activeRate, 
 					pData[i].autoRFFScaleFactor, 
 					minutesSinceiLastFFTime, 
