@@ -19,6 +19,8 @@ public Plugin myinfo = {
 	url = ""
 };
 
+ConVar noHibernate;
+
 public void OnPluginStart() {
 	startupTime = GetTime();
 	EngineVersion g_Game = GetEngineVersion();
@@ -27,9 +29,11 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
+	noHibernate = FindConVar("sv_hibernate_when_empty");
+
 	RegAdminCmd("sm_request_restart", Command_RequestRestart, ADMFLAG_GENERIC);
 
-	CreateTimer(30.0, Timer_Check, _, TIMER_REPEAT);
+	CreateTimer(600.0, Timer_Check, _, TIMER_REPEAT);
 }
 
 public Action Command_RequestRestart(int client, int args) {
@@ -53,6 +57,7 @@ public Action Timer_Check(Handle h) {
 		return Plugin_Continue;
 	} else if(GetTime() - startupTime > MAX_TIME_ONLINE_MS) {
 		LogAction(0, -1, "Server has passed max online time threshold, will restart if remains empty");
+		noHibernate.BoolValue = true;
 		if(IsServerEmpty()) {
 			if(++triesEmpty > 4) {
 				LogAction(0, -1, "Server has passed max online time threshold and is empty after %d tries, restarting now", triesEmpty);
