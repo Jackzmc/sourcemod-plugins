@@ -395,7 +395,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		if(thirdPersonTimer != null)
 			delete thirdPersonTimer;
 		thirdPersonTimer = CreateTimer(1.0, Timer_CheckPlayers, _, TIMER_REPEAT);
-	} else if(!lateLoaded) {
+	} else if(!lateLoaded && suspenseTimer != null) {
 		UnhookEvent("round_end", Event_RoundEnd);
 		UnhookEvent("round_start", Event_RoundStart);
 		UnhookEvent("item_pickup", Event_ItemPickup);
