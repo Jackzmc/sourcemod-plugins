@@ -206,6 +206,7 @@ stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] m
 		return -1;
 	}
 	SetClientName(bot_client_id, spawn_minigun ? "MinigunBot" : "HoldoutBot");
+	ChangeClientTeam(bot_client_id, 4);
 	
 	SetEntProp(bot_client_id, Prop_Send, "m_fFlags", GetEntProp(bot_client_id, Prop_Send, "m_fFlags") | FL_FROZEN);
 	CreateTimer(0.1, Timer_Move, bot_user_id);

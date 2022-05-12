@@ -278,9 +278,7 @@ public void OnClientCookiesCached(int client) {
 ///////////////////////////////////////////////////////////////////////////////
 //Prevent issues with L4D1 characters being TP'd and stuck in brain dead form
 public void OnMapStart() {
-	char output[2];
-	L4D2_GetVScriptOutput("Director.GetSurvivorSet()", output, sizeof(output));
-	isL4D1Survivors = StringToInt(output) == 1;
+	isL4D1Survivors = L4D2_GetSurvivorSetMap() == 1;
 
 	survivors = 0;
 
