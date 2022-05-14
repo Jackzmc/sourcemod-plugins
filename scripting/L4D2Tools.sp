@@ -47,7 +47,7 @@ enum L4DModelId {
 }
 
 static ArrayList LasersUsed;
-static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres, hForceSurvivorSet;
+static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres, hForceSurvivorSet, hPlayerLimit, hSVMaxPlayers;
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1];
 ReserveMode reserveMode;
 static bool isHighPingIdle[MAXPLAYERS+1], isL4D1Survivors;
@@ -98,6 +98,12 @@ public void OnPluginStart() {
 	hFFNotice    	= CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
 	hPingDropThres 	= CreateConVar("sm_autoidle_ping_max", "0.0", "The highest ping a player can have until they will automatically go idle.\n0=OFF, Min is 30", FCVAR_NONE, true, 0.0, true, 1000.0);
 	hForceSurvivorSet = FindConVar("l4d_force_survivorset");
+
+	hSVMaxPlayers   = FindConVar("sv_maxplayers");
+	hPlayerLimit    = CreateConVar("sm_player_limit", "0", "Overrides sv_maxplayers. 0 = off, > 0: limit", FCVAR_NONE, true, 0.0, false);
+	hPlayerLimit.AddChangeHook(Event_PlayerLimitChange);
+	hSVMaxPlayers.IntValue = hPlayerLimit.IntValue;
+
 
 	hFFNotice.AddChangeHook(CVC_FFNotice);
 	if(hFFNotice.IntValue > 0) {
@@ -155,6 +161,13 @@ public void OnPluginStart() {
 public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
 	cvar.GetString(gamemode, sizeof(gamemode));
 }
+
+public void Event_PlayerLimitChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
+	if(cvar.IntValue > 0) {
+		hSVMaxPlayers.IntValue = cvar.IntValue;
+	}
+}
+
 
 public void OnClientConnected(int client) {
 	if(!IsFakeClient(client) && reserveMode == Reserve_Watch) {
@@ -658,7 +671,14 @@ public void OnMapStart() {
 	
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
+	
+}
+public void OnConfigsExecuted() {
 	isL4D1Survivors = L4D2_GetSurvivorSetMap() == 1;
+
+	if(hPlayerLimit.IntValue > 0) {
+		hSVMaxPlayers.IntValue = hPlayerLimit.IntValue;
+	}
 }
 
 public void OnSceneStageChanged(int scene, SceneStages stage) {

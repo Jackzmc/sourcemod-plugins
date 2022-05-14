@@ -377,3 +377,51 @@ stock void ExplodeProjectile(int entity, bool smoke = true) {
 	if(smoke)
 		SetEntProp(entity, Prop_Data, "m_nNextThinkTick", 1); //for smoke
 }  
+
+stock bool IsAreaClear(const float pos[3], const float ang[3]) { 
+	float min[3] = { -30.0, -30.0, -2.0};
+	float max[3] = { 30.0, 30.0, 50.0 };
+
+	// DebugTraceHull(pos, pos, min, max);
+	TR_TraceHullFilter(pos, pos, min, max, MASK_SOLID, Filter_Solid);
+	if(TR_DidHit()) {
+		return false;
+	}
+	return true;
+}
+
+bool SpawnCarOnPlayer(int target) {
+	float pos[3];
+	float ang[3];
+	GetClientEyePosition(target, pos);
+	GetClientEyeAngles(target, ang);
+	if(IsAreaClear(pos, ang)) {
+		pos[2] += 40.0;
+		int id = CreateProp("prop_physics", MODEL_CAR, pos, ang);
+		CreateTimer(4.0, Timer_Delete, id);
+		return true;
+	}
+	return false;
+}
+
+stock int CreateProp(const char[] entClass, const char[] model, const float pos[3], const float ang[3]) {
+	int entity = CreateEntityByName(entClass);
+	DispatchKeyValue(entity, "model", model);
+	DispatchKeyValue(entity, "solid", "6");
+	DispatchKeyValue(entity, "targetname", "hsprop");
+	DispatchKeyValue(entity, "disableshadows", "1");
+	TeleportEntity(entity, pos, ang, NULL_VECTOR);
+	DispatchSpawn(entity);
+	#if defined DEBUG_LOG_MAPSTART
+	PrintToServer("spawn prop %.1f %.1f %.1f model %s", pos[0], pos[1], pos[2], model[7]);
+	#endif
+	return entity;
+}
+
+public bool Filter_Solid(int entity, int contentsMask, any data) {
+	return entity <= 0;
+}
+
+public Action Timer_Delete(Handle h, int id) {
+	AcceptEntityInput(id, "Kill");
+}

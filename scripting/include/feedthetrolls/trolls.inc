@@ -130,6 +130,7 @@ void SetupTrolls() {
     SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
     SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
     SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
+    index = SetupTroll("Car Splat", "Car. splats.", TrollMod_Instant);
     index = SetupTroll("Meta: Inverse", "Uhm you are not supposed to see this...", TrollMod_Instant);
     Trolls[index].hidden = true;
     Trolls[index].AddFlagPrompt(false);
@@ -158,8 +159,8 @@ void AddMagnetFlags(int index) {
 bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier modifier, int flags) {
     bool isActive = IsTrollActiveByRawID(victim, troll.id);
     if(StrEqual(troll.name, "Reset User")) {
-        LogAction(activator, victim, "\"%L\" reset all troll effects for \"%L\"", activator, victim);
-        ShowActivityEx(activator, "[FTT] ", "reset troll effects for %N. ", victim);
+        LogAction(activator, victim, "\"%L\" reset all effects for \"%L\"", activator, victim);
+        ShowActivityEx(activator, "[FTT] ", "reset effects for %N. ", victim);
         for(int i = 0; i <= MAX_TROLLS; i++) {
             Trolls[i].activeFlagClients[victim] = -1;
         }
@@ -243,6 +244,11 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
             if(flags & (1 << i)) {
                 SpawnSpecialForTarget(view_as<SpecialType>(i), victim, spawnFlag);
             }
+        }
+    } else if(StrEqual(troll.name, "Car Splat")) {
+        if(!SpawnCarOnPlayer(victim)) {
+            ReplyToCommand(activator, "Could not find a suitable area to spawn a car");
+            return false;
         }
     } else if(modifier != TrollMod_Constant) {
         PrintToServer("[FTT] Warn: Possibly invalid troll, no apply action defined for \"%s\"", troll.name);

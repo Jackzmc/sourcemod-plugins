@@ -141,3 +141,11 @@ public Action Timer_ShootReverse(Handle h, DataPack pack) {
 		return Plugin_Stop;
 	}
 }
+
+public Action Timer_CheckSpecialSpawned(Handle h, int id) {
+	if(g_iSpId == id) {
+		PrintToServer("[FTT] Special did not spawn in time, continuing.");
+		g_iSpId++;
+		ProcessSpecialQueue();
+	}
+}

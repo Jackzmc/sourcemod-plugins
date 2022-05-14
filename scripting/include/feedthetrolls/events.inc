@@ -16,6 +16,8 @@ public void OnMapStart() {
 	PrecacheSound("weapons/ceda_jar/ceda_jar_explode.wav");
 	PrecacheSound("weapons/molotov/molotov_detonate_1.wav");
 
+	PrecacheSound(MODEL_CAR);
+
 	g_spSpawnQueue.Clear();
 	spIsActive = false;
 	//CreateTimer(30.0, Timer_AutoPunishCheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
@@ -44,6 +46,7 @@ public void Event_SecondaryHealthUsed(Event event, const char[] name, bool dontB
 		L4D_StaggerPlayer(client, client, NULL_VECTOR);
 	}
 }
+static float SPIT_VEL[3] = { 0.0, 0.0, -1.0 };
 public Action Timer_CheckSpecial(Handle h, int specialID) {
 	int special = GetClientOfUserId(specialID);
 	// Check if new player is the spawned special:
@@ -60,8 +63,15 @@ public Action Timer_CheckSpecial(Handle h, int specialID) {
 
 				TeleportEntity(special, spActiveRequest.position, spActiveRequest.angle, NULL_VECTOR);
 				if(spActiveRequest.flags & view_as<int>(SPI_KillOnSpawn)) {
+					if(type == Special_Spitter) {
+						float pos[3];
+						GetClientEyePosition(special, pos);
+						L4D2_SpitterPrj(special, pos, SPIT_VEL);
+					}
 					RequestFrame(Frame_Boom, special);
 				}
+
+				g_iSpId++;
 
 				ProcessSpecialQueue();
 			}
@@ -96,21 +106,16 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 	shootAtTargetHP[client] = 0;
 }
 public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
-	int client = GetClientOfUserId(event.GetInt("userid"));
+	int userid = event.GetInt("userid");
+	int client = GetClientOfUserId(userid);
 	if(client > 0) {
 		if(g_iAttackerTarget[client] > 0) {
 			// If special died, clear & subtract one from counter
-			int target = GetClientOfUserId(g_iAttackerTarget[client]);
-			gInstaSpecialMagnet[target]--;
-			if(gInstaSpecialMagnet[target] == 0) {
-				PrintToServer("[FTT] gInstaSpecialMagnet dropped below 0");
-				gInstaSpecialMagnet[target] = 0;
-			}
 			g_iAttackerTarget[client] = 0;
 		} else {
 			// If player died, stop the targetting
 			for(int i = 1; i <= MaxClients; i++) { 
-				if(g_iAttackerTarget[i] == client) {
+				if(g_iAttackerTarget[i] == userid) {
 					g_iAttackerTarget[i] = 0;
 					break;
 				}

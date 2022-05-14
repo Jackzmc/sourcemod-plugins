@@ -20,17 +20,6 @@
 #include <l4d_anti_rush>
 
 
-/*
-TODO IDEAS:
-1. [x] Instant pipebomb explosion
-2. [x] Spicy gas (instant ignite), ignite propane/gas canisters
-3. [x] Amazon Special Combo (flags, choose combinations) (NEED QUEUE)
-4. Random weapons (on interval, possible second option of random capacity)
-5. [x] Slippery shoes (periodic stagger, or on certain events)
-6. (on hold) Sticky goo (slow user down in goo, or freezes)
-7. Follow goo
-*/
-
 public Plugin myinfo = 
 {
 	name = "L4D2 Feed The Trolls", 

@@ -35,10 +35,10 @@ stock bool SpawnSpecialForTarget(SpecialType specialType, int target, SpecialSpa
 		GetClientAbsOrigin(target, pos);
 		GetClientEyeAngles(target, ang);
 
-		if(specialType == Special_Boomer) 
+		if(specialType == Special_Boomer || specialType == Special_Spitter) 
 			internalFlags |= view_as<int>(SPI_KillOnSpawn);
 
-		if(specialType == Special_Jockey || specialType == Special_Boomer) { // Else spawn a little bit off, and above (above for jockeys)
+		if(specialType == Special_Jockey || specialType == Special_Boomer || specialType == Special_Spitter) { // Else spawn a little bit off, and above (above for jockeys)
 			pos[2] += 25.0;
 			pos[0] += 5.0;
 		} else { //If not jockey/hunter find a suitable area that is at least 5 m away
@@ -75,10 +75,15 @@ stock bool SpawnSpecialAtPosition(SpecialType special, const float destination[3
 
 SpecialSpawnRequest spActiveRequest;
 
+// On spawn, keep id
+// timer checks if passed id still == kept id, if so, it failed. 
+int g_iSpId;
+
 bool ProcessSpecialQueue() {
 	if(g_spSpawnQueue.Length > 0) {
 		if(g_spSpawnQueue.GetArray(0, spActiveRequest, sizeof(spActiveRequest))) {
 			spIsActive = true;
+			CreateTimer(4.0, Timer_CheckSpecialSpawned, g_iSpId);
 		}
 		g_spSpawnQueue.Erase(0);
 
