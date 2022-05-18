@@ -81,7 +81,8 @@ Technically 'l4d2 game info', haven't changed name. Just prints general informat
     ```
     
 ### AutoWarpBot
-Simple l4d2 plugin that will auto teleport everyone to checkpoint once all real players have reached the saferoom
+Simple l4d2 plugin that will auto teleport everyone to checkpoint once all real players have reached the saferoom.
+Doesn't really work well.
 
    
 ### 200IQBots_FlyYouFools
@@ -95,7 +96,7 @@ Inspired by the 200IQBots_FlyYouFools. Bots avoid witch if its over 40% anger wh
 
 ### L4D2FFKickProtection
 Simple plugin that prevents a player that is being vote-kicked from doing any ff damage to teammates.
-It also prevents vote kicking of admins and will notify admins of the attempt.
+It also prevents vote kicking of admins, instead will kick the player and notify admins.
 
 * **Convars:**
   * `sm_votekick_force_threshold <#>` - The threshold of damage where the offending player is just immediately kicked. 0 -> Any attempted damage, -1 -> No auto kick.
@@ -125,7 +126,7 @@ Makes the bots avoid standing in front of or on top of the player that is using 
 Spawn the holdout bots used in the passing. This supports all 8 characters, including with the minigun. They can spawn with any weapon or default to ak47.
 
 **Notes:** 
-* The minigun holdout bot has to internally be Louis, so it will be Louis making sounds, but whatever model specified shown. This doesn't apply for normal holdout bot.
+* The minigun holdout bot has to internally be Louis, so it will be Louis making sounds, with whatever model specified being shown. This doesn't apply for normal holdout bot.
 * \<survivor name> can be "bill" or their numeric id (4). 
 
 Code modified from https://forums.alliedmods.net/showthread.php?p=1741099
@@ -143,7 +144,7 @@ A collection of small tools:
   * Set the survivor models of any survivor with updating [l4d_survivor_identity_fix](#l4d_survivor_identity_fix)
   * Automatically gives melee weapons that an idle bot dropped once no longer idle
   * Automatically make players go idle when ping spikes
-  * Slowly kill any bots attacking survivor bot's blind spots (Fixes bots stuck taking damage and brain dead)
+  * Slowly kill any zombies attacking survivor bot's blind spots (Fixes bots stuck taking damage and brain dead)
 
 * **Convars:**
    * `sm_laser_use_notice <0/1>` - Enable notification of when a laser box was used first
@@ -174,30 +175,8 @@ This really only affects wandering zombies, mobs and panic events, but it may wo
 ### l4d2_feedthetrolls
 This plugin allows you to enact certain troll modes on any player, some are subtle some are less so. Either way, it works great to deal with a rusher, an asshole or even your friends.
 
-Troll Modes: (updated 4/20/2021)
-
-1. **SlowSpeed** (0.8 < 1.0 base) - Slows down a user
-2. **HigherGravity** (1.3 > 1.0) - Adds more gravity to a user
-3. **HalfPrimary** - Sets user's primary reserve ammo in half
-4. **UziRules** - Picking up a weapon only gives them a UZI
-5. **PrimaryDisable** - Cannot pickup primary weapons at all
-6. **SlowDrain** - Health slowly drains every few seconds (controlled by cvar)
-7. **Clusmy** - Randomly drops any melee weapon, great with a swarm
-8. **IcantSpellNoMore** - Garble their chat messages
-9. **CameTooEarly** - (not implemented) A chance that when shooting, they empty a whole clip at once
-10. **KillMeSoftly** - Makes the player eat or waste their pills
-11. **ThrowItAll** - Makes a player throw all their items at any nearby players. Runs on the interval set by sm_ftt_throw_interval.
-12. **GunJam** - On reload, small chance their gun gets jammed - Can't reload.
-13. **NoPickup** - Prevents a player from picking up ANY (new) item. Use ThrowItAll to make them drop
-14. **Swarm** - Swarms a player with zombies.
-15. **Honk** – Replaces player's chat messages with honk
-16. **Special Magnet** – Attracts ALL specials to the closest alive trolled target with this troll enabled
-17. **Tank Magnet** – Attracts ALL tanks to the closest alive trolled target with this troll enabled
-18. **No Shove** – Prevents player from shoving at a % chance
-19. **Damage Boost** – Will make the player take 2x more damage than normal
-20. **Temp Quick Drain** – Will make a player’s temp health drain very quickly
-21. **Vomit Player** – Instantly vomits the player
-22. **Vocalize Gag** - Prevents player from vocalizing entirely
+See updated list of trolls and their descriptions:
+https://admin.jackz.me/docs/ftt
 
 * **Convars:**
   * `sm_ftt_victims` - A comma separated list of troll targets. Unused while new version is being implemented
@@ -308,6 +287,8 @@ Any survivor that attacks another survivor
 2. If during the finale vehicle arrival, they do 0x damage to victim and take 2x reverse friendly fire
 3. If neither #1 or #2, both the victim and the attacker take 1/2 the original damage
 4. If victim is in a saferoom, no damage is dealt.
+
+See https://admin.jackz.me/docs/plugins/#tkstopper
 
 
 During any of the above three conditions, if they deal (or attempt to deal) over 75 HP in 15 seconds they will be instantly banned for a set period of time (60 minutes). If they are for sure a team killer, it can be extended to a permanent ban.
