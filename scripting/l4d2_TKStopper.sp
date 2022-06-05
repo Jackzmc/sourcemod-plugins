@@ -304,8 +304,6 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		pData[attacker].ffCount++;
 
 		// Auto reverse ff logic
-		int prevFFTime = pData[attacker].lastFFTime;
-		pData[attacker].lastFFTime = time; 
 		// If not immune to RFF, damage is direct, _or admin shit_
 		if(~pData[attacker].immunityFlags & Immune_RFF && isDamageDirect) {
 			float minutesSinceiLastFFTime = (time - pData[attacker].lastFFTime) / 60.0;
@@ -331,6 +329,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 				pData[attacker].autoRFFScaleFactor = hFFAutoScaleMaxRatio.FloatValue;
 			}
 		}
+		int prevFFTime = pData[attacker].lastFFTime;
 		pData[attacker].lastFFTime = time;
 		
 		// Check for excessive friendly fire damage in short timespan
