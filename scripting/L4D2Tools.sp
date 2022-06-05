@@ -100,9 +100,11 @@ public void OnPluginStart() {
 	hForceSurvivorSet = FindConVar("l4d_force_survivorset");
 
 	hSVMaxPlayers   = FindConVar("sv_maxplayers");
-	hPlayerLimit    = CreateConVar("sm_player_limit", "0", "Overrides sv_maxplayers. 0 = off, > 0: limit", FCVAR_NONE, true, 0.0, false);
-	hPlayerLimit.AddChangeHook(Event_PlayerLimitChange);
-	hSVMaxPlayers.IntValue = hPlayerLimit.IntValue;
+	if(hSVMaxPlayers != null) { 
+		hPlayerLimit    = CreateConVar("sm_player_limit", "0", "Overrides sv_maxplayers. 0 = off, > 0: limit", FCVAR_NONE, true, 0.0, false);
+		hPlayerLimit.AddChangeHook(Event_PlayerLimitChange);
+		hSVMaxPlayers.IntValue = hPlayerLimit.IntValue;
+	}
 
 
 	hFFNotice.AddChangeHook(CVC_FFNotice);
@@ -675,8 +677,7 @@ public void OnMapStart() {
 }
 public void OnConfigsExecuted() {
 	isL4D1Survivors = L4D2_GetSurvivorSetMap() == 1;
-
-	if(hPlayerLimit.IntValue > 0) {
+	if(hSVMaxPlayers != null && hPlayerLimit.IntValue > 0) {
 		hSVMaxPlayers.IntValue = hPlayerLimit.IntValue;
 	}
 }
