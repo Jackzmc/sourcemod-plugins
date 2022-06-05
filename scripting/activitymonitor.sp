@@ -183,7 +183,7 @@ public void Event_Connection(Event event, const char[] name, bool dontBroadcast)
 			} else {
 				static char reason[64];
 				event.GetString("reason", reason, sizeof(reason));
-				Format(reason, sizeof(reason), "left: \"%s\"", reason);
+				Format(reason, sizeof(reason), " left: \"%s\"", reason);
 				AddLog("QUIT", clientName, "", reason);
 			}
 		}
