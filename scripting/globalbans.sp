@@ -98,7 +98,7 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
 
         g_db.Format(query, sizeof(query), "INSERT INTO bans"
             ..."(steamid, reason, expires, executor, flags, timestamp)"
-            ..."VALUES ('%s', '%s', %s, '%s', %d, UNIX_TIMESTAMP)",
+            ..."VALUES ('%s', '%s', %s, '%s', %d, UNIX_TIMESTAMP())",
             identity,
             reason,
             expiresDate,
@@ -238,7 +238,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
                         public_message = reason; 
                     }
 
-                    int id = results.FetchInt(4);
+                    int id = results.FetchInt(6);
 
                     if(hKickType.IntValue > 0) {
                         if(public_message[0] != '\0')
