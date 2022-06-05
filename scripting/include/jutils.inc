@@ -28,8 +28,8 @@ stock void GetHorizontalPositionFromClient(int client, float units, float finalP
 	GetClientAbsOrigin(client, pos);
 
 	float theta = DegToRad(ang[1]);
-	pos[0] += -150 * Cosine(theta); 
-	pos[1] += -150 * Sine(theta); 
+	pos[0] += units * Cosine(theta); 
+	pos[1] += units * Sine(theta); 
 	finalPosition = pos;
 }
  // Gets velocity of an entity (ent) toward new origin with speed (fSpeed) - thanks Ryan

@@ -10,16 +10,16 @@ enum ActionResultType
 { 
 	CONTINUE,			// continue executing this action next frame - nothing has changed
 	CHANGE_TO,			// change actions next frame
-	SUSPEND_FOR,			// put the current action on hold for the new action
+	SUSPEND_FOR,		// put the current action on hold for the new action
 	DONE,				// this action has finished, resume suspended action
-	SUSTAIN,				// for use with event handlers - a way to say "It's important to keep doing what I'm doing"
+	SUSTAIN,			// for use with event handlers - a way to say "It's important to keep doing what I'm doing"
 };
 
 enum EventResultPriorityType
 {
-	RESULT_NONE,			// no result
+	RESULT_NONE,		// no result
 	RESULT_TRY,			// use this result, or toss it out, either is ok
-	RESULT_IMPORTANT,		// try extra-hard to use this result
+	RESULT_IMPORTANT,	// try extra-hard to use this result
 	RESULT_CRITICAL		// this result must be used - emit an error if it can't be
 };
 
@@ -28,31 +28,86 @@ enum BehaviorAction
 	INVALID_ACTION
 };
 
+/**
+ * @brief Callback called for every entity action.
+ *
+ * @param action		Action address
+ *
+ * @noreturn
+ */
 typedef ActionsIteratorCallback = function void (BehaviorAction action);
 
-/* OnActionCreated is called when action added to Behavior system */
+/**
+ * @brief Called whenever action is created
+ *
+ * @param action			Created action address
+ * @param actor				Actor of the action
+ * @param name				Name of the action
+ *
+ * @noreturn
+ */
 forward void OnActionCreated( BehaviorAction action, int actor, const char[] name );
 
-/* OnActionDestroyed is called when action is about to be destroyed */
+/**
+ * @brief Called whenever action is destroyed
+ * @note  You are in action destructor!
+ *
+ * @param action			Destroyed action address
+ * @param actor				Actor of the action
+ * @param name				Name of the action
+ *
+ * @noreturn
+ */
 forward void OnActionDestroyed( BehaviorAction action, int actor, const char[] name );
 
 methodmap ActionResult
 {
+	/**
+ 	* @brief Gets action result reason
+ 	*
+ 	* @param destination		Buffer to store reason
+ 	* @param maxlength			Length of the buffer
+ 	*
+ 	* @noreturn
+ 	*/
 	public native void GetReason( char[] destination, int maxlength );
+
+	/**
+ 	* @brief Sets action result reason
+ 	*
+ 	* @param reason			String with reason
+ 	*
+ 	* @noreturn
+ 	*/
 	public native void SetReason( const char[] reason );
 	
+	/**
+ 	* @brief Property to get/set result type
+ 	*
+ 	* @return					Result type (see ActionResultType)
+ 	*/
 	property ActionResultType type
 	{
 		public native get();
 		public native set(ActionResultType type);
 	}
 	
+	/**
+ 	* @brief Property to get/set result action
+ 	*
+ 	* @return					Result action
+ 	*/
 	property BehaviorAction action
 	{
 		public native get();
 		public native set(BehaviorAction action);
 	}
 	
+	/**
+ 	* @brief Checks if result is requesting change
+ 	*
+ 	* @return					true if it is requesting, false otherwise
+ 	*/
 	public bool IsRequestingChange()
 	{
 		ActionResultType type = this.type;
@@ -63,6 +118,11 @@ methodmap ActionResult
 
 methodmap ActionDesiredResult < ActionResult
 {
+	/**
+ 	* @brief Property to get/set result priority
+ 	*
+ 	* @return					Result priority
+ 	*/
 	property EventResultPriorityType priority
 	{
 		public native get();
@@ -70,850 +130,833 @@ methodmap ActionDesiredResult < ActionResult
 	}
 }
 
-methodmap BehaviorAction
+typeset ActionHandler
 {
-	/* If you want to create game action manually you need to call this function with the appropriate constructor */
+	/* OnStart, OnSuspend, OnResume */
+	function Action (BehaviorAction action, int actor, BehaviorAction priorAction, ActionResult result);
+
+	/* OnUpdate */
+	function Action (BehaviorAction action, int actor, float interval, ActionResult result);
+
+	/* OnEnd */
+	function void (BehaviorAction action, int actor, BehaviorAction priorAction, ActionResult result);
+
+	/* InitialContainedAction */
+	function Action (BehaviorAction action, int actor, BehaviorAction& action);
+
+	/* OnLeaveGround, OnLandOnGround, OnDrop, OnShoved, OnBlinded, OnHitByVomitJar, OnCommandAttack */
+	function Action (BehaviorAction action, int actor, int entity, ActionDesiredResult result);
+
+	/* OnContact */
+	function Action (BehaviorAction action, int actor, int entity, Address trace, ActionDesiredResult result);
+
+	/* OnMoveToSuccess */
+	function Action (BehaviorAction action, int actor, Address path, ActionDesiredResult result);
+	
+	/* OnMoveToFailure */
+	function Action (BehaviorAction action, int actor, Address path, any type, ActionDesiredResult result);
+
+	/* OnStuck, OnUnStuck, OnPostureChanged, OnIgnite, OnModelChanged, OnEnteredSpit, OnCommandAssault, OnCommandResume  */
+	function Action (BehaviorAction action, int actor, ActionDesiredResult result);
+
+	/* OnAnimationActivityComplete, OnAnimationActivityInterrupted */
+	function Action (BehaviorAction action, int actor, int activity, ActionDesiredResult result);
+
+	/* OnAnimationEvent */
+	function Action (BehaviorAction action, int actor, Address animevent, ActionDesiredResult result);
+
+	/* OnInjured, OnKilled */
+	function Action (BehaviorAction action, int actor, Address takedamageinfo, ActionDesiredResult result);
+
+	/* OnOtherKilled */
+	function Action (BehaviorAction action, int actor, int other, Address takedamageinfo, ActionDesiredResult result);
+
+	/* OnSight, OnLostSight, OnThreatChanged */
+	function Action (BehaviorAction action, int actor, int entity, ActionDesiredResult result);
+
+	/* OnSound */
+	function Action (BehaviorAction action, int actor, int entity, const float pos[3], Address keyvalues, ActionDesiredResult result);
+
+	/* OnSpokeConcept */
+	function Action (BehaviorAction action, int actor, int who, Address concept, Address response, Address unknown, ActionDesiredResult result);
+	
+	/* OnNavAreaChanged */
+	function Action (BehaviorAction action, int actor, Address newArea, Address oldArea, ActionDesiredResult result);
+	
+	/* OnPickUp */
+	function Action (BehaviorAction action, int actor, int entity, int giver, ActionDesiredResult result);
+
+	/* OnCommandApproachVector */
+	function Action (BehaviorAction action, int actor, const float pos[3], float range, ActionDesiredResult result);
+
+	/* OnCommandApproachEntity */
+	function Action (BehaviorAction action, int actor, int goal, ActionDesiredResult result);
+
+	/* OnCommandRetreat */
+	function Action (BehaviorAction action, int actor, int threat, float range, ActionDesiredResult result);
+
+	/* OnCommandPause */
+	function Action (BehaviorAction action, int actor, float duration, ActionDesiredResult result);
+
+	/* OnCommandString */
+	function Action (BehaviorAction action, int actor, const char[] command, ActionDesiredResult result);
+
+	/* IsAbleToBlockMovementOf */
+	function Action (BehaviorAction action, int actor, Address nextbot, ActionDesiredResult result);
+}
+
+methodmap ActionsManager
+{
+	/**
+ 	* @brief Creates action template with given name
+	* @note  Use this to create your own actions
+ 	*
+ 	* @param name			New action name
+ 	*
+ 	* @return				Action address
+ 	*/
+	public static native BehaviorAction Create( const char[] name );
+	
+	/**
+ 	* @brief Allocates memory with given size
+	* @note  Use this with game action constructor to create game actions 
+ 	*
+ 	* @param size			Size to allocate
+ 	*
+ 	* @return				Allocated memory start address
+ 	*/
 	public static native BehaviorAction Allocate( int size );
 	
-	/* Deallocates action */
-	/* Use this when you want to replace some action with you own */
-	public static native BehaviorAction Deallocate( BehaviorAction action );
+	/**
+ 	* @brief Deallocates memory
+	* @note  Actually used only for deallocating actions
+ 	*
+ 	* @param action			Action to deallocate
+ 	*
+ 	* @noreturn
+ 	*/
+	public static native void Deallocate( BehaviorAction action );
 	
-	/* Searches for action with given name */
-	/* INVALID_ACTION if entity doesn't have this action */
-	public static native BehaviorAction Find( int entity, const char[] name );
+	/**
+ 	* @brief Used to iterate over all entity actions
+ 	*
+ 	* @param entity			Entity index
+ 	* @param callback		Iterator callback 
+ 	*
+ 	* @return				Number of actions entity has
+ 	*/
+	public static native int Iterator( int entity, ActionsIteratorCallback callback = INVALID_FUNCTION );
 	
-	/* Used to iterate through all entity actions */
-	public static native void Actions( int entity, ActionsIteratorCallback callback );
+	/**
+ 	* @brief Returns entity action with given name
+ 	*
+ 	* @param entity			Entity index
+ 	* @param name			Action name to find 
+ 	*
+ 	* @return				Action address, INVALID_ACTION if not found
+ 	*/
+	public static native BehaviorAction GetAction( int entity, const char[] name );
+}
+
+methodmap BehaviorAction
+{
+	public BehaviorAction(any action)
+	{
+		return view_as<BehaviorAction>(action);
+	}
+
+	/**
+ 	* @brief Stores pending event result
+	* @note This is almost same as changing result via event handler but this one violates semantics
+ 	*
+ 	* @param type			Result type (See ActionResultType)
+ 	* @param action			Action 
+ 	* @param priority		Priority 
+ 	* @param reason			Reason 
+ 	*
+	* @error				Invalid action passed
+ 	* @noreturn
+ 	*/
+	public native void StorePendingEventResult( ActionResultType type = CONTINUE, BehaviorAction action = INVALID_ACTION, EventResultPriorityType priority = RESULT_TRY, const char[] reason = NULL_STRING );
 	
+	/**
+ 	* @brief Gets action name 
+ 	*
+ 	* @param destination	Buffer to store name 
+ 	* @param maxlength		Buffer length
+ 	*
+	* @error				Invalid action passed
+ 	* @return				Number of bytes written?
+ 	*/
 	public native int GetName( char[] destination, int maxlength = ACTION_NAME_LENGTH );
 	
-	/* Just for convenience to make it easier to get/set data from/for action  */
-	
+	/**
+ 	* @brief Simple wrapper to get action data 
+ 	*
+ 	* @param int			Offset to data 
+ 	* @param type			How many bytes read (See NumberType)
+ 	*
+ 	* @return				Stored data
+ 	*/
 	public any Get( int offset, NumberType type = NumberType_Int32 )
 	{
 		return view_as<any>(LoadFromAddress(view_as<Address>(this) + view_as<Address>(offset), type));
 	}
 	
+	/**
+ 	* @brief Simple wrapper to set action data 
+ 	*
+ 	* @param int			Offset to data 
+ 	* @param data			Data to set
+ 	* @param type			How many bytes set (See NumberType)
+ 	*
+ 	* @noreturn
+ 	*/
+ #if SOURCEMOD_V_MINOR < 11
 	public void Set( int offset, any data, NumberType type = NumberType_Int32 )
 	{
 		StoreToAddress(view_as<Address>(this) + view_as<Address>(offset), data, type);
 	}
+ #else
+	public void Set( int offset, any data, NumberType type = NumberType_Int32, bool updateMemAccess = true )
+	{
+		StoreToAddress(view_as<Address>(this) + view_as<Address>(offset), data, type, updateMemAccess);
+	}
+ #endif	
+	// ====================================================================================================
+	// ACTION PROPERTIES
+	// ====================================================================================================
 	
-	/* Action members  */
-	
-	/* Return parent action */
+	/**
+ 	* @brief Property to get/set parent action
+ 	*
+ 	* @return				Parent action 
+ 	*/
 	property BehaviorAction Parent
 	{
 		public native get();
 	}
 	
-	/* Return child action */
+	/**
+ 	* @brief Property to get/set child action
+ 	*
+ 	* @return				Child action
+ 	*/
 	property BehaviorAction Child
 	{
 		public native get();
 	}
 	
-	/* Return Under action */
-	/* if we are suspender then this will return a suspended action */
+	/**
+ 	* @brief Property to get/set "under" action
+	* @note if we are suspender then this will return a suspended action
+ 	*
+ 	* @return				Under action
+ 	*/
 	property BehaviorAction Under
 	{
 		public native get();
 	}
 	
-	/* Return Above action */
-	/* if we are suspended action then this will return a suspender */
+	/**
+ 	* @brief Property to get/set "above" action
+	* @note if we are suspended action then this will return a suspender
+ 	*
+ 	* @return				Above action
+ 	*/
 	property BehaviorAction Above
 	{
 		public native get();
 	}
 	
-	/* Gets entity who owns this action */
-	/* 0 will be returned if action is not started yet */
+	/**
+ 	* @brief Property to get actor of action
+ 	* @note  returns 0 if action hasn't been started yet
+	* 
+ 	* @return				Action actor
+ 	*/
 	property int Actor
 	{
 		public native get();
 	}
 	
-	/* Used to determine whether an action has been suspended */
+	/**
+ 	* @brief Property to get/set suspended state of action
+	* 
+ 	* @return				true if suspended, false otherwise
+ 	*/
 	property bool IsSuspended
 	{
 		public native get();
 		public native set(bool suspended);
 	}
 	
-	/* Used to determine whether an action has been started (OnStart has already been called)*/
+	/**
+ 	* @brief Property to get/set started state of action
+	* @note if this returns true then OnStart handled has already been called 
+	* 
+ 	* @return				true if started, false otherwise
+ 	*/
 	property bool IsStarted
 	{
 		public native get();
 		public native set(bool started);
 	}
 	
-	/* Event Handlers */
+	// ====================================================================================================
+	// ACTION PRE EVENT HANDLERS
+	// ====================================================================================================
 	
-	property Function OnStart
+	property ActionHandler OnStart
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnUpdate
+	property ActionHandler OnUpdate
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnEnd
+	property ActionHandler OnEnd
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnSuspend
+	property ActionHandler OnSuspend
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnResume
+	property ActionHandler OnResume
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnInitialContainedAction
+	property ActionHandler OnInitialContainedAction
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnLeaveGround
+	property ActionHandler OnLeaveGround
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnLandOnGround
+	property ActionHandler OnLandOnGround
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnContact
+	property ActionHandler OnContact
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnMoveToSuccess
+	property ActionHandler OnMoveToSuccess
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnMoveToFailure
+	property ActionHandler OnMoveToFailure
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnStuck
+	property ActionHandler OnStuck
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnUnStuck
+	property ActionHandler OnUnStuck
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnPostureChanged
+	property ActionHandler OnPostureChanged
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnAnimationActivityComplete
+	property ActionHandler OnAnimationActivityComplete
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnAnimationActivityInterrupted
+	property ActionHandler OnAnimationActivityInterrupted
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnAnimationEvent
+	property ActionHandler OnAnimationEvent
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnIgnite
+	property ActionHandler OnIgnite
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnInjured
+	property ActionHandler OnInjured
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnKilled
+	property ActionHandler OnKilled
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnOtherKilled
+	property ActionHandler OnOtherKilled
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnSight
+	property ActionHandler OnSight
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnLostSight
+	property ActionHandler OnLostSight
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnThreatChanged
+	property ActionHandler OnThreatChanged
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnSound
+	property ActionHandler OnSound
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnSpokeConcept
+	property ActionHandler OnSpokeConcept
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnNavAreaChanged
+	property ActionHandler OnNavAreaChanged
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnModelChanged
+	property ActionHandler OnModelChanged
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnPickUp
+	property ActionHandler OnPickUp
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnShoved
+	property ActionHandler OnShoved
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnBlinded
+	property ActionHandler OnBlinded
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnEnteredSpit
+	property ActionHandler OnEnteredSpit
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnHitByVomitJar
+	property ActionHandler OnHitByVomitJar
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandAttack
+	property ActionHandler OnCommandAttack
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandAssault
+	property ActionHandler OnCommandAssault
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandApproachV
+	property ActionHandler OnCommandApproachV
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandApproachE
+	property ActionHandler OnCommandApproachE
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandRetreat
+	property ActionHandler OnCommandRetreat
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandPause
+	property ActionHandler OnCommandPause
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandResume
+	property ActionHandler OnCommandResume
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandString
+	property ActionHandler OnCommandString
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function IsAbleToBlockMovementOf
+	property ActionHandler IsAbleToBlockMovementOf
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	/**************************/
-	/* POST CALLBACKS SETTERS */
-	/**************************/
+	// ====================================================================================================
+	// ACTION POST EVENT HANDLERS
+	// ====================================================================================================
 	
-	property Function OnStartPost
+	property ActionHandler OnStartPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnUpdatePost
+	property ActionHandler OnUpdatePost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnEndPost
+	property ActionHandler OnEndPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnSuspendPost
+	property ActionHandler OnSuspendPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnResumePost
+	property ActionHandler OnResumePost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnInitialContainedActionPost
+	property ActionHandler OnInitialContainedActionPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnLeaveGroundPost
+	property ActionHandler OnLeaveGroundPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnLandOnGroundPost
+	property ActionHandler OnLandOnGroundPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnContactPost
+	property ActionHandler OnContactPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnMoveToSuccessPost
+	property ActionHandler OnMoveToSuccessPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnMoveToFailurePost
+	property ActionHandler OnMoveToFailurePost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnStuckPost
+	property ActionHandler OnStuckPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnUnStuckPost
+	property ActionHandler OnUnStuckPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnPostureChangedPost
+	property ActionHandler OnPostureChangedPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnAnimationActivityCompletePost
+	property ActionHandler OnAnimationActivityCompletePost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnAnimationActivityInterruptedPost
+	property ActionHandler OnAnimationActivityInterruptedPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnAnimationEventPost
+	property ActionHandler OnAnimationEventPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnIgnitePost
+	property ActionHandler OnIgnitePost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnInjuredPost
+	property ActionHandler OnInjuredPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnKilledPost
+	property ActionHandler OnKilledPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnOtherKilledPost
+	property ActionHandler OnOtherKilledPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnSightPost
+	property ActionHandler OnSightPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnLostSightPost
+	property ActionHandler OnLostSightPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnThreatChangedPost
+	property ActionHandler OnThreatChangedPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnSoundPost
+	property ActionHandler OnSoundPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnSpokeConceptPost
+	property ActionHandler OnSpokeConceptPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnNavAreaChangedPost
+	property ActionHandler OnNavAreaChangedPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnModelChangedPost
+	property ActionHandler OnModelChangedPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnPickUpPost
+	property ActionHandler OnPickUpPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnShovedPost
+	property ActionHandler OnShovedPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnBlindedPost
+	property ActionHandler OnBlindedPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnEnteredSpitPost
+	property ActionHandler OnEnteredSpitPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnHitByVomitJarPost
+	property ActionHandler OnHitByVomitJarPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandAttackPost
+	property ActionHandler OnCommandAttackPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandAssaultPost
+	property ActionHandler OnCommandAssaultPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandApproachVPost
+	property ActionHandler OnCommandApproachVPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandApproachEPost
+	property ActionHandler OnCommandApproachEPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandRetreatPost
+	property ActionHandler OnCommandRetreatPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandPausePost
+	property ActionHandler OnCommandPausePost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandResumePost
+	property ActionHandler OnCommandResumePost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function OnCommandStringPost
+	property ActionHandler OnCommandStringPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 	
-	property Function IsAbleToBlockMovementOfPost
+	property ActionHandler IsAbleToBlockMovementOfPost
 	{
-		public native set(Function func);
+		public native set(ActionHandler func);
 	}
 };
 
-methodmap BehaviorActionCustom < BehaviorAction
-{
-	public static native BehaviorActionCustom Create(const char[] name);
-	// public native BehaviorActionCustom Delete();
-	
-	property Function OnStartPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
+// ====================================================================================================
+// PL NTV
+// ====================================================================================================
 
-	property Function OnUpdatePost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnEndPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnSuspendPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnResumePost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnInitialContainedActionPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnLeaveGroundPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnLandOnGroundPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnContactPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnMoveToSuccessPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnMoveToFailurePost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnStuckPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnUnStuckPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnPostureChangedPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnAnimationActivityCompletePost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnAnimationActivityInterruptedPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnAnimationEventPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnIgnitePost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnInjuredPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnKilledPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnOtherKilledPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnSightPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnLostSightPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnThreatChangedPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnSoundPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnSpokeConceptPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnNavAreaChangedPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnModelChangedPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnPickUpPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnShovedPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnBlindedPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnEnteredSpitPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnHitByVomitJarPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnCommandAttackPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnCommandAssaultPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnCommandApproachVPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	 
-	property Function OnCommandApproachEPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnCommandRetreatPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnCommandPausePost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnCommandResumePost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function OnCommandStringPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
-	
-	property Function IsAbleToBlockMovementOfPost
-	{
-		public get()
-		{
-			return INVALID_FUNCTION;
-		}
-	}
+public Extension __ext_actions = 
+{
+    name = "Actions",
+    file = "actions.ext",
+    autoload = 1,
+#if defined REQUIRE_EXTENSIONS
+    required = 1,
+#else
+    required = 0,
+#endif
+};
+
+#if !defined REQUIRE_EXTENSIONS
+public void __ext_actions_SetNTVOptional()
+{
+    MarkNativeAsOptional("ActionResult.GetReason");
+    MarkNativeAsOptional("ActionResult.SetReason");
+    MarkNativeAsOptional("ActionResult.type.get");
+    MarkNativeAsOptional("ActionResult.type.set");
+    MarkNativeAsOptional("ActionResult.action.get");
+    MarkNativeAsOptional("ActionResult.action.set");
+    MarkNativeAsOptional("ActionDesiredResult.priority.get");
+    MarkNativeAsOptional("ActionDesiredResult.priority.set");
+    MarkNativeAsOptional("ActionsManager.Create");
+    MarkNativeAsOptional("ActionsManager.Allocate");
+    MarkNativeAsOptional("ActionsManager.Deallocate");
+    MarkNativeAsOptional("ActionsManager.Iterator");
+    MarkNativeAsOptional("ActionsManager.GetAction");
+    MarkNativeAsOptional("BehaviorAction.StorePendingEventResult");
+    MarkNativeAsOptional("BehaviorAction.GetName");
+    MarkNativeAsOptional("BehaviorAction.Parent.get");
+    MarkNativeAsOptional("BehaviorAction.Child.get");
+    MarkNativeAsOptional("BehaviorAction.Under.get");
+    MarkNativeAsOptional("BehaviorAction.Above.get");
+    MarkNativeAsOptional("BehaviorAction.Actor.get");
+    MarkNativeAsOptional("BehaviorAction.IsSuspended.get");
+    MarkNativeAsOptional("BehaviorAction.IsSuspended.set");
+    MarkNativeAsOptional("BehaviorAction.IsStarted.get");
+    MarkNativeAsOptional("BehaviorAction.IsStarted.set");
+    MarkNativeAsOptional("BehaviorAction.OnStart.set");
+    MarkNativeAsOptional("BehaviorAction.OnUpdate.set");
+    MarkNativeAsOptional("BehaviorAction.OnEnd.set");
+    MarkNativeAsOptional("BehaviorAction.OnSuspend.set");
+    MarkNativeAsOptional("BehaviorAction.OnResume.set");
+    MarkNativeAsOptional("BehaviorAction.OnInitialContainedAction.set");
+    MarkNativeAsOptional("BehaviorAction.OnLeaveGround.set");
+    MarkNativeAsOptional("BehaviorAction.OnLandOnGround.set");
+    MarkNativeAsOptional("BehaviorAction.OnContact.set");
+    MarkNativeAsOptional("BehaviorAction.OnMoveToSuccess.set");
+    MarkNativeAsOptional("BehaviorAction.OnMoveToFailure.set");
+    MarkNativeAsOptional("BehaviorAction.OnStuck.set");
+    MarkNativeAsOptional("BehaviorAction.OnUnStuck.set");
+    MarkNativeAsOptional("BehaviorAction.OnPostureChanged.set");
+    MarkNativeAsOptional("BehaviorAction.OnAnimationActivityComplete.set");
+    MarkNativeAsOptional("BehaviorAction.OnAnimationActivityInterrupted.set");
+    MarkNativeAsOptional("BehaviorAction.OnAnimationEvent.set");
+    MarkNativeAsOptional("BehaviorAction.OnIgnite.set");
+    MarkNativeAsOptional("BehaviorAction.OnInjured.set");
+    MarkNativeAsOptional("BehaviorAction.OnKilled.set");
+    MarkNativeAsOptional("BehaviorAction.OnOtherKilled.set");
+    MarkNativeAsOptional("BehaviorAction.OnSight.set");
+    MarkNativeAsOptional("BehaviorAction.OnLostSight.set");
+    MarkNativeAsOptional("BehaviorAction.OnThreatChanged.set");
+    MarkNativeAsOptional("BehaviorAction.OnSound.set");
+    MarkNativeAsOptional("BehaviorAction.OnSpokeConcept.set");
+    MarkNativeAsOptional("BehaviorAction.OnNavAreaChanged.set");
+    MarkNativeAsOptional("BehaviorAction.OnModelChanged.set");
+    MarkNativeAsOptional("BehaviorAction.OnPickUp.set");
+    MarkNativeAsOptional("BehaviorAction.OnShoved.set");
+    MarkNativeAsOptional("BehaviorAction.OnBlinded.set");
+    MarkNativeAsOptional("BehaviorAction.OnEnteredSpit.set");
+    MarkNativeAsOptional("BehaviorAction.OnHitByVomitJar.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandAttack.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandAssault.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandApproachV.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandApproachE.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandRetreat.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandPause.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandResume.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandString.set");
+    MarkNativeAsOptional("BehaviorAction.IsAbleToBlockMovementOf.set");
+    MarkNativeAsOptional("BehaviorAction.OnStartPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnUpdatePost.set");
+    MarkNativeAsOptional("BehaviorAction.OnEndPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnSuspendPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnResumePost.set");
+    MarkNativeAsOptional("BehaviorAction.OnInitialContainedActionPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnLeaveGroundPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnLandOnGroundPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnContactPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnMoveToSuccessPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnMoveToFailurePost.set");
+    MarkNativeAsOptional("BehaviorAction.OnStuckPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnUnStuckPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnPostureChangedPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnAnimationActivityCompletePost.set");
+    MarkNativeAsOptional("BehaviorAction.OnAnimationActivityInterruptedPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnAnimationEventPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnIgnitePost.set");
+    MarkNativeAsOptional("BehaviorAction.OnInjuredPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnKilledPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnOtherKilledPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnSightPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnLostSightPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnThreatChangedPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnSoundPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnSpokeConceptPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnNavAreaChangedPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnModelChangedPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnPickUpPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnShovedPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnBlindedPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnEnteredSpitPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnHitByVomitJarPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandAttackPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandAssaultPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandApproachVPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandApproachEPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandRetreatPost.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandPausePost.set");
+    MarkNativeAsOptional("BehaviorAction.OnCommandResumePost.set");
+    MarkNativeAsOptional("BehaviorAction.IsAbleToBlockMovementOfPost.set");
 }
+#endif 

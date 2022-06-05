@@ -37,9 +37,7 @@ int lastButtonUser;
 int lastCrescendoUser;
 int g_iAttackerTarget[MAXPLAYERS+1];
 int g_PendingBanTroll[MAXPLAYERS+1];
-int g_iInSpit[MAXPLAYERS+1];
-Timer g_inSpitTimer;
-
+float iLastInSpit[MAXPLAYERS+1];
 int gInstaSpecialMagnet[MAXPLAYERS+1];
 
 char steamids[MAXPLAYERS+1][64];
