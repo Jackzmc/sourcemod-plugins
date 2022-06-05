@@ -404,24 +404,50 @@ bool SpawnCarOnPlayer(int target) {
 	return false;
 }
 
-stock int CreateProp(const char[] entClass, const char[] model, const float pos[3], const float ang[3]) {
+stock int CreateProp(const char[] entClass, const char[] model, const float pos[3], const float ang[3] = { 0.0, 0.0, 0.0 }, const float vel[3] = {0.0, 0.0, 0.0}) {
 	int entity = CreateEntityByName(entClass);
 	DispatchKeyValue(entity, "model", model);
 	DispatchKeyValue(entity, "solid", "6");
 	DispatchKeyValue(entity, "targetname", "hsprop");
 	DispatchKeyValue(entity, "disableshadows", "1");
-	TeleportEntity(entity, pos, ang, NULL_VECTOR);
+	TeleportEntity(entity, pos, ang, vel);
 	DispatchSpawn(entity);
+	TeleportEntity(entity, pos, ang, vel);
 	#if defined DEBUG_LOG_MAPSTART
 	PrintToServer("spawn prop %.1f %.1f %.1f model %s", pos[0], pos[1], pos[2], model[7]);
 	#endif
 	return entity;
 }
 
+
 public bool Filter_Solid(int entity, int contentsMask, any data) {
 	return entity <= 0;
 }
 
-public Action Timer_Delete(Handle h, int id) {
-	AcceptEntityInput(id, "Kill");
+
+float VEH_MIN[3] = { -30.0, -30.0, 2.0};
+float VEH_MAX[3] = { 30.0, 30.0, 20.0 };
+
+bool SpawnCarToPlayer(int target, float distance) {
+	float pos[3], ang[3];
+	GetClientAbsOrigin(target, pos);
+	pos[2] += 40.0;
+	GetClientEyeAngles(target, ang);
+	ang[2] = ang[0] = 0.0;
+
+	float endPos[3];
+	GetHorizontalPositionFromOrigin(pos, ang, distance, endPos);
+
+	TR_TraceHullFilter(endPos, pos, VEH_MIN, VEH_MAX, MASK_SOLID, Filter_Solid);
+	if(TR_DidHit()) {
+		return false;
+	}
+	if(distance > 0.0)
+		ang[1] -= 180;
+ 	float vel[3];
+	vel[0] = Cosine(DegToRad(ang[1])) * 1500.0;
+	vel[1] = Sine(DegToRad(ang[1])) * 1500.0;
+	int id = CreateProp("prop_physics", MODEL_CAR, endPos, ang, vel);
+	CreateTimer(6.0, Timer_Delete, id);
+	return true;
 }

@@ -90,6 +90,11 @@ public void OnClientAuthorized(int client, const char[] auth) {
 	if(!IsFakeClient(client)) {
 		strcopy(steamids[client], 64, auth);
 	}
+	for(int i = 1; i <= MAX_TROLLS; i++) {
+		if(Trolls[i].IsActive(client) && Trolls[i].HasMod(TrollMod_Constant)) { //Add activeFlagClients >= 0 check possibly?
+			ApplyAffect(client, Trolls[i], -1, TrollMod_Constant, Trolls[i].activeFlagClients[client]);
+		}
+	}
 }
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
@@ -150,16 +155,12 @@ public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(user);
 	if(client) {
 		PrintToChatAll("%N has alerted the horde!", client);
-		CreateTimer(0.5, RushPlayer, user);
+		CreateTimer(0.2, RushPlayer, user);
+		CreateTimer(0.6, RushPlayer, user);
+		CreateTimer(1.5, RushPlayer, user);
 	}
 	//Ignore car alarms for autopunish
 	lastButtonUser = -1;
-}
-public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast) {
-	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(client) {
-		g_iInSpit[client] = true;
-	}
 }
 public Action RushPlayer(Handle h, int user) {
 	L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", user, 15000);
@@ -799,4 +800,23 @@ public Action OnAntiRush(int client, int &type, float distance) {
 			PrintToConsoleAll("[FTT] Spawning anti-rush special on %N (dist=%f) (special=%N)", client, distance, SPECIAL_NAMES[view_as<int>(special)-1]);
 		}
 	}
+}
+
+public void L4D2_CInsectSwarm_CanHarm_Post(int acid, int spitter, int entity) {
+	if(entity <= MaxClients)
+		iLastInSpit[entity] = GetGameTime();
+}
+
+public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(Trolls[stickyGooIndex].IsActive(stickyGooIndex)) {
+		float movement = 0.0;
+		if(Trolls[stickyGooIndex].activeFlagClients[client] & 1) movement = 0.6;
+		else if(Trolls[stickyGooIndex].activeFlagClients[client] & 2) movement = 0.3;
+
+		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", movement);
+		iLastInSpit[client] = GetGameTime();
+		CreateTimer(0.2, Timer_CheckIsInSpit, GetClientUserId(client), TIMER_REPEAT);
+	}
+
 }

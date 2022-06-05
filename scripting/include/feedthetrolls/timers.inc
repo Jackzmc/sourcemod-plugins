@@ -113,6 +113,10 @@ public Action Timer_KickBot(Handle timer, int client) {
 	}
 }
 
+public Action Timer_Delete(Handle h, int id) {
+	AcceptEntityInput(id, "Kill");
+}
+
 public Action Timer_ShootReverse(Handle h, DataPack pack) {
 	pack.Reset();
 	int attacker = pack.ReadCell();
@@ -148,4 +152,13 @@ public Action Timer_CheckSpecialSpawned(Handle h, int id) {
 		g_iSpId++;
 		ProcessSpecialQueue();
 	}
+}
+
+public Action Timer_CheckIsInSpit(Handle h, int userid) {
+	int client = GetClientOfUserId(userid);
+	if(client && GetGameTime() - iLastInSpit[userid] > 3.0) {
+		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", 1.0);
+		return Plugin_Stop;
+	}
+	return Plugin_Continue;
 }

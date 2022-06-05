@@ -102,6 +102,7 @@ public void OnPluginStart() {
 	HookEvent("door_close", Event_DoorToggle);
 	HookEvent("adrenaline_used", Event_SecondaryHealthUsed);
 	HookEvent("pills_used", Event_SecondaryHealthUsed);
+	HookEvent("entered_spit", Event_EnteredSpit);
 	
 	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 

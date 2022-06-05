@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 38
+    #define MAX_TROLLS 40
 #endif
 
 enum trollModifier {
@@ -362,6 +362,17 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
             LogAction(activator, victim, "\"%L\" deactivated \"%s\" on \"%L\"", activator, troll.name, victim);
         } else {
             static char flagName[MAX_TROLL_FLAG_LENGTH];
+            flagName[0] = '\0';
+            for(int i = 0; i < 32; i++) {
+                if(flags & (1 << i)) {
+                    // If at least one flag already, reset to none:
+                    if(flagName[0] != '\0') {
+                        flagName[0] = '\0';
+                        break;
+                    }
+                    troll.GetFlagName(i, flagName, sizeof(flagName));
+                }
+            }
             if(flags > 0 && flags & flags - 1 == 0 && flags & flags + 1 == 0) {
                 // Get the flag name if there is only one flag set
                 troll.GetFlagName(GetIndexFromPower(flags), flagName, sizeof(flagName));

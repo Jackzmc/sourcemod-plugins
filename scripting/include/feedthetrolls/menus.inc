@@ -9,17 +9,21 @@ public int Insta_PlayerHandler(Menu menu, MenuAction action, int client, int par
 
 		int userid = StringToInt(str[0]);
 		int instaMode = StringToInt(str[1]);
-
-		Menu spMenu = new Menu(Insta_SpecialHandler);
-		spMenu.SetTitle("Choose a Insta-Special™");
-		for(int i = 1; i <= 8; i++) {
-			Format(info, sizeof(info), "%d|%d|%d", userid, instaMode, i);
-			spMenu.AddItem(info, SPECIAL_NAMES[i-1]);
-		}
-		spMenu.ExitButton = true;
-		spMenu.Display(client, 0);
+		ShowInstaSpecialChooser(client, userid, instaMode);
 	} else if (action == MenuAction_End)
 		delete menu;
+}
+
+void ShowInstaSpecialChooser(int activator, int userid, int instaMode) {
+	Menu spMenu = new Menu(Insta_SpecialHandler);
+	spMenu.SetTitle("Choose a Insta-Special™");
+	static char data[16];
+	for(int i = 1; i <= 8; i++) {
+		Format(data, sizeof(data), "%d|%d|%d", userid, instaMode, i);
+		spMenu.AddItem(data, SPECIAL_NAMES[i-1]);
+	}
+	spMenu.ExitButton = true;
+	spMenu.Display(activator, 0);
 }
 
 public int Insta_SpecialHandler(Menu menu, MenuAction action, int client, int param2) {
@@ -29,12 +33,13 @@ public int Insta_SpecialHandler(Menu menu, MenuAction action, int client, int pa
 		menu.GetItem(param2, info, sizeof(info));
 		static char str[3][8];
 		ExplodeString(info, "|", str, 3, 8, false);
-		int target = GetClientOfUserId(StringToInt(str[0]));
+		int userid = StringToInt(str[0]);
+		int target = GetClientOfUserId(userid);
 		bool inFace = StrEqual(str[1], "1");
 		int specialInt = StringToInt(str[2]);
 		if(specialInt < 0 || specialInt > 8) {
 			ReplyToCommand(client, "Invalid special id");
-			return;
+			return 0;
 		}
 		SpecialType special = view_as<SpecialType>(specialInt);
 		if(inFace) {
@@ -52,8 +57,10 @@ public int Insta_SpecialHandler(Menu menu, MenuAction action, int client, int pa
 				ReplyToCommand(client, "Could not spawn special.");
 			}
 		}
+		ShowInstaSpecialChooser(client, userid, inFace);
 	} else if (action == MenuAction_End)
 		delete menu;
+	return 0;
 }
 
 

@@ -1,6 +1,7 @@
 // UP THE VALUE 'MAX_TROLLS' in base.inc before adding new ones!
 
 int slipperyShoesIndex = 0;
+int stickyGooIndex = 0;
 
 void SetupTrolls() {
     trollKV = new StringMap();
@@ -24,14 +25,13 @@ void SetupTrolls() {
     SetupTroll("Inface Special", "Shortcut to sm_inface", TrollMod_Instant);
     SetupTroll("Insta Special", "Shortcut to sm_insta", TrollMod_Instant);
     SetupTroll("Goo", "Spawns a spitter puddle underneath them", TrollMod_Instant);
-    index = SetupTroll("Amazon Special Combo", "Choose multiple different specials to spawn", TrollMod_Instant);
-    Trolls[index].AddFlagPrompt(true);
-    for(int i = 0; i < 8; i++) {
-        Trolls[index].AddFlag(SPECIAL_NAMES[i], false); // 1 << 7 max
-    }
+    index = SetupTroll("Sticky Goo", "Slows player down in goo", TrollMod_Constant);
     Trolls[index].AddFlagPrompt(false);
-    Trolls[index].AddFlag("Spawn On Face", false); // 1 << 8
-    Trolls[index].AddFlag("Spawn Near", false); // 1 << 9
+    Trolls[index].AddFlag("60% Movement Speed", true);
+    Trolls[index].AddFlag("30% Movement Speed", false);
+    Trolls[index].AddFlag("0% Movement Speed", false);
+    stickyGooIndex = index;
+    SetupTroll("Instant Commons", "Spawns commons behind or infront", TrollMod_Instant);
 
     // CATEGORY: Items
     SetCategory("Items");
@@ -112,7 +112,11 @@ void SetupTrolls() {
 
     /// CATEGORY: Movement
     SetCategory("Movement");
-    SetupTroll("Slow Speed", "Sets player speed to 0.8x of normal speed", TrollMod_Constant);
+    index = SetupTroll("Slow Speed", "Sets player speed to 0.8x of normal speed", TrollMod_Constant);
+    Trolls[index].AddFlagPrompt(false);
+    Trolls[index].AddFlag("60% Movement Speed", true);
+    Trolls[index].AddFlag("30% Movement Speed", false);
+    Trolls[index].AddFlag("0% Movement Speed", false);
     SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
     SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant);
     SetupTroll("Stagger", "Like a slap, but different", TrollMod_Instant);
@@ -131,6 +135,10 @@ void SetupTrolls() {
     SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
     SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
     index = SetupTroll("Car Splat", "Car. splats.", TrollMod_Instant);
+    Trolls[index].AddFlagPrompt(false);
+    Trolls[index].AddFlag("On Top", true);
+    Trolls[index].AddFlag("Into (Infront)", false);
+    Trolls[index].AddFlag("Into (Behind)", false);
     index = SetupTroll("Meta: Inverse", "Uhm you are not supposed to see this...", TrollMod_Instant);
     Trolls[index].hidden = true;
     Trolls[index].AddFlagPrompt(false);
@@ -167,9 +175,15 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
         SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
         SetEntityGravity(victim, 1.0);
         return false;
-    } else if(StrEqual(troll.name, "Slow Speed"))
-        SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", isActive ? 1.0 : 0.8);
-    else if(StrEqual(troll.name, "Higher Gravity"))
+    } else if(StrEqual(troll.name, "Slow Speed")) {
+        float movement = 1.0;
+        if(isActive) {
+            if(flags & 1) movement = 0.6;
+            else if(flags & 2) movement = 0.3;
+            SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", movement);
+        } else 
+            SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", movement);
+    } else if(StrEqual(troll.name, "Higher Gravity"))
         SetEntityGravity(victim, isActive ? 1.0 : 1.3);
     else if(StrEqual(troll.name, "Half Primary Ammo")) {
         int current = GetPrimaryReserveAmmo(victim);
@@ -237,19 +251,30 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
         BaseComm_SetClientMute(victim, !isActive);
     } else if(StrEqual(troll.name, "Spicy Gas")) {
         SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
-    } else if(StrEqual(troll.name, "Amazon Special Combo")) {
-        SpecialSpawnFlags spawnFlag = Special_Anywhere;
-        if(flags & (1 << 8)) spawnFlag = Special_OnTarget;
-        for(int i = 1; i < 7; i++) {
-            if(flags & (1 << i)) {
-                SpawnSpecialForTarget(view_as<SpecialType>(i), victim, spawnFlag);
+    } else if(StrEqual(troll.name, "Car Splat")) {
+        if(flags & 1) {
+            if(!SpawnCarOnPlayer(victim)) {
+                ReplyToCommand(activator, "Could not find a suitable area to spawn a car. Requires vertical space above victim.");
+                return false;
+            }
+        } else if(flags & 2) {
+            if(!SpawnCarToPlayer(victim, 450.0)) {
+                ReplyToCommand(activator, "Could not find a suitable area to spawn a car. Requires space ahead of victim");
+                return false;
+            }
+        } else if(flags & 4) {
+            if(!SpawnCarToPlayer(victim, -450.0)) {
+                ReplyToCommand(activator, "Could not find a suitable area to spawn a car. Requires space behind victim");
+                return false;
             }
         }
-    } else if(StrEqual(troll.name, "Car Splat")) {
-        if(!SpawnCarOnPlayer(victim)) {
-            ReplyToCommand(activator, "Could not find a suitable area to spawn a car");
-            return false;
+    } else if(StrEqual(troll.name, "Instant Commons")) {
+        float pos[3];
+        GetHorizontalPositionFromClient(victim, -40.0, pos);
+        for(int i = 0; i < 30; i++) {
+            L4D_SpawnCommonInfected(pos);
         }
+        CreateTimer(0.1, RushPlayer, victim);
     } else if(modifier != TrollMod_Constant) {
         PrintToServer("[FTT] Warn: Possibly invalid troll, no apply action defined for \"%s\"", troll.name);
         #if defined DEBUG
@@ -258,3 +283,4 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
     }
     return true;
 }
+
