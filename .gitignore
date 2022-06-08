@@ -3,6 +3,7 @@
 !scripting
 !scripting/include
 !scripting/include/feedthetrolls
+!scripting/include/hideandseek
 !gamedata/
 template.config.js
 .*
