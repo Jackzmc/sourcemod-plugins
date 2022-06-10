@@ -103,6 +103,7 @@ public void OnPluginStart() {
 	HookEvent("adrenaline_used", Event_SecondaryHealthUsed);
 	HookEvent("pills_used", Event_SecondaryHealthUsed);
 	HookEvent("entered_spit", Event_EnteredSpit);
+	HookEvent("bot_player_replace", Event_BotPlayerSwap);
 	
 	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
 

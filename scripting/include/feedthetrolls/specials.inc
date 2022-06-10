@@ -26,7 +26,7 @@ ArrayList g_spSpawnQueue;
 // target client index
 stock bool SpawnSpecialForTarget(SpecialType specialType, int target, SpecialSpawnFlags spawnFlags = Special_Anywhere) {
 	static float pos[3];
-	int internalFlags = 0;
+	int internalFlags = view_as<int>(SPI_AlwaysTarget);
 	if(spawnFlags == Special_OnTarget) {
 		static float ang[3];
 		static float testPos[3];

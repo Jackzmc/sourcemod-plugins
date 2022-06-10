@@ -36,9 +36,9 @@ int autoPunishMode;
 int lastButtonUser;
 int lastCrescendoUser;
 int g_iAttackerTarget[MAXPLAYERS+1];
+int g_iSpecialAttackFlags[MAXPLAYERS+1];
 int g_PendingBanTroll[MAXPLAYERS+1];
 float iLastInSpit[MAXPLAYERS+1];
-int gInstaSpecialMagnet[MAXPLAYERS+1];
 
 char steamids[MAXPLAYERS+1][64];
 
@@ -53,7 +53,8 @@ enum SpecialSpawnFlags {
 }
 
 enum SpecialInternalFlags {
-	SPI_KillOnSpawn = 1
+	SPI_KillOnSpawn = 1,
+	SPI_AlwaysTarget = 2
 }
 
 #define MODEL_CAR "models/props_vehicles/cara_95sedan.mdl"

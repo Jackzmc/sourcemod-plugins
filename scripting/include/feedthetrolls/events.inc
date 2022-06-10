@@ -57,9 +57,10 @@ public Action Timer_CheckSpecial(Handle h, int specialID) {
 			static char buf[32];
 			GetClientName(special, buf, sizeof(buf));
 			if(StrContains(buf, "bot", false) == -1) {
-				if(spActiveRequest.targetUserId)
+				if(spActiveRequest.targetUserId) {
 					g_iAttackerTarget[special] = spActiveRequest.targetUserId;
-				gInstaSpecialMagnet[GetClientOfUserId(spActiveRequest.targetUserId)]++;
+					g_iSpecialAttackFlags[special] = spActiveRequest.flags;
+				}
 
 				TeleportEntity(special, spActiveRequest.position, spActiveRequest.angle, NULL_VECTOR);
 				if(spActiveRequest.flags & view_as<int>(SPI_KillOnSpawn)) {
@@ -114,6 +115,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
 	if(client > 0) {
+		g_iSpecialAttackFlags[client] = 0;
 		if(g_iAttackerTarget[client] > 0) {
 			// If special died, clear & subtract one from counter
 			g_iAttackerTarget[client] = 0;
@@ -177,7 +179,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	if(existingTarget > 0) {
 		if(IsPlayerAlive(existingTarget)) {
 			// Insta-specials ALWAYS target, if target has any attackers remaining
-			if(gInstaSpecialMagnet[existingTarget] > 0) {
+			if(g_iSpecialAttackFlags[attacker] & SPI_AlwaysTarget) {
 				curTarget = existingTarget;
 				return Plugin_Changed;
 			} 
@@ -230,6 +232,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	}
 	// If found, set, else just let game decide
 	if(closestClient > 0) {
+		PrintToConsoleAll("[FTT/Debug] infected %N -> attack -> %N", attacker, closetClient);
 		g_iAttackerTarget[attacker] = GetClientUserId(closestClient);
 		curTarget = closestClient;
 		return Plugin_Changed;
@@ -521,8 +524,8 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		return Plugin_Continue;
 	}
 
+
 	if (shootAtTarget[client] > 0 && (buttons & IN_ATTACK) == 0)  {
-		// If so, block their crouching (+duck)
 		if(GetClientAimTarget(client, true) == shootAtTarget[client]) {
 			if(!IsActorBusy(client))
 				PerformScene(client, "PlayerLaugh");
@@ -792,7 +795,7 @@ public bool TraceEntityFilterPlayer(int entity, int mask, any data) {
 
 float iLastAntiRushEvent[MAXPLAYERS+1];
 public Action OnAntiRush(int client, int &type, float distance) {
-	if(type == 3 && IsPlayerAlive(client) && !IsPlayerIncapped(client)) {
+	if(client && client <= MaxClients && type == 3 && IsPlayerAlive(client) && !IsPlayerIncapped(client)) {
 		if(GetGameTime() - iLastAntiRushEvent[client] > 30.0) {
 			SpecialType special = view_as<SpecialType>(GetRandomInt(1,6));
 			iLastAntiRushEvent[client] = GetGameTime();
@@ -819,4 +822,16 @@ public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast
 		CreateTimer(0.2, Timer_CheckIsInSpit, GetClientUserId(client), TIMER_REPEAT);
 	}
 
+}
+
+public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
+	//Player replaced a bot
+	int client = GetClientOfUserId(event.GetInt("player"));
+	if(client) {
+		for(int i = 1; i <= MAX_TROLLS; i++) {
+			if(Trolls[i].IsActive(client) && Trolls[i].HasMod(TrollMod_Constant)) { //Add activeFlagClients >= 0 check possibly?
+				ApplyAffect(client, Trolls[i], -1, TrollMod_Constant, Trolls[i].activeFlagClients[client]);
+			}
+		}
+	}
 }

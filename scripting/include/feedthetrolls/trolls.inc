@@ -176,13 +176,13 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
         SetEntityGravity(victim, 1.0);
         return false;
     } else if(StrEqual(troll.name, "Slow Speed")) {
-        float movement = 1.0;
         if(isActive) {
+            float movement = 1.0;
             if(flags & 1) movement = 0.6;
             else if(flags & 2) movement = 0.3;
             SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", movement);
         } else 
-            SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", movement);
+            SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
     } else if(StrEqual(troll.name, "Higher Gravity"))
         SetEntityGravity(victim, isActive ? 1.0 : 1.3);
     else if(StrEqual(troll.name, "Half Primary Ammo")) {
