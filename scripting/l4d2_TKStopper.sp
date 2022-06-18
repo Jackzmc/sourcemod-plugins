@@ -49,6 +49,8 @@ enum struct PlayerData {
 PlayerData pData[MAXPLAYERS+1];
 
 ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime, hTKAction, hSuicideAction, hSuicideLimit, hFFAutoScaleAmount, hFFAutoScaleForgivenessAmount, hFFAutoScaleMaxRatio, hFFAutoScaleIgnoreAdmins;
+char gamemode[64];
+bool isEnabled = true;
 
 public Plugin myinfo = {
 	name =  "TK Stopper", 
@@ -82,6 +84,10 @@ public void OnPluginStart() {
 	hFFAutoScaleMaxRatio = CreateConVar("l4d2_tk_auto_ff_max_ratio", "5.0", "The maximum amount that the reverse ff can go. 0.0 for unlimited", FCVAR_NONE, true, 0.0);
 	hFFAutoScaleForgivenessAmount = CreateConVar("l4d2_tk_auto_ff_forgive_rate", "0.05", "This amount times amount of minutes since last ff is removed from ff rate", FCVAR_NONE, true, 0.0);
 	hFFAutoScaleIgnoreAdmins = CreateConVar("l4d2_tk_auto_ff_ignore_admins", "1", "Should automatic reverse ff ignore admins? 0 = Admins are subjected\n1 = Admins are excempt", FCVAR_NONE, true, 0.0, true, 1.0);
+
+	ConVar hGamemode = FindConVar("mp_gamemode"); 
+	hGamemode.AddChangeHook(Event_GamemodeChange);
+	Event_GamemodeChange(hGamemode, gamemode, gamemode);
 
 	AutoExecConfig(true, "l4d2_tkstopper");
 
@@ -118,6 +124,14 @@ public void OnPluginStart() {
 		}
 	}
 	LoadTranslations("common.phrases");
+}
+public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
+	cvar.GetString(gamemode, sizeof(gamemode));
+	if(StrEqual(gamemode, "coop")) {
+		isEnabled = true;
+	} else {
+		isEnabled = false;
+	}
 }
 ///////////////////////////////////////////////////////////////////////////////
 // Special Infected Events 
@@ -210,7 +224,7 @@ public void OnClientDisconnect(int client) {
 
 // Only clear things when they fully left on their own accord:
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
-	if(!event.GetBool("disconnect")) return;
+	if(!event.GetBool("disconnect") || !isEnabled) return;
 
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && event.GetInt("team") <= 2) {
@@ -243,7 +257,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 }
 
 public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
-	if(damage > 0.0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
+	if(isEnabled && damage > 0.0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
 		if(GetClientTeam(victim) != GetClientTeam(attacker) || attacker == victim) 
 			return Plugin_Continue;
 		else if(damagetype & DMG_BURN && IsFakeClient(attacker) && GetClientTeam(attacker) == 2) {
@@ -406,6 +420,9 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 
 public Action Command_TKInfo(int client, int args) {
 	int time = GetTime();
+	if(!isEnabled) {
+		ReplyToCommand(client, "Warn: Plugin is disabled in current gamemode (%s)", gamemode);
+	}
 	if(args > 0) {
 		static char arg1[32];
 		GetCmdArg(1, arg1, sizeof(arg1));

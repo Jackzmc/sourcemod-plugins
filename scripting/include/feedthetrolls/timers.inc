@@ -162,3 +162,46 @@ public Action Timer_CheckIsInSpit(Handle h, int userid) {
 	}
 	return Plugin_Continue;
 }
+
+float CHARGER_CHECK_MIN[3] = { -15.0, -15.0, 2.0};
+float CHARGER_CHECK_MAX[3] = { 15.0, 15.0, 20.0 };
+
+public Action Timer_CheckForChargerOpportunity(Handle h, int userid) {
+	int client = GetClientOfUserId(userid);
+	if(client) {
+		int activator = GetClientOfUserId(g_iSmartChargeActivator[client]);
+		if(!activator) {
+			g_iSmartChargeActivator[client] = 0;
+		}
+		float pos[3], ang[3], endPos[3], spawnPos[3];
+		GetClientAbsOrigin(client, pos);
+		GetClientEyeAngles(client, ang);
+
+		GetHorizontalPositionFromOrigin(pos, ang, -150.0, endPos);
+		TR_TraceHullFilter(endPos, pos, CHARGER_CHECK_MIN, CHARGER_CHECK_MAX, MASK_SOLID, Filter_CheckChargerValid, client);
+		if(!TR_DidHit()) {
+			spawnPos = endPos;
+			GetHorizontalPositionFromOrigin(pos, ang, 500.0, endPos);
+			TR_TraceHullFilter(endPos, pos, CHARGER_CHECK_MIN, CHARGER_CHECK_MAX, MASK_SOLID, Filter_CheckChargerValid, client);
+			if(!TR_DidHit()) {
+				SpawnSpecialAtPosition(Special_Charger, spawnPos, ang, client);
+				if(activator) PrintToChat(activator, "Auto charge %N successfully after %d tries", client, g_iSmartChargeAttempts[client]);
+				g_iSmartChargeAttempts[client] = 0;
+				g_iSmartChargeActivator[client] = 0;
+				return Plugin_Stop;
+			}
+		}
+		if(++g_iSmartChargeAttempts[client] > g_iSmartChargeMaxAttempts[client]) {
+			if(activator) PrintToChat(activator, "Auto charge timed out after %d attempts", g_iSmartChargeAttempts[client]);
+			g_iSmartChargeAttempts[client] = 0;
+			g_iSmartChargeActivator[client] = 0;
+			return Plugin_Stop;
+		}
+		return Plugin_Continue;
+	}
+	return Plugin_Stop;
+}
+
+public bool Filter_CheckChargerValid(int entity, int contentsMask, any data) {
+	return entity <= 0 || entity >= MaxClients || (entity != data && GetClientTeam(entity) == 2);
+}
