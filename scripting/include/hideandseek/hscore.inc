@@ -33,18 +33,22 @@ bool ReloadMapDB() {
 }
 
 
-
 bool LoadConfigForMap(const char[] map) {
 	kv.Rewind();
 	if (kv.JumpToKey(map)) {
-		PrintToServer("[H&S] Loading config data for set %s on %s", currentSet, map);
 		MapConfig config;
 		config.entities = new ArrayList(sizeof(EntityConfig));
 		config.inputs = new ArrayList(ByteCountToCells(64));
 		validSets.Clear();
+
+		static char buffer[64];
+		if(StrEqual(currentSet, "default") && kv.GetString("defaultset", buffer, sizeof(buffer))) {
+			strcopy(currentSet, sizeof(currentSet), buffer);
+		}
+		PrintToServer("[H&S] Loading config data for set %s on %s", currentSet, map);
+
 		if(kv.JumpToKey("ents")) {
 			kv.GotoFirstSubKey();
-			char entSet[16];
 			do {
 				EntityConfig entCfg;
 				kv.GetVector("origin", entCfg.origin, NULL_VECTOR);
@@ -55,17 +59,16 @@ bool LoadConfigForMap(const char[] map) {
 					Format(entCfg.model, sizeof(entCfg.model), "models/%s", entCfg.model);
 				kv.GetVector("scale", entCfg.scale, DEFAULT_SCALE);
 				kv.GetVector("offset", entCfg.offset, NULL_VECTOR);
-				kv.GetString("set", entSet, sizeof(entSet), "default");
-				if(validSets.FindString(entSet) == -1) {
-					validSets.PushString(entSet);
+				kv.GetString("set", buffer, sizeof(buffer), "default");
+				if(validSets.FindString(buffer) == -1) {
+					validSets.PushString(buffer);
 				}
-				char debug_str[64];
-				if(StrEqual(entSet, "default") || StrEqual(currentSet, entSet, false)) {
+				if(StrEqual(buffer, "default") || StrEqual(currentSet, buffer, false)) {
 					
 					config.entities.PushArray(entCfg);
 				} else {
-					kv.GetSectionName(debug_str, sizeof(debug_str));
-					PrintToServer("Skipping %s", debug_str);
+					kv.GetSectionName(buffer, sizeof(buffer));
+					PrintToServer("Skipping %s", buffer);
 				}
 			} while (kv.GotoNextKey());
 			// JumpToKey and GotoFirstSubKey both traverse, i guess, go back
@@ -74,7 +77,6 @@ bool LoadConfigForMap(const char[] map) {
 		}
 		if(kv.JumpToKey("inputs")) {
 			kv.GotoFirstSubKey(false);
-			static char buffer[64];
 			do {
 				kv.GetSectionName(buffer, sizeof(buffer));
 				config.inputs.PushString(buffer);
@@ -110,6 +112,18 @@ bool LoadConfigForMap(const char[] map) {
 					kv.GetString("buttons", buf, sizeof(buf));
 					config.pressButtons = !StrEqual(buf, "no");
 					mapTime = kv.GetNum("maptime", 0);
+					if(kv.JumpToKey("inputs")) {
+						kv.GotoFirstSubKey(false);
+						do {
+							kv.GetSectionName(buffer, sizeof(buffer));
+							config.inputs.PushString(buffer);
+
+							kv.GetString(NULL_STRING, buffer, sizeof(buffer));
+							config.inputs.PushString(buffer);
+						} while (kv.GotoNextKey(false));
+						kv.GoBack();
+						kv.GoBack();
+					}
 					break;
 				}
 				
@@ -164,4 +178,23 @@ bool LoadConfigForMap(const char[] map) {
 		PrintToServer("[H&S] No map config exists for %s", map);
 		return false;
 	}
+}
+
+int COLOR_GREY[4] = { 194, 197, 204, 255 };
+int COLOR_GREEN[4] = { 0, 128, 0, 255 };
+
+void ShowBeacon(int target, float radius = 100.0) {
+	float vec[3];
+	GetClientAbsOrigin(target, vec);
+	vec[2] += 10;
+
+	if (g_BeamSprite > -1 && g_HaloSprite > -1) {
+		TE_SetupBeamRingPoint(vec, 10.0, radius, g_BeamSprite, g_HaloSprite, 0, 15, 0.5, 5.0, 0.0, COLOR_GREY, 10, 0);
+		TE_SendToAll();
+		TE_SetupBeamRingPoint(vec, 10.0, radius, g_BeamSprite, g_HaloSprite, 0, 10, 0.6, 10.0, 0.5, COLOR_GREEN, 10, 0);
+		TE_SendToAll();
+	}
+	
+	GetClientEyePosition(target, vec);
+	EmitAmbientSound("buttons/button17.wav", vec, target, SNDLEVEL_RAIDSIREN);	
 }

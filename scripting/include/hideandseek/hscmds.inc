@@ -41,7 +41,7 @@ public Action Command_HideAndSeek(int client, int args) {
 						}
 						Cleanup();
 						SetupEntities(isNavBlockersEnabled, isPropsEnabled, isPortalsEnabled);
-						ReplyToCommand(client, "Set the current set to \"%s\"", currentSet);
+						PrintToChatAll("[H&S] Map set has been changed to \"%s\"", currentSet);
 						return Plugin_Handled;
 					}
 				}
@@ -216,9 +216,19 @@ public Action Command_HideAndSeek(int client, int args) {
 			}
 			if(IsBotsEnabled()) ReplyToCommand(client, "Bots are enabled");
 			else ReplyToCommand(client, "Bots are disabled");
-		} else if(StrEqual(subcmd, "peek")) {
-			SetPeekCamTarget(client);
-			SetPeekCamActive(client, !IsPeekCamActive(client));
+		} else if(StrEqual(subcmd, "peekfix")) {
+			if(seekerCam == INVALID_ENT_REFERENCE) {
+				SetPeekCamTarget(client);
+			}
+
+			for(int i = 1; i <= MaxClients; i++) {
+				if(IsClientConnected(i) && IsClientInGame(i)) {
+					SetPeekCamActive(client, false);
+					SetPeekCamActive(client, false);
+				}
+			}
+			AcceptEntityInput(seekerCam, "Kill");
+			ReplyToCommand(client, "Killing active camera");
 		} else if(StrEqual(subcmd, "seeker")) {
 			if(args == 2) {
 				char arg1[32];
@@ -240,8 +250,7 @@ public Action Command_HideAndSeek(int client, int args) {
 					ReplyToTargetError(client, target_count);
 					return Plugin_Handled;
 				}
-			
-				SetSlasher(target_list[0]);
+				SetSlasher(target_list[0], true);
 				ReplyToCommand(client, "Set the current seeker to %N", target_list[0]);
 			} else {
 				ReplyToCommand(client, "The current seeker is: %N", GetSlasher());
@@ -264,17 +273,24 @@ public Action Command_HideAndSeek(int client, int args) {
 		}
 		return Plugin_Handled;
 	}
-	ReplyToCommand(client, " - Hide & Seek Commands -");
-	ReplyToCommand(client, "toggle <blockers/props/all>: Toggles all specified");
-	ReplyToCommand(client, "set [new set]: Change the prop set or view current");
-	ReplyToCommand(client, "clear <props/blockers/all>: Clear all specified");
-	ReplyToCommand(client, "settime [seconds]: Sets the time override for the map");
-	ReplyToCommand(client, "settick [tick]: Sets the current tick timer value");
-	ReplyToCommand(client, "setspawn: Sets the temporary spawnpoint for the map");
+	ReplyToCommand(client, " === [ Hide & Seek Commands ] ===");
+	if(GetUserAdmin(client) != INVALID_ADMIN_ID) {
+		ReplyToCommand(client, "- Dev Commands -");
+		ReplyToCommand(client, "r/reload [force]: Reloads map config from file");
+		ReplyToCommand(client, "toggle <blockers/props/all>: Toggles all specified entities");
+		ReplyToCommand(client, "clear <props/blockers/all>: Clear all specified");
+		ReplyToCommand(client, "settime [seconds]: Sets the time override for the map");
+		ReplyToCommand(client, "settick [tick]: Sets the current tick timer value");
+		ReplyToCommand(client, "- Admin Commands -");
+		ReplyToCommand(client, "set [new set]: Change the prop set or view current");
+		ReplyToCommand(client, "setspawn: Sets the temporary spawnpoint for the map");
+		ReplyToCommand(client, "bots [toggle, [value]]: View if bots are enabled, or turn them on");
+		ReplyToCommand(client, "peekfix - Clear peek camera from all players");
+		ReplyToCommand(client, "seeker [new seeker]: Get the active seeker, or set a new one.");
+		ReplyToCommand(client, "sm_cvar hs_peekcam <0/2> - Turn the peek camera on or off");
+		ReplyToCommand(client, "- User Commands -");
+	}
 	ReplyToCommand(client, "stuck: Teleports you to spawn to unstuck yourself");
-	ReplyToCommand(client, "bots [toggle, [value]]: View if bots are enabled, or turn them on");
-	ReplyToCommand(client, "seeker [new seeker]: Get the active seeker, or set a new one.");
-	ReplyToCommand(client, "peek - debug cmd");
 	return Plugin_Handled;
 }
 
