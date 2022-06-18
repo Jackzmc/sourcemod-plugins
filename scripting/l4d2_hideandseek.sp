@@ -12,6 +12,7 @@
 #include <sdktools>
 #include <left4dhooks>
 #include <sceneprocessor>
+#include <multicolors>
 #if defined DEBUG_BLOCKERS
 #include <smlib/effects>
 int g_iLaserIndex;
@@ -111,6 +112,7 @@ bool ignoreSeekerBalance;
 
 ConVar cvar_peekCam;
 ConVar cvar_seekerBalance;
+ConVar cvar_abm_autohard;
 
 #include <hideandseek/hscore>
 
@@ -139,6 +141,8 @@ public void OnPluginStart() {
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.AddChangeHook(Event_GamemodeChange);
 	Event_GamemodeChange(hGamemode, gamemode, gamemode);
+
+	cvar_abm_autohard = FindConVar("cvar_abm_autohard");
 
 	RegConsoleCmd("sm_joingame", Command_Join, "Joins or joins someone else");
 	RegAdminCmd("sm_hs", Command_HideAndSeek, ADMFLAG_CHEATS, "The main command. see /hs help");
@@ -180,7 +184,9 @@ public void OnMapStart() {
 	seekerCam = INVALID_ENT_REFERENCE;
 	currentSeeker = 0;
 
-
+	if(cvar_abm_autohard != null) {
+		cvar_abm_autohard.IntValue = 0;
+	}
 	char map[64];
 	GetCurrentMap(map, sizeof(map));
 
@@ -320,17 +326,19 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 		}
 		
 		if(client == currentSeeker && alive == 1) {
-			PrintToChatAll("Hiders win!");
+			// If seeker died
+			CPrintToChatAll("{green}Hiders win!");
 			gameOver = true;
 		} else {
 			if(alive == 2) {
-				PrintToChatAll("One hider remains.");
+				CPrintToChatAll("{green}One hider remains.");
 			} else if(alive <= 0) {
 				// Player died and not seeker, therefore seeker killed em
-				if(client != currentSeeker) {
-					PrintToChatAll("Seeker %N won!", currentSeeker);
+				// If who died was not the seeker
+				if(client == currentSeeker) {
+					CPrintToChatAll("{green}Hiders win! The seeker has perished.");
 				} else {
-					PrintToChatAll("Hiders win! The last survivor was %N!", client);
+					CPrintToChatAll("{green}The seeker %N won!", currentSeeker);
 				}
 				if(cvar_peekCam.IntValue & 1) {
 					SetPeekCamTarget(client, false);
@@ -338,7 +346,7 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 				gameOver = true;
 				return;
 			} else if(alive > 2 && client != currentSeeker) {
-				PrintToChatAll("%d hiders remain", alive - 1);
+				CPrintToChatAll("{green}%d hiders remain", alive - 1);
 			}
 		}
 		CreateTimer(2.0, Timer_StopPeekCam);
@@ -402,7 +410,7 @@ public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast)
 					}
 				}
 				ignoreSeekerBalance = false;
-				PrintToChatAll("%N is the seeker", currentSeeker);
+				CPrintToChatAll("{green}%N{yellow} is the seeker", currentSeeker);
 			}
 		}
 	}

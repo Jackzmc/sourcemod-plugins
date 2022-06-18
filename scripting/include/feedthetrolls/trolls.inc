@@ -2,6 +2,8 @@
 
 int slipperyShoesIndex = 0;
 int stickyGooIndex = 0;
+int invertedTrollIndex;
+// int fireSpitMagnetTrollIndex;
 
 void SetupTrolls() {
     trollKV = new StringMap();
@@ -17,6 +19,7 @@ void SetupTrolls() {
     index = SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant);
     AddMagnetFlags(index);
     index = SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
+    // fireSpitMagnetTrollIndex = SetupTroll("Fire & Acid Magnet", "Make the player gravitate toward danger", TRollMod_Constant);
 
     /// CATEGORY: Infected
     SetCategory("Infected");
@@ -118,7 +121,7 @@ void SetupTrolls() {
     Trolls[index].AddFlag("30% Movement Speed", false);
     Trolls[index].AddFlag("0% Movement Speed", false);
     SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
-    SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant);
+    invertedTrollIndex = SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant);
     SetupTroll("Stagger", "Like a slap, but different", TrollMod_Instant);
     index = SetupTroll("Slippery Shoes", "Periodically stumbles around.", TrollMod_Constant);
     Trolls[index].AddFlagPrompt(true);
@@ -165,7 +168,7 @@ void AddMagnetFlags(int index) {
 }
 
 bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier modifier, int flags) {
-    bool isActive = IsTrollActiveByRawID(victim, troll.id);
+    bool toActive = IsTrollActiveByRawID(victim, troll.id);
     if(StrEqual(troll.name, "Reset User")) {
         LogAction(activator, victim, "\"%L\" reset all effects for \"%L\"", activator, victim);
         ShowActivityEx(activator, "[FTT] ", "reset effects for %N. ", victim);
@@ -174,17 +177,18 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
         }
         SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
         SetEntityGravity(victim, 1.0);
+        SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
         return false;
     } else if(StrEqual(troll.name, "Slow Speed")) {
-        if(isActive) {
-            float movement = 1.0;
+        if(toActive) {
+            float movement = 0.0;
             if(flags & 1) movement = 0.6;
             else if(flags & 2) movement = 0.3;
             SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", movement);
         } else 
             SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
     } else if(StrEqual(troll.name, "Higher Gravity"))
-        SetEntityGravity(victim, isActive ? 1.0 : 1.3);
+        SetEntityGravity(victim, toActive ? 1.3 : 1.0);
     else if(StrEqual(troll.name, "Half Primary Ammo")) {
         int current = GetPrimaryReserveAmmo(victim);
         SetPrimaryReserveAmmo(victim, current / 2);
@@ -248,7 +252,7 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
     } else if(StrEqual(troll.name, "Stagger")) {
         L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
     } else if(StrEqual(troll.name, "Voice Mute")) {
-        BaseComm_SetClientMute(victim, !isActive);
+        BaseComm_SetClientMute(victim, toActive);
     } else if(StrEqual(troll.name, "Spicy Gas")) {
         SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
     } else if(StrEqual(troll.name, "Car Splat")) {
