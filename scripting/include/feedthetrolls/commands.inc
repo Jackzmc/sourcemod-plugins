@@ -573,3 +573,43 @@ public Action Command_Stagger(int client, int args) {
 	}
 	return Plugin_Handled;
 }
+
+public Action Command_SmartCharge(int client, int args) {
+	if(args > 0) {
+		static char arg1[32], arg2[8];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+		int timeout = StringToInt(arg2);
+		if(timeout == 0) timeout = 15;
+
+		int target_list[1], target_count;
+		static char target_name[MAX_TARGET_LENGTH];
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			1,
+			COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_MULTI,
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		if(g_iSmartChargeActivator[target_list[0]]) {
+			ReplyToCommand(client, "Target already has auto smart charge enabled");
+		} else {
+			g_iSmartChargeAttempts[target_list[0]] = 0;
+			g_iSmartChargeMaxAttempts[target_list[0]] = timeout;
+			g_iSmartChargeActivator[target_list[0]] = GetClientUserId(client);
+			CreateTimer(1.0, Timer_CheckForChargerOpportunity, GetClientUserId(target_list[0]), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+			ShowActivity(client, "Enabling smart auto-charge on %N for %d seconds", target_list[0], timeout);
+		}
+	} else {
+		ReplyToCommand(client, "syntax: sm_smartcharge <target player> [timeout or default 10s]");
+	}
+	return Plugin_Handled;
+}

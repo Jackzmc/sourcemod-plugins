@@ -132,16 +132,14 @@ stock int CreateProp(const char[] entClass, const char[] model, const float pos[
 	return -1;
 }
 
-stock int CreateDummy(const char[] model, const float pos[3], const float ang[3]) {
+stock int CreateDummy(const char[] model, const char[] anim, const float pos[3], const float ang[3] = NULL_VECTOR) {
 	int entity = StartPropCreate("commentary_dummy", model, pos, ang);
 	if(entity == -1) return -1;
 	DispatchKeyValue(entity, "LookAtPlayers", "Yes");
 	DispatchKeyValue(entity, "StartingWeapons", "weapon_rifle_ak47");
-	DispatchKeyValue(entity, "StartingAnim", "hit_by_tankpunch"); //idle_calm_rifle
+	DispatchKeyValue(entity, "StartingAnim", anim); //idle_calm_rifle
 	DispatchKeyValueFloat(entity, "LookAtPlayers", 40.0);
 	DispatchSpawn(entity);
-	SetVariantString("idle_unabletoreachtarget_01a");
-	AcceptEntityInput(entity, "SetAnimation");
 	return entity;
 }
 
@@ -188,24 +186,56 @@ stock void EntFire(const char[] name, const char[] input) {
 	#endif
 	int len = SplitString(input, " ", cmd, sizeof(cmd));
 	if(len > -1) SetVariantString(input[len]);
+
+	int hammerId = name[0] == '!' ? StringToInt(name[1]) : 0;
+	bool setTeam = StrEqual(cmd, "_setteam");
 	for(int i = MaxClients + 1; i <= 4096; i++) {
 		if(IsValidEntity(i) && (IsValidEdict(i) || EntIndexToEntRef(i) != -1)) {
-			GetEntPropString(i, Prop_Data, "m_iName", targetname, sizeof(targetname));
-			if(StrEqual(targetname, name, false)) {
-				if(len > -1) AcceptEntityInput(i, cmd);
-				else AcceptEntityInput(i, input);
-			} /*else { 
-				GetEntityClassname(targetname, sizeof(targetname));
-				if(StrEqual(targetname, name, false)) {
-					if(len > -1) AcceptEntityInput(i, cmd);
+			if(hammerId > 0) {
+				if(hammerId == GetHammerId(i)) {
+					if(setTeam) {
+						SDKHook(i, SDKHook_TraceAttackPost, Hook_OnAttackPost);
+						SetEntProp(i, Prop_Send, "m_iTeamNum", 0);
+					} else if(len > -1) AcceptEntityInput(i, cmd);
 					else AcceptEntityInput(i, input);
 				}
-			}*/
+			} else {
+				GetEntPropString(i, Prop_Data, "m_iName", targetname, sizeof(targetname));
+				if(StrEqual(targetname, name, false)) {
+					if(setTeam) {
+						SDKHook(i, SDKHook_TraceAttackPost, Hook_OnAttackPost);
+						SetEntProp(i, Prop_Send, "m_iTeamNum", 0);
+					} else if(len > -1) AcceptEntityInput(i, cmd);
+					else AcceptEntityInput(i, input);
+					
+				}  else { 
+					GetEntityClassname(i, targetname, sizeof(targetname));
+					if(StrEqual(targetname, name, false)) {
+						if(len > -1) AcceptEntityInput(i, cmd);
+						else AcceptEntityInput(i, input);
+					}
+				}
+			}
 		}
 	}
 }
 
+int GetHammerId(int entity) {
+    return HasEntProp(entity, Prop_Data, "m_iHammerID") ? GetEntProp(entity, Prop_Data, "m_iHammerID") : -1;
+}
+
+
+
 void SetupEntities(bool blockers = true, bool props = true, bool portals = true) {
+	#if defined DEBUG_BLOCKERS
+	if(mapConfig.hasSpawnpoint) {
+		PrecacheModel("survivors/survivor_teenangst.mdl", true);
+		int dummy = CreateDummy("models/survivors/survivor_teenangst.mdl", "idle", mapConfig.spawnpoint, NULL_VECTOR);
+		SetEntProp(dummy, Prop_Data, "m_nSolidType", 0);
+		SetEntProp(dummy, Prop_Send, "m_CollisionGroup", 0);
+		SetEntProp(dummy, Prop_Send, "movetype", MOVETYPE_NONE);
+	}
+	#endif
 	if(mapConfig.entities != null) {
 		PrintToServer("[H&S] Deploying %d custom entities (Set: %s) (blockers:%b props:%b portals:%b)", mapConfig.entities.Length, currentSet, blockers, props, portals);
 		for(int i = 0; i < mapConfig.entities.Length; i++) {
@@ -243,7 +273,7 @@ void SetupEntities(bool blockers = true, bool props = true, bool portals = true)
 					}
 				}
 			} else if(StrEqual(config.type, "_dummy")) {
-				if(CreateDummy(config.model, config.origin, config.rotation) == -1) { 
+				if(CreateDummy(config.model, "hitby_tankpunch", config.origin, config.rotation) == -1) { 
 					PrintToServer("[H&S:WARN] Failed to spawn dummy [model=%s] at (%.1f,%.1f, %.1f)", config.model, config.origin[0], config.origin[1], config.origin[2]);
 				}
 			}else if(props) {

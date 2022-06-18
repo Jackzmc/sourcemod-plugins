@@ -46,6 +46,10 @@ int shootAtTarget[MAXPLAYERS+1];
 int shootAtTargetLoops[MAXPLAYERS+1];
 int shootAtTargetHP[MAXPLAYERS+1];
 
+int g_iSmartChargeAttempts[MAXPLAYERS+1];
+int g_iSmartChargeMaxAttempts[MAXPLAYERS+1];
+int g_iSmartChargeActivator[MAXPLAYERS+1];
+
 bool spIsActive;
 enum SpecialSpawnFlags {
 	Special_Anywhere = 0,

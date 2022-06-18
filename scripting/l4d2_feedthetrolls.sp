@@ -91,6 +91,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_instaface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
 	RegAdminCmd("sm_inface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
 	RegAdminCmd("sm_bots_attack", Command_BotsAttack, ADMFLAG_CHEATS, "Instructs all bots to attack a player until they have X health.");
+	RegAdminCmd("sm_scharge", Command_SmartCharge, ADMFLAG_CHEATS, "Auto Smart charge");
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);

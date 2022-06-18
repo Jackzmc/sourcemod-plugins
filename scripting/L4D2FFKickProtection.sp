@@ -82,7 +82,7 @@ public Action VoteStart(int client, const char[] command, int argc) {
 
 			if(strlen(option) > 1) { //empty userid/console can't call votes
 				int target = GetClientOfUserId(StringToInt(option));
-				if(target == 0) return Plugin_Continue; //invalid, pass it through
+				if(target == 0 || target >= MaxClients || !IsClientConnected(target)) return Plugin_Continue; //invalid, pass it through
 				AdminId callerAdmin = GetUserAdmin(client);
 				AdminId targetAdmin = GetUserAdmin(target);
 				if(targetAdmin != INVALID_ADMIN_ID) { //Only run if vote is against an admin

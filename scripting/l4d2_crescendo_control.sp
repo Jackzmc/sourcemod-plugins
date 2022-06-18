@@ -36,8 +36,8 @@ public void OnPluginStart()
 	}
 
 	hEnabled = CreateConVar("l4d2_crescendo_control", "1", "Should plugin be active?", FCVAR_NONE, true, 0.0, true, 1.0);
-	hPercent = CreateConVar("l4d2_crescendo_percent", "0.75", "The percent of players needed to be in range for crescendo to start", FCVAR_NONE);
-	hRange = CreateConVar("l4d2_crescendo_range", "200.0", "How many units away something range brain no work", FCVAR_NONE);
+	hPercent = CreateConVar("l4d2_crescendo_percent", "0.5", "The percent of players needed to be in range for crescendo to start", FCVAR_NONE);
+	hRange = CreateConVar("l4d2_crescendo_range", "250.0", "How many units away something range brain no work", FCVAR_NONE);
 
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.GetString(gamemode, sizeof(gamemode));
@@ -80,6 +80,7 @@ public Action Timer_GetFlows(Handle h) {
 			}
 		}
 	}
+	return Plugin_Continue;
 }
 
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
@@ -97,7 +98,6 @@ public Action Event_ButtonPress(const char[] output, int entity, int client, flo
 		float activatorFlow = L4D2Direct_GetFlowDistance(client);
 
 		PrintToConsoleAll("[CC] Button Press by %N", client);
-		
 		if(!IsActivationAllowed(activatorFlow, 1500.0)) {
 			ClientCommand(client, "play ui/menu_invalid.wav");
 			PrintToChat(client, "Please wait for players to catch up.");
@@ -130,6 +130,9 @@ public void Frame_ResetButton(int entity) {
 // [Debug] Percentage of far players: 0.625000% | Average 4222.518066
 
 stock bool IsActivationAllowed(float flowmax, float threshold) {
+	// Broken behavior, just short circuit true
+	if(flowmax == 0.0) return true;
+
 	int farSurvivors, totalSurvivors;
 	float totalFlow;
 	for(int i = 1; i <= MaxClients; i++) {

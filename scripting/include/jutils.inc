@@ -628,3 +628,32 @@ stock int GetRealClient(int client) {
 		return client;
 	}
 }
+
+stock int FindIdleBot(int client) {
+	for(int i = 1; i <= MaxClients; i++ ) {
+		if(IsClientConnected(i) && HasEntProp(i, Prop_Send, "m_humanSpectatorUserID")) {
+			int realPlayer = GetClientOfUserId(GetEntProp(i, Prop_Send, "m_humanSpectatorUserID"));
+			if(realPlayer == client) {
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
+stock void SetParent(int child, int parent) {
+	SetVariantString("!activator");
+	AcceptEntityInput(child, "SetParent", parent);
+}
+
+stock void SetParentAttachment(int child, const char[] attachment, bool withOffset = false) {
+	SetVariantString(attachment);
+	if(withOffset)
+		AcceptEntityInput(child, "SetParentAttachmentMaintainOffset");
+	else
+		AcceptEntityInput(child, "SetParentAttachment");
+}
+
+stock void ClearParent(int child) {
+	AcceptEntityInput(child, "ClearParent");
+}

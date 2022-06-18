@@ -96,7 +96,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 public Action Command_AddNote(int client, int args) {
 	if(args < 2) {
-		ReplyToCommand(client, "Syntax: sm_note <player> <note> or if they have disconnected use sm_notedisconnected");
+		ReplyToCommand(client, "Syntax: sm_note <player> \"note in quotes\" or if they left, use sm_notedisconnected");
 	} else {
 		static char target_name[MAX_TARGET_LENGTH];
 		GetCmdArg(1, target_name, sizeof(target_name));

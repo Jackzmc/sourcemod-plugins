@@ -179,7 +179,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	if(existingTarget > 0) {
 		if(IsPlayerAlive(existingTarget)) {
 			// Insta-specials ALWAYS target, if target has any attackers remaining
-			if(g_iSpecialAttackFlags[attacker] & SPI_AlwaysTarget) {
+			if(g_iSpecialAttackFlags[attacker] & view_as<int>(SPI_AlwaysTarget)) {
 				curTarget = existingTarget;
 				return Plugin_Changed;
 			} 
@@ -232,7 +232,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	}
 	// If found, set, else just let game decide
 	if(closestClient > 0) {
-		PrintToConsoleAll("[FTT/Debug] infected %N -> attack -> %N", attacker, closetClient);
+		PrintToConsoleAll("[FTT/Debug] infected %N -> attack -> %N", attacker, closestClient);
 		g_iAttackerTarget[attacker] = GetClientUserId(closestClient);
 		curTarget = closestClient;
 		return Plugin_Changed;
@@ -529,7 +529,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		if(GetClientAimTarget(client, true) == shootAtTarget[client]) {
 			if(!IsActorBusy(client))
 				PerformScene(client, "PlayerLaugh");
-			buttons |= IN_ATTACK;
+			buttons |= IN_ATTACK &~ (IN_RELOAD);
 			return Plugin_Changed;
 		} else {
 			if(!IsClientConnected(shootAtTarget[client])) {
@@ -541,8 +541,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
     }
 
 	// Inverted control code:
-	static int invertedTrollIndex;
-	if(invertedTrollIndex == 0) invertedTrollIndex = GetTrollID("Inverted Controls");
  	if(Trolls[invertedTrollIndex].IsActive(client)) {
 		if(buttons & IN_MOVELEFT || buttons & IN_MOVERIGHT) {
 			vel[1] = -vel[1];
@@ -795,7 +793,7 @@ public bool TraceEntityFilterPlayer(int entity, int mask, any data) {
 
 float iLastAntiRushEvent[MAXPLAYERS+1];
 public Action OnAntiRush(int client, int &type, float distance) {
-	if(client && client <= MaxClients && type == 3 && IsPlayerAlive(client) && !IsPlayerIncapped(client)) {
+	if(client && client > 0 && client <= MaxClients && type == 3 && IsPlayerAlive(client) && !IsPlayerIncapped(client)) {
 		if(GetGameTime() - iLastAntiRushEvent[client] > 30.0) {
 			SpecialType special = view_as<SpecialType>(GetRandomInt(1,6));
 			iLastAntiRushEvent[client] = GetGameTime();
@@ -825,13 +823,17 @@ public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast
 }
 
 public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
-	//Player replaced a bot
+	//Player replaced their idle bot
 	int client = GetClientOfUserId(event.GetInt("player"));
 	if(client) {
+		bool debug_hadTroll = false;
 		for(int i = 1; i <= MAX_TROLLS; i++) {
 			if(Trolls[i].IsActive(client) && Trolls[i].HasMod(TrollMod_Constant)) { //Add activeFlagClients >= 0 check possibly?
 				ApplyAffect(client, Trolls[i], -1, TrollMod_Constant, Trolls[i].activeFlagClients[client]);
+				debug_hadTroll = true;
 			}
 		}
+		if(debug_hadTroll) 
+			PrintToServer("[FTT] Re-applied trolls for was-idle player %N", client);
 	}
 }

@@ -664,7 +664,8 @@ public Action L4D_OnIsTeamFull(int team, bool &full) {
 	return Plugin_Continue;
 }
 
-char TIER1_WEAPONS[5][] = {
+#define TIER1_WEAPON_COUNT 5
+char TIER1_WEAPONS[TIER1_WEAPON_COUNT][] = {
 	"shotgun_chrome",
 	"pumpshotgun",
 	"smg",
@@ -672,6 +673,7 @@ char TIER1_WEAPONS[5][] = {
 	"smg_mp5"
 };
 
+#define TIER2_WEAPON_COUNT 9
 char TIER2_WEAPONS[9][] = {
 	"autoshotgun",
 	"rifle_ak47",
@@ -690,19 +692,52 @@ public void Frame_SetupNewClient(int client) {
 		EquipPlayerWeapon(client, item);
 	}
 
-	static char weapon[32];
-	if(currentChapter == 1 || (currentChapter == 2 && GetRandomFloat() < 0.3)) {
-		Format(weapon, sizeof(weapon), "weapon_%s", TIER1_WEAPONS[GetRandomInt(0,4)]);
-	} else {
-		Format(weapon, sizeof(weapon), "weapon_%s", TIER2_WEAPONS[GetRandomInt(0,8)]);
+	int lowestClient = -1;
+	float lowestIntensity;
+	char weaponName[64];
+
+	ArrayList tier2Weapons = new ArrayList(ByteCountToCells(32));
+
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			int wpn = GetPlayerWeaponSlot(client, 0);
+			if(wpn > 0) {
+				GetEntityClassname(wpn, weaponName, sizeof(weaponName));
+				for(int j = 0; j < TIER2_WEAPON_COUNT; j++) {
+					if(StrEqual(TIER2_WEAPONS[j], weaponName[j])) {
+						tier2Weapons.PushString(weaponName);
+						break;
+					}
+				}
+			}
+
+			float intensity = L4D_GetPlayerIntensity(i);
+			if(intensity < lowestIntensity || lowestClient == -1) {
+				lowestIntensity = intensity;
+				lowestClient = i;
+			}
+		}
 	}
 
-	// Find a suitable weapon to spawn with
+	if(tier2Weapons.Length > 0) {
+		tier2Weapons.GetString(GetRandomInt(0, tier2Weapons.Length), weaponName, sizeof(weaponName));
+		Format(weaponName, sizeof(weaponName), "weapon_%s", weaponName);
+	} else {
+		Format(weaponName, sizeof(weaponName), "weapon_%s", TIER1_WEAPONS[GetRandomInt(0, TIER1_WEAPON_COUNT)]);
+	}
+	int item = GivePlayerItem(client, weaponName);
+	if(lowestClient > 0) {
+		float pos[3];
+		GetClientAbsOrigin(lowestClient, pos);
+		TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
+	}
+	delete tier2Weapons;
 
-
-	// static float spawnPos[3];
-	// if(GetIdealPositionInSurvivorFlow(client, spawnPos))
-	// 	TeleportEntity(client, spawnPos, NULL_VECTOR, NULL_VECTOR);
+	if(item) {
+		GetEdictClassname(item, weaponName, sizeof(item));
+		SetEntProp(item, Prop_Send, "m_iClip1", L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_ClipSize));
+		EquipPlayerWeapon(client, item);
+	} else LogError("EPI Failed to give new late player weapon: %s", weaponName);
 }
 public Action Timer_RemoveInvincibility(Handle h, int client) {
 	SDKUnhook(client, SDKHook_OnTakeDamage, OnInvincibleDamageTaken);
@@ -820,6 +855,7 @@ public void OnMapEnd() {
 	}
 	ammoPacks.Clear();
 	playersLoadedIn = 0;
+	abmExtraCount = 4;
 }
 
 public void Event_RoundFreezeEnd(Event event, const char[] name, bool dontBroadcast) {

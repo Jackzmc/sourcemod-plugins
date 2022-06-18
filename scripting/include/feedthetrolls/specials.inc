@@ -60,7 +60,7 @@ stock bool SpawnSpecialForTarget(SpecialType specialType, int target, SpecialSpa
 }
 
 // Target is optional
-stock bool SpawnSpecialAtPosition(SpecialType special, const float destination[3], const float angle[3], int target = 0, int flags) {
+stock bool SpawnSpecialAtPosition(SpecialType special, const float destination[3], const float angle[3], int target = 0, int flags = 0) {
 	SpecialSpawnRequest request;
 	request.type = special;
 	if(target)

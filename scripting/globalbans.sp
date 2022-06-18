@@ -113,6 +113,7 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
 
         g_db.Format(query, sizeof(query), "SELECT `flags` FROM `bans` WHERE `expired` = 0 AND `steamid` LIKE 'STEAM_%%:%%:%s' OR ip = '%s'", identity[10], identity);
         g_db.Query(DB_OnBanPreCheck, query, key);
+        PrintToServer("Adding %s to OnBanClient queue. Key: %d", identity, key);
 
     }else if(flags == BANFLAG_IP) {
         LogMessage("Cannot save IP without steamid: %s [Source: %s]", identity, source);
@@ -120,6 +121,9 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
     return Plugin_Continue;
 }
 public Action OnBanClient(int client, int time, int flags, const char[] reason, const char[] kick_message, const char[] command, any source) {
+    if(GetUserAdmin(client) != INVALID_ADMIN_ID) return Plugin_Stop; 
+
+
     char executor[32], identity[32], ip[32];
     GetClientAuthId(client, AuthId_Steam2, identity, sizeof(identity));
 
@@ -132,10 +136,7 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
         executor = "CONSOLE";
     }
 
-    if(GetUserAdmin(client) != INVALID_ADMIN_ID) return Plugin_Stop; 
-
     GetClientIP(client, ip, sizeof(ip));
-
     char query[255];
        
     static char expiresDate[64];
@@ -162,9 +163,10 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
     IntToString(key, strKey, sizeof(strKey));
     pendingInsertQueries.SetString(strKey, query);
 
-
     g_db.Format(query, sizeof(query), "SELECT `flags` FROM `bans` WHERE `expired` = 0 AND `steamid` LIKE 'STEAM_%%:%%:%s' OR ip = '%s'", identity[10], identity);
     g_db.Query(DB_OnBanPreCheck, query, key);
+
+    PrintToServer("Adding %N to OnBanClient queue. Key: %d", client, key);
 
     return Plugin_Continue;
 }
@@ -196,11 +198,13 @@ public void DB_OnBanPreCheck(Database db, DBResultSet results, const char[] erro
     } else {
         if(results.FetchRow()) {
             int flags = results.FetchInt(0);
-            if(~flags & BANFLAG_SUSPENDED)
-                LogMessage("Ban Pre-check: Found existing ban, ignoring ban attempt. [Query: %s]", query);
-        } else {
-            g_db.Query(DB_OnBanQuery, query);
+            if(~flags & BANFLAG_SUSPENDED) {
+                LogMessage("Ban Pre-check: Found existing non-suspended ban, ignoring ban attempt. [Query: %s]", query);
+                return;
+            }
         }
+
+        g_db.Query(DB_OnBanQuery, query);
     }
 }
 
