@@ -23,8 +23,8 @@ public void OnMapStart() {
 	//CreateTimer(30.0, Timer_AutoPunishCheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 public void OnClientPutInServer(int client) {
-	g_PendingBanTroll[client] = 0;
-	shootAtTarget[client] = 0;
+	pdata[client].pendingTrollBan = 0;
+	pdata[client].shootAtTarget = 0;
 	if(IsTrollActive(client, "Voice Mute"))
 		BaseComm_SetClientMute(client, true);
 	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
@@ -63,8 +63,8 @@ public Action Timer_CheckSpecial(Handle h, int specialID) {
 				GetClientName(special, buf, sizeof(buf));
 				if(StrContains(buf, "bot", false) == -1) {
 					if(spActiveRequest.targetUserId) {
-						g_iAttackerTarget[special] = spActiveRequest.targetUserId;
-						g_iSpecialAttackFlags[special] = spActiveRequest.flags;
+						pdata[special].attackerTargetUid = spActiveRequest.targetUserId; 
+						pdata[special].specialAttackFlags = spActiveRequest.flags;
 					}
 
 					TeleportEntity(special, spActiveRequest.position, spActiveRequest.angle, NULL_VECTOR);
@@ -96,7 +96,7 @@ public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroa
 }
 public void OnClientAuthorized(int client, const char[] auth) {
 	if(!IsFakeClient(client)) {
-		strcopy(steamids[client], 64, auth);
+		strcopy(pdata[client].steamid, 64, auth);
 	}
 	for(int i = 1; i <= MAX_TROLLS; i++) {
 		if(Trolls[i].IsActive(client) && Trolls[i].HasMod(TrollMod_Constant)) { //Add activeFlagClients >= 0 check possibly?
@@ -107,18 +107,13 @@ public void OnClientAuthorized(int client, const char[] auth) {
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
-	if(client > 0 && g_PendingBanTroll[client] > 0) {
+	if(client > 0 && pdata[client].pendingTrollBan > 0) {
 		if(!IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID) {
-			BanIdentity(steamids[client], 0, BANFLAG_AUTHID, "Marked as Troll", "ftt", GetClientOfUserId(g_PendingBanTroll[client]));
+			BanIdentity(pdata[client].steamid, 0, BANFLAG_AUTHID, "Marked as Troll", "ftt", GetClientOfUserId(pdata[client].pendingTrollBan));
 		}
-		g_PendingBanTroll[client] = 0;
 	}
-	steamids[client][0] = '\0';
-	g_iAttackerTarget[client] = 0;
-	shootAtTarget[client] = 0;
-	shootAtTargetLoops[client] = 0;
-	shootAtTargetHP[client] = 0;
-	isTargettingHealer[client] = false;
+	pdata[client].shootAtTarget = 0;
+	pdata[client].Reset();
 	isCustomSurvivor[client] = false;
 	if(healTargetPlayer == userid) {
 		healTargetPlayer = 0;
@@ -128,15 +123,15 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
 	if(client > 0) {
-		g_iSpecialAttackFlags[client] = 0;
-		if(g_iAttackerTarget[client] > 0) {
+		pdata[client].specialAttackFlags = 0;
+		if(pdata[client].attackerTargetUid > 0) {
 			// If special died, clear & subtract one from counter
-			g_iAttackerTarget[client] = 0;
+			pdata[client].attackerTargetUid = 0;
 		} else {
 			// If player died, stop the targetting
 			for(int i = 1; i <= MaxClients; i++) { 
-				if(g_iAttackerTarget[i] == userid) {
-					g_iAttackerTarget[i] = 0;
+				if(pdata[i].attackerTargetUid == userid) {
+					pdata[i].attackerTargetUid = 0;
 					break;
 				}
 			}
@@ -189,11 +184,11 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	if(hMagnetChance.FloatValue < GetRandomFloat()) return Plugin_Continue;
 	L4D2Infected class = view_as<L4D2Infected>(GetEntProp(attacker, Prop_Send, "m_zombieClass"));
 	// Check for any existing victims
-	int existingTarget = GetClientOfUserId(g_iAttackerTarget[attacker]);
+	int existingTarget = GetClientOfUserId(pdata[attacker].attackerTargetUid);
 	if(existingTarget > 0) {
 		if(IsPlayerAlive(existingTarget)) {
 			// Insta-specials ALWAYS target, if target has any attackers remaining
-			if(g_iSpecialAttackFlags[attacker] & view_as<int>(SPI_AlwaysTarget)) {
+			if(pdata[attacker].specialAttackFlags & view_as<int>(SPI_AlwaysTarget)) {
 				curTarget = existingTarget;
 				return Plugin_Changed;
 			} 
@@ -213,7 +208,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 				return Plugin_Changed;
 			}
 		} else {
-			g_iAttackerTarget[attacker] = 0;
+			pdata[attacker].attackerTargetUid = 0;
 		}
 	}
 
@@ -247,7 +242,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	// If found, set, else just let game decide
 	if(closestClient > 0) {
 		PrintToConsoleAll("[FTT/Debug] infected %N -> attack -> %N", attacker, closestClient);
-		g_iAttackerTarget[attacker] = GetClientUserId(closestClient);
+		pdata[attacker].attackerTargetUid = GetClientUserId(closestClient);
 		curTarget = closestClient;
 		return Plugin_Changed;
 	}
@@ -528,7 +523,7 @@ public Action Event_ItemPickup(int client, int weapon) {
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	// If 'KillMeSoftly' activated:
 	int healTarget = GetClientOfUserId(healTargetPlayer);
-	if(healTarget > 0 && isTargettingHealer[client] && healTarget != client) {
+	if(healTarget > 0 && pdata[client].flags & view_as<int>(Flag_IsTargettingHealer) && healTarget != client) {
 		static float pos[3];
 		GetClientAbsOrigin(client, pos);
 		LookAtClient(client, healTarget);
@@ -540,7 +535,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		}
 	}
 
-	if(g_bPendingItemGive[client] && !(buttons & IN_ATTACK2)) {
+	if(pdata[client].flags & view_as<int>(Flag_PendingItemGive) && !(buttons & IN_ATTACK2)) {
 		int target = GetClientAimTarget(client, true);
 		if(target > -1) {
 			ClientCommand(client, "slot5");
@@ -552,17 +547,17 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	}
 
 
-	if (shootAtTarget[client] > 0 && (buttons & IN_ATTACK) == 0)  {
-		if(GetClientAimTarget(client, true) == shootAtTarget[client]) {
+	if (pdata[client].shootAtTarget > 0 && (buttons & IN_ATTACK) == 0)  {
+		if(GetClientAimTarget(client, true) == pdata[client].shootAtTarget) {
 			if(!IsActorBusy(client))
 				PerformScene(client, "PlayerLaugh");
 			buttons |= IN_ATTACK &~ (IN_RELOAD);
 			return Plugin_Changed;
 		} else {
-			if(!IsClientConnected(shootAtTarget[client])) {
-				shootAtTarget[client] = 0;
+			if(!IsClientConnected(pdata[client].shootAtTarget)) {
+				pdata[client].shootAtTarget = 0;
 			} else {
-				LookAtClient(client, shootAtTarget[client]);
+				LookAtClient(client, pdata[client].shootAtTarget);
 			}
 		}
     }
@@ -609,8 +604,8 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 	}
 
 	if(attacker > 0 && victim <= MaxClients && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
-		if(shootAtTarget[attacker] == victim) return Plugin_Continue;
-		if(g_PendingBanTroll[attacker] > 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
+		if(pdata[attacker].shootAtTarget == victim) return Plugin_Continue;
+		if(pdata[attacker].pendingTrollBan > 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
 			return Plugin_Stop;
 		}
 
@@ -644,15 +639,15 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 			if(IsFakeClient(attacker)) return Plugin_Handled;
 			else return Plugin_Continue;
 		}
-		if(hBotReverseFFDefend.IntValue > 0 && IsFakeClient(attacker) && shootAtTarget[attacker] == 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) return Plugin_Stop;
+		if(hBotReverseFFDefend.IntValue > 0 && IsFakeClient(attacker) && pdata[attacker].shootAtTarget == 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) return Plugin_Stop;
 		if(attacker != victim && hBotReverseFFDefend.IntValue > 0 && hBotReverseFFDefend.IntValue == 2 || GetUserAdmin(attacker) == INVALID_ADMIN_ID) {
 			if(IsFakeClient(victim) && !IsFakeClient(attacker) && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
 				if(hBotDefendChance.IntValue >= GetRandomFloat()) {
-					if(shootAtTarget[victim] == attacker) {
-						shootAtTargetHP[attacker] -= RoundFloat(damage);
-						shootAtTargetLoops[victim] += 4;
+					if(pdata[victim].shootAtTarget == attacker) {
+						pdata[attacker].shootAtTargetHealth -= RoundFloat(damage);
+						pdata[victim].shootAtLoops += 4;
 						return Plugin_Continue;
-					} else if(shootAtTarget[victim] > 0) {
+					} else if(pdata[victim].shootAtTarget > 0) {
 						// Don't switch, wait for timer to stop
 						return Plugin_Continue;
 					}
@@ -885,7 +880,7 @@ public Action OnAntiRush(int client, int &type, float distance) {
 
 public void L4D2_CInsectSwarm_CanHarm_Post(int acid, int spitter, int entity) {
 	if(entity <= MaxClients)
-		fLastInSpit[entity] = GetGameTime();
+		pdata[entity].lastInSpitTime = GetGameTime();
 }
 
 public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast) {
@@ -896,10 +891,10 @@ public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast
 		else if(Trolls[stickyGooIndex].activeFlagClients[client] & 2) movement = 0.3;
 
 		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", movement);
-		fLastInSpit[client] = GetGameTime();
-		if(!hasSpitTimer[client]) {
+		pdata[client].lastInSpitTime = GetGameTime();
+		if(~pdata[client].flags & view_as<int>(Flag_HasSpitTimer)) {
 			CreateTimer(0.2, Timer_CheckIsInSpit, GetClientUserId(client), TIMER_REPEAT);
-			hasSpitTimer[client] = true;
+			pdata[client].flags |= view_as<int>(Flag_HasSpitTimer);
 		}
 	}
 

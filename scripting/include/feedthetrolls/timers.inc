@@ -158,15 +158,15 @@ public Action Timer_ShootReverse(Handle h, DataPack pack) {
 
 	botAngles[1] = RadToDeg(ArcTangent2( botPosition[1] - targetPos[1], botPosition[0] - targetPos[0])) + 180.0;
 	TeleportEntity(attacker, NULL_VECTOR, botAngles, NULL_VECTOR);	
-	shootAtTargetLoops[attacker]--;
+	pdata[attacker].shootAtLoops--;
 	if(IsValidEntity(weapon))
 		SetEntProp(weapon, Prop_Send, "m_iClip1", ammo);
-	if(shootAtTargetLoops[attacker] > 0 && GetClientRealHealth(target) > shootAtTargetHP[target]) {
+	if(pdata[attacker].shootAtLoops > 0 && GetClientRealHealth(target) > pdata[target].shootAtTargetHealth) {
 		return Plugin_Continue;
 	} else {
-		shootAtTargetLoops[attacker] = 0;
-		shootAtTarget[attacker] = 0;
-		shootAtTargetHP[target] = 0;
+		pdata[attacker].shootAtTarget = 0;
+		pdata[attacker].shootAtLoops = 0;
+		pdata[attacker].shootAtTargetHealth = 0;
 		return Plugin_Stop;
 	}
 }
@@ -182,9 +182,9 @@ public Action Timer_CheckSpecialSpawned(Handle h, int id) {
 
 public Action Timer_CheckIsInSpit(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
-	if(client && GetGameTime() - fLastInSpit[userid] > 3.0) {
+	if(client && GetGameTime() - pdata[userid].lastInSpitTime > 3.0) {
 		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", 1.0);
-		hasSpitTimer[client] = false;
+		pdata[client].flags &= ~view_as<int>(Flag_HasSpitTimer);
 		return Plugin_Stop;
 	}
 	return Plugin_Continue;
@@ -196,9 +196,9 @@ float CHARGER_CHECK_MAX[3] = { 15.0, 15.0, 20.0 };
 public Action Timer_CheckForChargerOpportunity(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client) {
-		int activator = GetClientOfUserId(g_iSmartChargeActivator[client]);
+		int activator = GetClientOfUserId(pdata[client].smartChargeActivator);
 		if(!activator) {
-			g_iSmartChargeActivator[client] = 0;
+			pdata[client].smartChargeActivator = 0;
 		}
 		float pos[3], ang[3], endPos[3], spawnPos[3];
 		GetClientAbsOrigin(client, pos);
@@ -212,16 +212,16 @@ public Action Timer_CheckForChargerOpportunity(Handle h, int userid) {
 			TR_TraceHullFilter(endPos, pos, CHARGER_CHECK_MIN, CHARGER_CHECK_MAX, MASK_SOLID, Filter_CheckChargerValid, client);
 			if(!TR_DidHit()) {
 				SpawnSpecialAtPosition(Special_Charger, spawnPos, ang, client);
-				if(activator) PrintToChat(activator, "Auto charge %N successfully after %d tries", client, g_iSmartChargeAttempts[client]);
-				g_iSmartChargeAttempts[client] = 0;
-				g_iSmartChargeActivator[client] = 0;
+				if(activator) PrintToChat(activator, "Auto charge %N successfully after %d tries", client, pdata[client].smartChargeAttempts);
+				pdata[client].smartChargeAttempts = 0;
+				pdata[client].smartChargeActivator = 0;
 				return Plugin_Stop;
 			}
 		}
-		if(++g_iSmartChargeAttempts[client] > g_iSmartChargeMaxAttempts[client]) {
-			if(activator) PrintToChat(activator, "Auto charge timed out after %d attempts", g_iSmartChargeAttempts[client]);
-			g_iSmartChargeAttempts[client] = 0;
-			g_iSmartChargeActivator[client] = 0;
+		if(++pdata[client].smartChargeAttempts > pdata[client].smartChargeMaxAttempts) {
+			if(activator) PrintToChat(activator, "Auto charge timed out after %d attempts", pdata[client].smartChargeAttempts);
+			pdata[client].smartChargeAttempts = 0;
+			pdata[client].smartChargeActivator = 0;
 			return Plugin_Stop;
 		}
 		return Plugin_Continue;
@@ -242,7 +242,7 @@ public Action Timer_UpdateHealTargetPos(Handle h) {
 	GetAbsOrigin(healTarget, healTargetPos);
 	int bots = 0;
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsFakeClient(i) && isTargettingHealer[i]) {
+		if(IsClientConnected(i) && IsFakeClient(i) && pdata[i].flags & view_as<int>(Flag_IsTargettingHealer)) {
 			bots++;
 			L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%d),pos=Vector(%f,%f,%f)})", GetClientUserId(i), healTargetPos[0], healTargetPos[1], healTargetPos[2]);
 			int kit = GetPlayerWeaponSlot(i, 3);
@@ -276,7 +276,7 @@ Action Timer_SpawnBotsPost(Handle h) {
 				if(!StrEqual(classname, "weapon_first_aid_kit")) {
 					kit = GiveClientWeapon(i, "weapon_first_aid_kit");
 				}
-				isTargettingHealer[i] = true;
+				pdata[i].flags &= view_as<int>(Flag_IsTargettingHealer);
 			}
 		}
 	}

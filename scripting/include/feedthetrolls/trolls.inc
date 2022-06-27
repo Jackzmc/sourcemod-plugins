@@ -216,7 +216,7 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		GetClientWeaponName(victim, 4, wpn, sizeof(wpn));
 		if(StrEqual(wpn, "weapon_adrenaline") || StrEqual(wpn, "weapon_pain_pills")) {
 			ClientCommand(victim, "slot5");
-			g_bPendingItemGive[victim] = true;
+			pdata[victim].flags |= view_as<int>(Flag_PendingItemGive);
 		}else{
 			ReplyToCommand(activator, "User does not have pills or adrenaline");
 			return false;

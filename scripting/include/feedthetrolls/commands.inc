@@ -595,12 +595,12 @@ public Action Command_SmartCharge(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		if(g_iSmartChargeActivator[target_list[0]]) {
+		if(pdata[target_list[0]].smartChargeActivator > 0) {
 			ReplyToCommand(client, "Target already has auto smart charge enabled");
 		} else {
-			g_iSmartChargeAttempts[target_list[0]] = 0;
-			g_iSmartChargeMaxAttempts[target_list[0]] = timeout;
-			g_iSmartChargeActivator[target_list[0]] = GetClientUserId(client);
+			pdata[target_list[0]].smartChargeAttempts = 0;
+			pdata[target_list[0]].smartChargeMaxAttempts = timeout;
+			pdata[target_list[0]].smartChargeActivator = GetClientUserId(client);
 			CreateTimer(1.0, Timer_CheckForChargerOpportunity, GetClientUserId(target_list[0]), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 			ShowActivity(client, "Enabling smart auto-charge on %N for %d seconds", target_list[0], timeout);
 		}
@@ -650,7 +650,7 @@ public Action Command_HealTarget(int client, int args) {
 					if(kit > 0) {
 						GetEntityClassname(kit, arg1, sizeof(arg1));
 						if(StrEqual(arg1, "weapon_first_aid_kit")) {
-							isTargettingHealer[i] = true;
+							pdata[i].flags &= view_as<int>(Flag_IsTargettingHealer);
 
 							if(--limit == 0) {
 								break;

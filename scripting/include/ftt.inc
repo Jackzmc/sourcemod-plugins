@@ -26,26 +26,48 @@ ConVar hBotReverseFFDefend;
 ConVar hSbFriendlyFire;
 ConVar hBotDefendChance;
 
+enum playerDataFlags {
+	Flag_PendingItemGive = 1,
+	Flag_HasSpitTimer = 2,
+	Flag_IsTargettingHealer = 4
+}
 
-bool g_bPendingItemGive[MAXPLAYERS+1];
+enum struct PlayerData {
+	int flags;
+
+	int attackerTargetUid;
+	int specialAttackFlags;
+	int pendingTrollBan; // Includes ent index of activator
+
+	float lastInSpitTime;
+
+	int shootAtTarget;
+	int shootAtLoops;
+	int shootAtTargetHealth;
+
+	int smartChargeAttempts;
+	int smartChargeMaxAttempts;
+	int smartChargeActivator;
+
+	char steamid[32];
+
+	void Reset() {
+		this.flags = 0;
+		this.attackerTargetUid = 0;
+		this.specialAttackFlags = 0;
+		this.pendingTrollBan = 0;
+		this.lastInSpitTime = 0.0;
+		this.shootAtTarget = 0;
+		this.shootAtLoops = 0;
+		this.smartChargeAttempts = 0;
+		this.steamid[0] = '\0';
+	}
+}
+
+PlayerData pdata[MAXPLAYERS+1];
 
 int lastButtonUser;
 int lastCrescendoUser;
-int g_iAttackerTarget[MAXPLAYERS+1];
-int g_iSpecialAttackFlags[MAXPLAYERS+1];
-int g_PendingBanTroll[MAXPLAYERS+1];
-float fLastInSpit[MAXPLAYERS+1];
-bool hasSpitTimer[MAXPLAYERS+1];
-
-char steamids[MAXPLAYERS+1][64];
-
-int shootAtTarget[MAXPLAYERS+1];
-int shootAtTargetLoops[MAXPLAYERS+1];
-int shootAtTargetHP[MAXPLAYERS+1];
-
-int g_iSmartChargeAttempts[MAXPLAYERS+1];
-int g_iSmartChargeMaxAttempts[MAXPLAYERS+1];
-int g_iSmartChargeActivator[MAXPLAYERS+1];
 
 bool spIsActive;
 enum SpecialSpawnFlags {
@@ -59,7 +81,6 @@ enum SpecialInternalFlags {
 }
 
 int healTargetPlayer;
-bool isTargettingHealer[MAXPLAYERS+1];
 float healTargetPos[3];
 
 bool wasSbFixEnabled;

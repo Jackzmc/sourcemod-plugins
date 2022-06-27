@@ -105,7 +105,7 @@ bool ProcessSpecialQueue() {
 			// BypassLimit();
 			int tank = L4D2_SpawnTank(spActiveRequest.position, spActiveRequest.angle);
 			if(tank > 0 && IsClientConnected(tank))
-				g_iAttackerTarget[tank] = spActiveRequest.targetUserId;
+				pdata[tank].attackerTargetUid = spActiveRequest.targetUserId;
 			return ProcessSpecialQueue();
 		}
 		return true;

@@ -28,8 +28,8 @@ void SetWitchTarget(int witch, int target) {
 }
 
 bool ToggleMarkPlayer(int client, int target) {
-	if(g_PendingBanTroll[target] > 0) {
-		g_PendingBanTroll[target] = 0;
+	if(pdata[target].pendingTrollBan > 0) {
+		pdata[target].pendingTrollBan = 0;
 		LogAction(client, target, "\"%L\" unmarked \"%L\" as troll", client, target);
 		ShowActivityEx(client, "[FTT] ", "unmarked %N as troll", target);
 		return true;
@@ -41,7 +41,7 @@ bool ToggleMarkPlayer(int client, int target) {
 			Call_PushCell(client);
 			Call_PushCell(target);
 			Call_Finish();
-			g_PendingBanTroll[target] = GetClientUserId(client);
+			pdata[target].pendingTrollBan = GetClientUserId(client);
 			EnableTroll(target, "No Profanity");
 			LogAction(client, target, "\"%L\" marked \"%L\" as troll", client, target);
 			ShowActivityEx(client, "[FTT] ", "marked %N as troll", target);
@@ -319,17 +319,17 @@ stock int GetClientRealHealth(int client) {
 
 /// Returns TRUE if set, FALSE if not (if no weapon to shoot)
 bool SetBotTarget(int bot, int target, int targetHP, int loops = 15) {
-	if(shootAtTarget[target] == bot) {
+	if(pdata[target].shootAtTarget == bot) {
 		return false;
-	} else if(shootAtTarget[target] > 0) {
+	} else if(pdata[target].shootAtTarget > 0) {
 		return false;
 	}
 	LookAtClient(target, bot);
 	int weapon = GetPlayerWeaponSlot(target, 0);
 	if(weapon > -1) {
-		shootAtTarget[target] = bot;
-		shootAtTargetLoops[target] = loops;
-		shootAtTargetHP[bot] = targetHP;
+		pdata[target].shootAtTarget = bot;
+		pdata[target].shootAtLoops = loops;
+		pdata[bot].shootAtTargetHealth = targetHP;
 		int ammo = GetEntProp(weapon, Prop_Send, "m_iClip1");
 		DataPack pack = new DataPack();
 		// Reverse target and bot:
@@ -464,7 +464,7 @@ void ClearInventory(int client) {
 void StopHealingBots() {
 	healTargetPlayer = 0;
 	for(int i = 1; i <= MaxClients; i++) {
-		isTargettingHealer[i] = false;
+		pdata[i].flags &= ~view_as<int>(Flag_IsTargettingHealer);
 		if(isCustomSurvivor[i]) {
 			ClearInventory(i);
 			KickClient(i);

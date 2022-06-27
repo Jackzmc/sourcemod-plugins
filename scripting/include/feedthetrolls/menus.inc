@@ -339,7 +339,7 @@ public int ChooseTrollFlagHandler(Menu menu, MenuAction action, int param1, int 
 
 
 public void StopItemGive(int client) {
-	g_bPendingItemGive[client] = false;
+	pdata[client].flags &= ~view_as<int>(Flag_PendingItemGive);
 }
 
 void SetupCategoryMenu(int client, int victimUserID) {
