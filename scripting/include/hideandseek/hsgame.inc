@@ -309,3 +309,4 @@ stock void GetViewVector(float fVecAngle[3], float fOutPut[3])
 bool Filter_IgnoreAll(int entity, int mask) {
 	return false;
 }
+

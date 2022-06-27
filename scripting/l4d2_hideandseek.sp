@@ -12,10 +12,10 @@
 #include <sdktools>
 #include <left4dhooks>
 #include <sceneprocessor>
+#include <basegamemode>
 #include <multicolors>
 #if defined DEBUG_BLOCKERS
 #include <smlib/effects>
-int g_iLaserIndex;
 #endif
 
 public Plugin myinfo = 
@@ -60,52 +60,16 @@ enum GameState {
 	State_Hunting
 }
 
-char gamemode[32], currentMap[64];
-bool isEnabled, lateLoaded;
-
-bool isPendingPlay[MAXPLAYERS+1];
-bool isNavBlockersEnabled = true, isPropsEnabled = true, isPortalsEnabled = true;
 bool isNearbyPlaying[MAXPLAYERS+1];
 bool wasThirdPersonVomitted[MAXPLAYERS+1];
 bool gameOver;
 int currentSeeker;
 int currentPlayers = 0;
 
-float DEFAULT_SCALE[3] = { 5.0, 5.0, 5.0 };
-
-char currentSet[16] = "default";
-
 Handle suspenseTimer, thirdPersonTimer;
-
-char nextRoundMap[64];
-int seekerCam = INVALID_ENT_REFERENCE;
-bool isViewingCam[MAXPLAYERS+1];
 
 int g_BeamSprite;
 int g_HaloSprite;
-
-enum struct EntityConfig {
-	float origin[3];
-	float rotation[3];
-	char type[32];
-	char model[64];
-	float scale[3];
-	float offset[3];
-}
-
-enum struct MapConfig {
-	ArrayList entities;
-	ArrayList inputs;
-	float spawnpoint[3];
-	bool hasSpawnpoint;
-	int mapTime;
-	bool canClimb;
-	bool pressButtons;
-}
-
-MapConfig mapConfig;
-ArrayList validMaps;
-ArrayList validSets;
 
 bool hasBeenSeeker[MAXPLAYERS+1];
 bool ignoreSeekerBalance;
@@ -244,6 +208,14 @@ public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
 	return Plugin_Continue;
 }
 
+public void OnSceneStageChanged(int scene, SceneStages stage) {
+	if(isEnabled && stage == SceneStage_Spawned) {
+		int activator = GetSceneInitiator(scene);
+		if(activator != GetActorFromScene(scene)) {
+			CancelScene(scene);
+		}
+	}
+}
 
 public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
 	cvar.GetString(gamemode, sizeof(gamemode));
@@ -278,7 +250,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 				}
 			}
 		}
-	} else if(!lateLoaded && suspenseTimer != null) {
+	} else if(!lateLoaded) {
 		UnhookEvent("round_end", Event_RoundEnd);
 		UnhookEvent("round_start", Event_RoundStart);
 		UnhookEvent("item_pickup", Event_ItemPickup);

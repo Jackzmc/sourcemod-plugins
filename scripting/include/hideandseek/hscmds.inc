@@ -312,6 +312,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 
 public Action Command_Join(int client, int args) {
+	if(!isEnabled) return Plugin_Continue;
 	static float tpLoc[3];
 	GetSpawnPosition(tpLoc);
 	if(args == 1) {

@@ -1,9 +1,11 @@
 #include <hideandseek/hsgame>
-#include <hideandseek/hscmds>
 #include <hideandseek/hsents>
+#include <hideandseek/hscmds>
 
 static KeyValues kv;
 StringMap mapConfigs;
+
+static float DEFAULT_SCALE[3] = { 5.0, 5.0, 5.0 };
 
 bool ReloadMapDB() {
 	if(kv != null) {
