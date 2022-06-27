@@ -26,7 +26,6 @@ Useful things:
 * [l4d2_autobotcrown](#l4d2_autobotcrown)
 * [l4d2_extraplayeritems](#l4d2_extraplayeritems)
 * [l4d2_population_control](#l4d2_population_control)
-* [l4d2_extrafinaletanks](#l4d2_extrafinaletanks)
 * [globalbans](#globalbans)
 * [l4d2_rollback](#l4d2_rollback)
 * [l4d2_autorestart](#l4d2_autorestart)
@@ -38,6 +37,7 @@ Useful things:
 * [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
 * [l4d_survivor_identity_fix](#l4d_survivor_identity_fix)
 * [BetterWitchAvoidance](#BetterWitchAvoidance)
+* [l4d2_sb_fix](#l4d2_sb_fix)
 
 ## Descriptions
 
@@ -179,7 +179,6 @@ See updated list of trolls and their descriptions:
 https://admin.jackz.me/docs/ftt
 
 * **Convars:**
-  * `sm_ftt_victims` - A comma separated list of troll targets. Unused while new version is being implemented
   * `sm_ftt_throw_interval` - For troll mode 'ThrowItAll' (#11), how often players will re-throw all their items. 0 to disable
   * `sm_ftt_autopunish_mode <#>` - (Not used, WIP) Sets the modes that auto punish will activate for. 1 -> Early crescendo activations
   * `sm_ftt_autopunish_action <#>` - Which actions will autopunish activate? Add bits together. 0=None, 1=TankMagnet 2=SpecialMagnet 4=Swarm 8=VomitPlayer
@@ -192,6 +191,8 @@ https://admin.jackz.me/docs/ftt
   * `sm_ftr <player(s)>` - Removes & deactivates all trolls.
   * `sm_ftl` - Lists all players that have a mode applied.
   * `sm_ftm` - Lists all troll options & their descriptions
+  * `sm_scharge <player> [timeout seconds]` - Will wait till there's no obstructions and players in the way and charge
+  * `sm_healbots <player> [# bots or 0 default]` - Makes n amount of bots chase a player down to heal them 
 
 ### l4d2_autobotcrown
 Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Supports multiple bots and witches, but only one bot can crown one witch at a time. Plugin is obviously disabled in realism, and is really on suitable for coop or versus. Even works with idle players.
@@ -245,25 +246,21 @@ Allows you to set the chances that a common spawns as a certain uncommon. The or
 * **Commands:**
   * `sm_populations` or `sm_population_list` - Lists all the cvar values
 
-### l4d2_extrafinaletanks
-This plugin will automatically spawn an extra amount of tanks (determined by `l4d2_eft_count` cvar) after the second tank stage in a finale is over.
-* **Convars:**
-  * `l4d2_eft_count <#>` - Default is 1, determines how many tanks that are allowed to spawn in the extra tank stage
-  * `l4d2_eft_chance <0.0-1.0> - Default is 0.0, determines the chance of each tank spawning in extra tank stage.
-    * If the spawn fails, it will still count as a spawn, the percentage is PER tank
-
 ### globalbans
 This plugin will store bans in a database and read from it on connect. This allows you to easily have bans global between servers.
 It will automatically intercept any ban that calls OnBanIdentity or OnBanClient (so sm_ban will work normally)
 Note: All admin players are ignored
 
 * **Convars:**
-  * `sm_hKickOnDBFailure <0/1>` - Should the plugin kick players if it cannot connect to the database?
+  * `sm_globalbans_kick_type <0/1/2>`
+    * 0 = Do not kick, just notify
+    * 1 = Kick if banned
+    * 2 = Kick if cannot reach database
 
 ### l4d2_rollback
 An idea that you can either manually or have events (friendly fire, new player joining) trigger saving all the player's states. Then if say, a troll comes and kills you and/or incaps your team, you can just quick restore to exactly the point you were at with the same items, health, etc. 
 
-Currently **in development.**
+Currently **abandoned.**
 
 Currently auto triggers:
 
@@ -288,7 +285,7 @@ Any survivor that attacks another survivor
 3. If neither #1 or #2, both the victim and the attacker take 1/2 the original damage
 4. If victim is in a saferoom, no damage is dealt.
 
-See https://admin.jackz.me/docs/plugins/#tkstopper
+See https://admin.jackz.me/docs/plugins#tkstopper
 
 
 During any of the above three conditions, if they deal (or attempt to deal) over 75 HP in 15 seconds they will be instantly banned for a set period of time (60 minutes). If they are for sure a team killer, it can be extended to a permanent ban.
@@ -315,3 +312,8 @@ A very small plugin that simply allows a player to mute another player's vocaliz
 
 * **Commands:**
   * `sm_vgag <player(s)>` - Vocalize gag or ungags selected player(s)
+
+### l4d2_sb_fix
+A fork of https://forums.alliedmods.net/showthread.php?p=2757330
+- Updated to latest sourcepawn syntax
+- Some improvements
