@@ -8,6 +8,9 @@ public void OnMapStart() {
 	if(hBotReverseFFDefend.IntValue > 0) hSbFriendlyFire.BoolValue = true;
 	AddFileToDownloadsTable("sound/custom/meow1.mp3");
 	PrecacheSound("custom/meow1.mp3");	
+	AddFileToDownloadsTable("sound/custom/woof1.mp3");
+	PrecacheSound("custom/woof1.mp3");	
+
 
 	lastButtonUser = -1;
 	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
@@ -273,7 +276,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 	static int honkID;
 	static int profanityID;
-	if(honkID == 0) honkID = GetTrollID("Honk / Meow");
+	if(honkID == 0) honkID = GetTrollID("Honk / Meow / Woof");
 	if(profanityID == 0) profanityID = GetTrollID("No Profanity");
 
 	if(Trolls[honkID].IsActive(client) && Trolls[honkID].activeFlagClients[client] & 1) {
@@ -705,7 +708,7 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char soundEntry[PLATFORM_MAX_PATH], int& seed) {
 	static int honkID;
 	static int vocalGagID;
-	if(honkID == 0) honkID = GetTrollID("Honk / Meow");
+	if(honkID == 0) honkID = GetTrollID("Honk / Meow / Woof");
 	if(vocalGagID == 0) vocalGagID = GetTrollID("Vocalize Gag");
 	
 	if(lastButtonUser > 0 && IsClientConnected(lastButtonUser) && !IsFakeClient(lastButtonUser) && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
@@ -729,6 +732,8 @@ public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PL
 					strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
 				else if(Trolls[honkID].activeFlagClients[entity] & 2)
 					strcopy(sample, sizeof(sample), "custom/meow1.mp3");
+				else if(Trolls[honkID].activeFlagClients[entity] & 4)
+					strcopy(sample, sizeof(sample), "custom/woof1.mp3");
 				else
 					return Plugin_Continue;
 				return Plugin_Changed;

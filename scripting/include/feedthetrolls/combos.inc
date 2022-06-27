@@ -58,7 +58,7 @@ void SetupsTrollCombos() {
 
     SetupCombo(combo, "Shut up");
     combo.AddTroll("Vocalize Gag");
-    combo.AddTroll("Honk / Meow", .flags=1);
+    combo.AddTroll("Honk / Meow / Woof", .flags=1);
 
     SetupCombo(combo, "Weakness Compels You");
     combo.AddTroll("No Shove");

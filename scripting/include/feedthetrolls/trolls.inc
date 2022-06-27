@@ -96,10 +96,11 @@ void SetupTrolls() {
 	// Trolls[index].AddFlagPrompt(false);
 	// Trolls[index].AddFlag("Mute for All", true);
 	// Trolls[index].AddFlag("Mute For All But Them", false);
-	index = SetupTroll("Honk / Meow", "Honk or Meow", TrollMod_Constant);
+	index = SetupTroll("Honk / Meow / Woof", "Custom sounds", TrollMod_Constant);
 	Trolls[index].AddCustomFlagPrompt("Choose Sound:");
 	Trolls[index].AddFlag("Honk", true);
 	Trolls[index].AddFlag("Meow", false);
+	Trolls[index].AddFlag("Woof", false);
 	Trolls[index].AddCustomFlagPrompt("Choose Chat modifier:", false, 1);
 	Trolls[index].AddFlag("Show Modified to Them", true);
 	Trolls[index].AddFlag("Show Original to Them", false);
