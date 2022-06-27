@@ -435,7 +435,7 @@ bool AddSurvivor() {
 		return false;
 	}
 
-	int i = CreateFakeClient("GuessWhoBot");
+	int i = CreateFakeClient("FTTSurvivorBot");
 	bool result;
 	if (i > 0) {
 		if (DispatchKeyValue(i, "classname", "SurvivorBot")) {

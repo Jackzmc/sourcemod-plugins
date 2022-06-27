@@ -50,7 +50,7 @@ static float SPIT_VEL[3] = { 0.0, 0.0, -1.0 };
 public Action Timer_CheckSpecial(Handle h, int specialID) {
 	int special = GetClientOfUserId(specialID);
 	// Check if new player is the spawned special:
-	if(spIsActive && special > 0 && IsFakeClient(special) && GetClientTeam(special) == 3) {
+	if(spIsActive && special > 0 && IsFakeClient(special)) {
 		//g_iPendingSurvivorAdd
 		if(GetClientTeam(special) == 2 && g_iPendingSurvivorAdd && GetEntProp(special, Prop_Send, "m_humanSpectatorUserID") == 0) {
 			g_iPendingSurvivorAdd = false;
