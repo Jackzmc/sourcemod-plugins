@@ -65,7 +65,7 @@ forward void OnSceneStageChanged(int scene, SceneStages stage);
  * @return		Plugin_Stop to stop vocalize command.
  *			Plugin_Continue to allow vocalize command.
  */
-forward Action OnVocalizationProcess(int client, const char[] vocalize, int initiator);
+forward Action OnVocalizeCommand(int client, const char[] vocalize, int initiator);
 
 /**
  * Returns scene stage.
