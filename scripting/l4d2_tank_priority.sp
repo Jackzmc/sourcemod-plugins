@@ -120,3 +120,12 @@ public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) 
 bool IsPlayerIncapacitated(int client) {
     return (GetEntProp(client, Prop_Send, "m_isIncapacitated") == 1);
 }
+
+public void OnClientDisconnect(int client) {
+	tankChosenVictim[client] = 0;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(tankChosenVictim[i] == client) {
+			tankChosenVictim[i] = 0;
+		}
+	}
+}
