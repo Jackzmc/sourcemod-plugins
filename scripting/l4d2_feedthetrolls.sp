@@ -36,7 +36,7 @@ public Plugin myinfo =
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
 	if(g_Game != Engine_Left4Dead2) {
-		SetFailState("This plugin is for L4D/L4D2 only.");	
+		SetFailState("This plugin is for L4D2 only.");	
 	}
 	LoadTranslations("common.phrases");
 

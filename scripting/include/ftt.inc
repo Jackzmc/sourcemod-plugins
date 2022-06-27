@@ -26,6 +26,12 @@ ConVar hBotReverseFFDefend;
 ConVar hSbFriendlyFire;
 ConVar hBotDefendChance;
 
+ConVar hSbFixEnabled;
+bool wasSbFixEnabled;
+
+int wasAbmAutoHard;
+ConVar hAbmAutoHard;
+
 enum playerDataFlags {
 	Flag_PendingItemGive = 1,
 	Flag_HasSpitTimer = 2,
@@ -82,12 +88,6 @@ enum SpecialInternalFlags {
 
 int healTargetPlayer;
 float healTargetPos[3];
-
-bool wasSbFixEnabled;
-ConVar hSbFixEnabled;
-
-ConVar hAbmAutoHard;
-int wasAbmAutoHard;
 
 #define MODEL_CAR "models/props_vehicles/cara_95sedan.mdl"
 

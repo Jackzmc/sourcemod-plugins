@@ -640,17 +640,19 @@ public Action Command_HealTarget(int client, int args) {
 			StopHealingBots();
 		} else {
 			healTargetPlayer = targetUserId;
-			CreateTimer(3.0, Timer_UpdateHealTargetPos, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+			CreateTimer(2.0, Timer_UpdateHealTargetPos, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 
 			int limit = StringToInt(arg2);
-			if(limit <= 0) limit = MaxClients;
+			bool addBots = limit < 0;
+			if(limit < 0) limit = -limit;
+			else if(limit == 0) limit = MaxClients;
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && IsFakeClient(i)) {
 					int kit = GetPlayerWeaponSlot(i, 3);
 					if(kit > 0) {
 						GetEntityClassname(kit, arg1, sizeof(arg1));
 						if(StrEqual(arg1, "weapon_first_aid_kit")) {
-							pdata[i].flags &= view_as<int>(Flag_IsTargettingHealer);
+							pdata[i].flags |= view_as<int>(Flag_IsTargettingHealer);
 
 							if(--limit == 0) {
 								break;
@@ -659,7 +661,7 @@ public Action Command_HealTarget(int client, int args) {
 					}
 				}
 			}
-			if(limit > 0) {
+			if(addBots && limit > 0) {
 				wasAbmAutoHard = hAbmAutoHard.IntValue;
 				hAbmAutoHard.IntValue = 0;
 				CreateTimer(0.2, Timer_SpawnBots, limit, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
