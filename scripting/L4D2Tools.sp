@@ -684,13 +684,15 @@ public void OnConfigsExecuted() {
 
 public void OnSceneStageChanged(int scene, SceneStages stage) {
 	if(stage == SceneStage_Started) {
-		char sceneFile[64];
+		static char sceneFile[64];
 		GetSceneFile(scene, sceneFile, sizeof(sceneFile));
 		int activator = GetSceneInitiator(scene);
-		if(StrContains(sceneFile, "scenes/mechanic/dlc1_c6m1_initialmeeting") > -1 || StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting07.vcd")) {
-			CancelScene(scene);
-		}else if(StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting13.vcd") && activator == 0) {
-			CancelScene(scene);
+		if(activator == 0) {
+			if(StrContains(sceneFile, "scenes/mechanic/dlc1_c6m1_initialmeeting") > -1 || StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting07.vcd")) {
+				CancelScene(scene);
+			}else if(StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting13.vcd") && activator == 0) {
+				CancelScene(scene);
+			}
 		}
 	}
 }
@@ -720,7 +722,7 @@ public Action Event_OnWeaponDrop(int client, int weapon) {
 	static char wpn[32];
 	GetEdictClassname(weapon, wpn, sizeof(wpn));
 	if(StrEqual(wpn, "weapon_melee") && GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
-		#if defined DEBUG 0
+		#if defined DEBUG
 		PrintToServer("Bot %N dropped melee weapon %s", client, wpn);
 		#endif
 		RequestFrame(Frame_HideEntity, weapon);
@@ -743,7 +745,7 @@ public Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, floa
 		bool attackerVisible = IsEntityInSightRange(victim, attacker, 130.0, 100.0);
 		if(!attackerVisible) {
 			//Zombie is behind the bot, reduce damage taken and slowly kill zombie (1/10 of default hp per hit)
-			damage = damage / 2.0;
+			damage /= 2.0;
 			SDKHooks_TakeDamage(attacker, victim, victim, 10.0);
 			return Plugin_Changed;
 		}
@@ -753,15 +755,16 @@ public Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, floa
 //MINOR FIXES
 public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
 	if(client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
-		if(botDropMeleeWeapon[client] > 0) {
-			PrintToServer("Giving melee weapon back to %N", client);
-			float pos[3];
-			GetClientAbsOrigin(client, pos);
-			TeleportEntity(botDropMeleeWeapon[client], pos, NULL_VECTOR, NULL_VECTOR);
-			EquipPlayerWeapon(client, botDropMeleeWeapon[client]);
-			botDropMeleeWeapon[client] = -1;
-		}
-		if(StrEqual(gamemode, "tankrun", false)) {
+		if(StrEqual(gamemode, "coop", false)) {
+			if(botDropMeleeWeapon[client] > 0) {
+				PrintToServer("Giving melee weapon back to %N", client);
+				float pos[3];
+				GetClientAbsOrigin(client, pos);
+				TeleportEntity(botDropMeleeWeapon[client], pos, NULL_VECTOR, NULL_VECTOR);
+				EquipPlayerWeapon(client, botDropMeleeWeapon[client]);
+				botDropMeleeWeapon[client] = -1;
+			}
+		} else if(StrEqual(gamemode, "tankrun", false)) {
 			if(!IsFakeClient(client)) {
 				CreateTimer(1.0, Timer_TPBots, client, TIMER_FLAG_NO_MAPCHANGE);
 			}
@@ -873,18 +876,6 @@ stock int GetAnyValidClient() {
 		if (IsClientInGame(i) && !IsFakeClient(i))
 		{
 			return i;
-		}
-	}
-	return -1;
-}
-
-stock int GetIdleBot(int client) {
-	for(int i = 1; i <= MaxClients; i++ ) {
-		if(IsClientConnected(i) && HasEntProp(i, Prop_Send, "m_humanSpectatorUserID")) {
-			int realPlayer = GetClientOfUserId(GetEntProp(i, Prop_Send, "m_humanSpectatorUserID"));
-			if(realPlayer == client) {
-				return i;
-			}
 		}
 	}
 	return -1;
