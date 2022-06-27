@@ -34,22 +34,22 @@ stock void GetHorizontalPositionFromClient(int client, float units, float finalP
 }
  // Gets velocity of an entity (ent) toward new origin with speed (fSpeed) - thanks Ryan
  stock bool GetVelocityToOrigin(int entity, const float destination[3], const float fSpeed, float outVelocity[3]) {
-    float srcOrigin[3];
+	float srcOrigin[3];
 	GetEntPropVector(entity, Prop_Data, "m_vecVelocity", srcOrigin);
-    // Velocity = Distance / Time
+	// Velocity = Distance / Time
 
-    float fDistance[3];
-    fDistance[0] = destination[0] - srcOrigin[0];
-    fDistance[1] = destination[1] - srcOrigin[1];
-    fDistance[2] = destination[2] - srcOrigin[2];
+	float fDistance[3];
+	fDistance[0] = destination[0] - srcOrigin[0];
+	fDistance[1] = destination[1] - srcOrigin[1];
+	fDistance[2] = destination[2] - srcOrigin[2];
 
-    float fTime = (GetVectorDistance(srcOrigin, destination) / fSpeed);
+	float fTime = (GetVectorDistance(srcOrigin, destination) / fSpeed);
 
-    outVelocity[0] = (destination[0] - srcOrigin[0]) / fTime;
-    outVelocity[1] = (destination[1] - srcOrigin[1]) / fTime;
-    outVelocity[2] = (destination[2] - srcOrigin[2]) / fTime;
+	outVelocity[0] = (destination[0] - srcOrigin[0]) / fTime;
+	outVelocity[1] = (destination[1] - srcOrigin[1]) / fTime;
+	outVelocity[2] = (destination[2] - srcOrigin[2]) / fTime;
 
-    return (outVelocity[0] && outVelocity[1] && outVelocity[2]);
+	return (outVelocity[0] && outVelocity[1] && outVelocity[2]);
  }
 
 //Credits to Timocop for the stock :D
@@ -95,7 +95,7 @@ stock int GetSurvivorId(const char[] str, bool isL4D1 = false) {
 		}
 	}else if(possibleNumber == 0) {
 		int survivorId;
-		char s = CharToLower(s);
+		char s = CharToLower(str[0]);
 		if(s == 'b') {
 			survivorId = isL4D1 ? 0 : 4;
 		} else if(s == 'z') {
