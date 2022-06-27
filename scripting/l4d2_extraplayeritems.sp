@@ -131,9 +131,9 @@ Restore from saved inventory
 static StringMap weaponMaxClipSizes;
 static StringMap pInv;
 
-static char HUD_SCRIPT_DATA[] = "ExtraPlayerHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };g_ModeScript";
+static char HUD_SCRIPT_DATA[] = "g_ModeScript.ExtraPlayerHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( g_ModeScript.ExtraPlayerHUD );g_ModeScript";
 
-static char HUD_SCRIPT_CLEAR[] = "ExtraPlayerHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( ExtraPlayerHUD );HUDPlace( g_ModeScript.HUD_RIGHT_BOT,0.72,0.78,0.3,0.3);g_ModeScript";
+static char HUD_SCRIPT_CLEAR[] = "g_ModeScript.ExtraPlayerHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( g_ModeScript.ExtraPlayerHUD );g_ModeScript";
 
 
 #define CABINET_ITEM_BLOCKS 4
@@ -220,7 +220,7 @@ public void OnPluginStart() {
 		int count = GetRealSurvivorsCount();
 		abmExtraCount = count;
 		int threshold = hEPIHudState.IntValue == 1 ? 5 : 0;
-		if(hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
+		if(true || hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
 			PrintToServer("[EPI] Creating new hud timer");
 			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
 		}
@@ -305,6 +305,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 public void OnPluginEnd() {
 	delete weaponMaxClipSizes;
 	delete ammoPacks;
+	L4D2_ExecVScriptCode(HUD_SCRIPT_CLEAR);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -613,13 +614,15 @@ public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast)
 public Action Timer_DropSurvivor(Handle h, int client) {
 	if(playerData[client].state == State_PendingEmpty) {
 		playerData[client].state = State_Empty;
-		PrintToServer("[EPI] Dropping survivor %d. hMinPlayers-pre:%d", client, hMinPlayers.IntValue);
-		PrintToConsoleAll("[EPI] Dropping survivor %d. hMinPlayers-pre:%d", client, hMinPlayers.IntValue);
-		hMinPlayers.IntValue = --abmExtraCount;
-		if(hMinPlayers.IntValue < 4) {
-			hMinPlayers.IntValue = 4;
-			PrintToConsoleAll("[EPI!!] hMinPlayers dropped below 4. This is a bug, please report to jackz.");
-			PrintToServer("[EPI!!] hMinPlayers dropped below 4. This is a bug, please report to jackz.");
+		if(hMinPlayers != null) {
+			PrintToServer("[EPI] Dropping survivor %d. hMinPlayers-pre:%d", client, hMinPlayers.IntValue);
+			PrintToConsoleAll("[EPI] Dropping survivor %d. hMinPlayers-pre:%d", client, hMinPlayers.IntValue);
+			hMinPlayers.IntValue = --abmExtraCount;
+			if(hMinPlayers.IntValue < 4) {
+				hMinPlayers.IntValue = 4;
+				PrintToConsoleAll("[EPI!!] hMinPlayers dropped below 4. This is a bug, please report to jackz.");
+				PrintToServer("[EPI!!] hMinPlayers dropped below 4. This is a bug, please report to jackz.");
+			}
 		}
 		DropDroppedInventories();
 	}
@@ -735,7 +738,7 @@ public void Frame_SetupNewClient(int client) {
 
 	if(item) {
 		GetEdictClassname(item, weaponName, sizeof(item));
-		SetEntProp(item, Prop_Send, "m_iClip1", L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_ClipSize));
+		L4D_SetReserveAmmo(client, item, L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_ClipSize));
 		EquipPlayerWeapon(client, item);
 	} else LogError("EPI Failed to give new late player weapon: %s", weaponName);
 }
@@ -1080,17 +1083,15 @@ void UnlockDoor(int entity, int flag) {
 }
 
 public Action Timer_UpdateHud(Handle h) {
-	if(StrEqual(gamemode, "hideandseek")) return Plugin_Stop;
+	if(!StrEqual(gamemode, "coop")) return Plugin_Stop;
 	int threshold = hEPIHudState.IntValue == 1 ? 4 : 0;
 	if(hEPIHudState.IntValue == 0 || abmExtraCount <= threshold) {
-		PrintToServer("[EPI] Less than threshold, stopping hud timer");
+		PrintToServer("[EPI] Less than threshold, stopping hud timer (hudState=%d, abmExtraCount=%d)", hEPIHudState.IntValue, abmExtraCount);
 		L4D2_RunScript(HUD_SCRIPT_CLEAR);
 		updateHudTimer = null;
 		return Plugin_Stop;
 	}
-	static char players[512];
-	static char data[32];
-	static char prefix[16];
+	static char players[512], data[32], prefix[16];
 	players[0] = '\0';
 	for(int i = 1; i <= MaxClients; i++) { 
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
@@ -1107,7 +1108,6 @@ public Action Timer_UpdateHud(Handle h) {
 			}else{
 				Format(prefix, 8, "%N", i);
 			}
-			//TOOD: Move to bool instead of ent prop
 			if(!IsPlayerAlive(i)) 
 				Format(data, sizeof(data), "xx");
 			else if(GetEntProp(i, Prop_Send, "m_bIsOnThirdStrike") == 1) 
