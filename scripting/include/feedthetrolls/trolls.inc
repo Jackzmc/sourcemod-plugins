@@ -294,7 +294,7 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 			int primaryWpn = GetPlayerWeaponSlot(victim, 0);
 			if(primaryWpn > 0) {
 				int maxCap = GetEntProp(primaryWpn, Prop_Send, "m_iClip1");
-				SetEntProp(primaryWpn, Prop_Send, "m_iClip", GetRandomInt(0, maxCap));
+				SetEntProp(primaryWpn, Prop_Send, "m_iClip1", GetRandomInt(0, maxCap));
 			}
 		}
 	} else if(~modifier & TrollMod_Constant) {

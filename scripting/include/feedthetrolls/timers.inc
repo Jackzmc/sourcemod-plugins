@@ -62,7 +62,7 @@ public Action Timer_Main(Handle timer) {
 				int primaryWpn = GetPlayerWeaponSlot(i, 0);
 				if(primaryWpn > 0) {
 					int maxCap = GetEntProp(primaryWpn, Prop_Send, "m_iClip1");
-					SetEntProp(primaryWpn, Prop_Send, "m_iClip", GetRandomInt(0, maxCap));
+					SetEntProp(primaryWpn, Prop_Send, "m_iClip1", GetRandomInt(0, maxCap));
 				}
 			}
 		}
