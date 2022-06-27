@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 40
+    #define MAX_TROLLS 41
 #endif
 
 enum trollModifier {
@@ -298,11 +298,8 @@ bool IsAnyTrollActive(int victim) {
 }
 // Gets the Troll enum struct via key index
 // Returns index of troll enum
-int GetTrollByKeyIndex(int index, Troll troll) {
-    // static char name[MAX_TROLL_NAME_LENGTH];
-    // trollIds.GetKey(index, name, sizeof(name));
+void GetTrollByKeyIndex(int index, Troll troll) {
     troll = Trolls[index];
-    // return GetTroll(name, troll);
 }
 
 void ToggleTroll(int client, const char[] name, int flags = 0) {
@@ -365,8 +362,8 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
     // Log all actions, indicating if constant or single-fire, and if any flags
     if(!silent) {
         if(isActive) {
-            CShowActivityEx(activator, "[FTT] ", "deactivated {green}\"%s\"{default} on %N. ", troll.name, victim);
-            LogAction(activator, victim, "\"%L\" deactivated {green}\"%s\"{default} on \"%L\"", activator, troll.name, victim);
+            CShowActivityEx(activator, "[FTT] ", "deactivated {yellow}\"%s\"{default} on %N. ", troll.name, victim);
+            LogAction(activator, victim, "\"%L\" deactivated {yellow}\"%s\"{default} on \"%L\"", activator, troll.name, victim);
         } else {
             static char flagName[MAX_TROLL_FLAG_LENGTH];
             flagName[0] = '\0';
@@ -387,25 +384,25 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
             if(modifier & TrollMod_Constant) {
                 if(flags > 0) {
                     if(flagName[0] != '\0') {
-                        CShowActivityEx(activator, "[FTT] ", "activated constant {green}\"%s\"{default} ({yellow}%s{default}) for %N. ", troll.name, flagName, victim);
+                        CShowActivityEx(activator, "[FTT] ", "activated constant {yellow}%s{default} ({yellow}%s{default}) for %N. ", troll.name, flagName, victim);
                     } else {
-                        CShowActivityEx(activator, "[FTT] ", "activated constant {green}\"%s\"{default} ({yellow}%d{default}) for %N. ", troll.name, flags, victim);
+                        CShowActivityEx(activator, "[FTT] ", "activated constant {yellow}%s{default} ({yellow}%d{default}) for %N. ", troll.name, flags, victim);
                     }
                 } else
-                    CShowActivityEx(activator, "[FTT] ", "activated constant {green}\"%s\"{default} for %N. ", troll.name, victim);
+                    CShowActivityEx(activator, "[FTT] ", "activated constant {yellow}%s{default} for %N. ", troll.name, victim);
             } else if(flags > 0) {
                 if(flagName[0] != '\0') {
-				    CShowActivityEx(activator, "[FTT] ", "activated {green}\"%s\"{default} ({yellow}%s{default}) for %N. ", troll.name, flagName, victim);
+				    CShowActivityEx(activator, "[FTT] ", "activated {yellow}%s{default} ({yellow}%s{default}) for %N. ", troll.name, flagName, victim);
                 } else {
-				    CShowActivityEx(activator, "[FTT] ", "activated {green}\"%s\"{default} ({yellow}%d{default}) for %N. ", troll.name, flags, victim);
+				    CShowActivityEx(activator, "[FTT] ", "activated {yellow}%s{default} ({yellow}%d{default}) for %N. ", troll.name, flags, victim);
                 }
             } else
-				CShowActivityEx(activator, "[FTT] ", "activated {green}\"%s\"{default} for %N. ", troll.name, victim);
+				CShowActivityEx(activator, "[FTT] ", "activated {yellow}%s{default} for %N. ", troll.name, victim);
             
-            LogAction(activator, victim, "\"%L\" activated {green}\"%s\"{default} ({yellow}%d{default}) for \"%L\"", activator, troll.name, flags, victim);
+            LogAction(activator, victim, "\"%L\" activated \"%s\" (%d) for \"%L\"", activator, troll.name, flags, victim);
         }
     } else {
-        CReplyToCommand(activator, "ftt: Applied {green}\"%s\"{default} on %N with flags=%d", troll.name, victim, flags);
+        CReplyToCommand(activator, "ftt: Applied {yellow}\"%s\"{default} on %N with flags=%d", troll.name, victim, flags);
     }
 }
 

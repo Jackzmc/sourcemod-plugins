@@ -9,18 +9,24 @@ public Action Timer_ThrowTimer(Handle timer) {
 	}
 	return count > 0 ? Plugin_Continue : Plugin_Stop;
 }
+int instantCommonRef[MAXPLAYERS+1];
 
 public Action Timer_Main(Handle timer) {
 	static int loopTick;
+
 	static int slowDrainIndex;
 	if(!slowDrainIndex) slowDrainIndex = GetTrollID("Slow Drain");
 	static int tempHealthQuickDrainIndex;
 	if(!tempHealthQuickDrainIndex) tempHealthQuickDrainIndex = GetTrollID("Temp Health Quick Drain");
 	static int swarmIndex;
 	if(!swarmIndex) swarmIndex = GetTrollID("Swarm");
+	static int instantCommonIndex;
+	if(!instantCommonIndex) instantCommonIndex = GetTrollID("Instant Commons");
+	static int randomizeAmmoIndex;
+	if(!randomizeAmmoIndex) randomizeAmmoIndex = GetTrollID("Randomize Clip Ammo");
 
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i)) {
+		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
 			if(Trolls[slowDrainIndex].IsActive(i)) {
 				if(loopTick % 4 == 0) {
 					int hp = GetClientHealth(i);
@@ -31,11 +37,8 @@ public Action Timer_Main(Handle timer) {
 			}else if(Trolls[tempHealthQuickDrainIndex].IsActive(i)) {
 				if(loopTick % 2 == 0) {
 					float bufferTime = GetEntPropFloat(i, Prop_Send, "m_healthBufferTime");
-					float buffer = GetEntPropFloat(i, Prop_Send, "m_healthBuffer");
-					float tempHealth = GetTempHealth(i);
+					float tempHealth = L4D_GetTempHealth(i);
 					if(tempHealth > 0.0) {
-						PrintToConsole(i, "%f | %f %f", tempHealth, buffer, bufferTime);
-						//SetEntPropFloat(i, Prop_Send, "m_healthBuffer", buffer - 10.0); 
 						SetEntPropFloat(i, Prop_Send, "m_healthBufferTime", bufferTime - 7.0); 
 					}
 				}
@@ -44,6 +47,22 @@ public Action Timer_Main(Handle timer) {
 			} else if(Trolls[slipperyShoesIndex].IsActive(i) && Trolls[slipperyShoesIndex].activeFlagClients[i] & 1) {
 				if(GetRandomFloat() <= 0.4) {
 					L4D_StaggerPlayer(i, i, NULL_VECTOR);
+				}
+			} else if(Trolls[instantCommonIndex].IsActive(i)) {
+				int common = EntRefToEntIndex(instantCommonRef[i]);
+				if(common <= 0 || !IsValidEntity(common)) {
+					static float pos[3];
+					GetHorizontalPositionFromClient(i, Trolls[instantCommonIndex].activeFlagClients[i] & 1 ? -40.0 : 40.0, pos);
+					common = L4D_SpawnCommonInfected(pos);
+					instantCommonRef[i] = EntIndexToEntRef(common);
+				}
+				SetEntPropEnt(common, Prop_Send, "m_clientLookatTarget", i);
+				SetEntProp(common, Prop_Send, "m_nSequence", 96);
+			} else if(loopTick % 60 && Trolls[randomizeAmmoIndex].IsActive(i)) {
+				int primaryWpn = GetPlayerWeaponSlot(i, 0);
+				if(primaryWpn > 0) {
+					int maxCap = GetEntProp(primaryWpn, Prop_Send, "m_iClip1");
+					SetEntProp(primaryWpn, Prop_Send, "m_iClip", GetRandomInt(0, maxCap));
 				}
 			}
 		}
@@ -62,6 +81,7 @@ public Action Timer_GivePistol(Handle timer, int user) {
 		FakeClientCommand(client, "give pistol");
 		SetCommandFlags("give", flags);
 	}
+	return Plugin_Handled;
 }
 
 public Action Timer_ThrowWeapon(Handle timer, Handle pack) {
@@ -88,6 +108,7 @@ public Action Timer_ThrowWeapon(Handle timer, Handle pack) {
 				SDKHooks_DropWeapon(victim, wpn, dest);
 		}
 	}
+	return Plugin_Handled;
 }
 
 public Action Timer_ResetAutoPunish(Handle timer, int user) {
@@ -98,6 +119,7 @@ public Action Timer_ResetAutoPunish(Handle timer, int user) {
 		if(hAutoPunish.IntValue & 1 == 1) 
 			DisableTroll(client, "Tank Magnet");
 	}
+	return Plugin_Handled;
 }
 
 public Action Timer_NextWitchSet(Handle timer, DataPack pack) {
@@ -105,16 +127,19 @@ public Action Timer_NextWitchSet(Handle timer, DataPack pack) {
 	int client = GetClientOfUserId(pack.ReadCell());
 	int witch = pack.ReadCell();
 	SetWitchTarget(witch, client);
+	return Plugin_Handled;
 }
 
 public Action Timer_KickBot(Handle timer, int client) {
 	if(IsClientInGame(client) && (!IsClientInKickQueue(client))) {
 		if(IsFakeClient(client)) KickClient(client);
 	}
+	return Plugin_Handled;
 }
 
 public Action Timer_Delete(Handle h, int id) {
 	AcceptEntityInput(id, "Kill");
+	return Plugin_Handled;
 }
 
 public Action Timer_ShootReverse(Handle h, DataPack pack) {
@@ -152,12 +177,14 @@ public Action Timer_CheckSpecialSpawned(Handle h, int id) {
 		g_iSpId++;
 		ProcessSpecialQueue();
 	}
+	return Plugin_Handled;
 }
 
 public Action Timer_CheckIsInSpit(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
-	if(client && GetGameTime() - iLastInSpit[userid] > 3.0) {
+	if(client && GetGameTime() - fLastInSpit[userid] > 3.0) {
 		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", 1.0);
+		hasSpitTimer[client] = false;
 		return Plugin_Stop;
 	}
 	return Plugin_Continue;
@@ -204,4 +231,53 @@ public Action Timer_CheckForChargerOpportunity(Handle h, int userid) {
 
 public bool Filter_CheckChargerValid(int entity, int contentsMask, any data) {
 	return entity <= 0 || entity >= MaxClients || (entity != data && GetClientTeam(entity) == 2);
+}
+
+public Action Timer_UpdateHealTargetPos(Handle h) {
+	int healTarget = GetClientOfUserId(healTargetPlayer);
+	if(healTarget == 0) {
+		PrintToServer("[FTT] Lost heal target, stopping");
+		return Plugin_Stop;
+	}
+	GetAbsOrigin(healTarget, healTargetPos);
+	int bots = 0;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsFakeClient(i) && isTargettingHealer[i]) {
+			bots++;
+			L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%d),pos=Vector(%f,%f,%f)})", GetClientUserId(i), healTargetPos[0], healTargetPos[1], healTargetPos[2]);
+			int kit = GetPlayerWeaponSlot(i, 3);
+			if(kit > -1) {
+				SetEntPropEnt(i, Prop_Send, "m_hActiveWeapon", kit);
+			}
+		}
+	}
+	return bots > 0 ? Plugin_Continue : Plugin_Stop;
+}
+
+Action Timer_SpawnBots(Handle h, int max) {
+	static int count;
+	if(count < max) {
+		if(!AddSurvivor()) return Plugin_Stop;
+		count++;
+		return Plugin_Continue;
+	}
+	count = 0;
+	CreateTimer(0.2, Timer_SpawnBotsPost);
+	return Plugin_Stop;
+}
+
+Action Timer_SpawnBotsPost(Handle h) {
+	char classname[32];
+	for(int i = 1; i <= MaxClients; i++) {
+		if(isCustomSurvivor[i]) {
+			int kit = GetPlayerWeaponSlot(i, 3);
+			if(kit > 0) {
+				GetEntityClassname(kit, classname, sizeof(classname));
+				if(!StrEqual(classname, "weapon_first_aid_kit")) {
+					kit = GiveClientWeapon(i, "weapon_first_aid_kit");
+				}
+				isTargettingHealer[i] = true;
+			}
+		}
+	}
 }

@@ -4,15 +4,15 @@
 
 void ActivateAutoPunish(int client) {
 	if(hAutoPunish.IntValue & 2 == 2) 
-		ApplyTroll(lastButtonUser, "Special Magnet", 0, TrollMod_Constant);
+		ApplyTroll(client, "Special Magnet", 0, TrollMod_Constant);
 	if(hAutoPunish.IntValue & 1 == 1) 
-		ApplyTroll(lastButtonUser, "Tank Magnet", 0, TrollMod_Constant);
+		ApplyTroll(client, "Tank Magnet", 0, TrollMod_Constant);
 	if(hAutoPunish.IntValue & 8 == 8)
-		ApplyTroll(lastButtonUser, "Vomit Player", 0, TrollMod_Instant);
+		ApplyTroll(client, "Vomit Player", 0, TrollMod_Instant);
 	else if(hAutoPunish.IntValue & 4 == 4) 
-		ApplyTroll(lastButtonUser, "Swarm", 0, TrollMod_Instant);
+		ApplyTroll(client, "Swarm", 0, TrollMod_Instant);
 	if(hAutoPunishExpire.IntValue > 0) {
-		CreateTimer(60.0 * hAutoPunishExpire.FloatValue, Timer_ResetAutoPunish, GetClientOfUserId(lastButtonUser));
+		CreateTimer(60.0 * hAutoPunishExpire.FloatValue, Timer_ResetAutoPunish, GetClientOfUserId(client));
 	}
 }
 
@@ -137,7 +137,7 @@ ArrayList GetPhrasesArray(const char[] key) {
 }
 
 
-int FindClosestClientAdminPriority(int source, bool ignoreBots, float pos[3]) {
+stock int FindClosestClientAdminPriority(int source, bool ignoreBots, float pos[3]) {
 	int c = FindClosestAdmin(source, ignoreBots, pos);
 	if(c == -1) return FindClosestClient(source, ignoreBots, pos);
 	else return c;
@@ -170,7 +170,10 @@ int FindClosestAdmin(int source, bool ignoreBots, float pos[3]) {
 	static float pos2[3];
 	GetClientAbsOrigin(source, pos);
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && (|ignoreBots || !IsFakeClient(i)) && GetUserAdmin(i) != INVALID_ADMIN_ID && i != source) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && 
+			(ignoreBots || !IsFakeClient(i)) 
+			&& GetUserAdmin(i) != INVALID_ADMIN_ID && i != source
+		) {
 			GetClientAbsOrigin(i, pos2);
 			float dist = GetVectorDistance(pos1, pos2);
 			if(minDist == -1.0 || dist <= minDist) {
@@ -221,34 +224,6 @@ void ThrowItemToPlayer(int victim, int target, int slot) {
 	}
 }
 
-void ThrowItemToClosestPlayer(int victim, int slot) {
-	int wpn = GetPlayerWeaponSlot(victim, slot);
-	if(wpn > 0 && (slot != 1 || DoesClientHaveMelee(victim))) {
-		static float pos[3];
-		int clients[4];
-		GetClientAbsOrigin(victim, pos);
-		int clientCount = GetClientsInRange(pos, RangeType_Visibility, clients, sizeof(clients));
-		for(int i = 0; i < clientCount; i++) {
-			if(clients[i] != victim) {
-				static float targPos[3];
-				GetClientAbsOrigin(clients[i], targPos);
-				SDKHooks_DropWeapon(victim, wpn, targPos);
-				if(slot == 1)
-					CreateTimer(0.2, Timer_GivePistol, GetClientUserId(victim));
-				return;
-			}
-		}
-		// No client found, drop on ground:
-		SDKHooks_DropWeapon(victim, wpn, NULL_VECTOR);
-	}
-}
-
-void DropItem(int victim, int slot) {
-	int wpn = GetPlayerWeaponSlot(victim, slot);
-	if(slot != 1 || DoesClientHaveMelee(victim)) {
-		SDKHooks_DropWeapon(victim, wpn, NULL_VECTOR);
-	}
-}
 
 stock void AddInFrontOf(float fVecOrigin[3], float fVecAngle[3], float fUnits, float fOutPut[3])
 {
@@ -450,4 +425,51 @@ bool SpawnCarToPlayer(int target, float distance) {
 	int id = CreateProp("prop_physics", MODEL_CAR, endPos, ang, vel);
 	CreateTimer(6.0, Timer_Delete, id);
 	return true;
+}
+
+bool g_iPendingSurvivorAdd;
+int isCustomSurvivor[MAXPLAYERS+1];
+
+bool AddSurvivor() {
+	if (GetClientCount(false) >= MaxClients - 1) {
+		return false;
+	}
+
+	int i = CreateFakeClient("GuessWhoBot");
+	bool result;
+	if (i > 0) {
+		if (DispatchKeyValue(i, "classname", "SurvivorBot")) {
+			ChangeClientTeam(i, 2);
+
+			if (DispatchSpawn(i)) {
+				result = true;
+			}
+		}
+
+		g_iPendingSurvivorAdd = true;
+		CreateTimer(0.2, Timer_KickBot, i);
+	}
+	return result;
+}
+
+void ClearInventory(int client) {
+	for(int i = 0; i <= 5; i++) {
+		int item = GetPlayerWeaponSlot(client, i);
+		if(item > 0) {
+			AcceptEntityInput(item, "Kill");
+		}
+	}
+}
+
+void StopHealingBots() {
+	healTargetPlayer = 0;
+	for(int i = 1; i <= MaxClients; i++) {
+		isTargettingHealer[i] = false;
+		if(isCustomSurvivor[i]) {
+			ClearInventory(i);
+			KickClient(i);
+		}
+	}
+	hAbmAutoHard.IntValue = wasAbmAutoHard;
+	hSbFixEnabled.BoolValue = wasSbFixEnabled;
 }

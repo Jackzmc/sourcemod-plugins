@@ -29,6 +29,7 @@ public Plugin myinfo =
 	url = ""
 };
 
+
 //TODO: Trolls: Force take pills, Survivor Bot Magnet
 
 
@@ -72,16 +73,18 @@ public void OnPluginStart() {
 	hBotDefendChance = CreateConVar("sm_ftt_bot_defend_chance", "0.75", "% Chance bots will defend themselves.", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	hSbFriendlyFire = FindConVar("sb_friendlyfire");
+	hSbFixEnabled = FindConVar("sb_fix_enabled");
+	hAbmAutoHard = FindConVar("abm_autohard");
 
 	if(hBotReverseFFDefend.IntValue > 0) hSbFriendlyFire.BoolValue = true;
 	hBotReverseFFDefend.AddChangeHook(Change_BotDefend);
 
-	RegAdminCmd("sm_ftl",  Command_ListTheTrolls, ADMFLAG_KICK, "Lists all the trolls currently ingame.");
+	RegAdminCmd("sm_ftl",  Command_ListTheTrolls, ADMFLAG_GENERIC, "Lists all the trolls currently ingame.");
 	RegAdminCmd("sm_ftm",  Command_ListModes,     ADMFLAG_KICK, "Lists all the troll modes and their description");
-	RegAdminCmd("sm_ftr",  Command_ResetUser, 	  ADMFLAG_KICK, "Resets user of any troll effects.");
+	RegAdminCmd("sm_ftr",  Command_ResetUser, 	  ADMFLAG_GENERIC, "Resets user of any troll effects.");
 	RegAdminCmd("sm_fta",  Command_ApplyUser,     ADMFLAG_KICK, "Apply a troll mod to a player, or shows menu if no parameters.");
-	RegAdminCmd("sm_ftas", Command_ApplyUserSilent,  ADMFLAG_CHEATS, "Apply a troll mod to a player, or shows menu if no parameters.");
-	RegAdminCmd("sm_ftt",  Command_FeedTheTrollMenu, ADMFLAG_KICK, "Opens a list that shows all the commands");
+	RegAdminCmd("sm_ftas", Command_ApplyUserSilent,  ADMFLAG_ROOT, "Apply a troll mod to a player, or shows menu if no parameters.");
+	RegAdminCmd("sm_ftt",  Command_FeedTheTrollMenu, ADMFLAG_GENERIC, "Opens a list that shows all the commands");
 	RegAdminCmd("sm_mark", Command_MarkPendingTroll, ADMFLAG_KICK, "Marks a player as to be banned on disconnect");
 	RegAdminCmd("sm_ftp",  Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
 	RegAdminCmd("sm_ftc",  Command_ApplyComboTrolls, ADMFLAG_KICK, "Applies predefined combinations of trolls");
@@ -92,6 +95,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_inface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
 	RegAdminCmd("sm_bots_attack", Command_BotsAttack, ADMFLAG_CHEATS, "Instructs all bots to attack a player until they have X health.");
 	RegAdminCmd("sm_scharge", Command_SmartCharge, ADMFLAG_CHEATS, "Auto Smart charge");
+	RegAdminCmd("sm_healbots", Command_HealTarget, ADMFLAG_CHEATS, "Make bots heal a player");
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
@@ -105,8 +109,9 @@ public void OnPluginStart() {
 	HookEvent("pills_used", Event_SecondaryHealthUsed);
 	HookEvent("entered_spit", Event_EnteredSpit);
 	HookEvent("bot_player_replace", Event_BotPlayerSwap);
+	HookEvent("heal_success", Event_HealSuccess);
 	
-	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
+	AddNormalSoundHook(SoundHook);
 
 	AutoExecConfig(true, "l4d2_feedthetrolls");
 
@@ -194,41 +199,4 @@ bool IsPlayerFarDistance(int client, float distance) {
 	PrintToConsoleAll("Flow Check | Player1=%N Flow1=%f Delta=%f", farthestClient, highestFlow, difference);
 	PrintToConsoleAll("Flow Check | Player2=%N Flow2=%f", secondClient, secondHighestFlow);
 	return client == farthestClient && difference > distance;
-}
-
-stock int GetPrimaryReserveAmmo(int client) {
-	int weapon = GetPlayerWeaponSlot(client, 0);
-	if(weapon > 0) {
-		return GetEntProp(client, Prop_Send, "m_iAmmo", _, GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType"));
-	}
-	return -1;
-}
-stock bool SetPrimaryReserveAmmo(int client, int amount) {
-	int weapon = GetPlayerWeaponSlot(client, 0);
-	if(weapon > -1) {
-		SetEntProp(client, Prop_Send, "m_iAmmo", amount, _, GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType"));
-	}
-	return false;
-}
-
-stock void SendChatToAll(int client, const char[] message) {
-	static char nameBuf[MAX_NAME_LENGTH];
-	
-	for (int i = 1; i <= MaxClients; i++) {
-		if (IsClientInGame(i) && IsFakeClient(i)) {
-			FormatActivitySource(client, i, nameBuf, sizeof(nameBuf));
-			PrintToChat(i, "\x03 %s : \x01%s", nameBuf, message);
-		}
-	}
-}
-
-stock float GetTempHealth(int client) {
-	if(client <= 0 || !IsValidEntity(client) || !IsClientInGame(client)|| !IsPlayerAlive(client) || IsClientObserver(client)) return -1.0;
-	if(GetClientTeam(client) != 2) return 0.0;
-	
-	float buffer = GetEntPropFloat(client, Prop_Send, "m_healthBuffer");
-	if(buffer <= 0.0) return 0.0;
-	float difference = GetGameTime() - GetEntPropFloat(client, Prop_Send, "m_healthBufferTime");
-	float decay = FindConVar("pain_pills_decay_rate").FloatValue;
-	return buffer - (difference / (1.0 / decay));
 }

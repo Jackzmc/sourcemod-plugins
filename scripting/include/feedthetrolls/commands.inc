@@ -36,7 +36,6 @@ public Action Command_InstaSpecial(int client, int args) {
 			return Plugin_Handled;
 		}
 		SpecialType specialType = GetSpecialType(arg2);
-		static float pos[3];
 		if(specialType == Special_Invalid) {
 			ReplyToCommand(client, "Unknown special \"%s\"", arg2);
 			return Plugin_Handled;
@@ -101,7 +100,6 @@ public Action Command_InstaSpecialFace(int client, int args) {
 			return Plugin_Handled;
 		}
 		SpecialType specialType = GetSpecialType(arg2);
-		static float pos[3];
 		if(specialType == Special_Invalid) {
 			ReplyToCommand(client, "Unknown special \"%s\"", arg2);
 			return Plugin_Handled;
@@ -337,7 +335,6 @@ public Action Command_ApplyUserSilent(int client, int args) {
 }
 
 public Action Command_ListModes(int client, int args) {
-	static char name[MAX_TROLL_NAME_LENGTH];
 	static Troll troll;
 	for(int i = 0; i <= MAX_TROLLS; i++) {
 		GetTrollByKeyIndex(i, troll);
@@ -410,7 +407,6 @@ public Action Command_ListTheTrolls(int client, int args) {
 	int count = 0;
 	char[][] modeListArr = new char[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
 	static char modeList[255];
-	static char name[MAX_TROLL_NAME_LENGTH];
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) > 1 && IsAnyTrollActive(i)) {
 			if(IsFakeClient(i)) {
@@ -610,6 +606,70 @@ public Action Command_SmartCharge(int client, int args) {
 		}
 	} else {
 		ReplyToCommand(client, "syntax: sm_smartcharge <target player> [timeout or default 10s]");
+	}
+	return Plugin_Handled;
+}
+
+public Action Command_HealTarget(int client, int args) {
+	if(args > 0) {
+		char arg1[32], arg2[4];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+		int target_list[1], target_count;
+		static char target_name[MAX_TARGET_LENGTH];
+		bool tn_is_ml;
+		if ((target_count = ProcessTargetString(
+			arg1,
+			client,
+			target_list,
+			1,
+			COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_MULTI,
+			target_name,
+			sizeof(target_name),
+			tn_is_ml)) <= 0
+		) {
+			/* This function replies to the admin with a failure message */
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+
+		int target = target_list[0];
+		int targetUserId = GetClientUserId(target);
+		if(targetUserId == healTargetPlayer) {
+			ShowActivity(client, "cleared bots healing for %N", target);
+			StopHealingBots();
+		} else {
+			healTargetPlayer = targetUserId;
+			CreateTimer(3.0, Timer_UpdateHealTargetPos, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+
+			int limit = StringToInt(arg2);
+			if(limit <= 0) limit = MaxClients;
+			for(int i = 1; i <= MaxClients; i++) {
+				if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && IsFakeClient(i)) {
+					int kit = GetPlayerWeaponSlot(i, 3);
+					if(kit > 0) {
+						GetEntityClassname(kit, arg1, sizeof(arg1));
+						if(StrEqual(arg1, "weapon_first_aid_kit")) {
+							isTargettingHealer[i] = true;
+
+							if(--limit == 0) {
+								break;
+							}
+						}
+					}
+				}
+			}
+			if(limit > 0) {
+				wasAbmAutoHard = hAbmAutoHard.IntValue;
+				hAbmAutoHard.IntValue = 0;
+				CreateTimer(0.2, Timer_SpawnBots, limit, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+			}
+			ShowActivity(client, "made all bots heal %N", target);
+			wasSbFixEnabled = hSbFixEnabled.BoolValue;
+			hSbFixEnabled.BoolValue = false;
+		}
+	} else {
+		ReplyToCommand(client, "Usage: /healbots <player> [# of bots or 0 for all]");
 	}
 	return Plugin_Handled;
 }

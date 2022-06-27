@@ -15,7 +15,6 @@ GlobalForward g_PlayerMarkedForward;
 Handle g_hWitchAttack;
 Handle hThrowTimer;
 
-ConVar hVictimsList;
 ConVar hThrowItemInterval;
 ConVar hAutoPunish;
 ConVar hMagnetChance;
@@ -30,15 +29,13 @@ ConVar hBotDefendChance;
 
 bool g_bPendingItemGive[MAXPLAYERS+1];
 
-int g_iAmmoTable; //Loads the ammo table to get max ammo for weapons
-int autoPunished = -1;
-int autoPunishMode; 
 int lastButtonUser;
 int lastCrescendoUser;
 int g_iAttackerTarget[MAXPLAYERS+1];
 int g_iSpecialAttackFlags[MAXPLAYERS+1];
 int g_PendingBanTroll[MAXPLAYERS+1];
-float iLastInSpit[MAXPLAYERS+1];
+float fLastInSpit[MAXPLAYERS+1];
+bool hasSpitTimer[MAXPLAYERS+1];
 
 char steamids[MAXPLAYERS+1][64];
 
@@ -60,6 +57,16 @@ enum SpecialInternalFlags {
 	SPI_KillOnSpawn = 1,
 	SPI_AlwaysTarget = 2
 }
+
+int healTargetPlayer;
+bool isTargettingHealer[MAXPLAYERS+1];
+float healTargetPos[3];
+
+bool wasSbFixEnabled;
+ConVar hSbFixEnabled;
+
+ConVar hAbmAutoHard;
+int wasAbmAutoHard;
 
 #define MODEL_CAR "models/props_vehicles/cara_95sedan.mdl"
 

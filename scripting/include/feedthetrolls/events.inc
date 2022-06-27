@@ -51,33 +51,40 @@ public Action Timer_CheckSpecial(Handle h, int specialID) {
 	int special = GetClientOfUserId(specialID);
 	// Check if new player is the spawned special:
 	if(spIsActive && special > 0 && IsFakeClient(special) && GetClientTeam(special) == 3) {
-		SpecialType type = view_as<SpecialType>(GetEntProp(special, Prop_Send, "m_zombieClass"));
-		if(type == spActiveRequest.type) {
-			// Ignore any fake clients with 'Bot' in name
-			static char buf[32];
-			GetClientName(special, buf, sizeof(buf));
-			if(StrContains(buf, "bot", false) == -1) {
-				if(spActiveRequest.targetUserId) {
-					g_iAttackerTarget[special] = spActiveRequest.targetUserId;
-					g_iSpecialAttackFlags[special] = spActiveRequest.flags;
-				}
-
-				TeleportEntity(special, spActiveRequest.position, spActiveRequest.angle, NULL_VECTOR);
-				if(spActiveRequest.flags & view_as<int>(SPI_KillOnSpawn)) {
-					if(type == Special_Spitter) {
-						float pos[3];
-						GetClientEyePosition(special, pos);
-						L4D2_SpitterPrj(special, pos, SPIT_VEL);
+		//g_iPendingSurvivorAdd
+		if(GetClientTeam(special) == 2 && g_iPendingSurvivorAdd && GetEntProp(special, Prop_Send, "m_humanSpectatorUserID") == 0) {
+			g_iPendingSurvivorAdd = false;
+			isCustomSurvivor[special] = true;
+		} else if(GetClientTeam(special) == 3) {
+			SpecialType type = view_as<SpecialType>(GetEntProp(special, Prop_Send, "m_zombieClass"));
+			if(type == spActiveRequest.type) {
+				// Ignore any fake clients with 'Bot' in name
+				static char buf[32];
+				GetClientName(special, buf, sizeof(buf));
+				if(StrContains(buf, "bot", false) == -1) {
+					if(spActiveRequest.targetUserId) {
+						g_iAttackerTarget[special] = spActiveRequest.targetUserId;
+						g_iSpecialAttackFlags[special] = spActiveRequest.flags;
 					}
-					RequestFrame(Frame_Boom, special);
+
+					TeleportEntity(special, spActiveRequest.position, spActiveRequest.angle, NULL_VECTOR);
+					if(spActiveRequest.flags & view_as<int>(SPI_KillOnSpawn)) {
+						if(type == Special_Spitter) {
+							float pos[3];
+							GetClientEyePosition(special, pos);
+							L4D2_SpitterPrj(special, pos, SPIT_VEL);
+						}
+						RequestFrame(Frame_Boom, special);
+					}
+
+					g_iSpId++;
+
+					ProcessSpecialQueue();
 				}
-
-				g_iSpId++;
-
-				ProcessSpecialQueue();
 			}
 		}
  	}
+	return Plugin_Handled;
 }
 public void Frame_Boom(int special) {
 	SDKHooks_TakeDamage(special, special, special, 1000.0);
@@ -98,7 +105,8 @@ public void OnClientAuthorized(int client, const char[] auth) {
 	}
 }
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
-	int client = GetClientOfUserId(event.GetInt("userid"));
+	int userid = event.GetInt("userid");
+	int client = GetClientOfUserId(userid);
 	if(client > 0 && g_PendingBanTroll[client] > 0) {
 		if(!IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID) {
 			BanIdentity(steamids[client], 0, BANFLAG_AUTHID, "Marked as Troll", "ftt", GetClientOfUserId(g_PendingBanTroll[client]));
@@ -110,8 +118,13 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 	shootAtTarget[client] = 0;
 	shootAtTargetLoops[client] = 0;
 	shootAtTargetHP[client] = 0;
+	isTargettingHealer[client] = false;
+	isCustomSurvivor[client] = false;
+	if(healTargetPlayer == userid) {
+		healTargetPlayer = 0;
+	}
 }
-public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
+public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
 	if(client > 0) {
@@ -166,6 +179,7 @@ public void Event_CarAlarm(Event event, const char[] name, bool dontBroadcast) {
 }
 public Action RushPlayer(Handle h, int user) {
 	L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", user, 15000);
+	return Plugin_Handled;
 }
 public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	static int spMagnetID, tankMagnetID;
@@ -269,10 +283,10 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 	if(Trolls[honkID].IsActive(client) && Trolls[honkID].activeFlagClients[client] & 1) {
 		// Honk Processing
-		static char strings[32][7];
+		static char strings[32][8]; 
 		int words = ExplodeString(sArgs, " ", strings, sizeof(strings), 5);
 		for(int i = 0; i < words; i++) {
-			if(GetRandomFloat() <= 0.8) strings[i] = "honk";
+			if(GetRandomFloat() <= 0.8) strings[i] = "honk   ";
 			else strings[i] = "squeak";
 		}
 		int length = 7 * words;
@@ -306,7 +320,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
 	}else if(IsTrollActive(client, "iCantSpellNoMore")) {
-		int type = GetRandomInt(1, 13 + 5);
+		int type = GetRandomInt(1, 14 + 3);
 		char letterSrc, replaceChar;
 		switch(type) {
 			case 1: {
@@ -513,6 +527,19 @@ public Action Event_ItemPickup(int client, int weapon) {
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	// If 'KillMeSoftly' activated:
+	int healTarget = GetClientOfUserId(healTargetPlayer);
+	if(healTarget > 0 && isTargettingHealer[client] && healTarget != client) {
+		static float pos[3];
+		GetClientAbsOrigin(client, pos);
+		LookAtClient(client, healTarget);
+		if(GetVectorDistance(pos, healTargetPos, true) < 10000.0) {
+			if(GetClientAimTarget(client, true) == healTarget) {
+				buttons |= IN_ATTACK2;
+				return Plugin_Changed;
+			}
+		}
+	}
+
 	if(g_bPendingItemGive[client] && !(buttons & IN_ATTACK2)) {
 		int target = GetClientAimTarget(client, true);
 		if(target > -1) {
@@ -570,9 +597,16 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
 public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
 	//Stop FF from marked:
-	static int reverseFF;
+	static int reverseFF, nerfGunIndex;
 	if(reverseFF == 0) reverseFF = GetTrollID("Reverse FF");
-	if(attacker > 0 && attacker <= MaxClients && GetClientTeam(attacker) == 4 && IsFakeClient(attacker)) return Plugin_Continue;
+	if(nerfGunIndex == 0) nerfGunIndex = GetTrollID("Nerf Gun");
+	if(attacker > 0 && attacker <= MaxClients) {
+		if(GetClientTeam(attacker) == 4 && IsFakeClient(attacker)) return Plugin_Continue;
+		else if(Trolls[nerfGunIndex].IsActive(attacker)) {
+			damage = 0.0;
+			return Plugin_Changed;
+		}
+	}
 
 	if(attacker > 0 && victim <= MaxClients && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
 		if(shootAtTarget[attacker] == victim) return Plugin_Continue;
@@ -630,7 +664,50 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 	return Plugin_Continue;
 }
 
-public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
+public Action OnVocalizeCommand(int client, const char[] vocalize, int initiator) {
+	static int vocalGagID;
+	if(vocalGagID == 0) vocalGagID = GetTrollID("Vocalize Gag");
+	if(Trolls[vocalGagID].IsActive(client)) {
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
+}
+
+public void OnSceneStageChanged(int scene, SceneStages stage) {
+	if(stage == SceneStage_Spawned) {
+		static int vocalGagID, vocalizeSpecials;
+		if(vocalizeSpecials == 0) vocalizeSpecials = GetTrollID("Vocalize Specials");
+
+
+		int activator = GetSceneInitiator(scene);
+		if(activator > 0 && activator <= MaxClients) {
+			if(Trolls[vocalizeSpecials].IsActive(activator)) {
+				static char sceneFile[32];
+				GetSceneFile(scene, sceneFile, sizeof(sceneFile));
+				if(StrContains(sceneFile, "warnboomer") > -1) {
+					SpawnSpecialForTarget(Special_Boomer, activator, Special_OnTarget);
+				} else if(StrContains(sceneFile, "warnhunter") > -1) {
+					SpawnSpecialForTarget(Special_Hunter, activator, Special_OnTarget);
+				} else if(StrContains(sceneFile, "warnsmoker") > -1) {
+					SpawnSpecialForTarget(Special_Smoker, activator, Special_OnTarget);
+				} else if(StrContains(sceneFile, "warnspitter") > -1) {
+					SpawnSpecialForTarget(Special_Spitter, activator, Special_OnTarget);
+				} else if(StrContains(sceneFile, "warnjockey") > -1) {
+					SpawnSpecialForTarget(Special_Jockey, activator, Special_OnTarget);
+				} else if(StrContains(sceneFile, "warncharger") > -1) {
+					SpawnSpecialForTarget(Special_Charger, activator, Special_OnTarget);
+				}
+				if(Trolls[vocalizeSpecials].activeFlagClients[activator] & 1) {
+					CancelScene(scene);
+				}
+			} else if(Trolls[vocalGagID].IsActive(activator)) {
+				CancelScene(scene);
+			}
+		}
+	}
+}
+
+public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char soundEntry[PLATFORM_MAX_PATH], int& seed) {
 	static int honkID;
 	static int vocalGagID;
 	if(honkID == 0) honkID = GetTrollID("Honk / Meow");
@@ -657,7 +734,9 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 					strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
 				else if(Trolls[honkID].activeFlagClients[entity] & 2)
 					strcopy(sample, sizeof(sample), "custom/meow1.mp3");
-				else return Plugin_Changed;
+				else
+					return Plugin_Continue;
+				return Plugin_Changed;
 			} else if(Trolls[vocalGagID].IsActive(entity)) {
 				if(Trolls[vocalGagID].activeFlagClients[entity] & 2) {
 					clients[0] = entity;
@@ -671,7 +750,7 @@ public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX
 	return Plugin_Continue;
 }
 
-public Action Event_WitchVictimSet(Event event, const char[] name, bool dontBroadcast) {
+public void Event_WitchVictimSet(Event event, const char[] name, bool dontBroadcast) {
 	static int witchTrollID;
 	if(witchTrollID == 0) witchTrollID = GetTrollID("Witch Magnet");
 
@@ -779,7 +858,7 @@ public Action L4D2_MeleeGetDamageForVictim(int client, int weapon, int victim, f
 	return Plugin_Continue;
 }
 
-int FindClosestVisibleClient(int source) {
+stock int FindClosestVisibleClient(int source) {
 	static float pos[3], ang[3];
 	GetClientEyePosition(source, pos);
 	GetClientEyeAngles(source, ang);
@@ -801,11 +880,12 @@ public Action OnAntiRush(int client, int &type, float distance) {
 			PrintToConsoleAll("[FTT] Spawning anti-rush special on %N (dist=%f) (special=%N)", client, distance, SPECIAL_NAMES[view_as<int>(special)-1]);
 		}
 	}
+	return Plugin_Continue;
 }
 
 public void L4D2_CInsectSwarm_CanHarm_Post(int acid, int spitter, int entity) {
 	if(entity <= MaxClients)
-		iLastInSpit[entity] = GetGameTime();
+		fLastInSpit[entity] = GetGameTime();
 }
 
 public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast) {
@@ -816,8 +896,11 @@ public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast
 		else if(Trolls[stickyGooIndex].activeFlagClients[client] & 2) movement = 0.3;
 
 		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", movement);
-		iLastInSpit[client] = GetGameTime();
-		CreateTimer(0.2, Timer_CheckIsInSpit, GetClientUserId(client), TIMER_REPEAT);
+		fLastInSpit[client] = GetGameTime();
+		if(!hasSpitTimer[client]) {
+			CreateTimer(0.2, Timer_CheckIsInSpit, GetClientUserId(client), TIMER_REPEAT);
+			hasSpitTimer[client] = true;
+		}
 	}
 
 }
@@ -835,5 +918,13 @@ public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadca
 		}
 		if(debug_hadTroll) 
 			PrintToServer("[FTT] Re-applied trolls for was-idle player %N", client);
+	}
+}
+
+void Event_HealSuccess(Event event, const char[] name, bool dontBroadcast) {
+	int userid = event.GetInt("subject");
+	int client = GetClientOfUserId(userid);
+	if(client > 0 && userid == healTargetPlayer) {
+		StopHealingBots();
 	}
 }

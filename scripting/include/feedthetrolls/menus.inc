@@ -12,6 +12,7 @@ public int Insta_PlayerHandler(Menu menu, MenuAction action, int client, int par
 		ShowInstaSpecialChooser(client, userid, instaMode);
 	} else if (action == MenuAction_End)
 		delete menu;
+	return 0;
 }
 
 void ShowInstaSpecialChooser(int activator, int userid, int instaMode) {
@@ -72,6 +73,7 @@ public int ChooseMarkedTroll(Menu menu, MenuAction action, int activator, int pa
 		ToggleMarkPlayer(activator, target);
 	} else if (action == MenuAction_End)
 		delete menu;
+	return 0;
 }
 
 public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int param2) {
@@ -84,12 +86,13 @@ public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int par
 
 		if(client == 0) {
 			ReplyToCommand(param1, "FTT: Could not acquire player");
-			return;
+			return 0;
 		}
 		
 		SetupCategoryMenu(param1, userid);
 	} else if (action == MenuAction_End)
 		delete menu;
+	return 0;
 }
 
 public int ChoosePlayerHandlerForCombos(Menu menu, MenuAction action, int client, int param2) {
@@ -101,12 +104,13 @@ public int ChoosePlayerHandlerForCombos(Menu menu, MenuAction action, int client
 
 		if(victim == 0) {
 			ReplyToCommand(victim, "FTT: Could not acquire player");
-			return;
+			return 0;
 		}
 		
 		ShowTrollCombosMenu(client, userid);
 	} else if (action == MenuAction_End)
 		delete menu;
+	return 0;
 }
 
 public int ChooseComboHandler(Menu menu, MenuAction action, int client, int param2) {
@@ -121,7 +125,7 @@ public int ChooseComboHandler(Menu menu, MenuAction action, int client, int para
 
 		if(victim == 0) {
 			ReplyToCommand(client, "FTT: Could not acquire player");
-			return;
+			return 0;
 		}
 		
 		static TrollCombo combo;
@@ -129,6 +133,7 @@ public int ChooseComboHandler(Menu menu, MenuAction action, int client, int para
 		combo.Activate(client, victim);
 	} else if (action == MenuAction_End)
 		delete menu;
+	return 0;
 }
 
 static int iMenuVictimID[MAXPLAYERS+1];
@@ -144,7 +149,7 @@ public int ChooseCategoryHandler(Menu menu, MenuAction action, int param1, int p
 		int client = GetClientOfUserId(userid);
 		if(client == 0) {
 			ReplyToCommand(param1, "FTT: Could not acquire player");
-			return;
+			return 0;
 		}
 		
 		iMenuVictimID[param1] = userid;
@@ -153,12 +158,13 @@ public int ChooseCategoryHandler(Menu menu, MenuAction action, int param1, int p
 		// Reset troll:
 		if(category == -1) {
 			ApplyTroll(GetClientOfUserId(userid), "Reset User", param1, TrollMod_Instant);
-			return;
+			return 0;
 		}
 		
 		ShowTrollsForCategory(param1, userid, category);
 	} else if (action == MenuAction_End)
 		delete menu;
+	return 0;
 }
 
 public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
@@ -178,7 +184,7 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 		int client = GetClientOfUserId(userid);
 		if(client == 0) {
 			ReplyToCommand(param1, "FTT: Could not acquire player");
-			return;
+			return 0;
 		}
 
 		int keyIndex = StringToInt(str[1]);
@@ -188,7 +194,7 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 		if(StrEqual(troll.name, "Throw It All")) {
 			// Setup menu to call itself, but with an extra data point
 			ShowThrowItAllMenu(param1, userid);
-		} else if(troll.HasMod(TrollMod_Instant) && troll.HasMod(TrollMod_Constant)) {
+		} else if(!troll.IsActive(client) && troll.HasMod(TrollMod_Instant) && troll.HasMod(TrollMod_Constant)) {
 			Menu modiferMenu = new Menu(ChooseTrollModiferHandler); 
 			Format(info, sizeof(info), "%s: Choose Modifier", troll.name);
 			modiferMenu.SetTitle(info);
@@ -203,7 +209,7 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 			modiferMenu.ExitButton = true;
 			modiferMenu.Display(param1, 0);
 		} else if(troll.HasFlags() && !troll.IsActive(client)) {
- 			ShowSelectFlagMenu(param1, userid, 0, troll);
+ 			ShowSelectFlagMenu(param1, userid, -1, troll);
 		} else {
 			troll.Activate(client, param1);
 			ShowTrollsForCategory(param1, userid, troll.categoryID);
@@ -211,6 +217,7 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 		
 	} else if (action == MenuAction_End)
 		delete menu;
+	return 0;
 }
 
 public int ChooseClumsySlotHandler(Menu menu, MenuAction action, int param1, int param2) {
@@ -224,7 +231,7 @@ public int ChooseClumsySlotHandler(Menu menu, MenuAction action, int param1, int
 		int slot = StringToInt(str[1]);
 		if(client == 0) {
 			ReplyToCommand(param1, "FTT: Could not acquire player");
-			return;
+			return 0;
 		}else if(slot == -1) {
 			for(int i = 0; i <= 4; i++) {
 				ThrowItemToPlayer(client, param1, i);
@@ -238,6 +245,7 @@ public int ChooseClumsySlotHandler(Menu menu, MenuAction action, int param1, int
 		ShowThrowItAllMenu(param1, userid);
 	} else if (action == MenuAction_End)	
 		delete menu;
+	return 0;
 }
 
 public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, int param2) {
@@ -253,7 +261,7 @@ public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 
 		if(client == 0) {
 			ReplyToCommand(param1, "FTT: Could not acquire player");
-			return;
+			return 0;
 		}
 
 		static Troll troll;
@@ -272,6 +280,7 @@ public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 		
 	} else if (action == MenuAction_End)	
 		delete menu;
+	return 0;
 }
 
 public int ChooseTrollFlagHandler(Menu menu, MenuAction action, int param1, int param2) {
@@ -290,13 +299,12 @@ public int ChooseTrollFlagHandler(Menu menu, MenuAction action, int param1, int 
 
 		if(client == 0) {
 			ReplyToCommand(param1, "FTT: Could not acquire player");
-			return;
+			return 0;
 		}
 
 		static Troll troll;
 		GetTrollByKeyIndex(keyIndex, troll);
 
-		static TrollFlagPrompt prompt;
 		// If told to go to next prompt, find the next VALID prompt
 		// Valid prompt is one where the required flags for it, are active
 
@@ -305,12 +313,12 @@ public int ChooseTrollFlagHandler(Menu menu, MenuAction action, int param1, int 
 			// If there is a prompt available, show it, else fall down 
 			if(nextIndex != -1) {
 				ShowSelectFlagMenu(param1, userid, modifiers, troll, flags, nextIndex);
-				return;
+				return 0;
 			}
 			// else fall through & apply
 		} else {
 			ShowSelectFlagMenu(param1, userid, modifiers, troll, flags, index);
-			return;
+			return 0;
 		}
 
 		// Done with prompts, apply flags & modifiers
@@ -326,6 +334,7 @@ public int ChooseTrollFlagHandler(Menu menu, MenuAction action, int param1, int 
 		ShowTrollsForCategory(param1, userid, troll.categoryID);
 	} else if (action == MenuAction_End)	
 		delete menu;
+	return 0;	
 }
 
 
@@ -428,7 +437,7 @@ void ShowTrollsForCategory(int client, int userid, int category) {
 }
 
 // Called with defaults on start, then recalled by ChooseTrollFlagHandler until prompt selection finished
-void ShowSelectFlagMenu(int activator, int victimUserID, int modifiers, Troll troll, int prevFlags = 0, int promptIndex = 0) {
+void ShowSelectFlagMenu(int activator, int victimUserID, int modifiers, Troll troll, int prevFlags = -1, int promptIndex = 0) {
 	static char info[MAX_TROLL_NAME_LENGTH+16]; //victimUSERID|trollID|modifiers|flags||flagIndex
 	static char name[32];
 
@@ -442,7 +451,7 @@ void ShowSelectFlagMenu(int activator, int victimUserID, int modifiers, Troll tr
 	flagMenu.SetTitle(info);
 
 	if(prompt.multiselect) {
-		if(prevFlags == 0) prevFlags = prompt.defaults;
+		if(prevFlags == -1) prevFlags = prompt.defaults;
 		
 		Format(info, sizeof(info), "%d|%d|%d|%d|%d|1", victimUserID, troll.id, modifiers, prevFlags, promptIndex);
 		flagMenu.AddItem(info, "Apply / Next Prompt");
@@ -461,6 +470,7 @@ void ShowSelectFlagMenu(int activator, int victimUserID, int modifiers, Troll tr
 		}
 	} else {
 		// Single choice only
+		if(prevFlags == -1) prevFlags = 0;
 		for(int i = 0; i < troll.flagNames.Length; i++) {
 			int a = 1 << i;
 			if(prompt.flags & a) {
