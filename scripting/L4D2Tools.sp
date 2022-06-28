@@ -6,7 +6,6 @@
 #define PLUGIN_VERSION "1.0"
 
 #include <sourcemod>
-#include <sdktools>
 #include <sdkhooks>
 #include <left4dhooks>
 #include <jutils.inc>
@@ -80,19 +79,6 @@ public void OnPluginStart() {
 	}
 	LoadTranslations("common.phrases");
 
-	Handle hConfig = LoadGameConfigFile("l4d2tools");
-	if(hConfig == INVALID_HANDLE) SetFailState("Could not load l4d2tools gamedata.");
-	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(hConfig, SDKConf_Signature, "TakeOverBot");
-	hTakeOverBot = EndPrepSDKCall();
-	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(hConfig, SDKConf_Signature, "GoAwayFromKeyboard");
-	hGoAwayFromKeyboard = EndPrepSDKCall();
-	CloseHandle(hConfig);
-	if(hTakeOverBot == INVALID_HANDLE || hGoAwayFromKeyboard == INVALID_HANDLE) {
-		SetFailState("One of 3 signatures is invalid");
-	}
-	
 	hLaserNotice 	= CreateConVar("sm_laser_use_notice", "1.0", "Enable notification of a laser box being used", FCVAR_NONE, true, 0.0, true, 1.0);
 	hFinaleTimer 	= CreateConVar("sm_time_finale", "0.0", "Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales", FCVAR_NONE, true, 0.0, true, 2.0);
 	hFFNotice    	= CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
@@ -129,6 +115,7 @@ public void OnPluginStart() {
 	HookEvent("bot_player_replace", Event_BotPlayerSwap);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 	HookEvent("weapon_drop", Event_WeaponDrop);
+	HookEvent("player_disconnect", Event_PlayerDisconnect);
 
 	AutoExecConfig(true, "l4d2_tools");
 
@@ -177,32 +164,35 @@ public void OnClientConnected(int client) {
 	}
 }
 
-stock void PrintChatToAdmins(const char[] format, any ...) {
-	char buffer[254];
-	VFormat(buffer, sizeof(buffer), format, 2);
-	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i)) {
-			AdminId admin = GetUserAdmin(i);
-			if(admin != INVALID_ADMIN_ID) {
-				PrintToChat(i, "%s", buffer);
-			}
-		}
-	}
-	PrintToServer("%s", buffer);
+// Returns -1 if not allowed, or their previous index
+int GetAllowedPlayerIndex(const char[] authid2) {
+	int index;
+	return SteamIDs.GetValue(authid2, index) ? index : -1;
 }
 
 
 public void OnClientPostAdminCheck(int client) {
 	if(!IsFakeClient(client)) {
-		static char auth[32];
-		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
-		if(reserveMode == Reserve_Private || (reserveMode == Reserve_AdminOnly && GetUserAdmin(client) == INVALID_ADMIN_ID)) {
-			int index;
-			if(!SteamIDs.GetValue(auth, index)) {
+		if(reserveMode == Reserve_AdminOnly && GetUserAdmin(client) == INVALID_ADMIN_ID) {
+			static char auth[32];
+			GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
+			if(GetAllowedPlayerIndex(auth) == -1) {
 				KickClient(client, "Sorry, server is reserved");
 				return;
 			}
 		}
+	}
+}
+
+public void OnClientAuthorized(int client, const char[] auth) {
+	if(IsFakeClient(client)) return;
+	if(reserveMode == Reserve_Private) {
+		if(GetAllowedPlayerIndex(auth) == -1) {
+			KickClient(client, "Sorry, server is reserved");
+		}
+	}
+	// Don't insert id here if admin only, let admin check do that
+	if(reserveMode != Reserve_AdminOnly) {
 		SteamIDs.SetValue(auth, client);
 	}
 }
@@ -213,26 +203,31 @@ public Action Command_SetServerPermissions(int client, int args) {
 		GetCmdArg(1, arg1, sizeof(arg1));
 		if(StrEqual(arg1, "public", false)) {
 			reserveMode = Reserve_None;
-		}else if(StrContains(arg1, "noti", false) > -1) {
+		}else if(StrContains(arg1, "noti", false) > -1 || StrContains(arg1, "watch", false) > -1) {
 			reserveMode = Reserve_Watch;
 		}else if(StrContains(arg1, "admin", false) > -1) {
 			reserveMode = Reserve_AdminOnly;
-		}else if(StrEqual(arg1, "private", false)) {
-			reserveMode = Reserve_Private;
-			static char auth[32];
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
-					GetClientAuthId(i, AuthId_Steam2, auth, sizeof(auth));
-					SteamIDs.SetValue(auth, i);
+					GetClientAuthId(i, AuthId_Steam2, arg1, sizeof(arg1));
+					SteamIDs.SetValue(arg1, i);
+				}
+			}
+		}else if(StrEqual(arg1, "private", false)) {
+			reserveMode = Reserve_Private;
+			for(int i = 1; i <= MaxClients; i++) {
+				if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
+					GetClientAuthId(i, AuthId_Steam2, arg1, sizeof(arg1));
+					SteamIDs.SetValue(arg1, i);
 				}
 			}
 		}else {
 			ReplyToCommand(client, "Usage: sm_reserve [public/notify/admin/private] or no arguments to view current reservation.");
 			return Plugin_Handled;
 		}
-		PrintToChatAll("Server is now %s.", ReserveLevels[reserveMode]);
+		PrintChatToAdmins("Server access changed to %s", ReserveLevels[reserveMode]);
 	} else {
-		ReplyToCommand(client, "Server is currently %s", ReserveLevels[reserveMode]);
+		ReplyToCommand(client, "Server access level is currently %s", ReserveLevels[reserveMode]);
 	}
 	return Plugin_Handled;
 }
@@ -245,14 +240,15 @@ public Action Timer_CheckPlayerPings(Handle timer) {
 			if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && IsPlayerAlive(i) && GetClientTeam(i) > 1) {
 				int ping = GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iPing", _, i);
 				if(isHighPingIdle[i] && ping <= hPingDropThres.IntValue) {
-					SDKCall(hTakeOverBot, i);
+					L4D_TakeOverBot(i);
 					isHighPingIdle[i] = false;
+					iHighPingCount[i] = 0;
 				}else if(ping > hPingDropThres.IntValue) {
 					if(iHighPingCount[i]++ > 2) {
-						PrintToChat(i, "Due to your high ping (%d ms) you have been moved to AFK.", ping);
+						PrintToChat(i, "Due to your high ping (%d ms), you have been moved to AFK.", ping);
 						PrintToChat(i, "You will be automatically switched back once your ping restores");
 						//PrintToChat(i, "Type /pingignore to disable this feature.");
-						SDKCall(hGoAwayFromKeyboard, i);
+						L4D_ReplaceWithBot(i);
 						isHighPingIdle[i] = true;
 						iHighPingCount[i] = 0;
 					}
@@ -280,7 +276,7 @@ public Action Command_RespawnAll(int client, int args) {
 }
 public Action Command_SwapPlayer(int client, int args) {
 	if(args < 1) {
-		ReplyToCommand(client, "Usage: sm_swap <player> [player or yourself] [silent]");
+		ReplyToCommand(client, "Usage: sm_swap <player> [another player (default: self)] [\"silent\"]");
 	}else{
 		char arg1[64], arg2[64], arg3[8];
 		GetCmdArg(1, arg1, sizeof(arg1));
@@ -621,23 +617,31 @@ public Action Cmd_SetSurvivor(int client, int args) {
 	return Plugin_Handled;
 }
 
+// Hide MOTD
 public Action VGUIMenu(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init) {
 	static char buffer[5];
 	BfReadString(bf, buffer, sizeof(buffer));
 	return strcmp(buffer, "info") == 0 ? Plugin_Handled : Plugin_Continue;
 }  
+
 public void OnClientPutInServer(int client) {
 	if(!IsFakeClient(client))
 		SDKHook(client, SDKHook_WeaponEquip, Event_OnWeaponEquip);
 }
+
 public void OnClientDisconnect(int client) {
+	isHighPingIdle[client] = false;
+	iHighPingCount[client] = 0;
 	if(IsClientConnected(client) && IsClientInGame(client) && botDropMeleeWeapon[client] > -1) {
 		float pos[3];
 		GetClientAbsOrigin(client, pos);
 		TeleportEntity(botDropMeleeWeapon[client], pos, NULL_VECTOR, NULL_VECTOR);
 		botDropMeleeWeapon[client] = -1;
 	}
-	if(!IsFakeClient(client)) {
+}
+public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client && !IsFakeClient(client)) {
 		static char auth[32];
 		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
 		SteamIDs.Remove(auth);
