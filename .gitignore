@@ -4,6 +4,9 @@
 !scripting/include
 !scripting/include/feedthetrolls
 !scripting/include/hideandseek
+!scripting/hideandseek.sp
+!scripting/guessswho.sp
+!scripting/include/guessswho
 !gamedata/
 template.config.js
 .*
