@@ -525,13 +525,19 @@ stock bool IsEntityInSightRange(int client, int target, float angle = 90.0, floa
 	}
 	else return false;
 }
-stock void PrintToAdmins(const char[] message, const char[] flags) {
-	for (int x = 1; x <= MaxClients; x++){
-		if (IsValidClient(x) && IsValidAdmin(x, flags)) {
-			PrintToChat(x, message);
+stock void PrintChatToAdmins(const char[] format, any ...) {
+	char buffer[254];
+	VFormat(buffer, sizeof(buffer), format, 2);
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			AdminId admin = GetUserAdmin(i);
+			if(admin != INVALID_ADMIN_ID) {
+				PrintToChat(i, "%s", buffer);
+			}
 		}
 	}
-} 
+	PrintToServer("%s", buffer);
+}
 stock bool IsValidAdmin(int client, const char[] flags) {
 	int ibFlags = ReadFlagString(flags);
 	if ((GetUserFlagBits(client) & ibFlags) == ibFlags) {
