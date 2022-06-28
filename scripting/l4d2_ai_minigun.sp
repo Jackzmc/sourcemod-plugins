@@ -12,6 +12,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include "jutils.inc"
+#include <left4dhooks>
 //#include <sdkhooks>
 
 
@@ -106,7 +107,7 @@ public Action Command_SpawnMinigunBot(int client, int args) {
 		//make sure spawns a little above
 		vPos[2] += 1.0;
 
-		int survivor = GetClientOfUserId(SpawnSurvivor(vPos, vAng, model, true));
+		int survivor = SpawnSurvivor(vPos, vAng, model, true);
 		if(survivor > 0) {
 			GiveClientWeaponLasers(survivor, "rifle_ak47");
 		}else{
@@ -209,12 +210,12 @@ stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] m
 	ChangeClientTeam(bot_client_id, 4);
 	
 	SetEntProp(bot_client_id, Prop_Send, "m_fFlags", GetEntProp(bot_client_id, Prop_Send, "m_fFlags") | FL_FROZEN);
-	CreateTimer(0.1, Timer_Move, bot_user_id);
+	CreateTimer(0.1, spawn_minigun ? Timer_MoveMinigun : Timer_Move, bot_user_id);
 	TeleportEntity(bot_client_id, vPos, NULL_VECTOR, NULL_VECTOR);
 	
 	SetEntityModel(bot_client_id, model); //set entity model to custom survivor model
-	CreateTimer(6.0, Timer_Move, bot_user_id);
-	return bot_user_id;
+	CreateTimer(6.0, spawn_minigun ? Timer_MoveMinigun : Timer_Move, bot_user_id);
+	return bot_client_id;
 }
 void AvoidCharacter(int type, bool avoid) {
 	for( int i = 1; i <= MaxClients; i++ )
@@ -255,8 +256,19 @@ void AvoidCharacter(int type, bool avoid) {
 Action Timer_Move(Handle timer, any client) {
 	if((client = GetClientOfUserId(client))) {
 		//PrintToServer("client %d %N",client,client);
-		SetEntityMoveType(client, MOVETYPE_NONE);
-		SetEntProp(client, Prop_Send, "m_fFlags", GetEntProp(client, Prop_Send, "m_fFlags") | FL_FROZEN);
+		L4D2_RemoveEntityGlow(client);
+		// SetEntityMoveType(client, MOVETYPE_NONE);
+		SetEntProp(client, Prop_Send, "m_fFlags", GetEntProp(client, Prop_Send, "m_fFlags") & ~FL_FROZEN);
 		TeleportEntity(client, NULL_VECTOR, NULL_VECTOR, view_as<float>({ 0.0, 0.0, 0.0 }));
 	}
 }
+
+Action Timer_MoveMinigun(Handle timer, any client) {
+	if((client = GetClientOfUserId(client))) {
+		L4D2_RemoveEntityGlow(client);
+		SetEntityMoveType(client, MOVETYPE_NONE);
+		// SetEntProp(client, Prop_Send, "m_fFlags", GetEntProp(client, Prop_Send, "m_fFlags") & ~FL_FROZEN);
+		TeleportEntity(client, NULL_VECTOR, NULL_VECTOR, view_as<float>({ 0.0, 0.0, 0.0 }));
+	}
+}
+
