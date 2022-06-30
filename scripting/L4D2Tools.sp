@@ -78,6 +78,17 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
 	LoadTranslations("common.phrases");
+	Handle hConfig = LoadGameConfigFile("l4d2tools");
+	if(hConfig == INVALID_HANDLE) SetFailState("Could not load l4d2tools gamedata.");
+	
+	StartPrepSDKCall(SDKCall_Player);
+	PrepSDKCall_SetFromConf(hConfig, SDKConf_Signature, "GoAwayFromKeyboard");
+	hGoAwayFromKeyboard = EndPrepSDKCall();
+	delete hConfig;
+
+	if(hGoAwayFromKeyboard == INVALID_HANDLE) {
+		SetFailState("GoAwayFromKeyboard signature is invalid");
+	}
 
 	hLaserNotice 	= CreateConVar("sm_laser_use_notice", "1.0", "Enable notification of a laser box being used", FCVAR_NONE, true, 0.0, true, 1.0);
 	hFinaleTimer 	= CreateConVar("sm_time_finale", "0.0", "Record the time it takes to complete finale. 0 -> OFF, 1 -> Gauntlets Only, 2 -> All finales", FCVAR_NONE, true, 0.0, true, 2.0);
@@ -247,8 +258,9 @@ public Action Timer_CheckPlayerPings(Handle timer) {
 					if(iHighPingCount[i]++ > 2) {
 						PrintToChat(i, "Due to your high ping (%d ms), you have been moved to AFK.", ping);
 						PrintToChat(i, "You will be automatically switched back once your ping restores");
+						SDKCall(hGoAwayFromKeyboard, i);
 						//PrintToChat(i, "Type /pingignore to disable this feature.");
-						L4D_ReplaceWithBot(i);
+						// L4D_ReplaceWithBot(i);
 						isHighPingIdle[i] = true;
 						iHighPingCount[i] = 0;
 					}
