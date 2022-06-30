@@ -638,6 +638,7 @@ Action Timer_BotMove(Handle h, int userid) {
 }
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
+	if(!isEnabled) return Plugin_Continue;
 	if(IsFakeClient(client)) {
 		float random = GetURandomFloat();
 		buttons |= (activeBotLocations[client].runto ? IN_WALK : IN_SPEED);
