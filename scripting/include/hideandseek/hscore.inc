@@ -44,7 +44,7 @@ bool LoadConfigForMap(const char[] map) {
 		validSets.Clear();
 
 		static char buffer[64];
-		if(StrEqual(currentSet, "default") && kv.GetString("defaultset", buffer, sizeof(buffer))) {
+		if(StrEqual(currentSet, "default") && kv.GetString("defaultset", buffer, sizeof(buffer)) && buffer[0] != '\0') {
 			strcopy(currentSet, sizeof(currentSet), buffer);
 		}
 		PrintToServer("[H&S] Loading config data for set %s on %s", currentSet, map);

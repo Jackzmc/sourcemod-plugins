@@ -269,6 +269,8 @@ public Action Timer_StopPeekCam(Handle h) {
 			SetPeekCamActive(i, false);
 		}
 	}
+	AcceptEntityInput(seekerCam, "Kill");
+	seekerCam = INVALID_ENT_REFERENCE;
 }
 
 public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) { 

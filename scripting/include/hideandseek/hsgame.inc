@@ -263,8 +263,6 @@ void SetPeekCamActive(int client, bool active) {
 		AcceptEntityInput(seekerCam, "Enable", client); // Need to always activate before deactivating to fix a semi-common bug
 		if(!active) {
 			AcceptEntityInput(seekerCam, "Disable", client);
-			AcceptEntityInput(seekerCam, "Kill");
-			seekerCam = INVALID_ENT_REFERENCE;
 		}
 	} else {
 		PrintToServer("WARN: SetPeekCamActive(%d, %b) when seekerCam invalid", client, active);
