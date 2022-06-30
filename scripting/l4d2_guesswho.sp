@@ -5,11 +5,19 @@
 
 #define PLUGIN_VERSION "1.0"
 
+#define BOT_MOVE_RANDOM_MIN_TIME 7.0 // The minimum random time for Timer_BotMove to activate (set per round)
+#define BOT_MOVE_RANDOM_MAX_TIME 9.6 // The maximum random time for Timer_BotMove to activate (set per round)
+#define BOT_MOVE_CHANCE 0.90 // The chance the bot will move each Timer_BotMove
+#define BOT_MOVE_AVOID_FLOW_DIST 15.0 // The flow range of flow distance that triggers avoid
+#define BOT_MOVE_AVOID_SEEKER_CHANCE 0.60 // The chance that if the bot gets too close to the seeker, it runs away
 
-#define DEBUG_SEEKER_PATH_CREATION 1
+#define BOT_MOVE_TOO_FAR_DIST 1200.0 // TODO: DO NOT HARDCODE ME -FLOW RANGE-
+#define SEED_TIME 1.0 // Time the seeker is blind, used to gather locations for bots
 
 
-#define SEED_TIME 10.0
+// #define DEBUG_SEEKER_PATH_CREATION 1
+
+
 #define MAX_VALID_LOCATIONS 1000
 
 #include <sourcemod>
@@ -18,6 +26,7 @@
 #include <smlib/effects>
 #include <sceneprocessor>
 #include <basegamemode>
+#include <multicolors>
 
 //#include <sdkhooks>
 
@@ -42,16 +51,13 @@ int currentSeeker;
 bool hasBeenSeeker[MAXPLAYERS+1];
 bool ignoreSeekerBalance;
 Handle spawningTimer;
+UserMsg g_FadeUserMsgId;
 
 ConVar cvar_survivorLimit;
-ConVar cvar_separationMinRange;
-ConVar cvar_separationMaxRange;
-ConVar cvar_abmAutoHard;
-ConVar cvar_sbFixEnabled;
-
 ConVar cvar_seekerFailDamageAmount;
 
 ArrayList validLocations;
+
 
 enum struct LocationMeta {
 	float pos[3];
@@ -60,6 +66,10 @@ enum struct LocationMeta {
 }
 
 LocationMeta activeBotLocations[MAXPLAYERS];
+
+static float seekerPos[3];
+Handle moveTimers[MAXPLAYERS+1];
+float seekerFlow = 0.0;
 
 #include <guesswho/gwcore>
 
@@ -82,17 +92,17 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
 
+	validMaps = new ArrayList(ByteCountToCells(64));
+	validSets = new ArrayList(ByteCountToCells(16));
+	mapConfigs = new StringMap();
+
+	g_FadeUserMsgId = GetUserMessageId("Fade");
+
 	validLocations = new ArrayList(sizeof(LocationMeta));
 
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.AddChangeHook(Event_GamemodeChange);
 	Event_GamemodeChange(hGamemode, gamemode, gamemode);
-
-	cvar_survivorLimit = FindConVar("survivor_limit");
-	cvar_separationMinRange = FindConVar("sb_separation_danger_min_range");
-	cvar_separationMaxRange = FindConVar("sb_separation_danger_max_range");
-	cvar_abmAutoHard = FindConVar("abm_autohard");
-	cvar_sbFixEnabled = FindConVar("sb_fix_enabled");
 
 	cvar_seekerFailDamageAmount = CreateConVar("guesswho_seeker_damage", "20.0", "The amount of damage the seeker takes when they attack a bot.", FCVAR_NONE, true, 1.0);
 
@@ -138,6 +148,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		UnhookEvent("player_death", Event_PlayerDeath);
 		UnhookEvent("player_spawn", Event_PlayerSpawn);*/
 		Cleanup();
+		PrintToChatAll("[GuessWho] Gamemode unloaded but cvars have not been reset.");
 	}
 	isEnabled = shouldEnable;
 }
@@ -189,7 +200,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 			PrintToChatAll("Everyone has died. %N wins!", currentSeeker);
 		}
 		SetState(State_Unknown);
-		CreateTimer(5.0, Timer_ResetAll);
+		// CreateTimer(5.0, Timer_ResetAll);
 	}
 }
 
@@ -233,11 +244,13 @@ public void OnMapStart() {
 	char map[128];
 	GetCurrentMap(map, sizeof(map));
 	if(!StrEqual(currentMap, map)) {
+		strcopy(currentSet, sizeof(currentSet), "default");
 		if(!StrEqual(currentMap, "")) { 
 			if(!SaveMapData(currentMap)) {
 				LogError("Could not save map data to disk");
 			}
 		}
+		ReloadMapDB();
 		strcopy(currentMap, sizeof(currentMap), map);
 		LoadMapData(map);
 	}
@@ -247,7 +260,6 @@ public void OnMapStart() {
 	}
 
 	if(lateLoaded) {
-		SetupEntities();
 		int seeker = GetSeeker();
 		if(seeker > -1) {
 			currentSeeker = seeker;
@@ -255,6 +267,7 @@ public void OnMapStart() {
 		}
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
+				ClearInventory(i);
 				if(i == currentSeeker) {
 					CheatCommand(i, "give", "fireaxe");
 				} else {
@@ -269,20 +282,41 @@ public void OnMapStart() {
 	SetState(State_Unknown);
 }
 
+public void OnMapEnd() {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(moveTimers[i] != null) {
+			delete moveTimers[i];
+		}
+	}
+}
+
 public void OnClientPutInServer(int client) {
 	if(isEnabled && !IsFakeClient(client)) {
 		ChangeClientTeam(client, 1);
 		isPendingPlay[client] = true;
 		PrintToChatAll("%N will play next round", client);
 		float pos[3];
-		GetSpawnPosition(pos);
+		FindSpawnPosition(pos);
 		TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
+	}
+}
+
+public void OnClientDisconnect(int client) {
+	if(client == currentSeeker) {
+		PrintToChatAll("The seeker has disconnected");
+		CreateTimer(1.0, Timer_ResetAll);
 	}
 }
 
 
 
 void SetCvars() {
+	cvar_survivorLimit = FindConVar("survivor_limit");
+	ConVar cvar_separationMinRange = FindConVar("sb_separation_danger_min_range");
+	ConVar cvar_separationMaxRange = FindConVar("sb_separation_danger_max_range");
+	ConVar cvar_abmAutoHard = FindConVar("abm_autohard");
+	ConVar cvar_sbFixEnabled = FindConVar("sb_fix_enabled");
+	ConVar cvar_sbPushScale = FindConVar("sb_pushscale");
 	if(cvar_survivorLimit != null) {
 		cvar_survivorLimit.SetBounds(ConVarBound_Upper, true, 64.0);
 		cvar_survivorLimit.IntValue = MaxClients;
@@ -295,6 +329,7 @@ void SetCvars() {
 		cvar_abmAutoHard.IntValue = 0;
 	if(cvar_sbFixEnabled != null)
 		cvar_sbFixEnabled.IntValue = 0;
+	cvar_sbPushScale.IntValue = 0;
 }
 
 
@@ -303,6 +338,7 @@ void InitGamemode() {
 		PrintToServer("[GuessWho] Warn: InitGamemode() called in an incorrect state (%d)", GetState());
 		return;
 	}
+	SetupEntities();
 	PrintToChatAll("InitGamemode(): activating");
 	ArrayList validPlayerIds = new ArrayList();
 	for(int i = 1; i <= MaxClients; i++) {
@@ -328,12 +364,11 @@ void InitGamemode() {
 	if(newSeeker  > 0) {
 		hasBeenSeeker[newSeeker] = true;
 		PrintToChatAll("%N is the seeker", newSeeker);
-		SetTick(30);
-		SetState(State_Starting);
+		SetPlayerBlind(newSeeker, 255);
 		SetSeeker(newSeeker);
 	}
 	
-	PrintToChatAll("SPAWNING BOTS AHHHHHHHHHHHHH");
+	TeleportAllToStart();
 	spawningTimer = CreateTimer(0.2, Timer_SpawnBots, 16, TIMER_REPEAT);
 }
 
@@ -355,17 +390,10 @@ Action Timer_SpawnBots(Handle h, int max) {
 	return Plugin_Stop;
 }
 
-Action Timer_StartSeeker(Handle h) {
-	PrintToChatAll("Timer_StartSeeker(): activating");
-	PrintToChatAll("%N is now active", currentSeeker);
-	SetState(State_Active);
-	SetTick(0);
-	SetMapTime(1000);
-	return Plugin_Continue;
-}
-
 Action Timer_SpawnPost(Handle h) {
 	PrintToChatAll("Timer_SpawnPost(): activating");
+	SetState(State_Starting);
+
 	bool isL4D1 = L4D2_GetSurvivorSetMap() == 1;
 	int remainingSeekers;
 	for(int i = 1; i <= MaxClients; i++) {
@@ -394,34 +422,47 @@ Action Timer_SpawnPost(Handle h) {
 		}
 	}
 
-	PrintToChatAll("waiting for safe area leave");
+	PrintToChatAll("[debug] waiting for safe area leave");
 	CreateTimer(1.0, Timer_WaitForStart, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+
 	return Plugin_Handled;
 }
 
 Action Timer_WaitForStart(Handle h) {
 	if(L4D_HasAnySurvivorLeftSafeArea()) {
-		float pos[3];
-		GetClientAbsOrigin(L4D_GetHighestFlowSurvivor(), pos);
+		GetClientAbsOrigin(L4D_GetHighestFlowSurvivor(), seekerPos);
+		seekerFlow = L4D2Direct_GetFlowDistance(currentSeeker);
+		CreateTimer(0.5, Timer_AcquireLocations, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
 		for(int i = 1; i <= MaxClients; i++) {
 			if(i != currentSeeker && IsClientConnected(i) && IsClientInGame(i)) {
-				TeleportEntity(i, pos, NULL_VECTOR, NULL_VECTOR);
+				TeleportEntity(i, seekerPos, NULL_VECTOR, NULL_VECTOR);
+				if(IsFakeClient(i)) {
+					moveTimers[i] = CreateTimer(GetRandomFloat(BOT_MOVE_RANDOM_MIN_TIME, BOT_MOVE_RANDOM_MAX_TIME), Timer_BotMove2, GetClientUserId(i), TIMER_REPEAT);
+					TriggerTimer(moveTimers[i]);
+				}
 			}
 		}
-		CreateTimer(0.5, Timer_AcquireLocations, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
-		Handle t = CreateTimer(8.0, Timer_BotMove, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
-		TriggerTimer(t);
 
-		PrintToChatAll("[GuessWho] Player has left safe area, starting");
-		SetTick(RoundFloat(SEED_TIME));
+		PrintToChatAll("[GuessWho] Seeker will start in %.0f seconds", SEED_TIME);
+		SetTick(0);
+		SetMapTime(RoundFloat(SEED_TIME));
 		CreateTimer(SEED_TIME, Timer_StartSeeker);
 		return Plugin_Stop;
 	}
 	return Plugin_Continue;
 }
 
+Action Timer_StartSeeker(Handle h) {
+	CPrintToChatAll("{blue}%N{default} :  Here I come", currentSeeker);
+	TeleportToSpawn(currentSeeker);
+	SetPlayerBlind(currentSeeker, 0);
+	SetState(State_Active);
+	SetTick(0);
+	SetMapTime(1000);
+	return Plugin_Continue;
+}
+
 Action OnWeaponDrop(int client, int weapon) { 
-	PrintToChatAll("No drop");
 	return Plugin_Handled;
 }
 
@@ -430,7 +471,7 @@ Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float& damag
 		damage = 100.0;
 		ClearInventory(victim);
 		if(IsFakeClient(victim)) {
-			PrintToChat(attacker, "That was a bot! -%f health", cvar_seekerFailDamageAmount.FloatValue);
+			PrintToChat(attacker, "That was a bot! -%.0f health", cvar_seekerFailDamageAmount.FloatValue);
 			SDKHooks_TakeDamage(attacker, 0, 0, cvar_seekerFailDamageAmount.FloatValue);
 		}
 		return Plugin_Changed;
@@ -451,17 +492,19 @@ Action Timer_AcquireLocations(Handle h) {
 	#if defined DEBUG_SEEKER_PATH_CREATION
 		ignoreSeeker = false;
 	#endif
+	seekerFlow = L4D2Direct_GetFlowDistance(currentSeeker);
+	GetClientAbsOrigin(currentSeeker, seekerPos);
 	for(int i = 1; i <= MaxClients; i++) {
 		if((!ignoreSeeker || i != currentSeeker) && IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && GetEntityFlags(i) & FL_ONGROUND ) {
 			LocationMeta meta;
 			GetClientAbsOrigin(i, meta.pos);
 			GetClientEyeAngles(i, meta.ang);
 			if(meta.pos[0] != vecLastLocation[i][0] || meta.pos[1] != vecLastLocation[i][1] || meta.pos[2] != vecLastLocation[i][2]) {
-				meta.runto = GetURandomFloat() > 0.9;
 				validLocations.PushArray(meta);
 				if(validLocations.Length > MAX_VALID_LOCATIONS) {
+					PrintToServer("[GuessWho] Hit MAX_VALID_LOCATIONS (%d), clearing some locations", MAX_VALID_LOCATIONS);
 					validLocations.Sort(Sort_Random, Sort_Float);
-					validLocations.Erase(MAX_VALID_LOCATIONS - 100);
+					validLocations.Erase(MAX_VALID_LOCATIONS - 200);
 				}
 				Effect_DrawBeamBoxRotatableToAll(meta.pos, DEBUG_BOT_MOVER_MIN, DEBUG_BOT_MOVER_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.1, 0.1, 0, 0.0, {255, 0, 0, 255}, 0);
 				vecLastLocation[i] = meta.pos;
@@ -472,32 +515,38 @@ Action Timer_AcquireLocations(Handle h) {
 }
 
 
-Action Timer_BotMove(Handle h) {
-	static float seekerPos[3];
-	if(!IsClientConnected(currentSeeker)) {
-		PrintToChatAll("The seeker has disconnected");
-		CreateTimer(1.0, Timer_ResetAll);
-		return Plugin_Stop;
-	}
-	float seekerFlow = L4D2Direct_GetFlowDistance(currentSeeker);
-	GetClientAbsOrigin(currentSeeker, seekerPos);
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsFakeClient(i)) {
-			float botFlow = L4D2Direct_GetFlowDistance(i);
+Action Timer_BotMove2(Handle h, int userid) {
+	int i = GetClientOfUserId(userid);
+	if(i == 0) return Plugin_Stop;
+	if(GetURandomFloat() > BOT_MOVE_CHANCE) return Plugin_Continue;
 
-			if(botFlow - seekerFlow > 1000.0) {
-				TE_SetupBeamLaser(i, currentSeeker, g_iLaserIndex, 0, 0, 0, 8.0, 0.5, 0.1, 0, 1.0, {255, 255, 0, 125}, 1);
-				TE_SendToAll();
-				L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(i), seekerPos[0], seekerPos[1], seekerPos[2]);
-			} else if(validLocations.Length > 0) {
-				validLocations.GetArray(GetURandomInt() % validLocations.Length, activeBotLocations[i]);
-				Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_BOT_MOVER_MIN, DEBUG_BOT_MOVER_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.1, 0.1, 0, 0.0, {255, 0, 255, 255}, 0);
-				L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", 
-					GetClientUserId(i), 
-					activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]
-				);
+	float botFlow = L4D2Direct_GetFlowDistance(i);
+	float flowDiff = FloatAbs(botFlow - seekerFlow);
+	if(flowDiff > BOT_MOVE_TOO_FAR_DIST) {
+		activeBotLocations[i].runto = GetURandomFloat() > 0.90;
+		TE_SetupBeamLaser(i, currentSeeker, g_iLaserIndex, 0, 0, 0, 8.0, 0.5, 0.1, 0, 1.0, {255, 255, 0, 125}, 1);
+		TE_SendToAll();
+		L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(i), seekerPos[0], seekerPos[1], seekerPos[2]);
+		PrintToConsoleAll("[gw/debug] BOT %N TOO FAR (DIFF %f) -> Moving to seeker (%f %f %f)", i, flowDiff, seekerPos[0], seekerPos[1], seekerPos[2]);
+	} else if(validLocations.Length > 0) {
+		if(mapConfig.hasSpawnpoint && FloatAbs(botFlow - seekerFlow) < BOT_MOVE_AVOID_FLOW_DIST && GetURandomFloat() < BOT_MOVE_AVOID_SEEKER_CHANCE) {
+			if(!FindPointAway(seekerPos, activeBotLocations[i].pos)) {
+				PrintToConsoleAll("[gw/debug] BOT %N TOO CLOSE -> Failed to find far point, falling back to spawn", i);
+				activeBotLocations[i].pos = mapConfig.spawnpoint;
+			} else {
+				PrintToConsoleAll("[gw/debug] BOT %N TOO CLOSE -> Moving to far point (%f %f %f)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
 			}
+			activeBotLocations[i].runto = GetURandomFloat() < 0.75;
+			Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_BOT_MOVER_MIN, DEBUG_BOT_MOVER_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.2, 0.1, 0, 0.0, {255, 255, 255, 255}, 0);
+		} else {
+			activeBotLocations[i].runto = GetURandomFloat() > 0.90;
+			validLocations.GetArray(GetURandomInt() % validLocations.Length, activeBotLocations[i]);
+			Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_BOT_MOVER_MIN, DEBUG_BOT_MOVER_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.1, 0.1, 0, 0.0, {255, 0, 255, 255}, 0);
 		}
+		L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", 
+			GetClientUserId(i), 
+			activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]
+		);
 	}
 	return Plugin_Continue;
 }
@@ -505,8 +554,7 @@ Action Timer_BotMove(Handle h) {
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	if(IsFakeClient(client)) {
 		float random = GetURandomFloat();
-		if(!activeBotLocations[client].runto)
-			buttons |= IN_SPEED;
+		buttons |= (activeBotLocations[client].runto ? IN_WALK : IN_SPEED);
 		if(random < 0.001) {
 			buttons |= IN_JUMP;
 		} else if(random < 0.0015) {
@@ -522,6 +570,7 @@ void ClearInventory(int client) {
 	for(int i = 0; i <= 5; i++) {
 		int item = GetPlayerWeaponSlot(client, i);
 		if(item > 0) {
+			RemovePlayerItem(client, item);
 			AcceptEntityInput(item, "Kill");
 		}
 	}
@@ -529,23 +578,22 @@ void ClearInventory(int client) {
 
 bool AddSurvivor() {
 	if (GetClientCount(false) >= MaxClients - 1) {
-        return false;
-    }
+		return false;
+	}
 
 	int i = CreateFakeClient("GuessWhoBot");
 	bool result;
 	if (i > 0) {
-        if (DispatchKeyValue(i, "classname", "SurvivorBot")) {
-            ChangeClientTeam(i, 2);
+		if (DispatchKeyValue(i, "classname", "SurvivorBot")) {
+			ChangeClientTeam(i, 2);
 
-            if (DispatchSpawn(i)) {
-                result = true;
-            }
-        }
+			if (DispatchSpawn(i)) {
+				result = true;
+			}
+		}
 
 		CreateTimer(0.2, Timer_Kick, i);
-        // KickClient(i);
-    }
+	}
 	return result;
 }
 
@@ -605,10 +653,9 @@ bool LoadMapData(const char[] map) {
 
 	char buffer[256];
 	BuildPath(Path_SM, buffer, sizeof(buffer), "data/guesswho/%s.txt", map);
-	PrintToServer("[GuessWho] Attempting to read %s", buffer);
+	LoadConfigForMap(map);
 	File file = OpenFile(buffer, "r+");
 	if(file != null) {
-		PrintToServer("[GuessWho] Read map data file for %s", map);
 		char line[64];
 		char pieces[16][6];
 		file.ReadLine(line, sizeof(line)); // Skip header
@@ -623,7 +670,7 @@ bool LoadMapData(const char[] map) {
 			meta.ang[2] = StringToFloat(pieces[5]);
 			validLocations.PushArray(meta);
 		}
-		PrintToServer("[GuessWho] Loaded %d locations from disk", validLocations.Length);
+		PrintToServer("[GuessWho] Loaded %d locations for %s", validLocations.Length, map);
 		delete file;
 		return true;
 	}
