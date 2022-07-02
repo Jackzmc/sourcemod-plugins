@@ -3,6 +3,7 @@ This is a collection of all the sourcemod plugins I've created, most are just us
 
 
 Not always the latest versions, if you have any interest with plugins I can make sure to upload the latest.
+Nearly all l4d2 plugins require left4dhooks
 
 
 Useful things:
@@ -32,6 +33,8 @@ Useful things:
 * [l4d2_TKStopper](#l4d2_TKStopper)
 * [l4d2_crescendo_control](#l4d2_crescendo_control)
 * [l4d2_vocalize_control](#l4d2_vocalize_control)
+* [l4d2_hideandseek](#l4d2_hideandseek)
+* [l4d2_guesswho](#l4d2_guesswho)
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
@@ -316,4 +319,19 @@ A very small plugin that simply allows a player to mute another player's vocaliz
 ### l4d2_sb_fix
 A fork of https://forums.alliedmods.net/showthread.php?p=2757330
 - Updated to latest sourcepawn syntax
-- Some improvements
+
+
+### l4d2_hideandseek
+A sourcemod extenstion of the vscript gamemode (https://steamcommunity.com/sharedfiles/filedetails/?id=2467133506)
+- Player blockers, portals, and props to change and control the maps
+- Some quality of life (winner messages, change seeker mid game, change map time)
+- and a lot more
+
+### l4d2_guesswho
+Based off gmod guess who game, find the real players amongst a group of bots.
+All logic is written in this plugin, thus is required. 
+Vscript required for hud & mutation
+
+Gamemode: https://steamcommunity.com/sharedfiles/filedetails/?id=2823719841
+
+Requires l4dtoolz and left4dhooks, and optioanlly skip intro cutscene 
