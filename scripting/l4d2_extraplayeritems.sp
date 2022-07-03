@@ -463,15 +463,18 @@ public Action Timer_SpawnFinaleTank(Handle t, int user) {
 		ServerCommand("sm_forcespecial tank");
 		finaleStage = Stage_Inactive;
 	}
+	return Plugin_Handled;
 }
 public Action Timer_SpawnSplitTank(Handle t, int user) {
 	ServerCommand("sm_forcespecial tank");
+	return Plugin_Handled;
 }
 public Action Timer_SetHealth(Handle h, int user) {
 	int client = GetClientOfUserId(user);
 	if(client > 0 ) {
 		SetEntProp(client, Prop_Send, "m_iHealth", extraTankHP);
 	}
+	return Plugin_Handled;
 }
 
 public void Frame_SetExtraTankHealth(int user) {
@@ -591,6 +594,7 @@ public Action Timer_CheckInventory(Handle h, int client) {
 		PrintToConsoleAll("[EPI] Detected mismatch inventory for %N, restoring", client);
 		RestoreInventory(client);
 	}
+	return Plugin_Handled;
 }
 
 public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast) {
@@ -626,6 +630,7 @@ public Action Timer_DropSurvivor(Handle h, int client) {
 		}
 		DropDroppedInventories();
 	}
+	return Plugin_Handled;
 }
 
 /*public Action Timer_DropSurvivor(Handle h, DataPack pack) {
@@ -725,8 +730,10 @@ public void Frame_SetupNewClient(int client) {
 	if(tier2Weapons.Length > 0) {
 		tier2Weapons.GetString(GetRandomInt(0, tier2Weapons.Length), weaponName, sizeof(weaponName));
 		Format(weaponName, sizeof(weaponName), "weapon_%s", weaponName);
+		PrintToServer("[EPI/debug] Giving new client (%N) tier 2: %s", client, weaponName);
 	} else {
 		Format(weaponName, sizeof(weaponName), "weapon_%s", TIER1_WEAPONS[GetRandomInt(0, TIER1_WEAPON_COUNT)]);
+		PrintToServer("[EPI/debug] Giving new client (%N) tier 1: %s", client, weaponName);
 	}
 	int item = GivePlayerItem(client, weaponName);
 	if(lowestClient > 0) {
@@ -744,6 +751,7 @@ public void Frame_SetupNewClient(int client) {
 }
 public Action Timer_RemoveInvincibility(Handle h, int client) {
 	SDKUnhook(client, SDKHook_OnTakeDamage, OnInvincibleDamageTaken);
+	return Plugin_Handled;
 }
 public Action OnInvincibleDamageTaken(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
 	damage = 0.0;

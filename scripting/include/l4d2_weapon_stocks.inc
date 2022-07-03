@@ -3,14 +3,6 @@
 #endif
 #define l4d2_weapons_inc_
 
-#define GETWEAPONNAME(%0) (IsValidWeaponId(WeaponId (%0)) ? (WeaponNames[(%0)]) : "")
-#define GETLONGWEAPONNAME(%0) (IsValidWeaponId(WeaponId (%0)) ? (LongWeaponNames[(%0)]) : "")
-#define GETMELEEWEAPONNAME(%0) (IsValidWeaponId(MeleeWeaponId (%0)) ? (MeleeWeaponNames[(%0)]) : "")
-#define GETLONGMELEEWEAPONNAME(%0) (IsValidWeaponId(MeleeWeaponId (%0)) ? (LongMeleeWeaponNames[(%0)]) : "")
-#define GETWEAPONMODEL(%0) (HasValidWeaponModel(WeaponId (%0)) ? (WeaponModels[(%0)]) : "")
-#define GETMELEEWEAPONMODEL(%0) (HasValidWeaponModel(MeleeWeaponId (%0)) ? (MeleeWeaponModels[(%0)]) : "")
-
-
 // Weapon ID enumerations.
 // These values are *NOT* arbitrary! 
 // They are used in game as the weaponid for weapon_spawn entities
@@ -69,7 +61,8 @@ enum WeaponId {
     WEPID_ROCK,             // 52
     WEPID_PHYSICS,          // 53
     WEPID_AMMO,             // 54
-    WEPID_UPGRADE_ITEM      // 55
+    WEPID_UPGRADE_ITEM,      // 55
+    WEPID_COUNT
 };
 
 // These values are arbitrary
@@ -89,7 +82,8 @@ enum MeleeWeaponId
     WEPID_KATANA,
     WEPID_MACHETE,
     WEPID_RIOT_SHIELD,
-    WEPID_TONFA
+    WEPID_TONFA,
+    WEPID_MELEE_COUNT
 };
 
 // Weapon names for each of the weapons, used in identification.
@@ -139,7 +133,7 @@ char LongWeaponNames[56][] = {
 };
 
 // Internal names for melee weapons
-char MeleeWeaponNames[MeleeWeaponId][] =
+char MeleeWeaponNames[WEPID_MELEE_COUNT][] =
 {
     "",
     "knife",
@@ -159,7 +153,7 @@ char MeleeWeaponNames[MeleeWeaponId][] =
 };
 
 // Long melee weapon names
-char LongMeleeWeaponNames[MeleeWeaponId][] =
+char LongMeleeWeaponNames[WEPID_MELEE_COUNT][] =
 {
     "None",
     "Knife",
@@ -332,13 +326,13 @@ static Handle hMeleeWeaponModelsTrie = INVALID_HANDLE;
 
 stock void InitWeaponNamesTrie() {
     hWeaponNamesTrie = CreateTrie();
-    for(int i = 0; i < view_as<int>(WeaponId); i++) {
+    for(int i = 0; i < view_as<int>(WEPID_COUNT); i++) {
         SetTrieValue(hWeaponNamesTrie, WeaponNames[i], i);
     }
 
     hMeleeWeaponNamesTrie = CreateTrie();
     hMeleeWeaponModelsTrie = CreateTrie();
-    for (int i = 0; i < view_as<int>(MeleeWeaponId); ++i)
+    for (int i = 0; i < view_as<int>(WEPID_MELEE_COUNT); ++i)
     {
         SetTrieValue(hMeleeWeaponNamesTrie, MeleeWeaponNames[i], i);
         SetTrieString(hMeleeWeaponModelsTrie, MeleeWeaponModels[i], MeleeWeaponNames[i]);
@@ -357,7 +351,7 @@ stock bool IsValidWeaponId(WeaponId wepid){
 }
 
 stock bool IsValidMeleeWeaponId(MeleeWeaponId wepid) {
-    return MeleeWeaponId:wepid >= WEPID_MELEE_NONE && MeleeWeaponId:wepid < MeleeWeaponId;
+    return wepid >= WEPID_MELEE_NONE && wepid < WEPID_MELEE_COUNT;
 }
 
 /**
@@ -382,9 +376,7 @@ stock bool HasValidWeaponModel(WeaponId wepid) {
 }
 
 stock bool HasValidMeleeWeaponModel(MeleeWeaponId wepid) {
-    if (tagType == tagof(MeleeWeaponId)) {
-        return IsValidWeaponId(MeleeWeaponId:wepid) && MeleeWeaponModels[MeleeWeaponId:wepid][0] != '\0';
-    }
+    return IsValidMeleeWeaponId(wepid) && MeleeWeaponModels[wepid][0] != '\0';
 }
 
 /**
@@ -429,11 +421,13 @@ stock int GetMeleeWeaponName(WeaponId wepid, char[] nameBuffer, int length) {
  * @return                Number of bytes written to buffer, or 0 for invalid weaponId.
  */
 stock int GetLongWeaponName(WeaponId wepid, char[] nameBuffer, int length) {
-    strcopy(nameBuffer, length, GETLONGMELEEWEAPONNAME(wepid));
+    if(!IsValidWeaponId(wepid)) return 0;
+    return strcopy(nameBuffer, length, LongWeaponNames[wepid]);
 }
 
-stock int GetLongMeleeWeaponName(WeaponId wepid, char[] nameBuffer, int length) {
-    strcopy(nameBuffer, length, GETLONGWEAPONNAME(wepid));
+stock int GetLongMeleeWeaponName(MeleeWeaponId wepid, char[] nameBuffer, int length) {
+    if(!IsValidMeleeWeaponId(wepid)) return 0;
+    return strcopy(nameBuffer, length, LongMeleeWeaponNames[wepid]);
 }
     
 /**
@@ -445,12 +439,14 @@ stock int GetLongMeleeWeaponName(WeaponId wepid, char[] nameBuffer, int length) 
  * @param length        Max length which can be written to the buffer.
  * @return                Number of bytes written to buffer, or 0 for invalid weaponid or no weapon model available.
  */
-stock int GetWeaponModel(MeleeWeaponId wepid, char[] modelBuffer, int length) {
-    strcopy(modelBuffer, length, GETWEAPONMODEL(wepid));
+stock int GetWeaponModel(WeaponId wepid, char[] modelBuffer, int length) {
+    if(!HasValidWeaponModel(wepid)) return 0;
+    return strcopy(modelBuffer, length, WeaponModels[wepid]);
 }
 
 stock int GetMeleeWeaponModel(MeleeWeaponId wepid, char[] modelBuffer, int length) {
-    strcopy(modelBuffer, length, GETMELEEWEAPONMODEL(wepid));
+    if(!HasValidMeleeWeaponModel(wepid)) return 0;
+    return strcopy(modelBuffer, length, MeleeWeaponModels[wepid]);
 }
 
 /**
@@ -533,7 +529,7 @@ stock MeleeWeaponId IdentifyMeleeWeapon(int entity) {
 
     int id;
     if(GetTrieValue(hMeleeWeaponNamesTrie, sName, id)) {
-        return id;
+        return view_as<MeleeWeaponId>(id);
     }
     return WEPID_MELEE_NONE;
 }
@@ -549,14 +545,14 @@ stock MeleeWeaponId IdentifyMeleeWeapon(int entity) {
  * @param model            World model to use for the weapon spawn
  * @return entity of the new weapon spawn, or -1 on errors.
  */
-stock int ConvertWeaponSpawn(int entity, WeaponId wepid, int count = 5, const char model[] = "")
+stock int ConvertWeaponSpawn(int entity, WeaponId wepid, int count = 5, const char[] model = "")
 {
     if(!IsValidEntity(entity)) return -1;
     if(!IsValidWeaponId(wepid)) return -1;
     if(model[0] == '\0' && !HasValidWeaponModel(wepid)) return -1;
     
     
-    new Float:origins[3], Float:angles[3];
+    float origins[3], angles[3];
     GetEntPropVector(entity, Prop_Send, "m_vecOrigin", origins);
     GetEntPropVector(entity, Prop_Send, "m_angRotation", angles);
     
@@ -567,7 +563,7 @@ stock int ConvertWeaponSpawn(int entity, WeaponId wepid, int count = 5, const ch
     
     SetEntProp(entity, Prop_Send, "m_weaponID", wepid);
 
-    decl String:buf[64];
+    char buf[64];
     if(model[0] == '\0') {
         SetEntityModel(entity, model);
     } else {

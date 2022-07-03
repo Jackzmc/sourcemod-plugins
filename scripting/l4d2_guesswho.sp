@@ -4,12 +4,14 @@
 #define DEBUG
 #define DEBUG_SHOW_POINTS
 #define DEBUG_BOT_MOVE
+#define DEBUG_BLOCKERS
+// #define DEBUG_MOVE_ATTEMPTS
 // #define DEBUG_SEEKER_PATH_CREATION 1
 
 #define PLUGIN_VERSION "1.0"
 
-#define BOT_MOVE_RANDOM_MIN_TIME 6.0 // The minimum random time for Timer_BotMove to activate (set per bot, per round)
-#define BOT_MOVE_RANDOM_MAX_TIME 8.6 // The maximum random time for Timer_BotMove to activate (set per bot, per round)
+#define BOT_MOVE_RANDOM_MIN_TIME 2.0 // The minimum random time for Timer_BotMove to activate (set per bot, per round)
+#define BOT_MOVE_RANDOM_MAX_TIME 3.0 // The maximum random time for Timer_BotMove to activate (set per bot, per round)
 #define BOT_MOVE_CHANCE 0.96 // The chance the bot will move each Timer_BotMove
 #define BOT_MOVE_AVOID_FLOW_DIST 12.0 // The flow range of flow distance that triggers avoid
 #define BOT_MOVE_AVOID_SEEKER_CHANCE 0.50 // The chance that if the bot gets too close to the seeker, it runs away
@@ -18,10 +20,17 @@
 #define BOT_MOVE_JUMP_CHANCE 0.001
 #define BOT_MOVE_SHOVE_CHANCE 0.0015
 #define BOT_MOVE_RUN_CHANCE 0.15
+#define BOT_MOVE_NOT_REACHED_DISTANCE 60.0 // The distance that determines if a bot reached a point
+#define BOT_MOVE_NOT_REACHED_ATTEMPT_RUNJUMP 6 // The minimum amount of attempts where bot will run or jump to dest
+#define BOT_MOVE_NOT_REACHED_ATTEMPT_RETRY 9 // The minimum amount of attempts where bot gives up and picks new
 #define DOOR_TOGGLE_INTERVAL 5.0 // Interval that loops throuh all doors to randomly toggle
 #define DOOR_TOGGLE_CHANCE 0.01 // Chance that every Timer_DoorToggles triggers a door to toggle state
 #define HIDER_SWAP_COOLDOWN 30.0 // Amount of seconds until they can swap
+#define HIDER_SWAP_LIMIT 3 // Amount of times a hider can swap per round
 #define FLOW_BOUND_BUFFER 200.0 // Amount to add to calculated bounds (Make it very generous)
+#define HIDER_MIN_AVG_DISTANCE_AUTO_VOCALIZE 300.0 // The average minimum distance a hider is from the player that triggers auto vocalizating
+#define HIDER_AUTO_VOCALIZE_GRACE_TIME 20.0 // Number of seconds between auto vocalizations
+#define DEFAULT_MAP_TIME 480
 
 #if defined DEBUG
 	#define SEED_TIME 1.0
@@ -39,6 +48,8 @@
 
 float DEBUG_POINT_VIEW_MIN[3] = { -5.0, -5.0, 0.0 }; 
 float DEBUG_POINT_VIEW_MAX[3] = { 5.0, 5.0, 2.0 }; 
+int SEEKER_GLOW_COLOR[3] = { 128, 0, 0 };
+int PLAYER_GLOW_COLOR[3] = { 0, 255, 0 };
 
 #include <sourcemod>
 #include <sdktools>
@@ -49,20 +60,22 @@ float DEBUG_POINT_VIEW_MAX[3] = { 5.0, 5.0, 2.0 };
 #include <multicolors>
 
 char SURVIVOR_MODELS[8][] = {
-	"models/survivors/survivor_gambler.mdl",
-	"models/survivors/survivor_producer.mdl",
-	"models/survivors/survivor_coach.mdl",
-	"models/survivors/survivor_mechanic.mdl",
 	"models/survivors/survivor_namvet.mdl",
 	"models/survivors/survivor_teenangst.mdl",
 	"models/survivors/survivor_biker.mdl",
-	"models/survivors/survivor_manager.mdl"
+	"models/survivors/survivor_manager.mdl",
+	"models/survivors/survivor_gambler.mdl",
+	"models/survivors/survivor_producer.mdl",
+	"models/survivors/survivor_coach.mdl",
+	"models/survivors/survivor_mechanic.mdl"
 };
 
 enum struct LocationMeta {
 	float pos[3];
 	float ang[3];
 	bool runto;
+	bool jump;
+	int attempts; // # of attempts player has moved until they will try to manage
 }
 
 // Game settings
@@ -82,10 +95,14 @@ int currentSeeker;
 bool hasBeenSeeker[MAXPLAYERS+1];
 bool ignoreSeekerBalance;
 int hiderSwapTime[MAXPLAYERS+1];
+int hiderSwapCount[MAXPLAYERS+1];
+bool isStarting;
 
 // Temp Ent Materials & Timers
 Handle spawningTimer;
+Handle hiderCheckTimer;
 Handle recordTimer;
+Handle timesUpTimer;
 Handle acquireLocationsTimer;
 Handle moveTimers[MAXPLAYERS+1];
 UserMsg g_FadeUserMsgId;
@@ -99,7 +116,7 @@ ConVar cvar_seekerFailDamageAmount;
 
 // Bot Movement specifics
 float flowMin, flowMax;
-static float seekerPos[3];
+float seekerPos[3];
 float seekerFlow = 0.0;
 
 float vecLastLocation[MAXPLAYERS+1][3]; 
@@ -166,12 +183,14 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		HookEvent("round_start", Event_RoundStart);
 		HookEvent("player_death", Event_PlayerDeath);
 		HookEvent("player_bot_replace", Event_PlayerToBot);
+		HookEvent("player_ledge_grab", Event_LedgeGrab);
 		AddCommandListener(OnGoAwayFromKeyboard, "go_away_from_keyboard");
 	} else if(!lateLoaded) {
 		UnsetCvars();
 		UnhookEvent("round_start", Event_RoundStart);
 		UnhookEvent("player_death", Event_PlayerDeath);
 		UnhookEvent("player_bot_replace", Event_PlayerToBot);
+		UnhookEvent("player_ledge_grab", Event_LedgeGrab);
 		Cleanup();
 		PrintToChatAll("[GuessWho] Gamemode unloaded but cvars have not been reset.");
 		RemoveCommandListener(OnGoAwayFromKeyboard, "go_away_from_keyboard");
@@ -181,6 +200,13 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 
 public Action OnGoAwayFromKeyboard(int client, const char[] command, int argc) {
 	return Plugin_Handled;
+}
+
+void Event_LedgeGrab(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0) {
+		L4D_ReviveSurvivor(client);
+	}
 }
 
 void Event_PlayerToBot(Event event, const char[] name, bool dontBroadcast) {
@@ -197,8 +223,6 @@ void Event_PlayerToBot(Event event, const char[] name, bool dontBroadcast) {
 	}
 }
 
-int SEEKER_GLOW_COLOR[3] = { 128, 0, 0 };
-int PLAYER_GLOW_COLOR[3] = { 0, 255, 0 };
 
 void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
@@ -207,19 +231,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 		if(client == currentSeeker) {
 			PrintToChatAll("The seeker, %N, has died. Hiders win!", currentSeeker);
 			SetState(State_HidersWin);
-			for(int i = 1; i <= MaxClients; i++) {
-				if(IsClientConnected(i) && IsClientInGame(i) && IsFakeClient(i)) {
-					if(IsFakeClient(i)) {
-						ClearInventory(i);
-						PrintToServer("PlayerDeath: Seeker kill %d", i);
-						KickClient(i);
-					} else {
-						L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 20, PLAYER_GLOW_COLOR, false);
-						L4D2_SetPlayerSurvivorGlowState(i, true);
-					}
-				}
-			}
-			CreateTimer(5.0, Timer_ResetAll);
+			EndGame(State_HidersWin);
 		} else if(!IsFakeClient(client)) {
 			if(attacker == currentSeeker) {
 				PrintToChatAll("%N was killed", client);
@@ -235,46 +247,13 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	if(GetPlayersLeftAlive() == 0) {
 		if(GetState() == State_Active) {
 			PrintToChatAll("Everyone has died. %N wins!", currentSeeker);
-			CreateTimer(5.0, Timer_ResetAll);
-			SetState(State_SeekerWon);
+			EndGame(State_SeekerWon);
 		}
-	}
-}
-
-Action Timer_ResetAll(Handle h) {
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-			ForcePlayerSuicide(i);
-		}
-	}
-	return Plugin_Handled;
-}
-bool isStarting;
-
-void StartGame() {
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i)) {
-			if(isPendingPlay[i]) {
-				ChangeClientTeam(i, 2);
-			} else if(IsFakeClient(i)) { 
-				KickClient(i);
-			}
-		}
-	}
-	if(!isStarting) {
-		isStarting = true;
-		CreateTimer(5.0, Timer_Start);
 	}
 }
 
 void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
-	StartGame();
-}
-
-Action Timer_Start(Handle h) {
-	if(isStarting)
-		InitGamemode();
-	return Plugin_Handled;
+	CreateTimer(5.0, Timer_WaitForPlayers, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public void OnMapStart() {
@@ -324,7 +303,7 @@ public void OnMapStart() {
 				SDKHook(i, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 			}
 		}
-		CreateTimer(0.1, Timer_Start);
+		InitGamemode();
 	}
 	SetState(State_Unknown);
 }
@@ -356,25 +335,20 @@ public void OnClientPutInServer(int client) {
 		isPendingPlay[client] = true;
 		PrintToChatAll("%N will play next round", client);
 		TeleportToSpawn(client);
-		if(!IsPendingPlayers()) {
-			StartGame();
-		}
 	}
 }
+
 
 public void OnClientDisconnect(int client) {
 	if(!isEnabled) return;
 	if(client == currentSeeker) {
-		if(acquireLocationsTimer != null) delete acquireLocationsTimer;
 		PrintToChatAll("The seeker has disconnected");
-		CreateTimer(1.0, Timer_ResetAll);
-		currentSeeker = 0;
+		EndGame(State_HidersWin);
 	} else if(!IsFakeClient(client) && GetState() == State_Active) {
 		PrintToChatAll("A hider has left (%N)", client);
 		if(GetPlayersLeftAlive() == 0 && GetState() == State_Active) {
 			PrintToChatAll("Game Over. %N wins!", currentSeeker);
-			CreateTimer(5.0, Timer_ResetAll);
-			SetState(State_SeekerWon);
+			EndGame(State_SeekerWon);
 		}
 	}
 }
@@ -423,6 +397,7 @@ void SetCvars(bool record = false) {
 	SetCvarValue(cvar_sbPushScale, 0, record);
 	SetCvarValue(FindConVar("sb_battlestation_give_up_range_from_human"), 5000.0, record);
 	SetCvarValue(FindConVar("sb_max_battlestation_range_from_human"), 5000.0, record);
+	SetCvarValue(FindConVar("sb_enforce_proximity_range"), 10000, record);
 }
 
 void UnsetCvars() {
@@ -459,11 +434,17 @@ void InitGamemode() {
 	ArrayList validPlayerIds = new ArrayList();
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-			if(IsFakeClient(i)) KickClient(i);
-			else {
+			ChangeClientTeam(i, 2);
+			activeBotLocations[i].attempts = 0;
+			if(IsFakeClient(i)) {
+				ClearInventory(i);
+				KickClient(i);
+			} else {
 				if(!IsPlayerAlive(i)) {
 					L4D_RespawnPlayer(i);
 				}
+				hiderSwapCount[i] = 0;
+				distQueue[i].Clear();
 				ChangeClientTeam(i, 2);
 				if(!hasBeenSeeker[i] || ignoreSeekerBalance)
 					validPlayerIds.Push(GetClientUserId(i));
@@ -477,11 +458,12 @@ void InitGamemode() {
 	ignoreSeekerBalance = false;
 	int newSeeker = GetClientOfUserId(validPlayerIds.Get(GetURandomInt() % validPlayerIds.Length));
 	delete validPlayerIds;
-	if(newSeeker  > 0) {
+	if(newSeeker > 0) {
 		hasBeenSeeker[newSeeker] = true;
 		PrintToChatAll("%N is the seeker", newSeeker);
-		SetPlayerBlind(newSeeker, 255);
 		SetSeeker(newSeeker);
+		SetPlayerBlind(newSeeker, 255);
+		SetEntPropFloat(newSeeker, Prop_Send, "m_flLaggedMovementValue", 0.0);
 		// L4D2_SetPlayerSurvivorGlowState(newSeeker, true);
 		L4D2_SetEntityGlow(newSeeker, L4D2Glow_Constant, 0, 10, SEEKER_GLOW_COLOR, false);
 	}
@@ -513,13 +495,24 @@ Action Timer_SpawnPost(Handle h) {
 	PrintToChatAll("Timer_SpawnPost(): activating");
 	bool isL4D1 = L4D2_GetSurvivorSetMap() == 1;
 	int remainingSeekers;
+	int survivorMaxIndex = isL4D1 ? 3 : 7;
+	int survivorIndexBot;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(i != currentSeeker && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-			if(!IsFakeClient(i)) {
+			int survivor;
+			if(IsFakeClient(i)) {
+				// Set bot models uniformly
+				survivor = survivorIndexBot;
+				if(++survivorIndexBot > survivorMaxIndex) {
+					survivorIndexBot = 0;
+				}
+			} else {
+				// Set hiders models randomly
+				survivor = GetURandomInt() % survivorMaxIndex;
 				if(!hasBeenSeeker[i]) {
 					remainingSeekers++;
 				}
-				PrintToChat(i, "You can change your model by looking at a player and pressing RELOAD");
+				PrintToChat(i, "You can change your model %d times by looking at a player and pressing RELOAD", HIDER_SWAP_LIMIT);
 			}
 			SDKHook(i, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 			SDKHook(i, SDKHook_WeaponDrop, OnWeaponDrop);
@@ -527,9 +520,10 @@ Action Timer_SpawnPost(Handle h) {
 			ClearInventory(i);
 			int item = GivePlayerItem(i, "weapon_gnome");
 			EquipPlayerWeapon(i, item);
-			int survivor = GetRandomInt(isL4D1 ? 5 : 0, 7);
+
 			SetEntityModel(i, SURVIVOR_MODELS[survivor]);
-			SetEntProp(i, Prop_Send, "m_survivorCharacter", isL4D1 ? (survivor - 4) : survivor);
+			SetEntProp(i, Prop_Send, "m_survivorCharacter", survivor);
+
 		}
 	}
 
@@ -554,13 +548,15 @@ Action Timer_WaitForStart(Handle h) {
 		}
 		seekerFlow = L4D2Direct_GetFlowDistance(currentSeeker);
 		acquireLocationsTimer = CreateTimer(0.5, Timer_AcquireLocations, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+		hiderCheckTimer = CreateTimer(5.0, Timer_CheckHiders, _, TIMER_REPEAT);
 		CreateTimer(DOOR_TOGGLE_INTERVAL, Timer_DoorToggles, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
 		for(int i = 1; i <= MaxClients; i++) {
 			if(i != currentSeeker && IsClientConnected(i) && IsClientInGame(i)) {
 				TeleportEntity(i, seekerPos, NULL_VECTOR, NULL_VECTOR);
 				if(IsFakeClient(i)) {
 					moveTimers[i] = CreateTimer(GetRandomFloat(BOT_MOVE_RANDOM_MIN_TIME, BOT_MOVE_RANDOM_MAX_TIME), Timer_BotMove, GetClientUserId(i), TIMER_REPEAT);
-					TriggerTimer(moveTimers[i]);
+					validLocations.GetArray(GetURandomInt() % validLocations.Length, activeBotLocations[i]);
+					TeleportEntity(i, activeBotLocations[i].pos, activeBotLocations[i].ang, NULL_VECTOR);
 				}
 			}
 		}
@@ -581,8 +577,19 @@ Action Timer_StartSeeker(Handle h) {
 	SetPlayerBlind(currentSeeker, 0);
 	SetState(State_Active);
 	SetTick(0);
-	SetMapTime(1000);
+	SetEntPropFloat(currentSeeker, Prop_Send, "m_flLaggedMovementValue", 1.0);
+	if(mapConfig.mapTime == 0) {
+		mapConfig.mapTime = DEFAULT_MAP_TIME;
+	}
+	SetMapTime(mapConfig.mapTime);
+	timesUpTimer = CreateTimer(float(mapConfig.mapTime), Timer_TimesUp, _, TIMER_FLAG_NO_MAPCHANGE);
 	return Plugin_Continue;
+}
+
+Action Timer_TimesUp(Handle h) {
+	PrintToChatAll("The seeker ran out of time. Hiders win!");
+	EndGame(State_HidersWin);
+	return Plugin_Handled;
 }
 
 Action OnWeaponDrop(int client, int weapon) { 
@@ -595,7 +602,7 @@ Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float& damag
 		ClearInventory(victim);
 		if(IsFakeClient(victim)) {
 			PrintToChat(attacker, "That was a bot! -%.0f health", cvar_seekerFailDamageAmount.FloatValue);
-			SDKHooks_TakeDamage(attacker, 0, 0, cvar_seekerFailDamageAmount.FloatValue, DMG_BURN);
+			SDKHooks_TakeDamage(attacker, 0, 0, cvar_seekerFailDamageAmount.FloatValue, DMG_DIRECT);
 		}
 		return Plugin_Changed;
 	} else if(attacker > 0 && attacker <= MaxClients) {
@@ -613,6 +620,7 @@ Action Timer_DoorToggles(Handle h) {
 		if(GetURandomFloat() < DOOR_TOGGLE_CHANCE)
 			AcceptEntityInput(entity, "Toggle");
 	}
+	return Plugin_Handled;
 }
 
 Action Timer_AcquireLocations(Handle h) {
@@ -644,6 +652,15 @@ Action Timer_AcquireLocations(Handle h) {
 	return Plugin_Continue;
 }
 
+void GetMovePoint(int i) {
+	activeBotLocations[i].runto = GetURandomFloat() < BOT_MOVE_RUN_CHANCE;
+	activeBotLocations[i].attempts = 0;
+	validLocations.GetArray(GetURandomInt() % validLocations.Length, activeBotLocations[i]);
+	#if defined DEBUG_SHOW_POINTS
+	Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_POINT_VIEW_MIN, DEBUG_POINT_VIEW_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.1, 0.1, 0, 0.0, {255, 0, 255, 120}, 0);
+	#endif
+}
+
 Action Timer_BotMove(Handle h, int userid) {
 	int i = GetClientOfUserId(userid);
 	if(i == 0) return Plugin_Stop;
@@ -659,6 +676,7 @@ Action Timer_BotMove(Handle h, int userid) {
 	}
 
 	float botFlow = L4D2Direct_GetFlowDistance(i);
+	static float pos[3];
 	if(botFlow < flowMin || botFlow > flowMax) {
 		activeBotLocations[i].runto = GetURandomFloat() > 0.90;
 		TE_SetupBeamLaser(i, currentSeeker, g_iLaserIndex, 0, 0, 0, 8.0, 0.5, 0.1, 0, 1.0, {255, 255, 0, 125}, 1);
@@ -667,37 +685,83 @@ Action Timer_BotMove(Handle h, int userid) {
 		#if defined DEBUG_BOT_MOVE
 		PrintToConsoleAll("[gw/debug] BOT %N TOO FAR (%f) BOUNDS (%f, %f)-> Moving to seeker (%f %f %f)", i, botFlow, flowMin, flowMax, seekerPos[0], seekerPos[1], seekerPos[2]);
 		#endif
+		activeBotLocations[i].attempts = 0;
 	} else if(validLocations.Length > 0) {
-		if(mapConfig.hasSpawnpoint && FloatAbs(botFlow - seekerFlow) < BOT_MOVE_AVOID_FLOW_DIST && GetURandomFloat() < BOT_MOVE_AVOID_SEEKER_CHANCE) {
-			if(!FindPointAway(seekerPos, activeBotLocations[i].pos, BOT_MOVE_AVOID_MIN_DISTANCE)) {
-				#if defined DEBUG_BOT_MOVE
-				PrintToConsoleAll("[gw/debug] BOT %N TOO CLOSE -> Failed to find far point, falling back to spawn", i);
+		GetAbsOrigin(i, pos);
+		float distanceToPoint = GetVectorDistance(pos, activeBotLocations[i].pos);
+		if(distanceToPoint < BOT_MOVE_NOT_REACHED_DISTANCE || GetURandomFloat() < 0.20) {
+			activeBotLocations[i].attempts = 0;
+			#if defined DEBUG_BOT_MOVE
+			L4D2_SetPlayerSurvivorGlowState(i, false);
+			L4D2_RemoveEntityGlow(i);
+			#endif
+			// Has reached destination
+			if(mapConfig.hasSpawnpoint && FloatAbs(botFlow - seekerFlow) < BOT_MOVE_AVOID_FLOW_DIST && GetURandomFloat() < BOT_MOVE_AVOID_SEEKER_CHANCE) {
+				if(!FindPointAway(seekerPos, activeBotLocations[i].pos, BOT_MOVE_AVOID_MIN_DISTANCE)) {
+					#if defined DEBUG_BOT_MOVE
+					PrintToConsoleAll("[gw/debug] BOT %N TOO CLOSE -> Failed to find far point, falling back to spawn", i);
+					#endif
+					activeBotLocations[i].pos = mapConfig.spawnpoint;
+				} else {
+					#if defined DEBUG_BOT_MOVE
+					PrintToConsoleAll("[gw/debug] BOT %N TOO CLOSE -> Moving to far point (%f %f %f) (%f units away)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2], GetVectorDistance(seekerPos, activeBotLocations[i].pos));
+					#endif
+				}
+				activeBotLocations[i].runto = GetURandomFloat() < 0.75;
+				#if defined DEBUG_SHOW_POINTS
+				Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_POINT_VIEW_MIN, DEBUG_POINT_VIEW_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.2, 0.1, 0, 0.0, {255, 255, 255, 255}, 0);
 				#endif
-				activeBotLocations[i].pos = mapConfig.spawnpoint;
 			} else {
-				#if defined DEBUG_BOT_MOVE
-				PrintToConsoleAll("[gw/debug] BOT %N TOO CLOSE -> Moving to far point (%f %f %f) (%f units away)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2], GetVectorDistance(seekerPos, activeBotLocations[i].pos));
-				#endif
+				GetMovePoint(i);
 			}
-			activeBotLocations[i].runto = GetURandomFloat() < 0.75;
-			#if defined DEBUG_SHOW_POINTS
-			Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_POINT_VIEW_MIN, DEBUG_POINT_VIEW_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.2, 0.1, 0, 0.0, {255, 255, 255, 255}, 0);
-			#endif
+			if(!L4D2_IsReachable(i, activeBotLocations[i].pos)) {
+				#if defined DEBUG_BOT_MOVE
+				PrintToChatAll("[gw/debug] POINT UNREACHABLE (Bot:%d) (%f %f %f)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
+				PrintToServer("[gw/debug] POINT UNREACHABLE (Bot:%d) (%f %f %f)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
+				Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_POINT_VIEW_MIN, view_as<float>({ 10.0, 10.0, 100.0 }), NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 400.0, 2.0, 3.0, 0, 0.0, {255, 0, 0, 255}, 0);
+				#endif
+				GetMovePoint(i);
+			}
 		} else {
-			activeBotLocations[i].runto = GetURandomFloat() < BOT_MOVE_RUN_CHANCE;
-			validLocations.GetArray(GetURandomInt() % validLocations.Length, activeBotLocations[i]);
+			// Has not reached dest
+			activeBotLocations[i].attempts++;
+			#if defined DEBUG_MOVE_ATTEMPTS
+			PrintToConsoleAll("[gw/debug] Bot %d - move attempt %d - dist: %f", i, activeBotLocations[i].attempts, distanceToPoint);
+			#endif
+			if(activeBotLocations[i].attempts == BOT_MOVE_NOT_REACHED_ATTEMPT_RUNJUMP) {
+				if(distanceToPoint <= (BOT_MOVE_NOT_REACHED_DISTANCE * 2)) {
+					#if defined DEBUG_BOT_MOVE
+					PrintToConsoleAll("[gw/debug] Bot %d still has not reached point (%f %f %f), jumping", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
+					L4D2_SetPlayerSurvivorGlowState(i, true);
+					L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, PLAYER_GLOW_COLOR, true);
+					#endif
+					activeBotLocations[i].jump = true;
+				} else {
+					activeBotLocations[i].runto = true;
+					#if defined DEBUG_BOT_MOVE
+					PrintToConsoleAll("[gw/debug] Bot %d not reached point (%f %f %f), running", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
+					L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, PLAYER_GLOW_COLOR, true);
+					L4D2_SetPlayerSurvivorGlowState(i, true);
+					#endif
+				}
+			} else if(activeBotLocations[i].attempts > BOT_MOVE_NOT_REACHED_ATTEMPT_RETRY) {
+				#if defined DEBUG_BOT_MOVE
+				PrintToConsoleAll("[gw/debug] Bot %d giving up at reaching point (%f %f %f)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
+				L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, SEEKER_GLOW_COLOR, true);
+				L4D2_SetPlayerSurvivorGlowState(i, true);
+				#endif
+				GetMovePoint(i);
+			} 
 			#if defined DEBUG_SHOW_POINTS
-			Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_POINT_VIEW_MIN, DEBUG_POINT_VIEW_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.1, 0.1, 0, 0.0, {255, 0, 255, 255}, 0);
+			int color[4];
+			color[0] = 255;
+			color[2] = 255;
+			color[3] = 120 + activeBotLocations[i].attempts * 45;
+			Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_POINT_VIEW_MIN, DEBUG_POINT_VIEW_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.1, 0.1, 0, 0.0, color, 0);
 			#endif
 		}
-		#if defined DEBUG_BOT_MOVE
-		if(!L4D2_IsReachable(i, activeBotLocations[i].pos)) {
-			PrintToChatAll("[gw/debug] POINT UNREACHABLE (Bot:%d) (%f %f %f)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
-			PrintToServer("[gw/debug] POINT UNREACHABLE (Bot:%d) (%f %f %f)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
-			Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_POINT_VIEW_MIN, DEBUG_POINT_VIEW_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.1, 0.1, 0, 0.0, {255, 0, 0, 255}, 0);
-		}
-		#endif
-		
+
+		LookAtPoint(i, activeBotLocations[i].pos);
 		L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", 
 			GetClientUserId(i), 
 			activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]
@@ -709,6 +773,11 @@ Action Timer_BotMove(Handle h, int userid) {
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	if(!isEnabled) return Plugin_Continue;
 	if(IsFakeClient(client)) {
+		if(activeBotLocations[client].jump) {
+			activeBotLocations[client].jump = false;
+			buttons |= (IN_WALK | IN_JUMP | IN_FORWARD);
+			return Plugin_Changed;
+		}
 		buttons |= (activeBotLocations[client].runto ? IN_WALK : IN_SPEED);
 		if(GetURandomFloat() < BOT_MOVE_USE_CHANCE) {
 			buttons |= IN_USE;
@@ -721,28 +790,35 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		}
 		return Plugin_Changed;
 	} else if(client != currentSeeker && buttons & IN_RELOAD) {
-		int target = GetClientAimTarget(client, true);
-		if(target > 0) {
-			int time = GetTime();
-			float diff = float(time - hiderSwapTime[client]);
-			if(diff > HIDER_SWAP_COOLDOWN) {
-				hiderSwapTime[client] = GetTime();
+		if(hiderSwapCount[client] >= HIDER_SWAP_LIMIT) {
+			PrintHintText(client, "Swap limit reached");
+		} else {
+			int target = GetClientAimTarget(client, true);
+			
+			if(target > 0) {
+				int time = GetTime();
+				float diff = float(time - hiderSwapTime[client]);
+				if(diff > HIDER_SWAP_COOLDOWN) {
+					hiderSwapTime[client] = GetTime();
+					hiderSwapCount[client]++;
 
-				/*float pos[3], pos2[3];
-				GetClientAbsOrigin(client, pos);
-				GetClientEyePosition(client, pos2);
-				TE_SetupParticle(g_iSmokeParticle, pos, pos2, .iEntity = client);
-				TE_SendToAllInRange(pos, RangeType_Audibility, 0.0);*/
+					/*float pos[3], pos2[3];
+					GetClientAbsOrigin(client, pos);
+					GetClientEyePosition(client, pos2);
+					TE_SetupParticle(g_iSmokeParticle, pos, pos2, .iEntity = client);
+					TE_SendToAllInRange(pos, RangeType_Audibility, 0.0);*/
 
-				char modelName[64];
-				GetClientModel(target, modelName, sizeof(modelName));
-				int type = GetEntProp(target, Prop_Send, "m_survivorCharacter");
-				SetEntityModel(client, modelName);
-				SetEntProp(client, Prop_Send, "m_survivorCharacter", type);
+					char modelName[64];
+					GetClientModel(target, modelName, sizeof(modelName));
+					int type = GetEntProp(target, Prop_Send, "m_survivorCharacter");
+					SetEntityModel(client, modelName);
+					SetEntProp(client, Prop_Send, "m_survivorCharacter", type);
 
-				EmitSoundToAll("ui/pickup_secret01.wav", client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING);
-			} else {
-				PrintHintText(client, "You can swap in %.0f seconds", HIDER_SWAP_COOLDOWN - diff);
+					EmitSoundToAll("ui/pickup_secret01.wav", client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING);
+					PrintHintText(client, "You have %d swaps remaining", HIDER_SWAP_LIMIT - hiderSwapCount[client]);
+				} else {
+					PrintHintText(client, "You can swap in %.0f seconds", HIDER_SWAP_COOLDOWN - diff);
+				}
 			}
 		}
 	}
@@ -755,7 +831,8 @@ void ClearInventory(int client) {
 		int item = GetPlayerWeaponSlot(client, i);
 		if(item > 0) {
 			RemovePlayerItem(client, item);
-			AcceptEntityInput(item, "Kill");
+			RemoveEdict(item);
+			// AcceptEntityInput(item, "Kill");
 		}
 	}
 }
@@ -776,13 +853,15 @@ bool AddSurvivor() {
 			}
 		}
 
-		CreateTimer(0.2, Timer_Kick, i);
+		CreateTimer(0.2, Timer_Kick, GetClientUserId(i));
 	}
 	return result;
 }
 
-Action Timer_Kick(Handle h, int i) {
-	KickClient(i);
+Action Timer_Kick(Handle h, int u) {
+	int i = GetClientOfUserId(u);
+	if(i > 0) KickClient(i);
+	return Plugin_Handled;
 }
 
 stock void L4D2_RunScript(const char[] sCode, any ...) {
