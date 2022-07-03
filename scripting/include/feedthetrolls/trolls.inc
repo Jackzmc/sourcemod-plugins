@@ -287,7 +287,6 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 			for(int i = 0; i < 30; i++) {
 				int c = L4D_SpawnCommonInfected(pos);
 				L4D2_RunScript("CommandABot({cmd=0,bot=EntIndexToHScript(%i),target=GetPlayerFromUserID(%i)})", c, victimId);
-				SetEntPropEnt(c, Prop_Send, "m_hTargetEntity", victim);
 			}
 		}
 	} else if(StrEqual(troll.name, "Randomize Clip Ammo")) {
