@@ -1,4 +1,7 @@
 **/
+!data/
+!data/**
+!gamedata/
 !plugins
 !scripting
 !scripting/include
@@ -7,10 +10,8 @@
 !scripting/hideandseek.sp
 !scripting/guessswho.sp
 !scripting/include/guessswho
-!data/*.cfg
-!gamedata/
+.push.settings.jsonc*
 template.config.js
-.*
 scripting/sm_give.sp
 scripting/include/steamtools.inc
 scripting/L4D2Testing.sp
@@ -25,12 +26,9 @@ plugins/l4d2_custom.smx
 plugins/disable_cameras.smx
 plugins/l4d_esfp.smx
 plugins/customstatus.smx
-plugins/l4d_mini_gun_flamethrower.smx
-scripting/l4d_mini_gun_flamethrower.sp
 scripting/l4d_esfp.sp
 scripting/customstatus.sp
 plugins/ssh.smx
 scripting/include/ssh.inc
 scripting/ssh.sp
 scripting/l4d2_witch_force_attack_cmd.sp
-.gitignore
