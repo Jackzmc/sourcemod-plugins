@@ -280,4 +280,5 @@ Action Timer_SpawnBotsPost(Handle h) {
 			}
 		}
 	}
+	return Plugin_Handled;
 }

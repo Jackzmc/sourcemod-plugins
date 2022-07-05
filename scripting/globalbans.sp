@@ -11,7 +11,6 @@
 
 #include <sourcemod>
 #include <sdktools>
-#include <geoip>
 
 public Plugin myinfo = 
 {

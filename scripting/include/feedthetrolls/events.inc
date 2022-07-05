@@ -272,7 +272,7 @@ public Action L4D2_OnEntityShoved(int client, int entity, int weapon, float vecD
 }
 
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
-	if(sArgs[0] == '@') return Plugin_Continue; //Ignore admin chat
+	if(client <= 0 || sArgs[0] == '@') return Plugin_Continue; //Ignore admin chat or console
 
 	static int honkID;
 	static int profanityID;

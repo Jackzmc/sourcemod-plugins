@@ -217,6 +217,7 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 	}
 }
 
+bool wasEnabled;
 public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
 	cvar.GetString(gamemode, sizeof(gamemode));
 	#if defined FORCE_ENABLED
@@ -250,7 +251,9 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 				}
 			}
 		}
-	} else if(!lateLoaded) {
+		wasEnabled = true;
+	} else if(wasEnabled) {
+		wasEnabled = false;
 		UnhookEvent("round_end", Event_RoundEnd);
 		UnhookEvent("round_start", Event_RoundStart);
 		UnhookEvent("item_pickup", Event_ItemPickup);
@@ -271,6 +274,7 @@ public Action Timer_StopPeekCam(Handle h) {
 	}
 	AcceptEntityInput(seekerCam, "Kill");
 	seekerCam = INVALID_ENT_REFERENCE;
+	return Plugin_Handled;
 }
 
 public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) { 
@@ -547,7 +551,6 @@ public Action Timer_RoundStart(Handle h) {
 	PrintToServer("[H&S] Map time is %d seconds", GetMapTime());
 	return Plugin_Continue;
 }
-static float SHAKE_SIZE[3] = { 40.0, 40.0, 20.0 };
 
 static float lastShakeTime;
 public void Hook_OnAttackPost(int entity, int attacker, int inflictor, float damage, int damagetype, int ammotype, int hitbox, int hitgroup) {

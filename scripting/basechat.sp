@@ -116,10 +116,10 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			int target = FindTarget(client, arg, true, false);
 			
 			if (target == -1 || len == -1) {
-                PrintToChat(client, "Cannot send a private msg: Invalid user specified.");
-            } else {
-			    SendPrivateChat(client, target, sArgs[startidx+len]);
-            }
+				PrintToChat(client, "Cannot send a private msg: Invalid user specified.");
+			} else {
+				SendPrivateChat(client, target, sArgs[startidx+len]);
+			}
 			
 			
 			return Plugin_Stop;
@@ -436,5 +436,6 @@ void SendPanelToAll(int from, char[] message)
 
 public int Handler_DoNothing(Menu menu, MenuAction action, int param1, int param2)
 {
+	return 0;
 	/* Do nothing */
 }

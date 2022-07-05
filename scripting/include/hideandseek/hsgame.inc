@@ -196,12 +196,12 @@ stock void GetHorizontalPositionFromClient(int client, float units, float finalP
 	finalPosition = pos;
 }
 
-void SetParent(int child, int parent) {
+stock void SetParent(int child, int parent) {
 	SetVariantString("!activator");
 	AcceptEntityInput(child, "SetParent", parent);
 }
 
-void SetParentAttachment(int child, const char[] attachment, bool withOffset = false) {
+stock void SetParentAttachment(int child, const char[] attachment, bool withOffset = false) {
 	SetVariantString(attachment);
 	if(withOffset)
 		AcceptEntityInput(child, "SetParentAttachmentMaintainOffset");
@@ -209,11 +209,9 @@ void SetParentAttachment(int child, const char[] attachment, bool withOffset = f
 		AcceptEntityInput(child, "SetParentAttachment");
 }
 
-void ClearParent(int child) {
+stock void ClearParent(int child) {
 	AcceptEntityInput(child, "ClearParent");
 }
-
-static float EMPTY_ANG[3] = { 0.0, 0.0, 0.0 };
 
 void SetPeekCamTarget(int target, bool showFPOV = false) { 
 	if(seekerCam == INVALID_ENT_REFERENCE || !IsValidEntity(seekerCam)) {
@@ -251,10 +249,6 @@ void SetPeekCamTarget(int target, bool showFPOV = false) {
 
 		TeleportEntity(seekerCam, endPos, ang, NULL_VECTOR);
 	}
-}
-
-bool IsPeekCamActive(int client) {
-	return isViewingCam[client];
 }
 
 //  int GetClientsInRange(const float origin[3], ClientRangeType rangeType, int[] clients, int size)
