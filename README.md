@@ -12,35 +12,36 @@ Useful things:
 ## Plugin List
 
 ### Created by Me
-* [csgo-knifehp](#csgo-knifehp)
-* [l4d2-manual-director](#l4d2-manual-director)
-* [l4d2-info-cmd](#l4d2-info-cmd)
-* [AutoWarpBot](#AutoWarpBot)
-* [L4D2FFKickProtection](#L4D2FFKickProtection)
-* [l4d2_ff_test](#l4d2_ff_test)
-* [CSGOTroll](#CSGOTroll)
-* [l4d2_avoid_minigun](#l4d2_avoid_minigun)
-* [l4d2_ai_minigun](#l4d2_ai_minigun)
-* [L4D2Tools](#L4D2Tools)
-* [l4d2_swarm](#l4d2_swarm)
-* [l4d2_feedthetrolls](#l4d2_feedthetrolls)
-* [l4d2_autobotcrown](#l4d2_autobotcrown)
-* [l4d2_extraplayeritems](#l4d2_extraplayeritems)
-* [l4d2_population_control](#l4d2_population_control)
-* [globalbans](#globalbans)
-* [l4d2_rollback](#l4d2_rollback)
-* [l4d2_autorestart](#l4d2_autorestart)
-* [l4d2_TKStopper](#l4d2_TKStopper)
-* [l4d2_crescendo_control](#l4d2_crescendo_control)
-* [l4d2_vocalize_control](#l4d2_vocalize_control)
-* [l4d2_hideandseek](#l4d2_hideandseek)
-* [l4d2_guesswho](#l4d2_guesswho)
+#### CSGO
+* [csgo-knifehp](#csgo-knifehp) - First plugin I've made
+* [CSGOTroll](#CSGOTroll) - Abandoned friend trolling plugin
+#### L4D2
+* [l4d2-manual-director](#l4d2-manual-director) - Spawn specials on demand via director or at your cursor
+* [l4d2-info-cmd](#l4d2-info-cmd) - Prints a full state of all survivors, useful for external information
+* [AutoWarpBot](#AutoWarpBot) - Abandoned
+* [L4D2FFKickProtection](#L4D2FFKickProtection) - Prevents friendly firing from players being voted off and admins from being kicked
+* [l4d2_avoid_minigun](#l4d2_avoid_minigun) - Makes bots avoid being infront of any in use miniguns. Useful for spawned miniguns
+* [l4d2_ai_minigun](#l4d2_ai_minigun) - Based off [Silver's Survivor Bot Holdout plugin](https://forums.alliedmods.net/showthread.php?p=1741099), allows you to spawn survivor bots but with no limit.
+* [L4D2Tools](#L4D2Tools) - A collection of utilities, mostly just used with l4d_survivor_identity_fix and the /model command
+* [l4d2_swarm](#l4d2_swarm) - Uses vscript RushVictim to make all zombies target a player, like a more subtle vomitplayer
+* [l4d2_feedthetrolls](#l4d2_feedthetrolls) - Full collection of tools to troll your friends or troll the trolls
+* [l4d2_autobotcrown](#l4d2_autobotcrown) - Bots will auto crown 
+* [l4d2_extraplayeritems](#l4d2_extraplayeritems) - Includes tons of utilities for 5+ games, such as 5+ player hud, extra kit spawning, and more
+* [l4d2_population_control](#l4d2_population_control) - Allows you to custom the type of zombies that spawn (% of clowns, mud men, etc..)
+* [globalbans](#globalbans) - Bans synced via mysql, way lighter than the sourcebans cesspool.
+* [l4d2_rollback](#l4d2_rollback) - Abandoned but makes periodic backup of all player's items
+* [l4d2_autorestart](#l4d2_autorestart) - Restarts server if it's been on for a certain uptime or when empty with just bots
+* [l4d2_TKStopper](#l4d2_TKStopper) - All the teamkiller and shitty aim player punishments. Auto increasing reverse ff and teamkill detection
+* [l4d2_crescendo_control](#l4d2_crescendo_control) - Prevents players from running far ahead and starting events & logs button presses
+* [l4d2_vocalize_control](#l4d2_vocalize_control) - Allows you to locally mute someone from vocalizing
+* [l4d2_hideandseek](#l4d2_hideandseek) - An enhancement to the base hide and seek mutation
+* [l4d2_guesswho](#l4d2_guesswho) - Garrys mod's guess who in l4d2, inspired by hide and seek
 
 ### Modified Others
-* [200IQBots_FlyYouFools](#200IQBots_FlyYouFools)
-* [l4d_survivor_identity_fix](#l4d_survivor_identity_fix)
+* [200IQBots_FlyYouFools](#200IQBots_FlyYouFools) - Improved code to make it support multiple tanks and work better
+* [l4d_survivor_identity_fix](#l4d_survivor_identity_fix) - Use with L4D2Tools to change models, some fixes
 * [BetterWitchAvoidance](#BetterWitchAvoidance)
-* [l4d2_sb_fix](#l4d2_sb_fix)
+* [l4d2_sb_fix](#l4d2_sb_fix) - Updated to 1.11, removed some stupid shit it does
 
 ## Descriptions
 
@@ -103,16 +104,6 @@ It also prevents vote kicking of admins, instead will kick the player and notify
 
 * **Convars:**
   * `sm_votekick_force_threshold <#>` - The threshold of damage where the offending player is just immediately kicked. 0 -> Any attempted damage, -1 -> No auto kick.
-
-### l4d2_ff_test
-More of a joke plugin, it will prevent a player from picking up a m60 if their friendly fire count or damage is over a certain threshold (Hardcoded as 5 and 35 respectively)
-
-It also can modify the FF damage done to the victim, and redirect on a scale back to the attacker
-* **Convars:**
-  * `sm_redirect_ff_scale <#.#>` - The redirected damage back to attacker. 0.0 -> OFF | 1 -> All damage. Minimum 0.0
-  * `sm_victim_ff_scale <0.0-1.0>` - This is multiplied by the damage the victim will receive. 0 -> No damage, 1 -> All damage
-* **Commands:**
-  * `sm_view_ff` - View the ff damage and count of all players
 
 ### CSGOTroll
 Another joke plugin, with it configured, a victim will have a % chance their shots just fail. This can be for the AWP or all weapons at least for now.
