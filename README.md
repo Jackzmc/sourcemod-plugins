@@ -182,13 +182,19 @@ https://admin.jackz.me/docs/ftt
   * `sm_ftt_magnet_chance <0.0 - 1.0>` - % of the time that the magnet will work on a player."
   * `sm_ftt_shove_fail_chance <0.0 - 1.0>` - The % chance that a shove fails
 * **Commands:**
-  * `sm_fta <player(s)> <mode #>` - Applies a mode to a set of users. See list above
-  * `sm_fta` - No arguments: Shows a menu, choose player, mode, and modifiers all in one.
-  * `sm_ftr <player(s)>` - Removes & deactivates all trolls.
+  * `sm_fta [player]` - Opens a menu to select a troll to apply, with modifiers and flags
+  * `sm_ftr [player]` - Removes all active trolls from a player
+  * `sm_ftc [player]` - Opens a menu to select a combo of trolls
   * `sm_ftl` - Lists all players that have a mode applied.
   * `sm_ftm` - Lists all troll options & their descriptions
-  * `sm_scharge <player> [timeout seconds]` - Will wait till there's no obstructions and players in the way and charge
-  * `sm_healbots <player> [# bots or 0 default]` - Makes n amount of bots chase a player down to heal them 
+  * `sm_mark` - Toggles marking a player to be banned when they fully disconnect
+  * `sm_insta [player] [special]` - (No arguments opens menu) - Spawns a special via director that will only target the victim
+  * `sm_inface [player] [special]` - Identical to above, but special will be spawned as close as possible to survivor. Boomers auto explode.
+  * `sm_bots_attack <player> [target health]` - Slightly broken, but makes all bots shoot at player until they hit X health or a timeout is reached.
+  * `sm_stagger <player>` - Makes a player stagger, shortcut to the Stagger troll
+  * `sm_witch_attack <player>` - Makes all witches agro on the player
+  * `sm_scharge <player> [timeout seconds]` - Will wait till there's no obstructions and players in the way and then spawns a charger to charge them.
+  * `sm_healbots <player> [# bots or 0 default]` - Makes n amount of bots chase a player down to heal them. Won't stop until they are healed or die.
 
 ### l4d2_autobotcrown
 Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Supports multiple bots and witches, but only one bot can crown one witch at a time. Plugin is obviously disabled in realism, and is really on suitable for coop or versus. Even works with idle players.
