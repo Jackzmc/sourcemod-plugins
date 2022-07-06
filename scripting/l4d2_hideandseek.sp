@@ -145,7 +145,6 @@ public void OnClientDisconnect(int client) {
 public void OnMapStart() {
 	if(!isEnabled) return;
 
-	seekerCam = INVALID_ENT_REFERENCE;
 	currentSeeker = 0;
 
 	if(cvar_abm_autohard != null) {
@@ -187,7 +186,7 @@ public void OnMapStart() {
 		int seeker = GetSlasher();
 		if(seeker > -1) {
 			currentSeeker = seeker;
-			SetPeekCamTarget(currentSeeker);
+			PeekCam.Target = currentSeeker;
 			PrintToServer("[H&S] Late load, found seeker %N", currentSeeker);
 		}
 		if(IsGameSoloOrPlayersLoading()) {
@@ -269,11 +268,10 @@ const float DEATH_CAM_MIN_DIST = 150.0;
 public Action Timer_StopPeekCam(Handle h) { 
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
-			SetPeekCamActive(i, false);
+			PeekCam.SetViewing(i, false);
 		}
 	}
-	AcceptEntityInput(seekerCam, "Kill");
-	seekerCam = INVALID_ENT_REFERENCE;
+	PeekCam.Destroy();
 	return Plugin_Handled;
 }
 
@@ -282,20 +280,21 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 
 	if(!gameOver && client && GetClientTeam(client) == 2) {
-		SetPeekCamTarget(attacker > 0 ? attacker : client, true);
+		PeekCam.Target = attacker > 0 ? attacker : client;
+		PeekCam.Perspective = Cam_FirstPerson;
 
 		int alive = 0;
 		float pos[3], checkPos[3];
 		if(attacker <= 0) attacker = client;
 		GetClientAbsOrigin(attacker, pos);
-		SetPeekCamActive(attacker, true);
+		PeekCam.SetViewing(attacker, true);
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 				if(attacker > 0 && attacker != client) {
 					if(cvar_peekCam.IntValue & 2) {
 						GetClientAbsOrigin(i, checkPos);
 						if(GetVectorDistance(checkPos, pos) > DEATH_CAM_MIN_DIST) {
-							SetPeekCamActive(i, true);
+							PeekCam.SetViewing(i, true);
 						}
 					}
 					alive++;
@@ -319,7 +318,8 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 					CPrintToChatAll("{green}The seeker %N won!", currentSeeker);
 				}
 				if(cvar_peekCam.IntValue & 1) {
-					SetPeekCamTarget(client, false);
+					PeekCam.Target = client;
+					PeekCam.Perspective = Cam_ThirdPerson;
 				}
 				gameOver = true;
 				return;
@@ -360,7 +360,7 @@ public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast)
 				} else if(currentSeeker != client) {
 					PrintToChatAll("[H&S] Seeker does not equal axe-receiver. Possible seeker: %N", client);
 				}
-				SetPeekCamTarget(currentSeeker);
+				PeekCam.Target = currentSeeker;
 				if(!ignoreSeekerBalance && cvar_seekerBalance.BoolValue) {
 					if(hasBeenSeeker[currentSeeker]) {
 						ArrayList notPlayedSeekers = new ArrayList(1);
@@ -399,7 +399,7 @@ public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast
 	if(client > 0 && mapConfig.hasSpawnpoint) {
 		TeleportEntity(client, mapConfig.spawnpoint, NULL_VECTOR, NULL_VECTOR);
 	}
-	isViewingCam[client] = false;
+	PeekCam.SetViewing(client, false);
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
@@ -427,7 +427,7 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	for(int i = 1; i <= MaxClients; i++) {
 		isNearbyPlaying[i] = false;
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 1) {
-			SetPeekCamActive(i, false);
+			PeekCam.SetViewing(i, false);
 			if(isPendingPlay[i]) {
 				ChangeClientTeam(i, 2);
 				L4D_RespawnPlayer(i);
@@ -437,6 +437,7 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 				isPendingPlay[i] = false;
 			}
 		}
+		PeekCam.Destroy();
 	}
 }
 
@@ -480,7 +481,7 @@ public Action Timer_Music(Handle h) {
 			if(prevState == State_Hiding) {
 				changedToHunting = true;
 				ShowBeacon(currentSeeker);
-				SetPeekCamTarget(currentSeeker);
+				PeekCam.Target = currentSeeker;
 			}
 			EmitSoundToClient(currentSeeker, SOUND_SUSPENSE_1, currentSeeker, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEPITCH, 0.2, 90, currentSeeker, seekerLoc, seekerLoc, true);
 		}
@@ -490,7 +491,7 @@ public Action Timer_Music(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && i != currentSeeker) {
 			if(changedToHunting)
-				SetPeekCamActive(i, true);
+				PeekCam.SetViewing(i, true);
 			playerCount++;
 			GetClientAbsOrigin(i, playerLoc);
 			float dist = GetVectorDistance(seekerLoc, playerLoc, true);

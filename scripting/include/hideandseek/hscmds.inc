@@ -217,17 +217,17 @@ public Action Command_HideAndSeek(int client, int args) {
 			if(IsBotsEnabled()) ReplyToCommand(client, "Bots are enabled");
 			else ReplyToCommand(client, "Bots are disabled");
 		} else if(StrEqual(subcmd, "peekfix")) {
-			if(seekerCam == INVALID_ENT_REFERENCE) {
-				SetPeekCamTarget(client);
+			if(!PeekCam.Exists()) {
+				PeekCam.Target = client;
 			}
 
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i)) {
-					SetPeekCamActive(client, false);
-					SetPeekCamActive(client, false);
+					PeekCam.SetViewing(client, true);
+					PeekCam.SetViewing(client, false);
 				}
 			}
-			AcceptEntityInput(seekerCam, "Kill");
+			PeekCam.Destroy();
 			ReplyToCommand(client, "Killing active camera");
 		} else if(StrEqual(subcmd, "seeker")) {
 			if(args == 2) {

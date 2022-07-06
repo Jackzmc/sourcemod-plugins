@@ -12,11 +12,8 @@ void Cleanup() {
 	EntFire("hsprop", "kill");
 	EntFire("hsblocker", "kill");
 	EntFire("hsportal", "kill");
-	if(seekerCam != INVALID_ENT_REFERENCE && IsValidEntity(seekerCam)) {
-		AcceptEntityInput(seekerCam, "Disable");
-		AcceptEntityInput(seekerCam, "Kill");
-		seekerCam = INVALID_ENT_REFERENCE;
-	}
+	PeekCam.Destroy();
+
 }
 
 GameState GetState() {
@@ -195,75 +192,6 @@ stock void GetHorizontalPositionFromClient(int client, float units, float finalP
 	pos[1] += units * Sine(theta); 
 	finalPosition = pos;
 }
-
-stock void SetParent(int child, int parent) {
-	SetVariantString("!activator");
-	AcceptEntityInput(child, "SetParent", parent);
-}
-
-stock void SetParentAttachment(int child, const char[] attachment, bool withOffset = false) {
-	SetVariantString(attachment);
-	if(withOffset)
-		AcceptEntityInput(child, "SetParentAttachmentMaintainOffset");
-	else
-		AcceptEntityInput(child, "SetParentAttachment");
-}
-
-stock void ClearParent(int child) {
-	AcceptEntityInput(child, "ClearParent");
-}
-
-void SetPeekCamTarget(int target, bool showFPOV = false) { 
-	if(seekerCam == INVALID_ENT_REFERENCE || !IsValidEntity(seekerCam)) {
-		seekerCam = CreateEntityByName("point_viewcontrol_survivor");
-		DispatchKeyValue(seekerCam, "targetname", "hscam");
-		DispatchSpawn(seekerCam);
-		for(int i = 0; i <= MaxClients; i++) {
-			isViewingCam[i] = false;
-		}
-	}
-
-	AcceptEntityInput(seekerCam, "ClearParent");
-	AcceptEntityInput(seekerCam, "Disable");
-
-	float pos[3], endPos[3], ang[3];
-	GetClientEyePosition(target, pos);
-	GetClientEyeAngles(target, ang);
-	if(showFPOV) {
-		TeleportEntity(seekerCam, pos, ang, NULL_VECTOR);
-		SetParent(seekerCam, target);
-		SetParentAttachment(seekerCam, "primary", false);
-	} else {
-		TR_TraceRayFilter(pos, ang, CONTENTS_PLAYERCLIP | MASK_SOLID | MASK_VISIBLE, RayType_Infinite, Filter_IgnoreAll);
-		if(TR_DidHit()) {
-			TR_GetEndPosition(endPos);
-		}
-		endPos[2] += 50.0;
-
-		ang[0] = 0.0;
-		float deltaA = endPos[0] - pos[0];
-		float deltaB = endPos[1] - pos[1];
-		float deltaC = endPos[2] - pos[2];
-		ang[0] = RadToDeg(ArcTangent(deltaC / GetVectorDistance(endPos, pos, false) ));
-		ang[1] = RadToDeg(ArcTangent2(deltaA, deltaB));
-
-		TeleportEntity(seekerCam, endPos, ang, NULL_VECTOR);
-	}
-}
-
-//  int GetClientsInRange(const float origin[3], ClientRangeType rangeType, int[] clients, int size)
-void SetPeekCamActive(int client, bool active) {
-	if(seekerCam != INVALID_ENT_REFERENCE) {
-		AcceptEntityInput(seekerCam, "Enable", client); // Need to always activate before deactivating to fix a semi-common bug
-		if(!active) {
-			AcceptEntityInput(seekerCam, "Disable", client);
-		}
-	} else {
-		PrintToServer("WARN: SetPeekCamActive(%d, %b) when seekerCam invalid", client, active);
-	}
-	isViewingCam[client] = active;
-}
-
 
 stock void GetAnglesLookAt(int iClient, int iTarget, float fFinalPos[3]) {
 	static float fTargetPos[3]; 
