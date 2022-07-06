@@ -74,7 +74,7 @@ public Plugin myinfo =
 	author = "jackzmc", 
 	description = "Automatic system for management of 5+ player games. Provides extra kits, items, and more", 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance;

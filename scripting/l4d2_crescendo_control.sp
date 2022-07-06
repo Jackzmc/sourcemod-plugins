@@ -24,7 +24,7 @@ public Plugin myinfo =
 	author = "jackzmc", 
 	description = "Prevents players from starting crescendos early", 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 public void OnPluginStart()
@@ -43,7 +43,7 @@ public void OnPluginStart()
 	hGamemode.GetString(gamemode, sizeof(gamemode));
 	hGamemode.AddChangeHook(Event_GamemodeChange);
 
-	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
+	AddNormalSoundHook(SoundHook);
 	//dhook setup
 }
 
@@ -111,7 +111,7 @@ public Action Event_ButtonPress(const char[] output, int entity, int client, flo
 }
 
 
-public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
+public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char soundEntry[PLATFORM_MAX_PATH], int& seed) {
 	if(StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav") && lastButtonPressTime > 0) {
 		if(GetGameTime() - lastButtonPressTime < PANIC_DETECT_THRESHOLD) {
 			panicStarted = true;

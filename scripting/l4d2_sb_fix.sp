@@ -10,7 +10,7 @@ public Plugin myinfo =
 	author = "DingbatFlat",
 	description = "Survivor Bot Fix. Improve Survivor Bot",
 	version = "1.00",
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 }
 
 /*
@@ -483,7 +483,7 @@ void inputConfig()
 *=		Round / Start Ready / Select Improved Targets
 *=
 ================================================================================================ */
-public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
+public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
 	for (int x = 1; x <= MAXPLAYERS; x++) g_bFixTarget[x] = false; // RESET
 	
@@ -498,7 +498,7 @@ public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 	InitTimers();
 }
 
-public Action Event_BotAndPlayerReplace(Handle event, const char[] name, bool dontBroadcast)
+public void Event_BotAndPlayerReplace(Handle event, const char[] name, bool dontBroadcast)
 {
 	if (!LeftSafeRoom) return;
 	
@@ -634,6 +634,7 @@ public Action Timer_ShoveChance(Handle Timer)
 			}
 		}
 	}
+	return Plugin_Continue;
 }
 
 
@@ -1880,7 +1881,7 @@ public Action Event_PlayerDeath(Handle event, const char[] name, bool dontBroadc
 	return Plugin_Handled;
 }
 
-public Action Event_WitchRage(Handle event, const char[] name, bool dontBroadcast)
+public void Event_WitchRage(Handle event, const char[] name, bool dontBroadcast)
 {
 	int attacker = GetClientOfUserId(GetEventInt(event, "userid"));
 	
@@ -1940,7 +1941,7 @@ stock void ScriptCommand(int client, const char[] command, const char[] argument
 
 stock void L4D2_RunScript(const char[] sCode, any ...)
 {
-	static iScriptLogic = INVALID_ENT_REFERENCE;
+	static int iScriptLogic = INVALID_ENT_REFERENCE;
 	if(iScriptLogic == INVALID_ENT_REFERENCE || !IsValidEntity(iScriptLogic)) {
 		iScriptLogic = EntIndexToEntRef(CreateEntityByName("logic_script"));
 		if(iScriptLogic == INVALID_ENT_REFERENCE || !IsValidEntity(iScriptLogic))
@@ -2226,7 +2227,7 @@ stock bool isInterruptTo(int client, int target)
 	
 	GetClientEyePosition(client, self_pos);
 	computeAimAngles(client, target, aim_angles);
-	int Handle trace = TR_TraceRayFilterEx(self_pos, aim_angles, MASK_SOLID, RayType_Infinite, traceFilter, client);
+	Handle trace = TR_TraceRayFilterEx(self_pos, aim_angles, MASK_SOLID, RayType_Infinite, traceFilter, client);
 	if (TR_DidHit(trace)) {
 		int hit = TR_GetEntityIndex(trace);
 		if (hit == target) {

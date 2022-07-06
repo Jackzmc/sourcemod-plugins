@@ -21,7 +21,7 @@ public Plugin myinfo =
 	author = "jackzmc", 
 	description = "System to save and rollback to states in the game, usually pre-troll", 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 enum struct PlayerState {

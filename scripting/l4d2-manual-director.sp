@@ -14,32 +14,13 @@
 ConVar g_cMdNotify, g_cMdEnableTank, g_cMdEnableWitch, g_cMdEnableMob, g_cMdAnnounceLevel;
 bool g_bMdIsL4D2 = false;
 
-int g_icSpawnStats[15];
-/*
-0 - Commons
-1 - Mob
-2 - Panics
-3 - Jockey
-4 - Hunter
-5 - Charger
-6 - Smoker
-7 - Spitter
-8 - Boomer
-9 - Witch
-10 - Tank
-11 - Weapons
-12 - Health
-13 - Throwables
-14 - Restarts (cvar?)
-*/
-
 public Plugin myinfo = 
 {
 	name = PLUGIN_NAME, 
 	author = PLUGIN_AUTHOR, 
 	description = PLUGIN_DESCRIPTION, 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
@@ -208,6 +189,7 @@ public Action ShowSpecialMenu(int client, int args) {
 	if (g_cMdEnableMob.BoolValue)menu.AddItem("mob", "Mob");
 	menu.ExitButton = true;
 	menu.Display(client, 0);
+	return Plugin_Handled;
 }
 public Action ShowLocalSpecialMenu(int client, int args) {
 	Menu menu = new Menu(Handle_LocalSpawnMenu);
@@ -228,6 +210,7 @@ public Action ShowLocalSpecialMenu(int client, int args) {
 	if (g_cMdEnableMob.BoolValue) menu.AddItem("mob", "Mob");
 	menu.ExitButton = true;
 	menu.Display(client, 0);
+	return Plugin_Handled;
 }
 
 public int Handle_SpawnMenu(Menu menu, MenuAction action, int client, int index)
@@ -251,6 +234,7 @@ public int Handle_SpawnMenu(Menu menu, MenuAction action, int client, int index)
 	{
 		delete menu;
 	}
+	return 0;
 }
 public int Handle_LocalSpawnMenu(Menu menu, MenuAction action, int client, int index)
 {
@@ -269,6 +253,7 @@ public int Handle_LocalSpawnMenu(Menu menu, MenuAction action, int client, int i
 	{
 		delete menu;
 	}
+	return 0;
 }
 
 stock Action kickbot(Handle timer, int client)
@@ -277,29 +262,7 @@ stock Action kickbot(Handle timer, int client)
 	{
 		if (IsFakeClient(client))KickClient(client);
 	}
-}
-int FindStatIndex(const char[] type) {
-	return SpawnStats
-	if (StrEqual(type, "common") return 0;
-	else if (StrEqual(type, "mob")) return 1;
-	else if (StrEqual(type, "panic")) return 2;
-	else if (StrEqual(type, "jockey")) return 3;
-	else if (StrEqual(type, "hunter")) return 4;
-	else if (StrEqual(type, "charger")) return 5;
-	else if (StrEqual(type, "smoker")) return 6;
-	else if (StrEqual(type, "spitter")) return 7;
-	else if (StrEqual(type, "boomer")) return 8;
-	else if (StrEqual(type, "witch")) return 9;
-	else if (StrEqual(type, "tank")) return 10;
-	else if (StrEqual(type, "weapon")) return 11;
-	else if (StrEqual(type, "health")) return 12;
-	else if (StrEqual(type, "throwable")) return 13;
-	else if (StrEqual(type, "restart")) return 14;
-	else return sizeof(g_icSpawnStats);
-}
-stock void UpdateIndex(char[] type) {
-	int index = FindStatIndex(type);
-	g_icSpawnStats[index]++;
+	return Plugin_Handled;
 }
 
 stock int GetAnyValidClient() {

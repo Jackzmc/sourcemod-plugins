@@ -1,12 +1,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-
-#define PLUGIN_NAME "L4D2 FF Kick Protection"
-#define PLUGIN_DESCRIPTION "Prevents assholes from friendly firing when being kicked."
-#define PLUGIN_AUTHOR "jackzmc"
 #define PLUGIN_VERSION "1.0"
-#define PLUGIN_URL ""
 
 #include <sourcemod>
 #include <sdktools>
@@ -16,11 +11,11 @@ static int disableFFClient, ffDamageCount; //client to disable FF for
 static ConVar forceKickFFThreshold;
 
 public Plugin myinfo = {
-	name = PLUGIN_NAME, 
-	author = PLUGIN_AUTHOR, 
-	description = PLUGIN_DESCRIPTION, 
+	name = "L4D2 FF Kick Protection", 
+	author = "jackzmc", 
+	description = "Prevents friendly firing from players being voted off and admins from being kicked", 
 	version = PLUGIN_VERSION, 
-	url = PLUGIN_URL
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 public void OnPluginStart() {
@@ -57,14 +52,6 @@ public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast)
 		}
 	}
 }
-/*
-Dropped BabybackRibs from server (Disconnect by user.)                                                                  
-L 02/16/2022 - 10:38:53: [SM] Exception reported: No valid ban method flags specified                                   
-L 02/16/2022 - 10:38:53: [SM] Blaming: L4D2FFKickProtection.smx                                                        
- L 02/16/2022 - 10:38:53: [SM] Call stack trace:                                                                         
- L 02/16/2022 - 10:38:53: [SM]   [0] BanClient                                                                           
- L 02/16/2022 - 10:38:53: [SM]   [1] Line 78, s:\Jackz\Documents\Sourcepawn\scripting\L4D2FFKickProtection.sp::VoteStart Potential vote being called                                                                                             
-*/
 public Action VoteStart(int client, const char[] command, int argc) {
 	if(!IsClientInGame(client)) {
 		PrintToServer("Preventing vote from user not in game: %N", client);

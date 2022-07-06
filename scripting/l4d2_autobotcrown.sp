@@ -20,7 +20,7 @@ public Plugin myinfo =
 	author = "jackzmc", 
 	description = "Makes bots automatically crown a witch in cases where a witch is blocking the way", 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 //TODO: convars for allowed gamemodes / difficulties

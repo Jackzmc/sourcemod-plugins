@@ -27,7 +27,7 @@ public Plugin myinfo =
 	author = PLUGIN_AUTHOR, 
 	description = PLUGIN_DESCRIPTION, 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 //TODO: Transition state
@@ -128,19 +128,19 @@ public Action PrintGameInfo(int client, int args) {
 		
 		ReplyToCommand(client,"%d,0,%s,%d,%d,%s,%s,%s,%s,%s,%d,%s,%s", i, name, bot, hp, status, throwItem, kitItem, pillItem, character, velocity, primaryWeapon, secondaryWeapon);
 	}
-	
+	return Plugin_Handled;
 }
 // EVENTS //
 public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
 	cvar.GetString(g_icGamemode, sizeof(g_icGamemode));
 }
-public Action Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
+public void Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2)
 			b_isTransitioning[i] = true;
 	}
 }
-public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && b_isTransitioning[client]) {
 		b_isTransitioning[client] = false;

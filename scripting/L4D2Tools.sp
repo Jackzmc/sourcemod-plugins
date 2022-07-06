@@ -50,7 +50,7 @@ static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1];
 ReserveMode reserveMode;
 static bool isHighPingIdle[MAXPLAYERS+1], isL4D1Survivors;
-static Handle hTakeOverBot, hGoAwayFromKeyboard;
+static Handle hGoAwayFromKeyboard;
 static StringMap SteamIDs;
 static char lastSound[MAXPLAYERS+1][64], gamemode[32];
 
@@ -61,7 +61,7 @@ public Plugin myinfo = {
 	author = "Includes: Notice on laser use, Timer for gauntlet runs",
 	description = "jackzmc", 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 //TODO: On pickup ammo pack, mark dropped kit/defib 
@@ -280,11 +280,12 @@ public void CVC_FFNotice(ConVar convar, const char[] oldValue, const char[] newV
 	}
 }
 
-public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
+public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	LasersUsed.Clear();
 }
 public Action Command_RespawnAll(int client, int args) {
 	L4D_CreateRescuableSurvivors();
+	return Plugin_Handled;
 }
 public Action Command_SwapPlayer(int client, int args) {
 	if(args < 1) {
@@ -362,6 +363,7 @@ public Action Command_ListClientModels(int client, int args) {
 			ReplyToCommand(client, "%N's model: %s", i, model);
 		}
 	}
+	return Plugin_Handled;
 }
 public Action Command_PlaySound(int client, int args) {
 	if(args < 2) {
@@ -571,7 +573,7 @@ int AddWeaponSlot(int target, int slot, DataPack pack) {
 public Action Timer_RequipWeapon(Handle hdl, DataPack pack) {
 	pack.Reset();
 	int client = GetClientOfUserId(pack.ReadCell());
-	if(client == 0) return;
+	if(client == 0) return Plugin_Handled;
 
 	int weapon, pistolSlotItem = -1;
 
@@ -588,6 +590,7 @@ public Action Timer_RequipWeapon(Handle hdl, DataPack pack) {
 	if(isDualWield && pistolSlotItem != -1 && HasEntProp(pistolSlotItem, Prop_Send, "m_isDualWielding")) {
 		SetEntProp(pistolSlotItem, Prop_Send, "m_isDualWielding", 1);
 	}
+	return Plugin_Handled;
 }
 
 public Action Cmd_SetSurvivor(int client, int args) {
@@ -661,7 +664,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 }
 int disabledItem[2048];
 //Can also probably prevent kit drop to pick them up 
-public Action Event_WeaponDrop(Event event, const char[] name, bool dontBroadcast) {
+public void Event_WeaponDrop(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	int weapon = event.GetInt("propid");
 	char newWpn[32];
@@ -678,6 +681,7 @@ public Action Event_OnWeaponEquip(int client, int weapon) {
 }
 public Action Timer_AllowKitPickup(Handle h, int entity) {
 	disabledItem[entity] = 0;
+	return Plugin_Handled;
 }
 public void OnMapStart() {
 	AddFileToDownloadsTable("sound/custom/meow1.mp3");
@@ -713,7 +717,7 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 	}
 }
 ///AFK BOT WEAPON FIX
-public Action Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
+public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
 	int bot = GetClientOfUserId(event.GetInt("bot"));
 	if(StrEqual(name, "player_bot_replace")) {
 		//Bot replaced player, hook any drop events
@@ -798,6 +802,7 @@ public Action Timer_TPBots(Handle timer, int user) {
 			
 		}
 	}
+	return Plugin_Handled;
 }
 //FRIENDLY FIRE NOTICE
 public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) {

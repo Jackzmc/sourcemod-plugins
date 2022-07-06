@@ -17,7 +17,7 @@ public Plugin myinfo =
 	author = "jackzmc", 
 	description = "", 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 static ConVar hPercentTotal;
@@ -27,7 +27,6 @@ static ConVar hPercentCeda;
 static ConVar hPercentWorker;
 static ConVar hPercentRiot;
 static ConVar hPercentJimmy;
-static ConVar hPercentFallen;
 static ConVar hTotalZombies;
 static ConVar hZCommonLimit;
 

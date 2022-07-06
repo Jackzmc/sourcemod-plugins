@@ -16,7 +16,7 @@ public Plugin myinfo =
 	author = "jackzmc", 
 	description = "", 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 static Database DB;
@@ -73,6 +73,7 @@ public int Menu_Disconnected(Menu menu, MenuAction action, int client, int item)
 		WaitingForNotePlayer = client;
 	} else if (action == MenuAction_End)	
 		delete menu;
+	return 0;
 }
 
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
@@ -184,7 +185,7 @@ bool ConnectDB() {
     }
 }
 
-public Action Event_FirstSpawn(Event event, const char[] name, bool dontBroadcast) {
+public void Event_FirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && client <= MaxClients && !IsFakeClient(client)) {
 		static char auth[32];
@@ -194,7 +195,7 @@ public Action Event_FirstSpawn(Event event, const char[] name, bool dontBroadcas
 	}
 }
 
-public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	if(!event.GetBool("bot")) {
 		PlayerData data;
 		event.GetString("networkid", data.id, sizeof(data.id));

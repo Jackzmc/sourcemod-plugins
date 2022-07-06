@@ -128,7 +128,7 @@ public Plugin myinfo = {
 	author = "jackzmc", 
 	description = "", 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {

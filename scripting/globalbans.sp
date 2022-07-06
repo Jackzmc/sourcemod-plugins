@@ -18,7 +18,7 @@ public Plugin myinfo =
     author = "jackzmc", 
     description = "Manages bans via MySQL", 
     version = PLUGIN_VERSION, 
-    url = ""
+    url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 static Database g_db;

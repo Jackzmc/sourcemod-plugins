@@ -26,7 +26,7 @@ public Plugin myinfo =
 	author = "jackzmc", 
 	description = "https://forums.alliedmods.net/showthread.php?t=325331", 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 

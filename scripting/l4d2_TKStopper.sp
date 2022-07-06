@@ -57,13 +57,14 @@ public Plugin myinfo = {
 	author = "jackzmc", 
 	description = "", 
 	version = PLUGIN_VERSION, 
-	url = ""
+	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	if(late) {
 		lateLoaded = true;
 	}
+	return APLRes_Success;
 } 
 
 public void OnPluginStart() {
@@ -209,7 +210,7 @@ public void OnClientPutInServer(int client) {
 }
 
 public void OnClientPostAdminCheck(int client) {
-	if(GetUserAdmin(client) != INVALID_ADMIN_ID) {
+	if(GetUserAdmin(client) != INVALID_ADMIN_ID && hFFAutoScaleIgnoreAdmins.BoolValue) {
 		pData[client].immunityFlags = Immune_TK | Immune_RFF;
 	}
 }
@@ -599,21 +600,10 @@ stock bool GetNearestPlayerPosition(int client, float pos[3]) {
 	return lowestID > 0;
 }
 
-static char buffer[254];
-stock void PrintChatToAdmins(const char[] format, any ...) {
-	VFormat(buffer, sizeof(buffer), format, 2);
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i)) {
-			AdminId admin = GetUserAdmin(i);
-			if(admin != INVALID_ADMIN_ID) {
-				PrintToChat(i, "%s", buffer);
-			}
-		}
-	}
-	PrintToServer("%s", buffer);
-}
 
 stock void PrintToConsoleAdmins(const char[] format, any ...) {
+	char buffer[254];
+
 	VFormat(buffer, sizeof(buffer), format, 2);
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
