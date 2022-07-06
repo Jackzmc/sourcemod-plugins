@@ -44,7 +44,7 @@
 // #define SMOKE_PARTICLE_PATH "materials/particle/fire_explosion_1/fire_explosion_1.vmt"
 #define SOUND_MODEL_SWAP "ui/pickup_secret01.wav"
 #define MAX_VALID_LOCATIONS 2000 // The maximum amount of locations to hold, once this limit is reached only MAX_VALID_LOCATIONS_KEEP_PERCENT entries will be kept at random
-#define MAX_VALID_LOCATIONS_KEEP_PERCENT 0.30 // The % of locations to be kept when dumping validLocations
+#define MAX_VALID_LOCATIONS_KEEP_PERCENT 0.30 // The % of locations to be kept when dumping movePoints
 
 float DEBUG_POINT_VIEW_MIN[3] = { -5.0, -5.0, 0.0 }; 
 float DEBUG_POINT_VIEW_MAX[3] = { 5.0, 5.0, 2.0 }; 
@@ -70,17 +70,8 @@ char SURVIVOR_MODELS[8][] = {
 	"models/survivors/survivor_mechanic.mdl"
 };
 
-enum struct LocationMeta {
-	float pos[3];
-	float ang[3];
-	bool runto;
-	bool jump;
-	int attempts; // # of attempts player has moved until they will try to manage
-}
 
 // Game settings
-ArrayList validLocations; //ArrayList<LocationMeta>
-LocationMeta activeBotLocations[MAXPLAYERS];
 
 enum GameState {
 	State_Unknown = 0,
@@ -121,7 +112,11 @@ float seekerFlow = 0.0;
 
 float vecLastLocation[MAXPLAYERS+1][3]; 
 
+MovePoints movePoints;
+GuessWhoGame Game;
+
 #include <guesswho/gwcore>
+
 
 public Plugin myinfo = {
 	name =  "L4D2 Guess Who", 
@@ -150,9 +145,10 @@ public void OnPluginStart() {
 	validSets = new ArrayList(ByteCountToCells(16));
 	mapConfigs = new StringMap();
 
+	movePoints = new MovePoints();
+
 	g_FadeUserMsgId = GetUserMessageId("Fade");
 
-	validLocations = new ArrayList(sizeof(LocationMeta));
 	previousCvarValues = new StringMap();
 
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
@@ -169,7 +165,7 @@ public void OnPluginStart() {
 
 
 public void OnPluginEnd() {
-	Cleanup();
+	Game.Cleanup();
 }
 
 public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
@@ -191,7 +187,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		UnhookEvent("player_death", Event_PlayerDeath);
 		UnhookEvent("player_bot_replace", Event_PlayerToBot);
 		UnhookEvent("player_ledge_grab", Event_LedgeGrab);
-		Cleanup();
+		Game.Cleanup();
 		PrintToChatAll("[GuessWho] Gamemode unloaded but cvars have not been reset.");
 		RemoveCommandListener(OnGoAwayFromKeyboard, "go_away_from_keyboard");
 	}
@@ -227,11 +223,11 @@ void Event_PlayerToBot(Event event, const char[] name, bool dontBroadcast) {
 void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
-	if(client > 0 && GetState() == State_Active) {
+	if(client > 0 && Game.State == State_Active) {
 		if(client == currentSeeker) {
 			PrintToChatAll("The seeker, %N, has died. Hiders win!", currentSeeker);
-			SetState(State_HidersWin);
-			EndGame(State_HidersWin);
+			Game.State = State_HidersWin;
+			Game.End(State_HidersWin);
 		} else if(!IsFakeClient(client)) {
 			if(attacker == currentSeeker) {
 				PrintToChatAll("%N was killed", client);
@@ -245,9 +241,9 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	}
 
 	if(GetPlayersLeftAlive() == 0) {
-		if(GetState() == State_Active) {
+		if(Game.State == State_Active) {
 			PrintToChatAll("Everyone has died. %N wins!", currentSeeker);
-			EndGame(State_SeekerWon);
+			Game.End(State_SeekerWon);
 		}
 	}
 }
@@ -286,7 +282,7 @@ public void OnMapStart() {
 	SetCvars(false);
 
 	if(lateLoaded) {
-		int seeker = GetSeeker();
+		int seeker = Game.Seeker;
 		if(seeker > -1) {
 			currentSeeker = seeker;
 			PrintToServer("[GuessWho] Late load, found seeker %N", currentSeeker);
@@ -305,7 +301,7 @@ public void OnMapStart() {
 		}
 		InitGamemode();
 	}
-	SetState(State_Unknown);
+	Game.State = State_Unknown;
 }
 public void ThinkPost(int entity) {  
 	static int iTeamNum[MAXPLAYERS+1];
@@ -334,7 +330,7 @@ public void OnClientPutInServer(int client) {
 		ChangeClientTeam(client, 1);
 		isPendingPlay[client] = true;
 		PrintToChatAll("%N will play next round", client);
-		TeleportToSpawn(client);
+		Game.TeleportToSpawn(client);
 	}
 }
 
@@ -343,12 +339,12 @@ public void OnClientDisconnect(int client) {
 	if(!isEnabled) return;
 	if(client == currentSeeker) {
 		PrintToChatAll("The seeker has disconnected");
-		EndGame(State_HidersWin);
-	} else if(!IsFakeClient(client) && GetState() == State_Active) {
+		Game.End(State_HidersWin);
+	} else if(!IsFakeClient(client) && Game.State == State_Active) {
 		PrintToChatAll("A hider has left (%N)", client);
-		if(GetPlayersLeftAlive() == 0 && GetState() == State_Active) {
+		if(GetPlayersLeftAlive() == 0 && Game.State == State_Active) {
 			PrintToChatAll("Game Over. %N wins!", currentSeeker);
-			EndGame(State_SeekerWon);
+			Game.End(State_SeekerWon);
 		}
 	}
 }
@@ -425,8 +421,8 @@ void UnsetCvars() {
 
 
 void InitGamemode() {
-	if(isStarting && GetState() != State_Unknown) {
-		PrintToServer("[GuessWho] Warn: InitGamemode() called in an incorrect state (%d)", GetState());
+	if(isStarting && Game.State != State_Unknown) {
+		PrintToServer("[GuessWho] Warn: InitGamemode() called in an incorrect state (%d)", Game.State);
 		return;
 	}
 	SetupEntities();
@@ -461,14 +457,14 @@ void InitGamemode() {
 	if(newSeeker > 0) {
 		hasBeenSeeker[newSeeker] = true;
 		PrintToChatAll("%N is the seeker", newSeeker);
-		SetSeeker(newSeeker);
+		Game.Seeker = newSeeker;
 		SetPlayerBlind(newSeeker, 255);
 		SetEntPropFloat(newSeeker, Prop_Send, "m_flLaggedMovementValue", 0.0);
 		// L4D2_SetPlayerSurvivorGlowState(newSeeker, true);
 		L4D2_SetEntityGlow(newSeeker, L4D2Glow_Constant, 0, 10, SEEKER_GLOW_COLOR, false);
 	}
 	
-	TeleportAllToStart();
+	Game.TeleportAllToStart();
 	spawningTimer = CreateTimer(0.2, Timer_SpawnBots, 16, TIMER_REPEAT);
 }
 
@@ -555,16 +551,16 @@ Action Timer_WaitForStart(Handle h) {
 				TeleportEntity(i, seekerPos, NULL_VECTOR, NULL_VECTOR);
 				if(IsFakeClient(i)) {
 					moveTimers[i] = CreateTimer(GetRandomFloat(BOT_MOVE_RANDOM_MIN_TIME, BOT_MOVE_RANDOM_MAX_TIME), Timer_BotMove, GetClientUserId(i), TIMER_REPEAT);
-					validLocations.GetArray(GetURandomInt() % validLocations.Length, activeBotLocations[i]);
+					movePoints.GetArray(GetURandomInt() % movePoints.Length, activeBotLocations[i]);
 					TeleportEntity(i, activeBotLocations[i].pos, activeBotLocations[i].ang, NULL_VECTOR);
 				}
 			}
 		}
 
 		PrintToChatAll("[GuessWho] Seeker will start in %.0f seconds", SEED_TIME);
-		SetState(State_Starting);
-		SetTick(0);
-		SetMapTime(RoundFloat(SEED_TIME));
+		Game.State = State_Starting;
+		Game.Tick = 0;
+		Game.MapTime = RoundFloat(SEED_TIME);
 		CreateTimer(SEED_TIME, Timer_StartSeeker);
 		return Plugin_Stop;
 	}
@@ -573,22 +569,22 @@ Action Timer_WaitForStart(Handle h) {
 
 Action Timer_StartSeeker(Handle h) {
 	CPrintToChatAll("{blue}%N{default} :  Here I come", currentSeeker);
-	TeleportToSpawn(currentSeeker);
+	Game.TeleportToSpawn(currentSeeker);
 	SetPlayerBlind(currentSeeker, 0);
-	SetState(State_Active);
-	SetTick(0);
+	Game.State = State_Active;
+	Game.Tick = 0;
 	SetEntPropFloat(currentSeeker, Prop_Send, "m_flLaggedMovementValue", 1.0);
 	if(mapConfig.mapTime == 0) {
 		mapConfig.mapTime = DEFAULT_MAP_TIME;
 	}
-	SetMapTime(mapConfig.mapTime);
+	Game.MapTime = mapConfig.mapTime;
 	timesUpTimer = CreateTimer(float(mapConfig.mapTime), Timer_TimesUp, _, TIMER_FLAG_NO_MAPCHANGE);
 	return Plugin_Continue;
 }
 
 Action Timer_TimesUp(Handle h) {
 	PrintToChatAll("The seeker ran out of time. Hiders win!");
-	EndGame(State_HidersWin);
+	Game.End(State_HidersWin);
 	return Plugin_Handled;
 }
 
@@ -636,11 +632,11 @@ Action Timer_AcquireLocations(Handle h) {
 			GetClientAbsOrigin(i, meta.pos);
 			GetClientEyeAngles(i, meta.ang);
 			if(meta.pos[0] != vecLastLocation[i][0] || meta.pos[1] != vecLastLocation[i][1] || meta.pos[2] != vecLastLocation[i][2]) {
-				validLocations.PushArray(meta);
-				if(validLocations.Length > MAX_VALID_LOCATIONS) {
+				movePoints.PushArray(meta);
+				if(movePoints.Length > MAX_VALID_LOCATIONS) {
 					PrintToServer("[GuessWho] Hit MAX_VALID_LOCATIONS (%d), clearing some locations", MAX_VALID_LOCATIONS);
-					validLocations.Sort(Sort_Random, Sort_Float);
-					validLocations.Erase(RoundFloat(MAX_VALID_LOCATIONS * MAX_VALID_LOCATIONS_KEEP_PERCENT));
+					movePoints.Sort(Sort_Random, Sort_Float);
+					movePoints.Erase(RoundFloat(MAX_VALID_LOCATIONS * MAX_VALID_LOCATIONS_KEEP_PERCENT));
 				}
 				#if defined DEBUG_SHOW_POINTS
 				Effect_DrawBeamBoxRotatableToClient(i, meta.pos, DEBUG_POINT_VIEW_MIN, DEBUG_POINT_VIEW_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.1, 0.1, 0, 0.0, {0, 0, 255, 64}, 0);
@@ -655,7 +651,7 @@ Action Timer_AcquireLocations(Handle h) {
 void GetMovePoint(int i) {
 	activeBotLocations[i].runto = GetURandomFloat() < BOT_MOVE_RUN_CHANCE;
 	activeBotLocations[i].attempts = 0;
-	validLocations.GetArray(GetURandomInt() % validLocations.Length, activeBotLocations[i]);
+	movePoints.GetArray(GetURandomInt() % movePoints.Length, activeBotLocations[i]);
 	#if defined DEBUG_SHOW_POINTS
 	Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_POINT_VIEW_MIN, DEBUG_POINT_VIEW_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.1, 0.1, 0, 0.0, {255, 0, 255, 120}, 0);
 	#endif
@@ -686,7 +682,7 @@ Action Timer_BotMove(Handle h, int userid) {
 		PrintToConsoleAll("[gw/debug] BOT %N TOO FAR (%f) BOUNDS (%f, %f)-> Moving to seeker (%f %f %f)", i, botFlow, flowMin, flowMax, seekerPos[0], seekerPos[1], seekerPos[2]);
 		#endif
 		activeBotLocations[i].attempts = 0;
-	} else if(validLocations.Length > 0) {
+	} else if(movePoints.Length > 0) {
 		GetAbsOrigin(i, pos);
 		float distanceToPoint = GetVectorDistance(pos, activeBotLocations[i].pos);
 		if(distanceToPoint < BOT_MOVE_NOT_REACHED_DISTANCE || GetURandomFloat() < 0.20) {
@@ -697,7 +693,7 @@ Action Timer_BotMove(Handle h, int userid) {
 			#endif
 			// Has reached destination
 			if(mapConfig.hasSpawnpoint && FloatAbs(botFlow - seekerFlow) < BOT_MOVE_AVOID_FLOW_DIST && GetURandomFloat() < BOT_MOVE_AVOID_SEEKER_CHANCE) {
-				if(!FindPointAway(seekerPos, activeBotLocations[i].pos, BOT_MOVE_AVOID_MIN_DISTANCE)) {
+				if(!movePoints.GetRandomPointFar(seekerPos, activeBotLocations[i].pos, BOT_MOVE_AVOID_MIN_DISTANCE)) {
 					#if defined DEBUG_BOT_MOVE
 					PrintToConsoleAll("[gw/debug] BOT %N TOO CLOSE -> Failed to find far point, falling back to spawn", i);
 					#endif
@@ -900,11 +896,11 @@ bool SaveMapData(const char[] map, const char[] set = "default") {
 	if(file != null) {
 		file.WriteLine("px\tpy\tpz\tax\tay\taz");
 		LocationMeta meta;
-		for(int i = 0; i < validLocations.Length; i++) {
-			validLocations.GetArray(i, meta);
+		for(int i = 0; i < movePoints.Length; i++) {
+			movePoints.GetArray(i, meta);
 			file.WriteLine("%.1f %.1f %.1f %.1f %.1f %.1f", meta.pos[0], meta.pos[1], meta.pos[2], meta.ang[0], meta.ang[1], meta.ang[2]);
 		}
-		PrintToServer("[GuessWho] Saved %d locations to %s/%s.txt", validLocations.Length, map, set);
+		PrintToServer("[GuessWho] Saved %d locations to %s/%s.txt", movePoints.Length, map, set);
 		file.Flush();
 		delete file;
 		return true;
@@ -914,7 +910,7 @@ bool SaveMapData(const char[] map, const char[] set = "default") {
 }
 
 bool LoadMapData(const char[] map, const char[] set = "default") {
-	validLocations.Clear();
+	movePoints.Clear();
 
 	char buffer[256];
 	BuildPath(Path_SM, buffer, sizeof(buffer), "data/guesswho/%s/%s.txt", map, set);
@@ -949,13 +945,13 @@ bool LoadMapData(const char[] map, const char[] set = "default") {
 			if(flow < flowMin) flowMin = flow;
 			else if(flow > flowMax) flowMax = flow;
 
-			validLocations.PushArray(meta);
+			movePoints.PushArray(meta);
 		}
 		// Give some buffer space, to not trigger TOO FAR
 		flowMin -= FLOW_BOUND_BUFFER;
 		flowMax += FLOW_BOUND_BUFFER;
 
-		PrintToServer("[GuessWho] Loaded %d locations (bounds (%.0f, %.0f)) for %s/%s", validLocations.Length, flowMin, flowMax, map, set);
+		PrintToServer("[GuessWho] Loaded %d locations (bounds (%.0f, %.0f)) for %s/%s", movePoints.Length, flowMin, flowMax, map, set);
 		delete file;
 		return true;
 	}

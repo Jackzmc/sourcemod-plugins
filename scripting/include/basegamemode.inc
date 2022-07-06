@@ -49,7 +49,7 @@ methodmap PeekCamera {
 	public void SetPerspective(PeekPerspective perspective) {
 		float pos[3], ang[3];
 		int client = this.Target;
-		GetClientEyePosition(client, pos);
+		GetClientEyePosition(this.Target, pos);
 		GetClientEyeAngles(client, ang);
 
 		if(perspective == Cam_FirstPerson) {

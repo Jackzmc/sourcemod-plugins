@@ -19,11 +19,6 @@ Action Timer_RecordPoints(Handle h, int i) {
 
 Action Timer_WaitForPlayers(Handle h) {
 	if(!isEnabled) return Plugin_Stop;
-	if(!Game.IsPendingPlayers()) {
-		isStarting = true;
-		InitGamemode();
-		return Plugin_Stop;
-	}
 	return Plugin_Continue;
 }
 

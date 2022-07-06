@@ -42,7 +42,7 @@ bool FindSpawnPosition(float pos[3], bool includePlayers = true) {
 
 static char buffer[64];
 
-methodmap GameConVar __nullable__ < ConVar {
+methodmap GameConVar < ConVar {
 	public GameConVar(const char[] name) {
 		return view_as<GameConVar>(FindConVar(name));
 	}
@@ -73,6 +73,7 @@ methodmap GameConVar __nullable__ < ConVar {
 		this.SetString(value);
 	}
 }
+
 
 methodmap GuessWhoGame {
 
@@ -185,7 +186,7 @@ methodmap GuessWhoGame {
 		EntFire("gwprop", "kill");
 		EntFire("gwblocker", "kill");
 		EntFire("gwportal", "kill");
-		PeekCam.Destroy();
+		// PeekCam.Destroy();
 		if(entsOnly) return;
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
@@ -268,6 +269,7 @@ methodmap GuessWhoGame {
 
 }
 
+
 stock void GetHorizontalPositionFromClient(int client, float units, float finalPosition[3]) {
 	float pos[3], ang[3];
 	GetClientEyeAngles(client, ang);
@@ -278,11 +280,6 @@ stock void GetHorizontalPositionFromClient(int client, float units, float finalP
 	pos[1] += units * Sine(theta); 
 	finalPosition = pos;
 }
-
-
-
-
-
 
 stock void GetAnglesLookAt(int iClient, int iTarget, float fFinalPos[3]) {
 	static float fTargetPos[3]; 

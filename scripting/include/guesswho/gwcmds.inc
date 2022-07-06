@@ -147,7 +147,7 @@ public Action Command_GuessWho(int client, int args) {
 				ReplyToCommand(client, "Removed all custom gamemode blockers");
 			} else ReplyToCommand(client, "Specify the type to affect: 'blockers', 'props', 'portals', or 'all'");
 		} else if(StrEqual(subcmd, "settime")) {
-			int prev = Game.MapTime();
+			int prev = Game.MapTime;
 			static char arg[16];
 			GetCmdArg(2, arg, sizeof(arg));
 			int time = StringToInt(arg);
