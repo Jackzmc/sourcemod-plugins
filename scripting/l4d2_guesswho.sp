@@ -240,7 +240,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 		}
 	}
 
-	if(GetPlayersLeftAlive() == 0) {
+	if(Game.AlivePlayers == 0) {
 		if(Game.State == State_Active) {
 			PrintToChatAll("Everyone has died. %N wins!", currentSeeker);
 			Game.End(State_SeekerWon);
@@ -342,7 +342,7 @@ public void OnClientDisconnect(int client) {
 		Game.End(State_HidersWin);
 	} else if(!IsFakeClient(client) && Game.State == State_Active) {
 		PrintToChatAll("A hider has left (%N)", client);
-		if(GetPlayersLeftAlive() == 0 && Game.State == State_Active) {
+		if(Game.AlivePlayers == 0 && Game.State == State_Active) {
 			PrintToChatAll("Game Over. %N wins!", currentSeeker);
 			Game.End(State_SeekerWon);
 		}

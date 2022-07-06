@@ -258,17 +258,28 @@ methodmap GuessWhoGame {
 		}
 	}
 
-	public bool IsPendingPlayers() {
-		for(int i = 1;  i <= MaxClients; i++) {
-			if(IsClientConnected(i) && !IsClientInGame(i)) {
-				return true;
+	// Ignores seeker
+	property int AlivePlayers {
+		public get() {
+			int amount = 0;
+			for(int i = 1; i <= MaxClients; i++) {
+				if(i != currentSeeker && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && !IsFakeClient(i)) {
+					amount++;
+				}
 			}
+			return amount;
 		}
-		return false;
 	}
-
 }
 
+stock bool ArePlayersJoining() {
+	for(int i = 1;  i <= MaxClients; i++) {
+		if(IsClientConnected(i) && !IsClientInGame(i)) {
+			return true;
+		}
+	}
+	return false;
+}
 
 stock void GetHorizontalPositionFromClient(int client, float units, float finalPosition[3]) {
 	float pos[3], ang[3];
@@ -351,17 +362,6 @@ stock void LookAtPoint(int client, const float targetPos[3]) {
 
 bool Filter_IgnoreAll(int entity, int mask) {
 	return false;
-}
-
-// Ignores seeker
-int GetPlayersLeftAlive() {
-	int amount = 0;
-	for(int i = 1; i <= MaxClients; i++) {
-		if(i != currentSeeker && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && !IsFakeClient(i)) {
-			amount++;
-		}
-	}
-	return amount;
 }
 
 
