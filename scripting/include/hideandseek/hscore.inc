@@ -44,10 +44,10 @@ bool LoadConfigForMap(const char[] map) {
 		validSets.Clear();
 
 		static char buffer[64];
-		if(StrEqual(currentSet, "default") && kv.GetString("defaultset", buffer, sizeof(buffer)) && buffer[0] != '\0') {
-			strcopy(currentSet, sizeof(currentSet), buffer);
+		if(StrEqual(g_currentSet, "default") && kv.GetString("defaultset", buffer, sizeof(buffer)) && buffer[0] != '\0') {
+			strcopy(g_currentSet, sizeof(g_currentSet), buffer);
 		}
-		PrintToServer("[H&S] Loading config data for set %s on %s", currentSet, map);
+		PrintToServer("[H&S] Loading config data for set %s on %s", g_currentSet, map);
 
 		if(kv.JumpToKey("ents")) {
 			kv.GotoFirstSubKey();
@@ -65,7 +65,7 @@ bool LoadConfigForMap(const char[] map) {
 				if(validSets.FindString(buffer) == -1) {
 					validSets.PushString(buffer);
 				}
-				if(StrEqual(buffer, "default") || StrEqual(currentSet, buffer, false)) {
+				if(StrEqual(buffer, "default") || StrEqual(g_currentSet, buffer, false)) {
 					
 					config.entities.PushArray(entCfg);
 				} else {
@@ -94,7 +94,7 @@ bool LoadConfigForMap(const char[] map) {
 		config.hasSpawnpoint = false;
 		config.canClimb = true;
 		config.pressButtons = true;
-		if(!StrEqual(currentSet, "default") && kv.JumpToKey("sets")) {
+		if(!StrEqual(g_currentSet, "default") && kv.JumpToKey("sets")) {
 			char set[16];
 			kv.GotoFirstSubKey(true);
 			do {
@@ -102,10 +102,10 @@ bool LoadConfigForMap(const char[] map) {
 				if(validSets.FindString(set) == -1) {
 					validSets.PushString(set);
 				}
-				if(StrEqual(currentSet, set, false)) {
+				if(StrEqual(g_currentSet, set, false)) {
 					kv.GetVector("spawnpoint", config.spawnpoint);
 					if(config.spawnpoint[0] != 0.0 && config.spawnpoint[1] != 0.0 && config.spawnpoint[2] != 0.0) {
-						PrintToServer("[H&S] Using provided custom spawnpoint for set %s at %0.1f, %0.1f, %0.1f", currentSet, config.spawnpoint[0], config.spawnpoint[1], config.spawnpoint[2]);
+						PrintToServer("[H&S] Using provided custom spawnpoint for set %s at %0.1f, %0.1f, %0.1f", g_currentSet, config.spawnpoint[0], config.spawnpoint[1], config.spawnpoint[2]);
 						config.hasSpawnpoint = true;
 					} 
 					char buf[8];

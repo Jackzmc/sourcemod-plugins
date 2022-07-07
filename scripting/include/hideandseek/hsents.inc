@@ -237,7 +237,7 @@ void SetupEntities(bool blockers = true, bool props = true, bool portals = true)
 	}
 	#endif
 	if(mapConfig.entities != null) {
-		PrintToServer("[H&S] Deploying %d custom entities (Set: %s) (blockers:%b props:%b portals:%b)", mapConfig.entities.Length, currentSet, blockers, props, portals);
+		PrintToServer("[H&S] Deploying %d custom entities (Set: %s) (blockers:%b props:%b portals:%b)", mapConfig.entities.Length, g_currentSet, blockers, props, portals);
 		for(int i = 0; i < mapConfig.entities.Length; i++) {
 			EntityConfig config;
 			mapConfig.entities.GetArray(i, config);

@@ -12,7 +12,6 @@
 #include <sdktools>
 #include <left4dhooks>
 #include <sceneprocessor>
-#include <basegamemode>
 #include <multicolors>
 #if defined DEBUG_BLOCKERS
 #include <smlib/effects>
@@ -78,7 +77,10 @@ ConVar cvar_peekCam;
 ConVar cvar_seekerBalance;
 ConVar cvar_abm_autohard;
 
+BaseGame Game;
+#include <gamemodes/base>
 #include <hideandseek/hscore>
+
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	lateLoaded = late;
@@ -90,6 +92,8 @@ public void OnPluginStart() {
 	if(g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
+
+	Game.Init("Hide&Seek", "H&S");
 
 	validMaps = new ArrayList(ByteCountToCells(64));
 	validSets = new ArrayList(ByteCountToCells(16));
@@ -153,13 +157,13 @@ public void OnMapStart() {
 	char map[64];
 	GetCurrentMap(map, sizeof(map));
 
-	if(!StrEqual(currentMap, map)) {
+	if(!StrEqual(g_currentMap, map)) {
 		PrintToServer("[H&S] Map changed, loading fresh config");
-		strcopy(currentMap, sizeof(currentMap), map);
+		strcopy(g_currentMap, sizeof(g_currentMap), map);
 		if(!mapConfigs.GetArray(map, mapConfig, sizeof(MapConfig))) {
 			LoadConfigForMap(map);
 		}
-		strcopy(currentSet, sizeof(currentSet), "default");
+		strcopy(g_currentSet, sizeof(g_currentSet), "default");
 		if(IsGameSoloOrPlayersLoading()) {
 			Handle timer = CreateTimer(10.0, Timer_KeepWaiting, _, TIMER_REPEAT);
 			TriggerTimer(timer);

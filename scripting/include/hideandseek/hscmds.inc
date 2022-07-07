@@ -3,11 +3,11 @@ public Action Command_HideAndSeek(int client, int args) {
 		char subcmd[16];
 		GetCmdArg(1, subcmd, sizeof(subcmd));
 		if(StrEqual(subcmd, "r") || StrEqual(subcmd, "reload", false)) {
-			GetCurrentMap(currentMap, sizeof(currentMap));
+			GetCurrentMap(g_currentMap, sizeof(g_currentMap));
 			char arg[16];
 			GetCmdArg(2, arg, sizeof(arg));
 			if(ReloadMapDB()) {
-				if(!LoadConfigForMap(currentMap)) {
+				if(!LoadConfigForMap(g_currentMap)) {
 					ReplyToCommand(client, "Warn: Map has no config file");
 				}
 				Cleanup();
@@ -22,7 +22,7 @@ public Action Command_HideAndSeek(int client, int args) {
 		} else if(StrEqual(subcmd, "set", false)) {
 			char set[16];
 			if(args == 1) {
-				ReplyToCommand(client, "Current Map Set: \"%s\" (Specify with /hs set <set>)", currentSet);
+				ReplyToCommand(client, "Current Map Set: \"%s\" (Specify with /hs set <set>)", g_currentSet);
 				if(validSets.Length == 0) ReplyToCommand(client, "Available Sets: (no map config found)");
 				else { 
 					ReplyToCommand(client, "Available Sets: ");
@@ -32,16 +32,16 @@ public Action Command_HideAndSeek(int client, int args) {
 					}
 				}
 			} else {
-				GetCmdArg(2, currentSet, sizeof(currentSet));
+				GetCmdArg(2, g_currentSet, sizeof(g_currentSet));
 				for(int i = 0; i < validSets.Length; i++) {
 					validSets.GetString(i, set, sizeof(set));
-					if(StrEqual(set, currentSet)) {
-						if(!LoadConfigForMap(currentMap)) {
+					if(StrEqual(set, g_currentSet)) {
+						if(!LoadConfigForMap(g_currentMap)) {
 							ReplyToCommand(client, "Warn: Map has no config file");
 						}
 						Cleanup();
 						SetupEntities(isNavBlockersEnabled, isPropsEnabled, isPortalsEnabled);
-						PrintToChatAll("[H&S] Map set has been changed to \"%s\"", currentSet);
+						PrintToChatAll("[H&S] Map set has been changed to \"%s\"", g_currentSet);
 						return Plugin_Handled;
 					}
 				}
@@ -135,7 +135,7 @@ public Action Command_HideAndSeek(int client, int args) {
 				do {
 					int mapIndex = GetURandomInt() % validMaps.Length;
 					validMaps.GetString(mapIndex, map, sizeof(map));
-					if(!StrEqual(currentMap, map, false)) {
+					if(!StrEqual(g_currentMap, map, false)) {
 						foundMap = true;
 					}
 				} while(!foundMap);
@@ -262,7 +262,7 @@ public Action Command_HideAndSeek(int client, int args) {
 			ReplyToCommand(client, "State: %d | Tick: %d", view_as<int>(GetState()), GetTick());
 
 			ReplyToCommand(client, "- Map Info -");
-			ReplyToCommand(client, "Map: %s (set %s)", currentMap, currentSet);
+			ReplyToCommand(client, "Map: %s (set %s)", g_currentMap, g_currentSet);
 			if(mapConfig.hasSpawnpoint)
 				ReplyToCommand(client, "Has Spawnpoint: yes (%f %f %f)", mapConfig.spawnpoint[0], mapConfig.spawnpoint[1], mapConfig.spawnpoint[2]);
 			else
