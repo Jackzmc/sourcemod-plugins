@@ -4,7 +4,7 @@
 
 
 public Action Command_GuessWho(int client, int args) {
-	if(!isEnabled) ReplyToCommand(client, "Warn: Guess Who is not active");
+	if(!isEnabled) ReplyToCommand(client, "Warn: %s is not active", GAMEMODE_NAME);
 	if(args > 0) {
 		char subcmd[32];
 		GetCmdArg(1, subcmd, sizeof(subcmd));
@@ -17,18 +17,18 @@ public Action Command_GuessWho(int client, int args) {
 				if(args == 3) {
 					GetCmdArg(2, subcmd, sizeof(subcmd));
 				} else {
-					subcmd = currentSet;
+					subcmd = g_currentSet;
 				}
-				if(movePoints.SaveMap(currentMap, subcmd)) {
-					ReplyToCommand(client, "Saved movement data for %s/%s", currentMap, subcmd);
+				if(movePoints.SaveMap(g_currentMap, subcmd)) {
+					ReplyToCommand(client, "Saved movement data for %s/%s", g_currentMap, subcmd);
 				} else {
 					ReplyToCommand(client, "Failed to save map data");
 				}
 			} else if(StrEqual(subcmd, "load")) {
-				MovePoints points = MovePoints.LoadMap(currentMap, currentSet);
+				MovePoints points = MovePoints.LoadMap(g_currentMap, g_currentSet);
 				if(points != null) {
 					Game.SetPoints(points);
-					ReplyToCommand(client, "Loaded movement data for %s/%s", currentMap, currentSet);
+					ReplyToCommand(client, "Loaded movement data for %s/%s", g_currentMap, g_currentSet);
 				} else {
 					ReplyToCommand(client, "Failed to load map data");
 				}
@@ -55,11 +55,11 @@ public Action Command_GuessWho(int client, int args) {
 				ReplyToCommand(client, "Unknown option. Valid options: 'clear', 'save', 'load'");
 			}
 		} else if(StrEqual(subcmd, "r") || StrEqual(subcmd, "reload", false)) {
-			GetCurrentMap(currentMap, sizeof(currentMap));
+			GetCurrentMap(g_currentMap, sizeof(g_currentMap));
 			char arg[4];
 			GetCmdArg(2, arg, sizeof(arg));
 			if(ReloadMapDB()) {
-				if(!LoadConfigForMap(currentMap)) {
+				if(!LoadConfigForMap(g_currentMap)) {
 					ReplyToCommand(client, "Warn: Map has no config file");
 				}
 				Game.Cleanup(true);
@@ -74,7 +74,7 @@ public Action Command_GuessWho(int client, int args) {
 		} else if(StrEqual(subcmd, "set", false)) {
 			char set[16];
 			if(args == 1) {
-				ReplyToCommand(client, "Current Map Set: \"%s\" (Specify with /gw set <set>)", currentSet);
+				ReplyToCommand(client, "Current Map Set: \"%s\" (Specify with /gw set <set>)", g_currentSet);
 				if(validSets.Length == 0) ReplyToCommand(client, "Available Sets: (no map config found)");
 				else { 
 					ReplyToCommand(client, "Available Sets: ");
@@ -84,25 +84,25 @@ public Action Command_GuessWho(int client, int args) {
 					}
 				}
 			} else {
-				GetCmdArg(2, currentSet, sizeof(currentSet));
+				GetCmdArg(2, g_currentSet, sizeof(g_currentSet));
 				for(int i = 0; i < validSets.Length; i++) {
 					validSets.GetString(i, set, sizeof(set));
-					if(StrEqual(set, currentSet)) {
-						if(!LoadConfigForMap(currentMap)) {
-							ReplyToCommand(client, "Warn: No config entry for %s", currentMap);
+					if(StrEqual(set, g_currentSet)) {
+						if(!LoadConfigForMap(g_currentMap)) {
+							ReplyToCommand(client, "Warn: No config entry for %s", g_currentMap);
 						}
-						MovePoints points = MovePoints.LoadMap(currentMap, currentSet);
+						MovePoints points = MovePoints.LoadMap(g_currentMap, g_currentSet);
 						if(points != null) {
 							if(movePoints.Length == 0) {
-								ReplyToCommand(client, "Warn: No map data found for %s/%s", currentMap, currentSet);
+								ReplyToCommand(client, "Warn: No map data found for %s/%s", g_currentMap, g_currentSet);
 							}
 							Game.SetPoints(points);
 						} else {
-							ReplyToCommand(client, "Warn: %s/%s has 0 saved movement locations", currentMap, currentSet);
+							ReplyToCommand(client, "Warn: %s/%s has 0 saved movement locations", g_currentMap, g_currentSet);
 						}
 						Game.Cleanup();
 						SetupEntities(isNavBlockersEnabled, isPropsEnabled, isPortalsEnabled);
-						PrintToChatAll("[GuessWho] Map set has been changed to \"%s\"", currentSet);
+						PrintToChatAll("[GuessWho] Map set has been changed to \"%s\"", g_currentSet);
 						return Plugin_Handled;
 					}
 				}
@@ -182,11 +182,11 @@ public Action Command_GuessWho(int client, int args) {
 				do {
 					int mapIndex = GetURandomInt() % validMaps.Length;
 					validMaps.GetString(mapIndex, map, sizeof(map));
-					if(!StrEqual(currentMap, map, false)) {
+					if(!StrEqual(g_currentMap, map, false)) {
 						foundMap = true;
 					}
 				} while(!foundMap);
-				PrintToChatAll("[GuessWho] Switching map to %s", map);
+				PrintToChatAll("%s Switching map to %s", GAMEMODE_PREFIX, map);
 				ChangeMap(map);
 			} else if(StrEqual(arg, "next", false)) {
 				if(args == 1) {
@@ -196,7 +196,7 @@ public Action Command_GuessWho(int client, int args) {
 					GetCmdArg(3, arg2, sizeof(arg2));
 					if(IsMapValid(arg2)) { 
 						strcopy(nextRoundMap, sizeof(nextRoundMap), arg2);
-						PrintToChatAll("[H&S] Switching map next round to %s", arg2);
+						PrintToChatAll("%s Switching map next round to %s", GAMEMODE_PREFIX, arg2);
 						ForceChangeLevel(arg, "SetMapSelect");
 					} else {
 						ReplyToCommand(client, "Map is not valid");
@@ -286,7 +286,7 @@ public Action Command_GuessWho(int client, int args) {
 			ReplyToCommand(client, "State: %d | Tick: %d", view_as<int>(Game.State), Game.Tick);
 
 			ReplyToCommand(client, "- Map Info -");
-			ReplyToCommand(client, "Map: %s (set %s)", currentMap, currentSet);
+			ReplyToCommand(client, "Map: %s (set %s)", g_currentMap, g_currentSet);
 			if(mapConfig.hasSpawnpoint)
 				ReplyToCommand(client, "Has Spawnpoint: yes (%f %f %f)", mapConfig.spawnpoint[0], mapConfig.spawnpoint[1], mapConfig.spawnpoint[2]);
 			else
@@ -298,7 +298,7 @@ public Action Command_GuessWho(int client, int args) {
 		}
 		return Plugin_Handled;
 	}
-	ReplyToCommand(client, " === [ Guess Who Commands ] ===");
+	ReplyToCommand(client, " === [ %s Commands ] ===", GAMEMODE_NAME);
 	if(GetUserAdmin(client) != INVALID_ADMIN_ID) {
 		ReplyToCommand(client, "- Dev Commands -");
 		ReplyToCommand(client, "points:");

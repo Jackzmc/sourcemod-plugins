@@ -42,7 +42,7 @@ bool FindSpawnPosition(float pos[3], bool includePlayers = true) {
 
 static char buffer[128];
 
-methodmap GuessWhoGame {
+methodmap GuessWhoGame < BaseGame {
 
 	property int Seeker {
 		public get() { 

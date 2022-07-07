@@ -56,9 +56,7 @@ int PLAYER_GLOW_COLOR[3] = { 0, 255, 0 };
 #include <left4dhooks>
 #include <smlib/effects>
 #include <sceneprocessor>
-#include <basegamemode>
 #include <multicolors>
-#include <gamemodes/cvars>
 
 char SURVIVOR_MODELS[8][] = {
 	"models/survivors/survivor_namvet.mdl",
@@ -125,6 +123,8 @@ float vecLastLocation[MAXPLAYERS+1][3];
 MovePoints movePoints;
 GuessWhoGame Game;
 
+
+#include <gamemodes/base>
 #include <guesswho/gwcore>
 
 
@@ -146,6 +146,8 @@ public void OnPluginStart() {
 	if(g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
+
+	Game.Init("GuessWho");
 
 	g_iTeamNum = FindSendPropInfo("CTerrorPlayerResource", "m_iTeam");
 	if (g_iTeamNum == -1)
@@ -186,7 +188,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 	if(shouldEnable) {
 		cvarStorage = new GameConVarStorage();
 		SetCvars(cvarStorage);
-		PrintToChatAll("[GuessWho] Gamemode is starting");
+		Game.Broadcast("Gamemode is starting");
 		HookEvent("round_start", Event_RoundStart);
 		HookEvent("player_death", Event_PlayerDeath);
 		HookEvent("player_bot_replace", Event_PlayerToBot);
@@ -200,7 +202,6 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		UnhookEvent("player_bot_replace", Event_PlayerToBot);
 		UnhookEvent("player_ledge_grab", Event_LedgeGrab);
 		Game.Cleanup();
-		PrintToChatAll("[GuessWho] Gamemode unloaded but cvars have not been reset.");
 		RemoveCommandListener(OnGoAwayFromKeyboard, "go_away_from_keyboard");
 	}
 	isEnabled = shouldEnable;
@@ -223,7 +224,7 @@ void Event_PlayerToBot(Event event, const char[] name, bool dontBroadcast) {
 
 	// Do not kick bots being spawned in
 	if(spawningTimer == null) {
-		PrintToServer("[GuessWho/debug] possible idle bot:  %d (player: %d)", bot, player);
+		Game.Debug("possible idle bot:  %d (player: %d)", bot, player);
 		// ChangeClientTeam(player, 0);
 		// L4D_SetHumanSpec(bot, player);
 		L4D_TakeOverBot(player);
@@ -237,24 +238,23 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 	if(client > 0 && Game.State == State_Active) {
 		if(client == currentSeeker) {
-			PrintToChatAll("The seeker, %N, has died. Hiders win!", currentSeeker);
-			Game.State = State_HidersWin;
+			Game.Broadcast("The seeker, %N, has died. Hiders win!", currentSeeker);
 			Game.End(State_HidersWin);
 		} else if(!IsFakeClient(client)) {
 			if(attacker == currentSeeker) {
-				PrintToChatAll("%N was killed", client);
+				Game.Broadcast("%N was killed", client);
 			} else {
-				PrintToChatAll("%N died", client);
+				Game.Broadcast("%N died", client);
 			}
 		} else {
 			KickClient(client);
-			PrintToServer("[GuessWho] Bot(%d) was killed", client);
+			Game.Debug("Bot(%d) was killed", client);
 		}
 	}
 
 	if(Game.AlivePlayers == 0) {
 		if(Game.State == State_Active) {
-			PrintToChatAll("Everyone has died. %N wins!", currentSeeker);
+			Game.Broadcast("Everyone has died. %N wins!", currentSeeker);
 			Game.End(State_SeekerWon);
 		}
 	}
@@ -272,16 +272,16 @@ public void OnMapStart() {
 
 	char map[128];
 	GetCurrentMap(map, sizeof(map));
-	if(!StrEqual(currentMap, map)) {
-		strcopy(currentSet, sizeof(currentSet), "default");
-		if(!StrEqual(currentMap, "")) { 
-			if(!movePoints.SaveMap(currentMap, currentSet)) {
+	if(!StrEqual(g_currentMap, map)) {
+		strcopy(g_currentSet, sizeof(g_currentSet), "default");
+		if(!StrEqual(g_currentMap, "")) { 
+			if(!movePoints.SaveMap(g_currentMap, g_currentSet)) {
 				LogError("Could not save map data to disk");
 			}
 		}
 		ReloadMapDB();
-		strcopy(currentMap, sizeof(currentMap), map);
-		Game.SetPoints(MovePoints.LoadMap(map, currentSet));
+		strcopy(g_currentMap, sizeof(g_currentMap), map);
+		Game.SetPoints(MovePoints.LoadMap(map, g_currentSet));
 	}
 
 	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt");
@@ -297,7 +297,7 @@ public void OnMapStart() {
 		int seeker = Game.Seeker;
 		if(seeker > -1) {
 			currentSeeker = seeker;
-			PrintToServer("[GuessWho] Late load, found seeker %N", currentSeeker);
+			Game.Debug("-Late load- Seeker: %N",currentSeeker);
 		}
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
@@ -341,7 +341,7 @@ public void OnClientPutInServer(int client) {
 	if(isEnabled && !IsFakeClient(client)) {
 		ChangeClientTeam(client, 1);
 		isPendingPlay[client] = true;
-		PrintToChatAll("%N will play next round", client);
+		Game.Broadcast("%N will play next round", client);
 		Game.TeleportToSpawn(client);
 	}
 }
@@ -350,12 +350,12 @@ public void OnClientPutInServer(int client) {
 public void OnClientDisconnect(int client) {
 	if(!isEnabled) return;
 	if(client == currentSeeker) {
-		PrintToChatAll("The seeker has disconnected");
+		Game.Broadcast("The seeker has disconnected");
 		Game.End(State_HidersWin);
 	} else if(!IsFakeClient(client) && Game.State == State_Active) {
-		PrintToChatAll("A hider has left (%N)", client);
+		Game.Broadcast("A hider has left (%N)", client);
 		if(Game.AlivePlayers == 0 && Game.State == State_Active) {
-			PrintToChatAll("Game Over. %N wins!", currentSeeker);
+			Game.Broadcast("Game Over. %N wins!", currentSeeker);
 			Game.End(State_SeekerWon);
 		}
 	}
@@ -363,7 +363,7 @@ public void OnClientDisconnect(int client) {
 
 
 void SetCvars(GameConVarStorage storage) {
-	PrintToServer("[GuessWho] Setting convars");
+	Game.Debug("Setting convars");
 	if(cvar_survivorLimit != null) {
 		cvar_survivorLimit.SetBounds(ConVarBound_Upper, true, 64.0);
 		cvar_survivorLimit.RecordInt(MaxClients, storage);
@@ -380,11 +380,11 @@ void SetCvars(GameConVarStorage storage) {
 
 void InitGamemode() {
 	if(isStarting && Game.State != State_Unknown) {
-		PrintToServer("[GuessWho] Warn: InitGamemode() called in an incorrect state (%d)", Game.State);
+		Game.Warn("InitGamemode() called in an incorrect state (%d)", Game.State);
 		return;
 	}
 	SetupEntities();
-	PrintToChatAll("InitGamemode(): activating");
+	Game.DebugConsole("InitGamemode(): activating");
 	ArrayList validPlayerIds = new ArrayList();
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
@@ -406,7 +406,7 @@ void InitGamemode() {
 		}
 	}
 	if(validPlayerIds.Length == 0) {
-		PrintToServer("[GuessWho] Warn: Ignoring InitGamemode() with no valid survivors");
+		Game.Warn("Ignoring InitGamemode() with no valid survivors");
 		return;
 	}
 	ignoreSeekerBalance = false;
@@ -414,7 +414,7 @@ void InitGamemode() {
 	delete validPlayerIds;
 	if(newSeeker > 0) {
 		hasBeenSeeker[newSeeker] = true;
-		PrintToChatAll("%N is the seeker", newSeeker);
+		Game.Broadcast("%N is the seeker", newSeeker);
 		Game.Seeker = newSeeker;
 		SetPlayerBlind(newSeeker, 255);
 		SetEntPropFloat(newSeeker, Prop_Send, "m_flLaggedMovementValue", 0.0);
@@ -446,7 +446,7 @@ Action Timer_SpawnBots(Handle h, int max) {
 
 Action Timer_SpawnPost(Handle h) {
 	spawningTimer = null;
-	PrintToChatAll("Timer_SpawnPost(): activating");
+	Game.DebugConsole("Timer_SpawnPost(): activating");
 	bool isL4D1 = L4D2_GetSurvivorSetMap() == 1;
 	int remainingSeekers;
 	int survivorMaxIndex = isL4D1 ? 3 : 7;
@@ -482,13 +482,13 @@ Action Timer_SpawnPost(Handle h) {
 	}
 
 	if(remainingSeekers == 0) {
-		PrintToChatAll("All players have been seekers once");
+		Game.Broadcast("All players have been seekers once");
 		for(int i = 0; i <= MaxClients; i++) { 
 			hasBeenSeeker[i] = false;
 		}
 	}
 
-	PrintToChatAll("[debug] waiting for safe area leave");
+	Game.Debug("waiting for safe area leave", BaseDebug_Server | BaseDebug_ChatAll);
 	CreateTimer(1.0, Timer_WaitForStart, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
 
 	return Plugin_Handled;
@@ -515,7 +515,7 @@ Action Timer_WaitForStart(Handle h) {
 			}
 		}
 
-		PrintToChatAll("[GuessWho] Seeker will start in %.0f seconds", SEED_TIME);
+		Game.Broadcast("Seeker will start in %.0f seconds", SEED_TIME);
 		Game.State = State_Starting;
 		Game.Tick = 0;
 		Game.MapTime = RoundFloat(SEED_TIME);
@@ -541,7 +541,7 @@ Action Timer_StartSeeker(Handle h) {
 }
 
 Action Timer_TimesUp(Handle h) {
-	PrintToChatAll("The seeker ran out of time. Hiders win!");
+	Game.Broadcast("The seeker ran out of time. Hiders win!");
 	Game.End(State_HidersWin);
 	return Plugin_Handled;
 }
@@ -592,7 +592,7 @@ Action Timer_AcquireLocations(Handle h) {
 			if(meta.pos[0] != vecLastLocation[i][0] || meta.pos[1] != vecLastLocation[i][1] || meta.pos[2] != vecLastLocation[i][2]) {
 				movePoints.AddPoint(meta);
 				if(movePoints.Length > MAX_VALID_LOCATIONS) {
-					PrintToServer("[GuessWho] Hit MAX_VALID_LOCATIONS (%d), clearing some locations", MAX_VALID_LOCATIONS);
+					Game.Warn("Hit MAX_VALID_LOCATIONS (%d), clearing some locations", MAX_VALID_LOCATIONS);
 					movePoints.Sort(Sort_Random, Sort_Float);
 					movePoints.Erase(RoundFloat(MAX_VALID_LOCATIONS * MAX_VALID_LOCATIONS_KEEP_PERCENT));
 				}
@@ -604,15 +604,6 @@ Action Timer_AcquireLocations(Handle h) {
 		}
 	}
 	return Plugin_Continue;
-}
-
-void GetMovePoint(int i) {
-	activeBotLocations[i].runto = GetURandomFloat() < BOT_MOVE_RUN_CHANCE;
-	activeBotLocations[i].attempts = 0;
-	movePoints.GetArray(GetURandomInt() % movePoints.Length, activeBotLocations[i]);
-	#if defined DEBUG_SHOW_POINTS
-	Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_POINT_VIEW_MIN, DEBUG_POINT_VIEW_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.1, 0.1, 0, 0.0, {255, 0, 255, 120}, 0);
-	#endif
 }
 
 Action Timer_BotMove(Handle h, int userid) {
@@ -637,7 +628,7 @@ Action Timer_BotMove(Handle h, int userid) {
 		TE_SendToAll();
 		L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(i), seekerPos[0], seekerPos[1], seekerPos[2]);
 		#if defined DEBUG_BOT_MOVE
-		PrintToConsoleAll("[gw/debug] BOT %N TOO FAR (%f) BOUNDS (%f, %f)-> Moving to seeker (%f %f %f)", i, botFlow, flowMin, flowMax, seekerPos[0], seekerPos[1], seekerPos[2]);
+		Game.DebugConsole("BOT %N TOO FAR (%f) BOUNDS (%f, %f)-> Moving to seeker (%f %f %f)", i, botFlow, flowMin, flowMax, seekerPos[0], seekerPos[1], seekerPos[2]);
 		#endif
 		activeBotLocations[i].attempts = 0;
 	} else if(movePoints.Length > 0) {
@@ -653,12 +644,12 @@ Action Timer_BotMove(Handle h, int userid) {
 			if(mapConfig.hasSpawnpoint && FloatAbs(botFlow - seekerFlow) < BOT_MOVE_AVOID_FLOW_DIST && GetURandomFloat() < BOT_MOVE_AVOID_SEEKER_CHANCE) {
 				if(!movePoints.GetRandomPointFar(seekerPos, activeBotLocations[i].pos, BOT_MOVE_AVOID_MIN_DISTANCE)) {
 					#if defined DEBUG_BOT_MOVE
-					PrintToConsoleAll("[gw/debug] BOT %N TOO CLOSE -> Failed to find far point, falling back to spawn", i);
+					// DebugConsole("BOT %N TOO CLOSE -> Failed to find far point, falling back to spawn", i);
 					#endif
 					activeBotLocations[i].pos = mapConfig.spawnpoint;
 				} else {
 					#if defined DEBUG_BOT_MOVE
-					PrintToConsoleAll("[gw/debug] BOT %N TOO CLOSE -> Moving to far point (%f %f %f) (%f units away)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2], GetVectorDistance(seekerPos, activeBotLocations[i].pos));
+					// DebugConsole("BOT %N TOO CLOSE -> Moving to far point (%f %f %f) (%f units away)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2], GetVectorDistance(seekerPos, activeBotLocations[i].pos));
 					#endif
 				}
 				activeBotLocations[i].runto = GetURandomFloat() < 0.75;
@@ -666,15 +657,14 @@ Action Timer_BotMove(Handle h, int userid) {
 				Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_POINT_VIEW_MIN, DEBUG_POINT_VIEW_MAX, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 150.0, 0.2, 0.1, 0, 0.0, {255, 255, 255, 255}, 0);
 				#endif
 			} else {
-				GetMovePoint(i);
+				movePoints.GetRandomPoint(activeBotLocations[i]);
 			}
 			if(!L4D2_IsReachable(i, activeBotLocations[i].pos)) {
 				#if defined DEBUG_BOT_MOVE
-				PrintToChatAll("[gw/debug] POINT UNREACHABLE (Bot:%d) (%f %f %f)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
-				PrintToServer("[gw/debug] POINT UNREACHABLE (Bot:%d) (%f %f %f)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
+				Game.Warn("Point is unreachable at (%f, %f, %f) for %L", activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2], i);
 				Effect_DrawBeamBoxRotatableToAll(activeBotLocations[i].pos, DEBUG_POINT_VIEW_MIN, view_as<float>({ 10.0, 10.0, 100.0 }), NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 400.0, 2.0, 3.0, 0, 0.0, {255, 0, 0, 255}, 0);
 				#endif
-				GetMovePoint(i);
+				movePoints.GetRandomPoint(activeBotLocations[i]);
 			}
 		} else {
 			// Has not reached dest
@@ -685,7 +675,7 @@ Action Timer_BotMove(Handle h, int userid) {
 			if(activeBotLocations[i].attempts == BOT_MOVE_NOT_REACHED_ATTEMPT_RUNJUMP) {
 				if(distanceToPoint <= (BOT_MOVE_NOT_REACHED_DISTANCE * 2)) {
 					#if defined DEBUG_BOT_MOVE
-					PrintToConsoleAll("[gw/debug] Bot %d still has not reached point (%f %f %f), jumping", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
+					Game.DebugConsole("Bot %d still has not reached point (%f %f %f), jumping", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
 					L4D2_SetPlayerSurvivorGlowState(i, true);
 					L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, PLAYER_GLOW_COLOR, true);
 					#endif
@@ -693,7 +683,7 @@ Action Timer_BotMove(Handle h, int userid) {
 				} else {
 					activeBotLocations[i].runto = true;
 					#if defined DEBUG_BOT_MOVE
-					PrintToConsoleAll("[gw/debug] Bot %d not reached point (%f %f %f), running", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
+					Game.DebugConsole("Bot %d not reached point (%f %f %f), running", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
 					L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, PLAYER_GLOW_COLOR, true);
 					L4D2_SetPlayerSurvivorGlowState(i, true);
 					#endif
@@ -704,7 +694,7 @@ Action Timer_BotMove(Handle h, int userid) {
 				L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, SEEKER_GLOW_COLOR, true);
 				L4D2_SetPlayerSurvivorGlowState(i, true);
 				#endif
-				GetMovePoint(i);
+				movePoints.GetRandomPoint(activeBotLocations[i]);
 			} 
 			#if defined DEBUG_SHOW_POINTS
 			int color[4];
