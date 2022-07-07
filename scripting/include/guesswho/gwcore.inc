@@ -1,10 +1,11 @@
+#define FOLDER_PERMS ( FPERM_U_READ |  FPERM_U_WRITE |  FPERM_U_EXEC |  FPERM_G_EXEC | FPERM_G_WRITE | FPERM_G_READ | FPERM_O_EXEC )
+
 #include <guesswho/gwpoints>
 #include <guesswho/gwgame>
 #include <guesswho/gwcmds>
 #include <guesswho/gwents>
 #include <guesswho/gwtimers>
 
-#define FOLDER_PERMS ( FPERM_U_READ |  FPERM_U_WRITE |  FPERM_U_EXEC |  FPERM_G_EXEC | FPERM_G_WRITE | FPERM_G_READ | FPERM_O_EXEC )
 
 static KeyValues kv;
 StringMap mapConfigs;
