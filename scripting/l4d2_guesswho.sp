@@ -58,6 +58,7 @@ int PLAYER_GLOW_COLOR[3] = { 0, 255, 0 };
 #include <sceneprocessor>
 #include <basegamemode>
 #include <multicolors>
+#include <gamemodes/cvars>
 
 char SURVIVOR_MODELS[8][] = {
 	"models/survivors/survivor_namvet.mdl",
@@ -101,10 +102,19 @@ int g_iSmokeParticle;
 int g_iTeamNum = -1;
 
 // Cvars
-StringMap previousCvarValues;
-ConVar cvar_survivorLimit;
 ConVar cvar_seekerFailDamageAmount;
 
+GameConVarStorage cvarStorage;
+
+GameConVar cvar_survivorLimit;
+GameConVar cvar_separationMinRange;
+GameConVar cvar_separationMaxRange;
+GameConVar cvar_abmAutoHard;
+GameConVar cvar_sbFixEnabled;
+GameConVar cvar_sbPushScale;
+GameConVar cvar_battlestationGiveUp;
+GameConVar cvar_sbMaxBattlestationRange;
+GameConVar cvar_enforceProximityRange;
 // Bot Movement specifics
 float flowMin, flowMax;
 float seekerPos[3];
@@ -149,7 +159,7 @@ public void OnPluginStart() {
 
 	g_FadeUserMsgId = GetUserMessageId("Fade");
 
-	previousCvarValues = new StringMap();
+	cvarStorage = new GameConVarStorage();
 
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.AddChangeHook(Event_GamemodeChange);
@@ -174,7 +184,8 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 	if(isEnabled == shouldEnable) return;
 	if(spawningTimer != null) delete spawningTimer;
 	if(shouldEnable) {
-		SetCvars(true);
+		cvarStorage = new GameConVarStorage();
+		SetCvars(cvarStorage);
 		PrintToChatAll("[GuessWho] Gamemode is starting");
 		HookEvent("round_start", Event_RoundStart);
 		HookEvent("player_death", Event_PlayerDeath);
@@ -182,7 +193,8 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		HookEvent("player_ledge_grab", Event_LedgeGrab);
 		AddCommandListener(OnGoAwayFromKeyboard, "go_away_from_keyboard");
 	} else if(!lateLoaded) {
-		UnsetCvars();
+		cvarStorage.Restore();
+		delete cvarStorage;
 		UnhookEvent("round_start", Event_RoundStart);
 		UnhookEvent("player_death", Event_PlayerDeath);
 		UnhookEvent("player_bot_replace", Event_PlayerToBot);
@@ -263,13 +275,13 @@ public void OnMapStart() {
 	if(!StrEqual(currentMap, map)) {
 		strcopy(currentSet, sizeof(currentSet), "default");
 		if(!StrEqual(currentMap, "")) { 
-			if(!SaveMapData(currentMap, currentSet)) {
+			if(!movePoints.SaveMap(currentMap, currentSet)) {
 				LogError("Could not save map data to disk");
 			}
 		}
 		ReloadMapDB();
 		strcopy(currentMap, sizeof(currentMap), map);
-		LoadMapData(map, currentSet);
+		Game.SetPoints(MovePoints.LoadMap(map, currentSet));
 	}
 
 	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt");
@@ -279,7 +291,7 @@ public void OnMapStart() {
 	}
 	// g_iSmokeParticle = PrecacheModel(SMOKE_PARTICLE_PATH);
 	PrecacheSound(SOUND_MODEL_SWAP);
-	SetCvars(false);
+	SetCvars(null);
 
 	if(lateLoaded) {
 		int seeker = Game.Seeker;
@@ -349,76 +361,22 @@ public void OnClientDisconnect(int client) {
 	}
 }
 
-public bool SetCvarString(ConVar cvar, const char[] value, bool record) {
-	if(cvar == null) return false;
-	char prevValue[32];
-	if(record) {
-		char name[32];
-		cvar.GetName(name, sizeof(name));
-		cvar.GetString(prevValue, sizeof(prevValue));
-		previousCvarValues.SetString(name, prevValue);
-	}
-	
-	cvar.SetString(value);
-	return true;
-}
-public bool SetCvarValue(ConVar cvar, any value, bool record) {
-	if(cvar == null) return false;
-	if(record) {
-		char name[32];
-		cvar.GetName(name, sizeof(name));
-		previousCvarValues.SetValue(name, float(value));
-	}
-	cvar.FloatValue = value;
-	return true;
-}
 
-void SetCvars(bool record = false) {
+void SetCvars(GameConVarStorage storage) {
 	PrintToServer("[GuessWho] Setting convars");
-	cvar_survivorLimit = FindConVar("survivor_limit");
-	ConVar cvar_separationMinRange = FindConVar("sb_separation_danger_min_range");
-	ConVar cvar_separationMaxRange = FindConVar("sb_separation_danger_max_range");
-	ConVar cvar_abmAutoHard = FindConVar("abm_autohard");
-	ConVar cvar_sbFixEnabled = FindConVar("sb_fix_enabled");
-	ConVar cvar_sbPushScale = FindConVar("sb_pushscale");
 	if(cvar_survivorLimit != null) {
 		cvar_survivorLimit.SetBounds(ConVarBound_Upper, true, 64.0);
-		SetCvarValue(cvar_survivorLimit, MaxClients, record);
-		cvar_survivorLimit.IntValue = MaxClients;
+		cvar_survivorLimit.RecordInt(MaxClients, storage);
 	}
-	SetCvarValue(cvar_separationMinRange, 1000, record);
-	SetCvarValue(cvar_separationMaxRange, 1200, record);
-	SetCvarValue(cvar_abmAutoHard, 0, record);
-	SetCvarValue(cvar_sbFixEnabled, 0, record);
-	SetCvarValue(cvar_sbPushScale, 0, record);
-	SetCvarValue(FindConVar("sb_battlestation_give_up_range_from_human"), 5000.0, record);
-	SetCvarValue(FindConVar("sb_max_battlestation_range_from_human"), 5000.0, record);
-	SetCvarValue(FindConVar("sb_enforce_proximity_range"), 10000, record);
+	cvar_separationMinRange.RecordInt(1000, storage);
+	cvar_separationMaxRange.RecordInt(1000, storage);
+	cvar_abmAutoHard.RecordInt(0, storage);
+	cvar_sbFixEnabled.RecordInt(0, storage);
+	cvar_sbPushScale.RecordInt(0, storage);
+	cvar_battlestationGiveUp.RecordFloat(5000.0, storage);
+	cvar_sbMaxBattlestationRange.RecordFloat(5000.0, storage);
+	cvar_enforceProximityRange.RecordInt(10000, storage);
 }
-
-void UnsetCvars() {
-	StringMapSnapshot snapshot = previousCvarValues.Snapshot();
-	char key[32], valueStr[32];
-	PrintToServer("[GuessWho] Restoring %d convars", snapshot.Length);
-	for(int i = 0; i < snapshot.Length; i++) {
-		snapshot.GetKey(i, key, sizeof(key));
-		ConVar convar = FindConVar(key);
-		if(convar != null) {
-			float value;
-			if(previousCvarValues.GetValue(key, value)) {
-				convar.FloatValue = value;
-			} else if(previousCvarValues.GetString(key, valueStr, sizeof(valueStr))) {
-				convar.SetString(valueStr);
-			} else {
-				LogError("[GuessWho] Invalid cvar (\"%s\")", key);
-			}
-		} else {
-			PrintToServer("[GuessWho] Cannot restore cvar (\"%s\") that does not exist", key);
-		}
-	}
-	previousCvarValues.Clear();
-}
-
 
 void InitGamemode() {
 	if(isStarting && Game.State != State_Unknown) {
@@ -632,7 +590,7 @@ Action Timer_AcquireLocations(Handle h) {
 			GetClientAbsOrigin(i, meta.pos);
 			GetClientEyeAngles(i, meta.ang);
 			if(meta.pos[0] != vecLastLocation[i][0] || meta.pos[1] != vecLastLocation[i][1] || meta.pos[2] != vecLastLocation[i][2]) {
-				movePoints.PushArray(meta);
+				movePoints.AddPoint(meta);
 				if(movePoints.Length > MAX_VALID_LOCATIONS) {
 					PrintToServer("[GuessWho] Hit MAX_VALID_LOCATIONS (%d), clearing some locations", MAX_VALID_LOCATIONS);
 					movePoints.Sort(Sort_Random, Sort_Float);
@@ -884,77 +842,4 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 			CancelScene(scene);
 		}
 	}
-}
-
-bool SaveMapData(const char[] map, const char[] set = "default") {
-	char buffer[256];
-	// guesswho folder should be created by ReloadMapDB
-	BuildPath(Path_SM, buffer, sizeof(buffer), "data/guesswho/%s", map);
-	CreateDirectory(buffer, FOLDER_PERMS);
-	BuildPath(Path_SM, buffer, sizeof(buffer), "data/guesswho/%s/%s.txt", map, set);
-	File file = OpenFile(buffer, "w+");
-	if(file != null) {
-		file.WriteLine("px\tpy\tpz\tax\tay\taz");
-		LocationMeta meta;
-		for(int i = 0; i < movePoints.Length; i++) {
-			movePoints.GetArray(i, meta);
-			file.WriteLine("%.1f %.1f %.1f %.1f %.1f %.1f", meta.pos[0], meta.pos[1], meta.pos[2], meta.ang[0], meta.ang[1], meta.ang[2]);
-		}
-		PrintToServer("[GuessWho] Saved %d locations to %s/%s.txt", movePoints.Length, map, set);
-		file.Flush();
-		delete file;
-		return true;
-	}
-	PrintToServer("[GuessWho] OpenFile(w+) returned null for %s", buffer);
-	return false;
-}
-
-bool LoadMapData(const char[] map, const char[] set = "default") {
-	movePoints.Clear();
-
-	char buffer[256];
-	BuildPath(Path_SM, buffer, sizeof(buffer), "data/guesswho/%s/%s.txt", map, set);
-	LoadConfigForMap(map);
-	File file = OpenFile(buffer, "r+");
-	if(file != null) {
-		char line[64];
-		char pieces[16][6];
-		file.ReadLine(line, sizeof(line)); // Skip header
-		flowMin = L4D2Direct_GetMapMaxFlowDistance();
-		flowMax = 0.0;
-		while(file.ReadLine(line, sizeof(line))) {
-			ExplodeString(line, " ", pieces, 6, 16, false);
-			LocationMeta meta;
-			meta.pos[0] = StringToFloat(pieces[0]);
-			meta.pos[1] = StringToFloat(pieces[1]);
-			meta.pos[2] = StringToFloat(pieces[2]);
-			meta.ang[0] = StringToFloat(pieces[3]);
-			meta.ang[1] = StringToFloat(pieces[4]);
-			meta.ang[2] = StringToFloat(pieces[5]);
-
-			// Calculate the flow bounds
-			Address nav = L4D2Direct_GetTerrorNavArea(meta.pos);
-			if(nav == Address_Null) {
-				nav = L4D_GetNearestNavArea(meta.pos);
-				if(nav == Address_Null) {
-					PrintToServer("[GuessWho] WARN: POINT AT (%f,%f,%f) IS INVALID (NO NAV AREA); skipping", meta.pos[0], meta.pos[1], meta.pos[2]);
-					continue;
-				}
-			}
-			float flow = L4D2Direct_GetTerrorNavAreaFlow(nav);
-			if(flow < flowMin) flowMin = flow;
-			else if(flow > flowMax) flowMax = flow;
-
-			movePoints.PushArray(meta);
-		}
-		// Give some buffer space, to not trigger TOO FAR
-		flowMin -= FLOW_BOUND_BUFFER;
-		flowMax += FLOW_BOUND_BUFFER;
-
-		PrintToServer("[GuessWho] Loaded %d locations (bounds (%.0f, %.0f)) for %s/%s", movePoints.Length, flowMin, flowMax, map, set);
-		delete file;
-		return true;
-	}
-	PrintToServer("[GuessWho] OpenFile(r+) returned null for %s", buffer);
-	return false;
 }
