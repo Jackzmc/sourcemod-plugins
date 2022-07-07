@@ -40,50 +40,15 @@ bool FindSpawnPosition(float pos[3], bool includePlayers = true) {
 	return false;
 }
 
-static char buffer[64];
-
-methodmap GameConVar < ConVar {
-	public GameConVar(const char[] name) {
-		return view_as<GameConVar>(FindConVar(name));
-	}
-
-	public void RecordInt(int value, bool record = false) {
-		if(record) {
-			this.GetName(buffer, sizeof(buffer));
-			previousCvarValues.SetValue(buffer, float(value));
-		}
-		this.IntValue = value;
-	}
-
-	public void RecordFloat(float value, bool record = false) {
-		if(record) {
-			this.GetName(buffer, sizeof(buffer));
-			previousCvarValues.SetValue(buffer, value);
-		}
-		this.FloatValue = value;
-	}
-
-	public void RecordString(const char[] value, bool record = false) {
-		if(record) {
-			char prevValue[32];
-			this.GetName(buffer, sizeof(buffer));
-			this.GetString(prevValue, sizeof(prevValue));
-			previousCvarValues.SetString(buffer, prevValue);
-		}
-		this.SetString(value);
-	}
-}
-
+static char buffer[128];
 
 methodmap GuessWhoGame {
 
 	property int Seeker {
 		public get() { 
-			if(currentSeeker > 0 && IsClientConnected(currentSeeker)) {
-				return currentSeeker;
-			} else {
-				return this._FindSeeker();
-			}
+			if(currentSeeker <= 0 || !IsClientConnected(currentSeeker))
+				currentSeeker = this._FindSeeker();
+			return currentSeeker;
 		}
 		public set(int client) {
 			for(int i = 1; i <= MaxClients; i++) {
@@ -256,6 +221,13 @@ methodmap GuessWhoGame {
 		} else {
 			PrintToServer("[GuessWho] Warn: No spawnpoint found (provided or map spawn)");
 		}
+	}
+
+	public void SetPoints(MovePoints points) {
+		if(movePoints != null) {
+			delete movePoints;
+		}
+		movePoints = points;
 	}
 
 	// Ignores seeker
