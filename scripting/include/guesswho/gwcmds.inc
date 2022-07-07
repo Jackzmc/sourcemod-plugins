@@ -19,13 +19,15 @@ public Action Command_GuessWho(int client, int args) {
 				} else {
 					subcmd = currentSet;
 				}
-				if(SaveMapData(currentMap, subcmd)) {
+				if(movePoints.SaveMap(currentMap, subcmd)) {
 					ReplyToCommand(client, "Saved movement data for %s/%s", currentMap, subcmd);
 				} else {
 					ReplyToCommand(client, "Failed to save map data");
 				}
 			} else if(StrEqual(subcmd, "load")) {
-				if(LoadMapData(currentMap, currentSet)) {
+				MovePoints points = MovePoints.LoadMap(currentMap, currentSet);
+				if(points != null) {
+					Game.SetPoints(points);
 					ReplyToCommand(client, "Loaded movement data for %s/%s", currentMap, currentSet);
 				} else {
 					ReplyToCommand(client, "Failed to load map data");
@@ -89,9 +91,13 @@ public Action Command_GuessWho(int client, int args) {
 						if(!LoadConfigForMap(currentMap)) {
 							ReplyToCommand(client, "Warn: No config entry for %s", currentMap);
 						}
-						if(!LoadMapData(currentMap, currentSet)) {
-							ReplyToCommand(client, "Warn: No map data found for %s/%s", currentMap, currentSet);
-						} else if(movePoints.Length == 0) {
+						MovePoints points = MovePoints.LoadMap(currentMap, currentSet);
+						if(points != null) {
+							if(movePoints.Length == 0) {
+								ReplyToCommand(client, "Warn: No map data found for %s/%s", currentMap, currentSet);
+							}
+							Game.SetPoints(points);
+						} else {
 							ReplyToCommand(client, "Warn: %s/%s has 0 saved movement locations", currentMap, currentSet);
 						}
 						Game.Cleanup();
