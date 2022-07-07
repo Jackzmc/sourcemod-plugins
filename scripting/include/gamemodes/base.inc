@@ -3,7 +3,6 @@ char GAMEMODE_NAME[30] = "_UNINITIALIZED_GAMEMODE_";
 char GAMEMODE_PREFIX[32];
 
 
-
 // Meta
 char gamemode[32];
 bool isEnabled, lateLoaded;
@@ -32,6 +31,7 @@ int g_iLaserIndex;
 
 // Gamemode state
 bool isPendingPlay[MAXPLAYERS+1];
+static char buffer[256];
 
 methodmap BaseGame {
 	property int DebugFlags {
@@ -41,27 +41,31 @@ methodmap BaseGame {
 		}
 	}
 
+	public void Init(const char[] name, const char[] prefix = "") {
+		strcopy(GAMEMODE_NAME, sizeof(GAMEMODE_NAME), name);
+		if(StrEqual(prefix, ""))
+			Format(GAMEMODE_PREFIX, sizeof(GAMEMODE_PREFIX), "[%s]", name);
+		else
+			Format(GAMEMODE_PREFIX, sizeof(GAMEMODE_PREFIX), "[%s]", prefix);
+	}
+
 	public void PrintToServer(const char[] format, any ...) {
-		char buffer[MAX_MESSAGE_LENGTH];
 		VFormat(buffer, sizeof(buffer), format, 2);
 		PrintToServer("[%s] %s", GAMEMODE_NAME, buffer);
 	}
 
 	public void Warn(const char[] format, any ...) {
-		char buffer[MAX_MESSAGE_LENGTH];
 		VFormat(buffer, sizeof(buffer), format, 2);
 		PrintToServer("[%s::WARN] %s", GAMEMODE_NAME, buffer);
 	}
 
 	public void Broadcast(const char[] format, any ...) {
-		char buffer[MAX_MESSAGE_LENGTH];
 		VFormat(buffer, sizeof(buffer), format, 2);
 		PrintToChatAll("[%s] %s", GAMEMODE_NAME, buffer);
 	}
 
 	public void Debug(const char[] format, any ...) {
 		if(_debugFlags == BaseDebug_None) return;
-		char buffer[MAX_MESSAGE_LENGTH];
 		VFormat(buffer, sizeof(buffer), format, 2);
 		if(_debugFlags & BaseDebug_Server)
 			PrintToServer("[%s/debug] %s", GAMEMODE_NAME, buffer);
@@ -73,14 +77,12 @@ methodmap BaseGame {
 
 	public void DebugConsole(const char[] format, any ...) {
 		if(_debugFlags == BaseDebug_None) return;
-		char buffer[MAX_MESSAGE_LENGTH];
 		VFormat(buffer, sizeof(buffer), format, 2);
 		PrintToConsoleAll("[%s/debug] %s", GAMEMODE_NAME, buffer);
 	}
 
 	public void DebugCustom(const char[] format, int flags, any ...) {
 		if(flags == BaseDebug_None) return;
-		char buffer[MAX_MESSAGE_LENGTH];
 		VFormat(buffer, sizeof(buffer), format, 3);
 		if(flags & BaseDebug_Server)
 			PrintToServer("[%s/debug] %s", GAMEMODE_NAME, buffer);
@@ -88,11 +90,6 @@ methodmap BaseGame {
 			PrintToChatAll("[%s/debug] %s", GAMEMODE_NAME, buffer);
 		if(flags & BaseDebug_ConsoleAll)
 			PrintToConsoleAll("[%s/debug] %s", GAMEMODE_NAME, buffer);
-	}
-
-	public void Init(const char[] name) {
-		strcopy(GAMEMODE_NAME, sizeof(GAMEMODE_NAME), name);
-		Format(GAMEMODE_PREFIX, sizeof(GAMEMODE_PREFIX), "[%s]", name);
 	}
 	
 	property bool Enabled {
