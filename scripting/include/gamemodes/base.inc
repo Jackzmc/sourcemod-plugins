@@ -1,17 +1,137 @@
+#include <gamemodes/cvars.inc>
+char GAMEMODE_NAME[30] = "_UNINITIALIZED_GAMEMODE_";
+char GAMEMODE_PREFIX[32];
+
+
+
 // Meta
 char gamemode[32];
-char currentMap[64];
 bool isEnabled, lateLoaded;
 
-// Internal State
-char currentSet[16] = "default";
+char g_currentSet[16];
+char g_currentMap[64];
 char nextRoundMap[64];
-bool isNavBlockersEnabled = true, isPropsEnabled = true, isPortalsEnabled = true;
+
+// Legacy:
+bool isNavBlockersEnabled, isPropsEnabled, isPortalsEnabled
+
+static int _debugFlags = BaseDebug_Server;
+
+enum {
+	BaseDebug_None,
+	BaseDebug_Server = 1,
+	BaseDebug_ConsoleAll = 2,
+	BaseDebug_ChatAll = 4
+}
+
+static bool ents_NavBlockers;
+static bool ents_Props;
+static bool ents_Portals;
 
 int g_iLaserIndex;
 
 // Gamemode state
 bool isPendingPlay[MAXPLAYERS+1];
+
+methodmap BaseGame {
+	property int DebugFlags {
+		public get() { return _debugFlags; }
+		public set(int flags) { 
+			_debugFlags = flags;
+		}
+	}
+
+	public void PrintToServer(const char[] format, any ...) {
+		char buffer[MAX_MESSAGE_LENGTH];
+		VFormat(buffer, sizeof(buffer), format, 2);
+		PrintToServer("[%s] %s", GAMEMODE_NAME, buffer);
+	}
+
+	public void Warn(const char[] format, any ...) {
+		char buffer[MAX_MESSAGE_LENGTH];
+		VFormat(buffer, sizeof(buffer), format, 2);
+		PrintToServer("[%s::WARN] %s", GAMEMODE_NAME, buffer);
+	}
+
+	public void Broadcast(const char[] format, any ...) {
+		char buffer[MAX_MESSAGE_LENGTH];
+		VFormat(buffer, sizeof(buffer), format, 2);
+		PrintToChatAll("[%s] %s", GAMEMODE_NAME, buffer);
+	}
+
+	public void Debug(const char[] format, any ...) {
+		if(_debugFlags == BaseDebug_None) return;
+		char buffer[MAX_MESSAGE_LENGTH];
+		VFormat(buffer, sizeof(buffer), format, 2);
+		if(_debugFlags & BaseDebug_Server)
+			PrintToServer("[%s/debug] %s", GAMEMODE_NAME, buffer);
+		if(_debugFlags & BaseDebug_ChatAll)
+			PrintToChatAll("[%s/debug] %s", GAMEMODE_NAME, buffer);
+		if(_debugFlags & BaseDebug_ConsoleAll)
+			PrintToConsoleAll("[%s/debug] %s", GAMEMODE_NAME, buffer);
+	}
+
+	public void DebugConsole(const char[] format, any ...) {
+		if(_debugFlags == BaseDebug_None) return;
+		char buffer[MAX_MESSAGE_LENGTH];
+		VFormat(buffer, sizeof(buffer), format, 2);
+		PrintToConsoleAll("[%s/debug] %s", GAMEMODE_NAME, buffer);
+	}
+
+	public void DebugCustom(const char[] format, int flags, any ...) {
+		if(flags == BaseDebug_None) return;
+		char buffer[MAX_MESSAGE_LENGTH];
+		VFormat(buffer, sizeof(buffer), format, 3);
+		if(flags & BaseDebug_Server)
+			PrintToServer("[%s/debug] %s", GAMEMODE_NAME, buffer);
+		if(flags & BaseDebug_ChatAll)
+			PrintToChatAll("[%s/debug] %s", GAMEMODE_NAME, buffer);
+		if(flags & BaseDebug_ConsoleAll)
+			PrintToConsoleAll("[%s/debug] %s", GAMEMODE_NAME, buffer);
+	}
+
+	public void Init(const char[] name) {
+		strcopy(GAMEMODE_NAME, sizeof(GAMEMODE_NAME), name);
+		Format(GAMEMODE_PREFIX, sizeof(GAMEMODE_PREFIX), "[%s]", name);
+	}
+	
+	property bool Enabled {
+		public get() {
+			return isEnabled
+		}
+		public set(bool value) {
+			isEnabled = value;
+		}
+	}
+
+	property bool Blockers {
+		public get() {
+			return ents_NavBlockers;
+		}
+		public set(bool value) {
+			ents_NavBlockers = value;
+		}
+	} 
+
+	property bool Props {
+		public get() {
+			return ents_Props;
+		}
+		public set(bool value) {
+			ents_Props = value;
+		}
+	} 
+
+	property bool Portals {
+		public get() {
+			return ents_Portals;
+		}
+		public set(bool value) {
+			ents_Portals = value;
+		}
+	} 
+	
+}
 
 
 // PeekCam specifics
