@@ -5,6 +5,7 @@
 #define DEBUG_SHOW_POINTS
 #define DEBUG_BOT_MOVE
 #define DEBUG_BLOCKERS
+// #define DEBUG_LOG_MAPSTART
 // #define DEBUG_MOVE_ATTEMPTS
 // #define DEBUG_SEEKER_PATH_CREATION 1
 
@@ -22,7 +23,7 @@
 #define BOT_MOVE_RUN_CHANCE 0.15
 #define BOT_MOVE_NOT_REACHED_DISTANCE 60.0 // The distance that determines if a bot reached a point
 #define BOT_MOVE_NOT_REACHED_ATTEMPT_RUNJUMP 6 // The minimum amount of attempts where bot will run or jump to dest
-#define BOT_MOVE_NOT_REACHED_ATTEMPT_RETRY 9 // The minimum amount of attempts where bot gives up and picks new
+#define BOT_MOVE_NOT_REACHED_ATTEMPT_RETRY 10 // The minimum amount of attempts where bot gives up and picks new
 #define DOOR_TOGGLE_INTERVAL 5.0 // Interval that loops throuh all doors to randomly toggle
 #define DOOR_TOGGLE_CHANCE 0.01 // Chance that every Timer_DoorToggles triggers a door to toggle state
 #define HIDER_SWAP_COOLDOWN 30.0 // Amount of seconds until they can swap
@@ -157,11 +158,19 @@ public void OnPluginStart() {
 	validSets = new ArrayList(ByteCountToCells(16));
 	mapConfigs = new StringMap();
 
-	movePoints = new MovePoints();
-
 	g_FadeUserMsgId = GetUserMessageId("Fade");
 
 	cvarStorage = new GameConVarStorage();
+	
+	cvar_survivorLimit = new GameConVar("cvar_survivorLimit");
+	cvar_separationMinRange = new GameConVar("sb_separation_danger_min_range");
+	cvar_separationMaxRange = new GameConVar("sb_separation_danger_max_range");
+	cvar_abmAutoHard = new GameConVar("abm_autohard");
+	cvar_sbFixEnabled = new GameConVar("sb_fix_enabled");
+	cvar_sbPushScale = new GameConVar("sb_pushscale");
+	cvar_battlestationGiveUp = new GameConVar("sb_battlestation_give_up_range_from_human");
+	cvar_sbMaxBattlestationRange = new GameConVar("sb_max_battlestation_range_from_human");
+	cvar_enforceProximityRange = new GameConVar("enforce_proximity_range");
 
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.AddChangeHook(Event_GamemodeChange);
@@ -190,6 +199,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		SetCvars(cvarStorage);
 		Game.Broadcast("Gamemode is starting");
 		HookEvent("round_start", Event_RoundStart);
+		HookEvent("round_end", Event_RoundEnd);
 		HookEvent("player_death", Event_PlayerDeath);
 		HookEvent("player_bot_replace", Event_PlayerToBot);
 		HookEvent("player_ledge_grab", Event_LedgeGrab);
@@ -198,6 +208,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		cvarStorage.Restore();
 		delete cvarStorage;
 		UnhookEvent("round_start", Event_RoundStart);
+		UnhookEvent("round_end", Event_RoundEnd);
 		UnhookEvent("player_death", Event_PlayerDeath);
 		UnhookEvent("player_bot_replace", Event_PlayerToBot);
 		UnhookEvent("player_ledge_grab", Event_LedgeGrab);
@@ -261,7 +272,12 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 }
 
 void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
-	CreateTimer(5.0, Timer_WaitForPlayers, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(2.5, Timer_WaitForPlayers, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+}
+
+void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
+	// Skip the check, everyone's loaded in
+	firstCheckDone = true;
 }
 
 public void OnMapStart() {
@@ -297,7 +313,7 @@ public void OnMapStart() {
 		int seeker = Game.Seeker;
 		if(seeker > -1) {
 			currentSeeker = seeker;
-			Game.Debug("-Late load- Seeker: %N",currentSeeker);
+			Game.Debug("-Late load- Seeker: %N", currentSeeker);
 		}
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
@@ -317,7 +333,6 @@ public void OnMapStart() {
 }
 public void ThinkPost(int entity) {  
 	static int iTeamNum[MAXPLAYERS+1];
-
 	GetEntDataArray(entity, g_iTeamNum, iTeamNum, sizeof(iTeamNum));
 	
 	for(int i = 1 ; i<= MaxClients; i++) {
@@ -327,14 +342,6 @@ public void ThinkPost(int entity) {
 	}
 	
 	SetEntDataArray(entity, g_iTeamNum, iTeamNum, sizeof(iTeamNum));
-}
-
-public void OnMapEnd() {
-	for(int i = 1; i <= MaxClients; i++) {
-		if(moveTimers[i] != null) {
-			delete moveTimers[i];
-		}
-	}
 }
 
 public void OnClientPutInServer(int client) {
@@ -387,7 +394,7 @@ void InitGamemode() {
 	Game.DebugConsole("InitGamemode(): activating");
 	ArrayList validPlayerIds = new ArrayList();
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
 			ChangeClientTeam(i, 2);
 			activeBotLocations[i].attempts = 0;
 			if(IsFakeClient(i)) {
@@ -403,6 +410,7 @@ void InitGamemode() {
 				if(!hasBeenSeeker[i] || ignoreSeekerBalance)
 					validPlayerIds.Push(GetClientUserId(i));
 			}
+			Game.TeleportToSpawn(i);
 		}
 	}
 	if(validPlayerIds.Length == 0) {
@@ -507,15 +515,15 @@ Action Timer_WaitForStart(Handle h) {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(i != currentSeeker && IsClientConnected(i) && IsClientInGame(i)) {
 				TeleportEntity(i, seekerPos, NULL_VECTOR, NULL_VECTOR);
-				if(IsFakeClient(i)) {
+				if(IsFakeClient(i) && movePoints.Length > 0) {
 					moveTimers[i] = CreateTimer(GetRandomFloat(BOT_MOVE_RANDOM_MIN_TIME, BOT_MOVE_RANDOM_MAX_TIME), Timer_BotMove, GetClientUserId(i), TIMER_REPEAT);
-					movePoints.GetArray(GetURandomInt() % movePoints.Length, activeBotLocations[i]);
+					movePoints.GetRandomPoint(activeBotLocations[i]);
 					TeleportEntity(i, activeBotLocations[i].pos, activeBotLocations[i].ang, NULL_VECTOR);
 				}
 			}
 		}
 
-		Game.Broadcast("Seeker will start in %.0f seconds", SEED_TIME);
+		Game.Broadcast("The Seeker (%N) will start in %.0f seconds", Game.Seeker, SEED_TIME);
 		Game.State = State_Starting;
 		Game.Tick = 0;
 		Game.MapTime = RoundFloat(SEED_TIME);
@@ -554,7 +562,7 @@ Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float& damag
 	if(attacker == currentSeeker) {
 		damage = 100.0;
 		ClearInventory(victim);
-		if(IsFakeClient(victim)) {
+		if(attacker > 0 && attacker <= MaxClients && IsFakeClient(victim)) {
 			PrintToChat(attacker, "That was a bot! -%.0f health", cvar_seekerFailDamageAmount.FloatValue);
 			SDKHooks_TakeDamage(attacker, 0, 0, cvar_seekerFailDamageAmount.FloatValue, DMG_DIRECT);
 		}

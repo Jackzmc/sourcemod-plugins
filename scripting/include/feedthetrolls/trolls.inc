@@ -297,7 +297,7 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 				SetEntProp(primaryWpn, Prop_Send, "m_iClip1", GetRandomInt(0, maxCap));
 			}
 		}
-	} else if(~modifier & TrollMod_Constant) {
+	}  else if(~modifier & TrollMod_Constant) {
 		PrintToServer("[FTT] Warn: Possibly invalid troll, no apply action defined for \"%s\"", troll.name);
 		#if defined DEBUG
 		ReplyToCommand(activator, "[FTT/Debug] If nothing occurs, this troll possibly was not implemented correctly. ");

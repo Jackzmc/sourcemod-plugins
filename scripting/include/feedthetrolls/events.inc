@@ -31,7 +31,68 @@ public void OnClientPutInServer(int client) {
 	if(IsTrollActive(client, "Voice Mute"))
 		BaseComm_SetClientMute(client, true);
 	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
+	SDKHook(client, SDKHook_OnTakeDamageAlive, NerfGun_OnTakeDamage);
 }
+public void OnEntityCreated(int entity, const char[] classname) {
+	if(entity >= MaxClients) {
+		if(StrEqual(classname, "infected", false))
+			SDKHook(entity, SDKHook_OnTakeDamageAlive, NerfGun_OnTakeDamage);
+		else if(StrContains(classname, "_projectile", true) > -1 ) {
+			RequestFrame(EntityCreateCallback, entity);
+		}
+	}
+}
+
+void EntityCreateCallback(int entity) {
+	if(!HasEntProp(entity, Prop_Send, "m_hOwnerEntity") || !IsValidEntity(entity)) return;
+	static char class[16];
+
+	static int badThrowID;
+	if(badThrowID == 0) badThrowID = GetTrollID("Bad Throw");
+
+	GetEntityClassname(entity, class, sizeof(class));
+	int entOwner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
+	if(entOwner > 0 && entOwner <= MaxClients) {
+		if(Trolls[badThrowID].IsActive(entOwner)) {
+			static float pos[3];
+			GetClientEyePosition(entOwner, pos);
+			if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_1) && StrContains(class, "vomitjar", true) > -1) {
+				AcceptEntityInput(entity, "Kill");
+				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
+					L4D_CTerrorPlayer_OnVomitedUpon(entOwner, entOwner);
+					EmitSoundToAll("weapons/ceda_jar/ceda_jar_explode.wav", entOwner);
+					FindClosestClient(entOwner, false, pos);
+				}
+				SpawnItem("vomitjar", pos);
+			} else if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_2) && StrContains(class, "molotov", true) > -1) {
+				// Burn them if no one near :)
+				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
+					GetClientAbsOrigin(entOwner, pos);
+					if(IsAnyPlayerNear(entOwner, 500.0)) {
+						AcceptEntityInput(entity, "Kill");
+						EmitSoundToAll("weapons/molotov/molotov_detonate_1.wav", entOwner);
+					} else { // or delete if there is
+						TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
+					}
+				} else {
+					SpawnItem("molotov", pos);
+					AcceptEntityInput(entity, "Kill");
+				}
+			} else if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_3) && StrContains(class, "pipe_bomb", true) > -1) {
+				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
+					TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
+					ExplodeProjectile(entity);
+				}
+				SpawnItem("pipe_bomb", pos);
+			}
+		} else if(Trolls[slipperyShoesIndex].IsActive(entOwner)) {
+			if(Trolls[slipperyShoesIndex].activeFlagClients[entOwner] & 4) {
+				L4D_StaggerPlayer(entOwner, entOwner, NULL_VECTOR);
+			}
+		}
+	}
+}
+
 public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
 	if(spIsActive)
@@ -593,17 +654,22 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	return Plugin_Continue;
 }
 
+public Action NerfGun_OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
+	static int nerfGunIndex;
+	if(nerfGunIndex == 0) nerfGunIndex = GetTrollID("Nerf Gun");
+	if(attacker > 0 && attacker <= MaxClients && GetClientTeam(attacker) == 2 && Trolls[nerfGunIndex].IsActive(attacker)) {
+		damage = 0.0;
+		return Plugin_Changed;
+	}
+	return Plugin_Continue;
+}
+
 public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
 	//Stop FF from marked:
-	static int reverseFF, nerfGunIndex;
+	static int reverseFF;
 	if(reverseFF == 0) reverseFF = GetTrollID("Reverse FF");
-	if(nerfGunIndex == 0) nerfGunIndex = GetTrollID("Nerf Gun");
 	if(attacker > 0 && attacker <= MaxClients) {
 		if(GetClientTeam(attacker) == 4 && IsFakeClient(attacker)) return Plugin_Continue;
-		else if(Trolls[nerfGunIndex].IsActive(attacker)) {
-			damage = 0.0;
-			return Plugin_Changed;
-		}
 	}
 
 	if(attacker > 0 && victim <= MaxClients && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
@@ -784,62 +850,6 @@ public void Event_WitchVictimSet(Event event, const char[] name, bool dontBroadc
 		CreateDataTimer(0.2, Timer_NextWitchSet, pack);
 		pack.WriteCell(GetClientUserId(closestClient));
 		pack.WriteCell(witch);
-	}
-}
-
-public void OnEntityCreated(int entity, const char[] classname) {
-	if(IsValidEntity(entity) && StrContains(classname, "_projectile", true) > -1 ) {
-		RequestFrame(EntityCreateCallback, entity);
-	}
-}
-
-void EntityCreateCallback(int entity) {
-	if(!HasEntProp(entity, Prop_Send, "m_hOwnerEntity") || !IsValidEntity(entity)) return;
-	static char class[16];
-
-	static int badThrowID;
-	if(badThrowID == 0) badThrowID = GetTrollID("Bad Throw");
-
-	GetEntityClassname(entity, class, sizeof(class));
-	int entOwner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
-	if(entOwner > 0 && entOwner <= MaxClients) {
-		if(Trolls[badThrowID].IsActive(entOwner)) {
-			static float pos[3];
-			GetClientEyePosition(entOwner, pos);
-			if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_1) && StrContains(class, "vomitjar", true) > -1) {
-				AcceptEntityInput(entity, "Kill");
-				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
-					L4D_CTerrorPlayer_OnVomitedUpon(entOwner, entOwner);
-					EmitSoundToAll("weapons/ceda_jar/ceda_jar_explode.wav", entOwner);
-					FindClosestClient(entOwner, false, pos);
-				}
-				SpawnItem("vomitjar", pos);
-			} else if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_2) && StrContains(class, "molotov", true) > -1) {
-				// Burn them if no one near :)
-				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
-					GetClientAbsOrigin(entOwner, pos);
-					if(IsAnyPlayerNear(entOwner, 500.0)) {
-						AcceptEntityInput(entity, "Kill");
-						EmitSoundToAll("weapons/molotov/molotov_detonate_1.wav", entOwner);
-					} else { // or delete if there is
-						TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
-					}
-				} else {
-					SpawnItem("molotov", pos);
-					AcceptEntityInput(entity, "Kill");
-				}
-			} else if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_3) && StrContains(class, "pipe_bomb", true) > -1) {
-				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
-					TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
-					ExplodeProjectile(entity);
-				}
-				SpawnItem("pipe_bomb", pos);
-			}
-		} else if(Trolls[slipperyShoesIndex].IsActive(entOwner)) {
-			if(Trolls[slipperyShoesIndex].activeFlagClients[entOwner] & 4) {
-				L4D_StaggerPlayer(entOwner, entOwner, NULL_VECTOR);
-			}
-		}
 	}
 }
 

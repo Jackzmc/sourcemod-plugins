@@ -116,6 +116,11 @@ methodmap GuessWhoGame < BaseGame {
 		public set(int seconds) {
 			Format(buffer, sizeof(buffer), "g_ModeScript.MutationState.MaxTime = %d", seconds);
 			L4D2_ExecVScriptCode(buffer);
+			if(timesUpTimer != null) {
+				float remaining = float(seconds) - float(this.Tick);
+				delete timesUpTimer;
+				timesUpTimer = CreateTimer(remaining, Timer_TimesUp, _, TIMER_FLAG_NO_MAPCHANGE);
+			}
 		}
 	}
 
@@ -124,6 +129,10 @@ methodmap GuessWhoGame < BaseGame {
 	}
 
 	public void End(GameState state) {
+		if(recordTimer != null) {
+			PrintToChatAll("Active recording stopped due to end of game. %d ready to save. \"/guesswho points save\" to save", movePoints.Length);
+			delete recordTimer;
+		} 
 		if(acquireLocationsTimer != null) delete acquireLocationsTimer;
 		if(timesUpTimer != null) delete timesUpTimer;
 		if(hiderCheckTimer != null) delete hiderCheckTimer;
@@ -135,7 +144,6 @@ methodmap GuessWhoGame < BaseGame {
 				if(IsClientConnected(i) && IsClientInGame(i) && IsFakeClient(i)) {
 					if(IsFakeClient(i)) {
 						ClearInventory(i);
-						PrintToServer("PlayerDeath: Seeker kill %d", i);
 						KickClient(i);
 					} else {
 						L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 20, PLAYER_GLOW_COLOR, false);
@@ -147,22 +155,23 @@ methodmap GuessWhoGame < BaseGame {
 		CreateTimer(5.0, Timer_ResetAll);
 	}
 
-	public void Cleanup(bool entsOnly = false) {
-		EntFire("gwprop", "kill");
-		EntFire("gwblocker", "kill");
-		EntFire("gwportal", "kill");
-		// PeekCam.Destroy();
-		if(entsOnly) return;
+	public void Cleanup(bool noClearInv = false) {
+		DeleteCustomEnts();
+		PeekCam.Destroy();
+		if(recordTimer != null) {
+			delete recordTimer;
+		}
+
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
-				if(isEnabled)
+				if(!noClearInv && isEnabled)
 					ClearInventory(i);
 				SDKUnhook(i, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 				SDKUnhook(i, SDKHook_WeaponDrop, OnWeaponDrop);
 			}
-		}
-		if(recordTimer != null) {
-			delete recordTimer;
+			if(moveTimers[i] != null) {
+				delete moveTimers[i];
+			}
 		}
 	}
 
@@ -174,7 +183,7 @@ methodmap GuessWhoGame < BaseGame {
 		if(uid > 0) {
 			return GetClientOfUserId(uid);
 		} else {
-			PrintToServer("[GuessWho] Could not find real seeker, falling back to manual check");
+			Game.Debug("Mutation has no seeker, manually attempting to find seeker");
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i)) {
 					int entity = GetPlayerWeaponSlot(i, 1);
@@ -187,6 +196,7 @@ methodmap GuessWhoGame < BaseGame {
 				}
 			}
 		}
+		Game.Debug("All attempts to find a seeker failed");
 		return -1;
 	}
 
@@ -227,7 +237,11 @@ methodmap GuessWhoGame < BaseGame {
 		if(movePoints != null) {
 			delete movePoints;
 		}
-		movePoints = points;
+		if(points == null) {
+			movePoints = new MovePoints();
+		} else {
+			movePoints = points;
+		}
 	}
 
 	// Ignores seeker
@@ -406,7 +420,7 @@ enum struct HiderDistQueue {
 			int time = GetTime();
 			if(time - this.lastVocalize > HIDER_AUTO_VOCALIZE_GRACE_TIME) {
 				this.lastVocalize = time;
-				int index = GetRandomInt(0, MAX_AUTO_VOCALIZATIONS);
+				int index = GetRandomInt(0, MAX_AUTO_VOCALIZATIONS - 1);
 				PerformScene(i, AUTO_VOCALIZATIONS[index]);
 			}
 		}

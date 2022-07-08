@@ -78,13 +78,13 @@ methodmap MovePoints < ArrayList {
             min -= FLOW_BOUND_BUFFER;
             max += FLOW_BOUND_BUFFER;
 
-            movePoints.SetBounds(flowMin, flowMax);
+            movePoints.SetBounds(min, max);
 
-            PrintToServer("[GuessWho] Loaded %d locations (bounds (%.0f, %.0f)) for %s/%s", movePoints.Length, min, max, map, set);
+            PrintToServer("[GuessWho] Loaded %d locations with bounds [%.0f, %.0f] for %s/%s", points.Length, min, max, map, set);
             delete file;
             return points;
         }
-        PrintToServer("[GuessWho] OpenFile(r+) returned null for %s", buffer);
+        PrintToServer("[GuessWho] No point data for %s/%s", map, set);
         return null;
     }
 
@@ -101,6 +101,7 @@ methodmap MovePoints < ArrayList {
     }
 
     public void GetRandomPoint(LocationMeta meta) {
+        if(this.Length == 0) return;
         meta.runto = GetURandomFloat() < BOT_MOVE_RUN_CHANCE;
         meta.attempts = 0;
         this.GetArray(GetURandomInt() % this.Length, meta);

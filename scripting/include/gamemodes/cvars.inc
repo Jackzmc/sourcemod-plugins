@@ -30,12 +30,13 @@ methodmap GameConVarStorage < StringMap {
 
 }
 
-methodmap GameConVar < ConVar {
+methodmap GameConVar __nullable__ < ConVar {
 	public GameConVar(const char[] name) {
 		return view_as<GameConVar>(FindConVar(name));
 	}
 
 	public void RecordInt(int value, GameConVarStorage storage) {
+		if(this == null) return;
 		if(storage != null) {
 			this.GetName(buffer, sizeof(buffer));
 			storage.SetValue(buffer, float(value));
@@ -44,6 +45,7 @@ methodmap GameConVar < ConVar {
 	}
 
 	public void RecordFloat(float value, GameConVarStorage storage) {
+		if(this == null) return;
 		if(storage != null) {
 			this.GetName(buffer, sizeof(buffer));
 			storage.SetValue(buffer, value);
@@ -52,6 +54,7 @@ methodmap GameConVar < ConVar {
 	}
 
 	public void RecordString(const char[] value, GameConVarStorage storage) {
+		if(this == null) return;
 		if(storage != null) {
 			char prevValue[32];
 			this.GetName(buffer, sizeof(buffer));

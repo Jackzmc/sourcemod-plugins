@@ -66,7 +66,7 @@ public Action Command_GuessWho(int client, int args) {
 				if(arg[0] == 'f') {
 					InitGamemode();
 				}
-				SetupEntities(isNavBlockersEnabled, isPropsEnabled, isPortalsEnabled);
+				SetupEntities(Game.Blockers, Game.Props, Game.Portals);
 				ReplyToCommand(client, "Reloaded map from config");
 			} else {
 				ReplyToCommand(client, "Error occurred while reloading map file");
@@ -101,7 +101,7 @@ public Action Command_GuessWho(int client, int args) {
 							ReplyToCommand(client, "Warn: %s/%s has 0 saved movement locations", g_currentMap, g_currentSet);
 						}
 						Game.Cleanup();
-						SetupEntities(isNavBlockersEnabled, isPropsEnabled, isPortalsEnabled);
+						SetupEntities(Game.Blockers, Game.Props, Game.Portals);
 						PrintToChatAll("[GuessWho] Map set has been changed to \"%s\"", g_currentSet);
 						return Plugin_Handled;
 					}
@@ -115,18 +115,18 @@ public Action Command_GuessWho(int client, int args) {
 			bool isUnknown = true;
 
 			if(doAll || StrEqual(type, "blockers", false)) {
-				if(isNavBlockersEnabled) {
+				if(Game.Blockers) {
 					EntFire(GAMEMODE_BLOCKER_NAME, "Disable");
 					ReplyToCommand(client, "Disabled all custom gamemode blockers");
 				} else {
 					EntFire(GAMEMODE_BLOCKER_NAME, "Enable");
 					ReplyToCommand(client, "Enabled all custom gamemode blockers");
 				}
-				isNavBlockersEnabled = !isNavBlockersEnabled;
+				Game.Blockers = !Game.Blockers;
 				isUnknown = false;
 			} 
 			if(doAll || StrEqual(type, "props", false)) {
-				if(isPropsEnabled) {
+				if(Game.Props) {
 					EntFire(GAMEMODE_PROP_NAME, "Disable");
 					EntFire(GAMEMODE_PROP_NAME, "DisableCollision");
 					ReplyToCommand(client, "Disabled all custom gamemode props");
@@ -135,10 +135,10 @@ public Action Command_GuessWho(int client, int args) {
 					EntFire(GAMEMODE_PROP_NAME, "EnableCollision");
 					ReplyToCommand(client, "Enabled all custom gamemode props");
 				}
-				isPropsEnabled = !isPropsEnabled;
+				Game.Props = !Game.Props;
 				isUnknown = false;
 			}
-			if(isUnknown) ReplyToCommand(client, "Specify the type to affect: 'blockers', 'props', 'portals', or 'all'");
+			if(isUnknown) ReplyToCommand(client, "Specify the type to affect: 'blockers', 'props', or 'all'");
 		} else if(StrEqual(subcmd, "clear", false)) {
 			static char arg[16];
 			GetCmdArg(2, arg, sizeof(arg));
@@ -151,7 +151,7 @@ public Action Command_GuessWho(int client, int args) {
 			} else if(StrEqual(arg, "blockers")) {
 				EntFire(GAMEMODE_BLOCKER_NAME, "kill");
 				ReplyToCommand(client, "Removed all custom gamemode blockers");
-			} else ReplyToCommand(client, "Specify the type to affect: 'blockers', 'props', 'portals', or 'all'");
+			} else ReplyToCommand(client, "Specify the type to affect: 'blockers', 'props', or 'all'");
 		} else if(StrEqual(subcmd, "settime")) {
 			int prev = Game.MapTime;
 			static char arg[16];
@@ -292,7 +292,7 @@ public Action Command_GuessWho(int client, int args) {
 			else
 				ReplyToCommand(client, "Has Spawnpoint: no (possibly map spawn %f %f %f)", mapConfig.spawnpoint[0], mapConfig.spawnpoint[1], mapConfig.spawnpoint[2]);
 			ReplyToCommand(client, "Map Time: %d", mapConfig.mapTime);
-			ReplyToCommand(client, "Flow Bounds: (%f, %f)", flowMin, flowMax);
+			ReplyToCommand(client, "Flow Bounds: (%f, %f)", movePoints.MinFlow, movePoints.MaxFlow);
 		} else {
 			ReplyToCommand(client, "Unknown option. Leave blank for help");
 		}
@@ -383,6 +383,9 @@ public Action Command_Join(int client, int args) {
 		L4D_RespawnPlayer(client);
 		TeleportEntity(client, tpLoc, NULL_VECTOR, NULL_VECTOR);
 		CheatCommand(client, "give", "gnome");
+		if(!ArePlayersJoining()) {
+			InitGamemode();
+		}
 	}
 	return Plugin_Handled;
 }

@@ -17,10 +17,24 @@ Action Timer_RecordPoints(Handle h, int i) {
 	return Plugin_Continue;
 }
 
+bool firstCheckDone = false;
 Action Timer_WaitForPlayers(Handle h) {
 	if(!isEnabled) return Plugin_Stop;
+	if(!ArePlayersJoining()) {
+		Game.Debug("No players pending, ready to go");
+		if(!firstCheckDone) {
+			// Wait one more iteration
+			firstCheckDone = true;
+		} else {
+			firstCheckDone = false;
+			InitGamemode();
+			return Plugin_Stop;
+		}
+	}
+	Game.Debug("Waiting for players");
 	return Plugin_Continue;
 }
+
 
 Action Timer_CheckHiders(Handle h) {
 	static float pos[3];

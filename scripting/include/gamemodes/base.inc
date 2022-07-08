@@ -12,7 +12,7 @@ char g_currentMap[64];
 char nextRoundMap[64];
 
 // Legacy:
-bool isNavBlockersEnabled, isPropsEnabled, isPortalsEnabled
+bool isNavBlockersEnabled = true, isPropsEnabled = true, isPortalsEnabled = true
 
 static int _debugFlags = BaseDebug_Server;
 
@@ -23,9 +23,9 @@ enum {
 	BaseDebug_ChatAll = 4
 }
 
-static bool ents_NavBlockers;
-static bool ents_Props;
-static bool ents_Portals;
+static bool ents_NavBlockers = true;
+static bool ents_Props = true;
+static bool ents_Portals = true;
 
 int g_iLaserIndex;
 
@@ -50,23 +50,23 @@ methodmap BaseGame {
 	}
 
 	public void PrintToServer(const char[] format, any ...) {
-		VFormat(buffer, sizeof(buffer), format, 2);
+		VFormat(buffer, sizeof(buffer), format, 3);
 		PrintToServer("[%s] %s", GAMEMODE_NAME, buffer);
 	}
 
 	public void Warn(const char[] format, any ...) {
-		VFormat(buffer, sizeof(buffer), format, 2);
+		VFormat(buffer, sizeof(buffer), format, 3);
 		PrintToServer("[%s::WARN] %s", GAMEMODE_NAME, buffer);
 	}
 
 	public void Broadcast(const char[] format, any ...) {
-		VFormat(buffer, sizeof(buffer), format, 2);
+		VFormat(buffer, sizeof(buffer), format, 3);
 		PrintToChatAll("[%s] %s", GAMEMODE_NAME, buffer);
 	}
 
 	public void Debug(const char[] format, any ...) {
 		if(_debugFlags == BaseDebug_None) return;
-		VFormat(buffer, sizeof(buffer), format, 2);
+		VFormat(buffer, sizeof(buffer), format, 3);
 		if(_debugFlags & BaseDebug_Server)
 			PrintToServer("[%s/debug] %s", GAMEMODE_NAME, buffer);
 		if(_debugFlags & BaseDebug_ChatAll)
@@ -77,7 +77,7 @@ methodmap BaseGame {
 
 	public void DebugConsole(const char[] format, any ...) {
 		if(_debugFlags == BaseDebug_None) return;
-		VFormat(buffer, sizeof(buffer), format, 2);
+		VFormat(buffer, sizeof(buffer), format, 3);
 		PrintToConsoleAll("[%s/debug] %s", GAMEMODE_NAME, buffer);
 	}
 
@@ -226,12 +226,12 @@ methodmap PeekCamera {
 	}
 
 	public void Destroy() {
-		if(seekerCam == INVALID_ENT_REFERENCE || !IsValidEntity(seekerCam)) {
-			seekerTarget = 0;
+		if(seekerCam != INVALID_ENT_REFERENCE && IsValidEntity(seekerCam)) {
 			AcceptEntityInput(seekerCam, "Disable");
 			AcceptEntityInput(seekerCam, "Kill");
 			seekerCam = INVALID_ENT_REFERENCE
 		}
+		seekerTarget = 0;
 	}
 }
 
