@@ -408,7 +408,7 @@ public Action Command_PlaySound(int client, int args) {
 				ReplyToCommand(client, "Playing '%s' to %N %s", arg2, target, arg3);
 			}
 		}
-		ShowActivity2(client, target_name, "\"%L\" playing sound \"%s\" to \"%L\"", client, arg2, target_name);
+		ShowActivity2(client, target_name, "\"%L\" playing sound \"%s\" to \"%s\"", client, arg2, target_name);
 	}
 	return Plugin_Handled;
 }
