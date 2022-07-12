@@ -241,7 +241,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
                         public_message = reason; 
                     }
 
-                    int id = results.FetchInt(6);
+                    int id = results.FetchInt(5);
 
                     if(hKickType.IntValue > 0) {
                         if(public_message[0] != '\0')
