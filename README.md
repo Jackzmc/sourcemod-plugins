@@ -37,6 +37,7 @@ Useful things:
   * [l4d2_vocalize_control](#l4d2_vocalize_control) - Allows you to locally mute someone from vocalizing
   * [l4d2_hideandseek](#l4d2_hideandseek) - An enhancement to the base hide and seek mutation
   * [l4d2_guesswho](#l4d2_guesswho) - Garrys mod's guess who in l4d2, inspired by hide and seek
+  * [sm_namespamblock](#sm_namespamblock) - Basic plugin that bans players if they change their name in rapid succession 
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
@@ -335,3 +336,12 @@ Vscript required for hud & mutation
 Gamemode: https://steamcommunity.com/sharedfiles/filedetails/?id=2823719841
 
 Requires l4dtoolz and left4dhooks, and optioanlly skip intro cutscene 
+
+### sm_namespamblock
+
+If a user changes their name 3 times within 10 seconds, they will be temp banned for 10 minutes.
+Requires recompile to change.
+
+* **Commands:**
+  * `status2` - Shitty name, but shows all non-admin players, sorted by last joined ascending (up top). Shows steamid and the first name they joined the server as
+  * `sm_status2` - Same command, but allows /status2 in chat

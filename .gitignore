@@ -7,6 +7,8 @@ scripting_ext/
 !scripting/include/guessswho/*
 !scripting/hideandseek.sp
 !scripting/guessswho.sp
+!scripting/sm_namespamblock.sp
+!plugins/sm_namespamblock.smx
 .push.settings.jsonc*
 template.config.js
 scripting/sm_give.sp
