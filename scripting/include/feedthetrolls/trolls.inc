@@ -225,8 +225,11 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		//TODO: Implement TrollMod_Constant
 		return false;
 	} else if(StrEqual(troll.name, "Throw It All")) {
-		if(modifier & TrollMod_Instant)
-			ThrowAllItems(victim);
+		if(modifier & TrollMod_Instant) {
+			if(flags & 1) { // Hacky, just throw their kit
+				ThrowItemToPlayer(victim, activator, 3);
+			} else ThrowAllItems(victim);
+		}
 		if(hThrowTimer == INVALID_HANDLE && modifier & TrollMod_Constant) {
 			hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
 		}

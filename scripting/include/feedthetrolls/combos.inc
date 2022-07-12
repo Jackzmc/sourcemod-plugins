@@ -56,6 +56,10 @@ void SetupsTrollCombos() {
     combo.AddTroll("Reverse FF", .flags=2);
     combo.AddTroll("Vomit Player");
 
+    SetupCombo(combo, "No more survival");
+    combo.AddTroll("No Pickup", .flags = 8)
+    combo.AddTroll("Throw It All", .flags = 1)
+
     SetupCombo(combo, "Shut up");
     combo.AddTroll("Vocalize Gag");
     combo.AddTroll("Honk / Meow / Woof", .flags=1);
