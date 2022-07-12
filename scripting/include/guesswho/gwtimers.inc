@@ -38,14 +38,25 @@ Action Timer_WaitForPlayers(Handle h) {
 
 Action Timer_CheckHiders(Handle h) {
 	static float pos[3];
+	static char classname[16];
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 			GetClientAbsOrigin(i, pos);
 			distQueue[i].AddPos(pos);
 			distQueue[i].Check(i);
+
+			int activeWeapon = GetEntPropEnt(i, Prop_Send, "m_hActiveWeapon");
+			if(IsValidEntity(activeWeapon)) {
+				GetEntityClassname(activeWeapon, classname, sizeof(classname));
+				if(i == currentSeeker) {
+					if(StrEqual(classname, "weapon_melee")) continue;
+						Game.SetupInventory(i);
+				} else if(StrEqual(classname, "weapon_gnome")) continue;
+			}
+			Game.SetupInventory(i);
 		}
 	}
-
+	Game.CleanupGnomes(true);
 	return Plugin_Continue;
 }
 

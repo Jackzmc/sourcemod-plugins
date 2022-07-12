@@ -51,24 +51,25 @@ methodmap GuessWhoGame < BaseGame {
 			return currentSeeker;
 		}
 		public set(int client) {
+			int existingSeeker = currentSeeker;
+			currentSeeker = client;
 			for(int i = 1; i <= MaxClients; i++) {
-				if(IsClientConnected(i) && IsClientInGame(i) && i != client) {
-					ClearInventory(i);
-					CheatCommand(i, "give", "gnome");
+				if(IsClientConnected(i) && IsClientInGame(i)) {
+					this.SetupInventory(i);
 				}
 			}
 			// Reset things incase set mid-start
-			if(currentSeeker > 0) {
-				SetEntPropFloat(currentSeeker, Prop_Send, "m_flLaggedMovementValue", 1.0);
-				SetPlayerBlind(currentSeeker, 0);
-				L4D2_RemoveEntityGlow(currentSeeker);
+			if(existingSeeker > 0) {
+				SetEntPropFloat(existingSeeker, Prop_Send, "m_flLaggedMovementValue", 1.0);
+				SetPlayerBlind(existingSeeker, 0);
+				L4D2_RemoveEntityGlow(existingSeeker);
 			}
+
+			L4D2_SetEntityGlow(client, L4D2Glow_Constant, 0, 10, SEEKER_GLOW_COLOR, false);
 
 			hasBeenSeeker[client] = true;
 			Format(buffer, sizeof(buffer), "g_ModeScript.MutationState.CurrentSeeker = GetPlayerFromUserID(%d);", GetClientUserId(client));
-			CheatCommand(client, "give", "fireaxe");
 			L4D2_ExecVScriptCode(buffer);
-			currentSeeker = client;
 		}
 	}
 
@@ -152,27 +153,49 @@ methodmap GuessWhoGame < BaseGame {
 				}
 			}
 		}
+		this.CleanupGnomes(true);
 		CreateTimer(5.0, Timer_ResetAll);
 	}
 
 	public void Cleanup(bool noClearInv = false) {
 		DeleteCustomEnts();
 		PeekCam.Destroy();
-		if(recordTimer != null) {
-			delete recordTimer;
-		}
+		if(recordTimer != null) delete recordTimer;
+		if(doorToggleTimer != null) delete doorToggleTimer;
+		if(waitForStartTimer != null && IsValidHandle(waitForStartTimer)) delete waitForStartTimer;
+		if(waitTimer != null) delete waitTimer;
 
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
 				if(!noClearInv && isEnabled)
 					ClearInventory(i);
-				SDKUnhook(i, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
-				SDKUnhook(i, SDKHook_WeaponDrop, OnWeaponDrop);
+				Game.UnsetupPlayer(i);
 			}
 			if(moveTimers[i] != null) {
 				delete moveTimers[i];
 			}
 		}
+		// Annoying
+		this.CleanupGnomes();
+	}
+
+	public void CleanupGnomes(bool orphansOnly = false) {
+		int entity = INVALID_ENT_REFERENCE;
+		char model[32];
+		while ((entity = FindEntityByClassname(entity, "prop_physics")) != INVALID_ENT_REFERENCE) {
+			int parent = GetEntPropEnt(entity, Prop_Data, "m_hParent");
+			if(orphansOnly && parent >= 0) continue;
+			GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
+			if(StrEqual(model, "models/props_junk/gnome.mdl")) {
+				RemoveEntity(entity);
+			}
+        }
+		entity = INVALID_ENT_REFERENCE;
+		while ((entity = FindEntityByClassname(entity, "weapon_gnome")) != INVALID_ENT_REFERENCE) {
+			int owner = GetEntPropEnt(entity, Prop_Data, "m_hOwnerEntity");
+			if(orphansOnly && owner >= 0) continue;
+			GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
+        }
 	}
 
 
@@ -255,6 +278,28 @@ methodmap GuessWhoGame < BaseGame {
 			}
 			return amount;
 		}
+	}
+
+	public void SetupInventory(int client) {
+		ClearInventory(client);
+		ignoreDrop[client] = true;
+		if(client == this.Seeker) {
+			CheatCommand(client, "give", "fireaxe");
+		} else {
+			GivePlayerItem(client, "weapon_gnome");
+		}
+		ignoreDrop[client] = false;
+	}
+
+	public void SetupPlayer(int client) {
+		this.SetupInventory(client);
+		SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+		SDKHook(client, SDKHook_WeaponEquip, OnWeaponEquip);
+	}
+
+	public void UnsetupPlayer(int client) {
+		SDKUnhook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+		SDKUnhook(client, SDKHook_WeaponEquip, OnWeaponEquip);
 	}
 }
 

@@ -270,7 +270,7 @@ public Action Command_GuessWho(int client, int args) {
 					target_name,
 					sizeof(target_name),
 					tn_is_ml)) <= 0
-				|| target_list[0] == 0){
+				|| target_list[0] <= 0){
 					/* This function replies to the admin with a failure message */
 					ReplyToTargetError(client, target_count);
 					return Plugin_Handled;
@@ -293,6 +293,8 @@ public Action Command_GuessWho(int client, int args) {
 				ReplyToCommand(client, "Has Spawnpoint: no (possibly map spawn %f %f %f)", mapConfig.spawnpoint[0], mapConfig.spawnpoint[1], mapConfig.spawnpoint[2]);
 			ReplyToCommand(client, "Map Time: %d", mapConfig.mapTime);
 			ReplyToCommand(client, "Flow Bounds: (%f, %f)", movePoints.MinFlow, movePoints.MaxFlow);
+		} else if(StrEqual(subcmd, "test")) {
+			
 		} else {
 			ReplyToCommand(client, "Unknown option. Leave blank for help");
 		}
@@ -382,7 +384,7 @@ public Action Command_Join(int client, int args) {
 		ChangeClientTeam(client, 2);
 		L4D_RespawnPlayer(client);
 		TeleportEntity(client, tpLoc, NULL_VECTOR, NULL_VECTOR);
-		CheatCommand(client, "give", "gnome");
+		Game.SetupPlayer(client);
 		if(!ArePlayersJoining()) {
 			InitGamemode();
 		}

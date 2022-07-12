@@ -1,9 +1,10 @@
 #pragma semicolon 1
 #pragma newdecls required
 
+#define DEBUG_BOT_MOVE
+#define DEBUG_BOT_MOVE_REACH
 #define DEBUG
 #define DEBUG_SHOW_POINTS
-#define DEBUG_BOT_MOVE
 #define DEBUG_BLOCKERS
 // #define DEBUG_LOG_MAPSTART
 // #define DEBUG_MOVE_ATTEMPTS
@@ -32,11 +33,12 @@
 #define HIDER_MIN_AVG_DISTANCE_AUTO_VOCALIZE 300.0 // The average minimum distance a hider is from the player that triggers auto vocalizating
 #define HIDER_AUTO_VOCALIZE_GRACE_TIME 20.0 // Number of seconds between auto vocalizations
 #define DEFAULT_MAP_TIME 480
+#define SEED_MIN_LOCATIONS 500 // Seed if less than this many locations
 
 #if defined DEBUG
 	#define SEED_TIME 1.0
 #else
-	#define SEED_TIME 30.0 // Time the seeker is blind, used to gather locations for bots
+	#define SEED_TIME 15.0 // Time the seeker is blind, used to gather locations for bots
 #endif
 
 
@@ -60,14 +62,14 @@ int PLAYER_GLOW_COLOR[3] = { 0, 255, 0 };
 #include <multicolors>
 
 char SURVIVOR_MODELS[8][] = {
-	"models/survivors/survivor_namvet.mdl",
-	"models/survivors/survivor_teenangst.mdl",
-	"models/survivors/survivor_biker.mdl",
-	"models/survivors/survivor_manager.mdl",
 	"models/survivors/survivor_gambler.mdl",
 	"models/survivors/survivor_producer.mdl",
 	"models/survivors/survivor_coach.mdl",
-	"models/survivors/survivor_mechanic.mdl"
+	"models/survivors/survivor_mechanic.mdl",
+	"models/survivors/survivor_namvet.mdl",
+	"models/survivors/survivor_teenangst.mdl",
+	"models/survivors/survivor_biker.mdl",
+	"models/survivors/survivor_manager.mdl"
 };
 
 
@@ -87,13 +89,17 @@ bool hasBeenSeeker[MAXPLAYERS+1];
 bool ignoreSeekerBalance;
 int hiderSwapTime[MAXPLAYERS+1];
 int hiderSwapCount[MAXPLAYERS+1];
+bool ignoreDrop[MAXPLAYERS+1];
 bool isStarting;
 
 // Temp Ent Materials & Timers
 Handle spawningTimer;
 Handle hiderCheckTimer;
+Handle doorToggleTimer;
 Handle recordTimer;
 Handle timesUpTimer;
+Handle waitTimer;
+Handle waitForStartTimer;
 Handle acquireLocationsTimer;
 Handle moveTimers[MAXPLAYERS+1];
 UserMsg g_FadeUserMsgId;
@@ -114,6 +120,7 @@ GameConVar cvar_sbPushScale;
 GameConVar cvar_battlestationGiveUp;
 GameConVar cvar_sbMaxBattlestationRange;
 GameConVar cvar_enforceProximityRange;
+GameConVar cvar_spectatorIdleTime;
 // Bot Movement specifics
 float flowMin, flowMax;
 float seekerPos[3];
@@ -171,6 +178,7 @@ public void OnPluginStart() {
 	cvar_battlestationGiveUp = new GameConVar("sb_battlestation_give_up_range_from_human");
 	cvar_sbMaxBattlestationRange = new GameConVar("sb_max_battlestation_range_from_human");
 	cvar_enforceProximityRange = new GameConVar("enforce_proximity_range");
+	cvar_spectatorIdleTime = new GameConVar("sv_spectatoridletime");
 
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.AddChangeHook(Event_GamemodeChange);
@@ -194,6 +202,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 	bool shouldEnable = StrEqual(gamemode, "guesswho", false);
 	if(isEnabled == shouldEnable) return;
 	if(spawningTimer != null) delete spawningTimer;
+	firstCheckDone = false;
 	if(shouldEnable) {
 		cvarStorage = new GameConVarStorage();
 		SetCvars(cvarStorage);
@@ -230,17 +239,25 @@ void Event_LedgeGrab(Event event, const char[] name, bool dontBroadcast) {
 }
 
 void Event_PlayerToBot(Event event, const char[] name, bool dontBroadcast) {
-	int player = GetClientOfUserId(event.GetInt("player"));
+	int userid = event.GetInt("player");
+	int player = GetClientOfUserId(userid);
 	int bot    = GetClientOfUserId(event.GetInt("bot")); 
 
 	// Do not kick bots being spawned in
-	if(spawningTimer == null) {
+	if(spawningTimer == null && !IsFakeClient(player)) {
 		Game.Debug("possible idle bot:  %d (player: %d)", bot, player);
 		// ChangeClientTeam(player, 0);
 		// L4D_SetHumanSpec(bot, player);
-		L4D_TakeOverBot(player);
+		CreateTimer(0.1, Timer_ResumeFromIdle, userid);
 		// KickClient(bot);
 	}
+}
+
+Action Timer_ResumeFromIdle(Handle h, int userid) {
+	int player = GetClientOfUserId(userid);
+	if(player > 0)
+		L4D_TakeOverBot(player);
+	return Plugin_Handled;
 }
 
 
@@ -258,6 +275,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 				Game.Broadcast("%N died", client);
 			}
 		} else {
+			ClearInventory(client);
 			KickClient(client);
 			Game.Debug("Bot(%d) was killed", client);
 		}
@@ -272,7 +290,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 }
 
 void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
-	CreateTimer(2.5, Timer_WaitForPlayers, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	waitTimer = CreateTimer(firstCheckDone ? 2.5 : 6.0, Timer_WaitForPlayers, _, TIMER_REPEAT);
 }
 
 void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
@@ -289,6 +307,7 @@ public void OnMapStart() {
 	char map[128];
 	GetCurrentMap(map, sizeof(map));
 	if(!StrEqual(g_currentMap, map)) {
+		firstCheckDone = false;
 		strcopy(g_currentSet, sizeof(g_currentSet), "default");
 		if(!StrEqual(g_currentMap, "")) { 
 			if(!movePoints.SaveMap(g_currentMap, g_currentSet)) {
@@ -317,20 +336,14 @@ public void OnMapStart() {
 		}
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
-				ClearInventory(i);
-				if(i == currentSeeker) {
-					CheatCommand(i, "give", "fireaxe");
-				} else {
-					CheatCommand(i, "give", "gnome");
-				}
-				SDKHook(i, SDKHook_WeaponDrop, OnWeaponDrop);
-				SDKHook(i, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+				Game.SetupPlayer(i);
 			}
 		}
 		InitGamemode();
 	}
 	Game.State = State_Unknown;
 }
+
 public void ThinkPost(int entity) {  
 	static int iTeamNum[MAXPLAYERS+1];
 	GetEntDataArray(entity, g_iTeamNum, iTeamNum, sizeof(iTeamNum));
@@ -345,7 +358,12 @@ public void ThinkPost(int entity) {
 }
 
 public void OnClientPutInServer(int client) {
-	if(isEnabled && !IsFakeClient(client)) {
+	if(!isEnabled) return;
+	if(IsFakeClient(client)) {
+		if(GetClientTeam(client) == 3) {
+			KickClient(client, "GW: Remove Special Infected");
+		}
+	} else {
 		ChangeClientTeam(client, 1);
 		isPendingPlay[client] = true;
 		Game.Broadcast("%N will play next round", client);
@@ -383,6 +401,7 @@ void SetCvars(GameConVarStorage storage) {
 	cvar_battlestationGiveUp.RecordFloat(5000.0, storage);
 	cvar_sbMaxBattlestationRange.RecordFloat(5000.0, storage);
 	cvar_enforceProximityRange.RecordInt(10000, storage);
+	cvar_spectatorIdleTime.RecordInt(120, storage);
 }
 
 void InitGamemode() {
@@ -395,22 +414,24 @@ void InitGamemode() {
 	ArrayList validPlayerIds = new ArrayList();
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
-			ChangeClientTeam(i, 2);
+			L4D2_SetPlayerSurvivorGlowState(i, false);
+			L4D2_RemoveEntityGlow(i);
+
+			// ChangeClientTeam(i, 2);
 			activeBotLocations[i].attempts = 0;
+			hiderSwapCount[i] = 0;
+			distQueue[i].Clear();
+			ClearInventory(i);
 			if(IsFakeClient(i)) {
-				ClearInventory(i);
 				KickClient(i);
 			} else {
+				ChangeClientTeam(i, 2);
 				if(!IsPlayerAlive(i)) {
 					L4D_RespawnPlayer(i);
 				}
-				hiderSwapCount[i] = 0;
-				distQueue[i].Clear();
-				ChangeClientTeam(i, 2);
 				if(!hasBeenSeeker[i] || ignoreSeekerBalance)
 					validPlayerIds.Push(GetClientUserId(i));
 			}
-			Game.TeleportToSpawn(i);
 		}
 	}
 	if(validPlayerIds.Length == 0) {
@@ -426,8 +447,6 @@ void InitGamemode() {
 		Game.Seeker = newSeeker;
 		SetPlayerBlind(newSeeker, 255);
 		SetEntPropFloat(newSeeker, Prop_Send, "m_flLaggedMovementValue", 0.0);
-		// L4D2_SetPlayerSurvivorGlowState(newSeeker, true);
-		L4D2_SetEntityGlow(newSeeker, L4D2Glow_Constant, 0, 10, SEEKER_GLOW_COLOR, false);
 	}
 	
 	Game.TeleportAllToStart();
@@ -460,7 +479,7 @@ Action Timer_SpawnPost(Handle h) {
 	int survivorMaxIndex = isL4D1 ? 3 : 7;
 	int survivorIndexBot;
 	for(int i = 1; i <= MaxClients; i++) {
-		if(i != currentSeeker && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			int survivor;
 			if(IsFakeClient(i)) {
 				// Set bot models uniformly
@@ -471,21 +490,18 @@ Action Timer_SpawnPost(Handle h) {
 			} else {
 				// Set hiders models randomly
 				survivor = GetURandomInt() % survivorMaxIndex;
-				if(!hasBeenSeeker[i]) {
-					remainingSeekers++;
+				if(i != currentSeeker) {
+					if(!hasBeenSeeker[i]) {
+						remainingSeekers++;
+					}
+					PrintToChat(i, "You can change your model %d times by looking at a player and pressing RELOAD", HIDER_SWAP_LIMIT);
 				}
-				PrintToChat(i, "You can change your model %d times by looking at a player and pressing RELOAD", HIDER_SWAP_LIMIT);
 			}
-			SDKHook(i, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
-			SDKHook(i, SDKHook_WeaponDrop, OnWeaponDrop);
 
-			ClearInventory(i);
-			int item = GivePlayerItem(i, "weapon_gnome");
-			EquipPlayerWeapon(i, item);
+			Game.SetupPlayer(i);
 
-			SetEntityModel(i, SURVIVOR_MODELS[survivor]);
+			SetEntityModel(i, SURVIVOR_MODELS[survivor]); // L4D2 first then L4D1
 			SetEntProp(i, Prop_Send, "m_survivorCharacter", survivor);
-
 		}
 	}
 
@@ -497,7 +513,7 @@ Action Timer_SpawnPost(Handle h) {
 	}
 
 	Game.Debug("waiting for safe area leave", BaseDebug_Server | BaseDebug_ChatAll);
-	CreateTimer(1.0, Timer_WaitForStart, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+	waitForStartTimer = CreateTimer(1.0, Timer_WaitForStart, _, TIMER_REPEAT);
 
 	return Plugin_Handled;
 }
@@ -508,26 +524,41 @@ Action Timer_WaitForStart(Handle h) {
 		if(targetPlayer > 0) {
 			GetClientAbsOrigin(targetPlayer, seekerPos);
 		}
-		seekerFlow = L4D2Direct_GetFlowDistance(currentSeeker);
-		acquireLocationsTimer = CreateTimer(0.5, Timer_AcquireLocations, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+		int seeker = Game.Seeker;
+		if(seeker <= 0) {
+			Game.Broadcast("Error: No seeker found, game in bugged state, restarting");
+			for(int i = 1; i <= MaxClients; i++) {
+				if(IsClientConnected(i) && IsClientInGame(i)) {
+					ForcePlayerSuicide(i);
+				}
+			}
+			return Plugin_Stop;
+		}
+		seekerFlow = L4D2Direct_GetFlowDistance(Game.Seeker);
+		acquireLocationsTimer = CreateTimer(0.5, Timer_AcquireLocations, _, TIMER_REPEAT);
 		hiderCheckTimer = CreateTimer(5.0, Timer_CheckHiders, _, TIMER_REPEAT);
-		CreateTimer(DOOR_TOGGLE_INTERVAL, Timer_DoorToggles, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+		doorToggleTimer = CreateTimer(DOOR_TOGGLE_INTERVAL, Timer_DoorToggles, _, TIMER_REPEAT);
 		for(int i = 1; i <= MaxClients; i++) {
 			if(i != currentSeeker && IsClientConnected(i) && IsClientInGame(i)) {
-				TeleportEntity(i, seekerPos, NULL_VECTOR, NULL_VECTOR);
-				if(IsFakeClient(i) && movePoints.Length > 0) {
-					moveTimers[i] = CreateTimer(GetRandomFloat(BOT_MOVE_RANDOM_MIN_TIME, BOT_MOVE_RANDOM_MAX_TIME), Timer_BotMove, GetClientUserId(i), TIMER_REPEAT);
-					movePoints.GetRandomPoint(activeBotLocations[i]);
-					TeleportEntity(i, activeBotLocations[i].pos, activeBotLocations[i].ang, NULL_VECTOR);
+				if(IsFakeClient(i)) {
+					if(movePoints.Length > 0) {
+						moveTimers[i] = CreateTimer(GetRandomFloat(BOT_MOVE_RANDOM_MIN_TIME, BOT_MOVE_RANDOM_MAX_TIME), Timer_BotMove, GetClientUserId(i), TIMER_REPEAT);
+						movePoints.GetRandomPoint(activeBotLocations[i]);
+					}
+					if(targetPlayer > 0)
+						TeleportEntity(i, activeBotLocations[i].pos, activeBotLocations[i].ang, NULL_VECTOR);
+				} else if(targetPlayer > 0) {
+					TeleportEntity(i, seekerPos, NULL_VECTOR, NULL_VECTOR);
 				}
 			}
 		}
 
-		Game.Broadcast("The Seeker (%N) will start in %.0f seconds", Game.Seeker, SEED_TIME);
+		float seedTime = movePoints.Length > SEED_MIN_LOCATIONS ? 5.0 : SEED_TIME;
+		Game.Broadcast("The Seeker (%N) will start in %.0f seconds", Game.Seeker, seedTime);
 		Game.State = State_Starting;
 		Game.Tick = 0;
-		Game.MapTime = RoundFloat(SEED_TIME);
-		CreateTimer(SEED_TIME, Timer_StartSeeker);
+		Game.MapTime = RoundFloat(seedTime);
+		CreateTimer(seedTime, Timer_StartSeeker);
 		return Plugin_Stop;
 	}
 	return Plugin_Continue;
@@ -544,7 +575,7 @@ Action Timer_StartSeeker(Handle h) {
 		mapConfig.mapTime = DEFAULT_MAP_TIME;
 	}
 	Game.MapTime = mapConfig.mapTime;
-	timesUpTimer = CreateTimer(float(mapConfig.mapTime), Timer_TimesUp, _, TIMER_FLAG_NO_MAPCHANGE);
+	timesUpTimer = CreateTimer(float(mapConfig.mapTime), Timer_TimesUp);
 	return Plugin_Continue;
 }
 
@@ -554,9 +585,15 @@ Action Timer_TimesUp(Handle h) {
 	return Plugin_Handled;
 }
 
-Action OnWeaponDrop(int client, int weapon) { 
-	return Plugin_Handled;
+
+Action OnWeaponEquip(int client, int weapon) {
+	if(weapon <= 0 || ignoreDrop[client]) return Plugin_Continue;
+	if(Game.Seeker == client) 
+		return Plugin_Handled;
+	return Plugin_Continue;
 }
+
+
 
 Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
 	if(attacker == currentSeeker) {
@@ -630,12 +667,12 @@ Action Timer_BotMove(Handle h, int userid) {
 
 	float botFlow = L4D2Direct_GetFlowDistance(i);
 	static float pos[3];
-	if(botFlow < flowMin || botFlow > flowMax) {
+	if(botFlow > 0.0 && (botFlow < flowMin || botFlow > flowMax)) {
 		activeBotLocations[i].runto = GetURandomFloat() > 0.90;
-		TE_SetupBeamLaser(i, currentSeeker, g_iLaserIndex, 0, 0, 0, 8.0, 0.5, 0.1, 0, 1.0, {255, 255, 0, 125}, 1);
-		TE_SendToAll();
 		L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(i), seekerPos[0], seekerPos[1], seekerPos[2]);
 		#if defined DEBUG_BOT_MOVE
+		TE_SetupBeamLaser(i, currentSeeker, g_iLaserIndex, 0, 0, 0, 8.0, 0.5, 0.1, 0, 1.0, {255, 255, 0, 125}, 1);
+		TE_SendToAll();
 		Game.DebugConsole("BOT %N TOO FAR (%f) BOUNDS (%f, %f)-> Moving to seeker (%f %f %f)", i, botFlow, flowMin, flowMax, seekerPos[0], seekerPos[1], seekerPos[2]);
 		#endif
 		activeBotLocations[i].attempts = 0;
@@ -684,23 +721,29 @@ Action Timer_BotMove(Handle h, int userid) {
 				if(distanceToPoint <= (BOT_MOVE_NOT_REACHED_DISTANCE * 2)) {
 					#if defined DEBUG_BOT_MOVE
 					Game.DebugConsole("Bot %d still has not reached point (%f %f %f), jumping", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
-					L4D2_SetPlayerSurvivorGlowState(i, true);
-					L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, PLAYER_GLOW_COLOR, true);
+						#if defined DEBUG_BOT_MOVE_REACH
+						L4D2_SetPlayerSurvivorGlowState(i, true);
+						L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, PLAYER_GLOW_COLOR, true);
+						#endif
 					#endif
 					activeBotLocations[i].jump = true;
 				} else {
 					activeBotLocations[i].runto = true;
 					#if defined DEBUG_BOT_MOVE
 					Game.DebugConsole("Bot %d not reached point (%f %f %f), running", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
-					L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, PLAYER_GLOW_COLOR, true);
-					L4D2_SetPlayerSurvivorGlowState(i, true);
+					#if defined DEBUG_BOT_MOVE_REACH
+						L4D2_SetPlayerSurvivorGlowState(i, true);
+						L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, PLAYER_GLOW_COLOR, true);
+					#endif
 					#endif
 				}
 			} else if(activeBotLocations[i].attempts > BOT_MOVE_NOT_REACHED_ATTEMPT_RETRY) {
 				#if defined DEBUG_BOT_MOVE
 				PrintToConsoleAll("[gw/debug] Bot %d giving up at reaching point (%f %f %f)", i, activeBotLocations[i].pos[0], activeBotLocations[i].pos[1], activeBotLocations[i].pos[2]);
-				L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, SEEKER_GLOW_COLOR, true);
-				L4D2_SetPlayerSurvivorGlowState(i, true);
+				#if defined DEBUG_BOT_MOVE_REACH
+					L4D2_SetPlayerSurvivorGlowState(i, true);
+					L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, PLAYER_GLOW_COLOR, true);
+				#endif
 				#endif
 				movePoints.GetRandomPoint(activeBotLocations[i]);
 			} 
@@ -760,14 +803,21 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 					TE_SetupParticle(g_iSmokeParticle, pos, pos2, .iEntity = client);
 					TE_SendToAllInRange(pos, RangeType_Audibility, 0.0);*/
 
+					ClearInventory(target);
+
 					char modelName[64];
 					GetClientModel(target, modelName, sizeof(modelName));
 					int type = GetEntProp(target, Prop_Send, "m_survivorCharacter");
 					SetEntityModel(client, modelName);
 					SetEntProp(client, Prop_Send, "m_survivorCharacter", type);
 
-					EmitSoundToAll("ui/pickup_secret01.wav", client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING);
+					float pos[3];
+					GetClientAbsOrigin(client, pos);
+
+					EmitSoundToAll("ui/pickup_secret01.wav", client, SNDCHAN_STATIC, .origin = pos);
 					PrintHintText(client, "You have %d swaps remaining", HIDER_SWAP_LIMIT - hiderSwapCount[client]);
+
+					CreateTimer(0.1, Timer_ReGnome, client);
 				} else {
 					PrintHintText(client, "You can swap in %.0f seconds", HIDER_SWAP_COOLDOWN - diff);
 				}
@@ -777,14 +827,18 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	return Plugin_Continue;
 }
 
+Action Timer_ReGnome(Handle h, int client) {
+	GivePlayerItem(client, "weapon_gnome");
+	return Plugin_Handled;
+}
+
 
 void ClearInventory(int client) {
 	for(int i = 0; i <= 5; i++) {
 		int item = GetPlayerWeaponSlot(client, i);
 		if(item > 0) {
 			RemovePlayerItem(client, item);
-			RemoveEdict(item);
-			// AcceptEntityInput(item, "Kill");
+			AcceptEntityInput(item, "kill");
 		}
 	}
 }
