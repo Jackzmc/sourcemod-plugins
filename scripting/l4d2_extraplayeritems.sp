@@ -710,7 +710,7 @@ public void Frame_SetupNewClient(int client) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 			int wpn = GetPlayerWeaponSlot(client, 0);
 			if(wpn > 0) {
-				GetEntityClassname(wpn, weaponName, sizeof(weaponName));
+				GetEdictClassname(wpn, weaponName, sizeof(weaponName));
 				for(int j = 0; j < TIER2_WEAPON_COUNT; j++) {
 					if(StrEqual(TIER2_WEAPONS[j], weaponName[j])) {
 						tier2Weapons.PushString(weaponName);
@@ -743,9 +743,12 @@ public void Frame_SetupNewClient(int client) {
 	}
 	delete tier2Weapons;
 
-	if(item) {
-		GetEdictClassname(item, weaponName, sizeof(item));
-		L4D_SetReserveAmmo(client, item, L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_ClipSize));
+	if(item > 0) {
+		if(L4D2_IsValidWeapon(weaponName)) {
+			L4D_SetReserveAmmo(client, item, L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_ClipSize));
+		} else {
+			PrintToServer("INVALID WEAPON: %s for %N", weaponName, client);
+		}
 		EquipPlayerWeapon(client, item);
 	} else LogError("EPI Failed to give new late player weapon: %s", weaponName);
 }
