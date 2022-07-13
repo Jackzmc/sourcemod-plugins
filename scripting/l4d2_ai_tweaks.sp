@@ -38,9 +38,17 @@ public Action OnFriendAction( BehaviorAction action, int actor, BehaviorAction p
 	// Do not let idle bots heal non-idle bots
 	int target = action.Get(0x34) & 0xFFF; 
    	if(GetEntProp(actor, Prop_Send, "m_humanSpectatorUserID") > 0) { // If idle bot
-	   	// If target is a bot AND is a non-idle bot OR target is black and white, stop the heal.
-		if(IsFakeClient(target) && (GetEntProp(target, Prop_Send, "m_humanSpectatorUserID") == 0 || !GetEntProp(target, Prop_Send, "m_bIsOnThirdStrike"))) {
-			PrintToServer("Preventing %N from healing %N", actor, target);
+		if(IsFakeClient(target)) {
+			// If target is a bot, not idle player, ignore
+			if(GetEntProp(target, Prop_Send, "m_humanSpectatorUserID") == 0) {
+				PrintToServer("Preventing %N from healing bot %N", actor, target);
+				result.type = DONE;
+				return Plugin_Handled;
+			}
+		} 
+		// If they are not black and white, also stop
+		if(!GetEntProp(target, Prop_Send, "m_bIsOnThirdStrike")) { //If real player and not black and white, stop
+			PrintToServer("Preventing %N from healing %N, not black & white", actor, target);
 			result.type = DONE;
 			return Plugin_Handled;
 		}
