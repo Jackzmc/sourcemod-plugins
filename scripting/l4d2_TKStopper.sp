@@ -44,6 +44,8 @@ enum struct PlayerData {
 	bool underAttack;
 
 	int immunityFlags;
+
+	bool pendingAction;
 }
 
 PlayerData pData[MAXPLAYERS+1];
@@ -364,18 +366,21 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 				diffJoinMin, 
 				lastFFMin
 			);
-			if(hTKAction.IntValue == 1) {
-				LogMessage("[TKStopper] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
-				NotifyAllAdmins("[Notice] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
-				KickClient(attacker, "Excessive FF");
-			} else if(hTKAction.IntValue == 2) {
-				LogMessage("[TKStopper] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
-				NotifyAllAdmins("[Notice] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
-				BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF (Auto)", "Excessive Friendly Fire (Automatic)", "TKStopper");
-			} else if(hTKAction.IntValue == 3) {
-				LogMessage("[TKStopper] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. ", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
-				NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. Use \"/ignore <player> tk\" to make them immune.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
-				pData[attacker].isTroll = true;
+			if(!pData[attacker].pendingAction) {
+				if(hTKAction.IntValue == 1) {
+					LogMessage("[TKStopper] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
+					NotifyAllAdmins("[Notice] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
+					KickClient(attacker, "Excessive FF");
+				} else if(hTKAction.IntValue == 2) {
+					LogMessage("[TKStopper] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
+					NotifyAllAdmins("[Notice] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
+					BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF (Auto)", "Excessive Friendly Fire (Automatic)", "TKStopper");
+				} else if(hTKAction.IntValue == 3) {
+					LogMessage("[TKStopper] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. ", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
+					NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. Use \"/ignore <player> tk\" to make them immune.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
+					pData[attacker].isTroll = true;
+				}
+				pData[attacker].pendingAction = true;
 			}
 			damage = 0.0;
 			return Plugin_Handled;
