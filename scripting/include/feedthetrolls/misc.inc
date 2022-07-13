@@ -474,6 +474,6 @@ void StopHealingBots() {
 			KickClient(i);
 		}
 	}
-	hAbmAutoHard.IntValue = wasAbmAutoHard;
-	hSbFixEnabled.BoolValue = wasSbFixEnabled;
+	if(hAbmAutoHard != null) hAbmAutoHard.IntValue = wasAbmAutoHard;
+	if(hSbFixEnabled != null) hSbFixEnabled.BoolValue = wasSbFixEnabled;
 }

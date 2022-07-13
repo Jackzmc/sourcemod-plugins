@@ -72,8 +72,6 @@ public void OnPluginStart() {
 	hBotDefendChance = CreateConVar("sm_ftt_bot_defend_chance", "0.75", "% Chance bots will defend themselves.", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	hSbFriendlyFire = FindConVar("sb_friendlyfire");
-	hSbFixEnabled = FindConVar("sb_fix_enabled");
-	hAbmAutoHard = FindConVar("abm_autohard");
 
 	if(hBotReverseFFDefend.IntValue > 0) hSbFriendlyFire.BoolValue = true;
 	hBotReverseFFDefend.AddChangeHook(Change_BotDefend);

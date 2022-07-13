@@ -1,9 +1,8 @@
-public void OnPluginEnd() {
-	UnhookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
+public void OnConfigsExecuted() {
+	hSbFixEnabled = FindConVar("sb_fix_enabled");
+	hAbmAutoHard = FindConVar("abm_autohard");
 }
-public void OnMapEnd() {
-	UnhookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
-}
+
 public void OnMapStart() {
 	if(hBotReverseFFDefend.IntValue > 0) hSbFriendlyFire.BoolValue = true;
 	AddFileToDownloadsTable("sound/custom/meow1.mp3");
