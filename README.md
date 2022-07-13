@@ -1,11 +1,7 @@
 # sourcemod-plugins
 This is a collection of all the sourcemod plugins I've created, most are just used for my own servers and some for very specific needs.
 
-
 Not always the latest versions, if you have any interest with plugins I can make sure to upload the latest.
-
-Nearly all l4d2 plugins require [left4dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
-
 
 Useful things:
 1. Netprop viewer https://jackz.me/netprops/l4d2
@@ -38,12 +34,25 @@ Useful things:
   * [l4d2_hideandseek](#l4d2_hideandseek) - An enhancement to the base hide and seek mutation
   * [l4d2_guesswho](#l4d2_guesswho) - Garrys mod's guess who in l4d2, inspired by hide and seek
   * [sm_namespamblock](#sm_namespamblock) - Basic plugin that bans players if they change their name in rapid succession 
+  * [l4d2-stats-plugin](https://github.com/jackzmc/l4d2-stats-plugin) - Custom stats recorder, see https://stats.jackz.me
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
 * [l4d_survivor_identity_fix](#l4d_survivor_identity_fix) - Use with [L4D2Tools](#l4d2tools) to change models, some fixes
 * [BetterWitchAvoidance](#betterwitchavoidance)
-* [l4d2_sb_fix](#l4d2_sb_fix) - Updated to 1.11, removed some stupid shit it does
+* l4d_anti_rush - Modified plugin to add a forward, so other plugins (like feedthetrolls) can do something
+* [l4d2_sb_fix](#l4d2_sb_fix) - Updated to 1.11 & latest sourcepawn syntax & removed the FCVAR_NOTIFY from all cvars (why would you put that?)
+
+## Dependencies
+This is a list of most common dependencies, independent if they are used for a certain plugin.
+Check the plugin info for an exact list.
+
+* [Left 4 Dhooks Direct](https://forums.alliedmods.net/showthread.php?t=321696)
+* [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
+
+### Development Dependencies
+Most L4D2 plugins use my own include: jutils.inc, it's provided in this repo.
+Some do require newer includes by modified plugins (such as my improved survivor identity fix)
 
 ## Descriptions
 
@@ -54,6 +63,7 @@ On knife kill, gives the player 100 HP (configurable)
    * `knifehp_max_health <#>` - Maximum health to set an attacker to
    * `knifehp_amount <#>` - Amount of health to give attacker
    
+
 ### l4d2-manual-director
 Probably going to be posted publicly sometime. allows you to spawn specials on cursor, or via director, forcefully, bypassing limits
 * **Convars:**
@@ -71,6 +81,7 @@ Probably going to be posted publicly sometime. allows you to spawn specials on c
    * `sm_specialmenu` - Show the spawn menu for director spawning
    * `sm_directormenu` (Same as sm_specialmenu for now)
    
+
 ### l4d2-info-cmd
 Technically 'l4d2 game info', haven't changed name. Just prints general information, used for a project
 * **Commands:**
@@ -86,6 +97,7 @@ Technically 'l4d2 game info', haven't changed name. Just prints general informat
     5,Louis,1,90,alive,0,,first_aid_kit,,Louis,0,,pistol
     ```
     
+
 ### AutoWarpBot
 Simple l4d2 plugin that will auto teleport everyone to checkpoint once all real players have reached the saferoom.
 Doesn't really work well. Abandoned.
@@ -97,8 +109,10 @@ Latest version now has support for multiple tanks, the bots might not avoid them
 * **Convars:**
    * `FlyYouFools_Version` - Prints the version of plugin
 
+
 ### BetterWitchAvoidance
 Inspired by the 200IQBots_FlyYouFools. Bots avoid witch if its over 40% anger when close, or a little bigger range at 60% or more. Not recommended to use, normal behavior seems fine.
+
 
 ### L4D2FFKickProtection
 Simple plugin that prevents a player that is being vote-kicked from doing any ff damage to teammates.
@@ -106,6 +120,7 @@ It also prevents vote kicking of admins, instead will kick the player and notify
 
 * **Convars:**
   * `sm_votekick_force_threshold <#>` - The threshold of damage where the offending player is just immediately kicked. 0 -> Any attempted damage, -1 -> No auto kick.
+
 
 ### CSGOTroll
 Another joke plugin, with it configured, a victim will have a % chance their shots just fail. This can be for the AWP or all weapons at least for now.
@@ -115,10 +130,14 @@ Another joke plugin, with it configured, a victim will have a % chance their sho
   * `troll_targets <ids>` - comma separated list of steamid64 targets (ex: STEAM_0:0:75141700)
   * `troll_shot_mode <0/1>` - 0 -> ALL Weapons, 1 -> AWP
 
+
 ### l4d2_avoid_minigun
 Makes the bots avoid standing in front of or on top of the player that is using a minigun. It checks every 2.0 seconds if they are in the way, then forces them to move to behind you.  There is no configuration, all automatic.
 
+
 ### l4d2_ai_minigun
+Requires: [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+
 Spawn the holdout bots used in the passing. This supports all 8 characters, including with the minigun. They can spawn with any weapon or default to ak47.
 
 **Notes:** 
@@ -134,6 +153,11 @@ Code modified from https://forums.alliedmods.net/showthread.php?p=1741099
 
 
 ### L4D2Tools
+Requires:
+* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+* [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
+* [Modified L4D Survivor Identity Fix](#l4d_survivor_identity_fix)
+
 A collection of small tools: 
   * Notification of when someone picks up laser sights (only the first user, includes bots), 
   * Record time it takes for a finale or gauntlet run to be completed.
@@ -152,6 +176,7 @@ A collection of small tools:
   * `sm_model <player> <character>` - Sets the survivor model of the target player(s). 'character' is name or ID of character.
   * `sm_surv <player> <character>` - Sets the m_survivorCharacter prop only of the target player(s). 'character' is name or ID of character.
 
+
 ### l4d2_swarm
 This plugin is used to counter trolls and otherwise bad players. It simply uses the new script function RushVictim() to make all zombies in X radius attack Y target. It's that simple. 
 
@@ -169,7 +194,14 @@ This really only affects wandering zombies, mobs and panic events, but it may wo
   * `sm_rushtogglemenu` - Will open a menu to quickly select a player to continuously rush.
     * Aliases: `sm_rtmenu`
 
+
 ### l4d2_feedthetrolls
+Requires:
+* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+* [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
+* [L4D2 Behavior](https://forums.alliedmods.net/showthread.php?p=2752139) - To be replaced with [Actions](https://forums.alliedmods.net/showthread.php?t=336374)
+* [Modified L4D Antirush](#l4d_anti_rush) - OPTIONAL
+
 This plugin allows you to enact certain troll modes on any player, some are subtle some are less so. Either way, it works great to deal with a rusher, an asshole or even your friends.
 
 See updated list of trolls and their descriptions:
@@ -197,6 +229,7 @@ https://admin.jackz.me/docs/ftt
   * `sm_scharge <player> [timeout seconds]` - Will wait till there's no obstructions and players in the way and then spawns a charger to charge them.
   * `sm_healbots <player> [# bots or 0 default]` - Makes n amount of bots chase a player down to heal them. Won't stop until they are healed or die.
 
+
 ### l4d2_autobotcrown
 Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Supports multiple bots and witches, but only one bot can crown one witch at a time. Plugin is obviously disabled in realism, and is really on suitable for coop or versus. Even works with idle players.
 
@@ -204,7 +237,13 @@ Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Suppo
   * `l4d2_autocrown_allowed_difficulty <default: 7>` - The difficulties the plugin is active on. 1=Easy, 2=Normal 4=Advanced 8=Expert. Add numbers together.
   * `l4d2_autocrown_modes_tog <default: 7>` - (Not implemented) - Turn on the plugin in these game modes. 0=All, 1=Coop, 2=Survival, 4=Versus, 8=Scavenge. Add numbers together
 
+
 ### l4d2_extraplayeritems
+Requires:
+* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+* [L4D Info Editor](https://forums.alliedmods.net/showthread.php?p=2614626)
+* (Development dependency) Updated l4d2_weapon_stocks.inc
+
 A well rounded tool that provides extra utilities to a 5+ co-op campaign. 
 
 Features:
@@ -227,10 +266,15 @@ Features:
   * `l4d2_extraitems_hudstate` - Controls when the extra player hud shows.
     * 0 = Never, 1 = When 5+ players, 2 = Always on
 
+
 ### l4d_survivor_identity_fix
+Requires:
+* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+
 A fork of [Survivor Identity Fix plugin](https://forums.alliedmods.net/showthread.php?t=280539) that adds support for other plugins to update the model cache. This is used by [L4D2Tools](#L4D2Tools) to update the identity when someone changes their model with `sm_model`. It also will clear the memory of model when a player disconnects entirely or on a new map.
 
 In addition, has a fix for the passing finale, and will automatically move L4D characters to L4D2 until finale starts preventing game messing up their characters.
+
 
 ### l4d2_population_control
 Allows you to set the chances that a common spawns as a certain uncommon. The order of the cvars is the order the percentages are ran
@@ -260,7 +304,11 @@ Note: All admin players are ignored
     * 1 = Kick if banned
     * 2 = Kick if cannot reach database
 
+
 ### l4d2_rollback
+Requires:
+* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+
 An idea that you can either manually or have events (friendly fire, new player joining) trigger saving all the player's states. Then if say, a troll comes and kills you and/or incaps your team, you can just quick restore to exactly the point you were at with the same items, health, etc. 
 
 Currently **abandoned.**
@@ -280,6 +328,9 @@ Plugin that automatically restarts server when the server is NOT hibernating, wi
 This fixes an issue with (shitty) custom maps that force sb_all_bot_game to 1 and disable hibernation
 
 ### l4d2_TKStopper
+Requires:
+* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+
 Plugin that prevents team killers by checking multiple criterias. Default system is as:
 Any survivor that attacks another survivor
 
@@ -300,7 +351,11 @@ During any of the above three conditions, if they deal (or attempt to deal) over
   * `l4d2_tk_ban_join_time` -  Upto how many minutes should any new player's FF be ignored. Default is 2 Minutes
 
 
+
 ### l4d2_crescendo_control
+Requires:
+* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+
 This plugin prevents the activation of buttons ahead of the team. It will prevent players from starting crescendos (and some small other activities as a side effect) until a certain threshold of the team has reached the area.
 
 _This plugin is currently in **development.**_ Current implementation may be lacking.
@@ -309,6 +364,7 @@ _This plugin is currently in **development.**_ Current implementation may be lac
 * **Cvars:**
   * `l4d2_crescendo_percent`
   * `l4d2_crescendo_range`
+
 
 ### l4d2_vocalize_control
 A very small plugin that simply allows a player to mute another player's vocalizations only for them.
@@ -323,12 +379,21 @@ A fork of https://forums.alliedmods.net/showthread.php?p=2757330
 
 
 ### l4d2_hideandseek
+Requires:
+* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+* [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
+
 A sourcemod extenstion of the vscript gamemode (https://steamcommunity.com/sharedfiles/filedetails/?id=2467133506)
 - Player blockers, portals, and props to change and control the maps
 - Some quality of life (winner messages, change seeker mid game, change map time)
 - and a lot more
 
+
 ### l4d2_guesswho
+Requires:
+* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+* [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
+
 Based off gmod guess who game, find the real players amongst a group of bots.
 All logic is written in this plugin, thus is required. 
 Vscript required for hud & mutation
@@ -336,6 +401,7 @@ Vscript required for hud & mutation
 Gamemode: https://steamcommunity.com/sharedfiles/filedetails/?id=2823719841
 
 Requires l4dtoolz and left4dhooks, and optioanlly skip intro cutscene 
+
 
 ### sm_namespamblock
 
