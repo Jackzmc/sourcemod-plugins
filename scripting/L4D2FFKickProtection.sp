@@ -10,6 +10,8 @@
 static int disableFFClient, ffDamageCount; //client to disable FF for
 static ConVar forceKickFFThreshold;
 
+static int voteController;
+
 public Plugin myinfo = {
 	name = "L4D2 FF Kick Protection", 
 	author = "jackzmc", 
@@ -29,6 +31,10 @@ public void OnPluginStart() {
 	HookUserMessage(GetUserMessageId("VoteFail"), VotePassFail);
 
 	forceKickFFThreshold = CreateConVar("sm_votekick_force_threshold","30.0","The threshold of amount of FF to then automatically kick.\n0: Any attempted damage\n -1: No auto kick.\n>0: When FF count > this", FCVAR_NONE, true, -1.0);
+}
+
+public void OnMapStart() {
+	voteController = FindEntityByClassname(-1, "vote_controller");
 }
 
 int iJoinTime[MAXPLAYERS+1];
@@ -69,7 +75,8 @@ public Action VoteStart(int client, const char[] command, int argc) {
 
 			if(strlen(option) > 1) { //empty userid/console can't call votes
 				int target = GetClientOfUserId(StringToInt(option));
-				if(target == 0 || target >= MaxClients || !IsClientConnected(target)) return Plugin_Continue; //invalid, pass it through
+				if(target <= 0 || target >= MaxClients || !IsClientConnected(target)) return Plugin_Continue; //invalid, pass it through
+				if(client <= 0 || client >= MaxClients || !IsClientConnected(client)) return Plugin_Continue; //invalid, pass it through
 				AdminId callerAdmin = GetUserAdmin(client);
 				AdminId targetAdmin = GetUserAdmin(target);
 				if(targetAdmin != INVALID_ADMIN_ID) { //Only run if vote is against an admin
@@ -85,6 +92,14 @@ public Action VoteStart(int client, const char[] command, int argc) {
 						PrintToChat(target, "%N has attempted to vote kick you.", client);
 					}
 					return Plugin_Handled;
+				} else if(callerAdmin != INVALID_ADMIN_ID && targetAdmin == INVALID_ADMIN_ID && IsValidEntity(voteController)) {
+					PrintToServer("Vote kick by admin, instantly passing");
+					SetEntProp(voteController, Prop_Send, "m_votesYes", 32);
+					for(int i = 1; i <= MaxClients; i++) {
+						if(IsClientConnected(i) && !IsFakeClient(i) && GetClientTeam(i) == GetClientTeam(target)) {
+							ClientCommand(i, "vote Yes");
+						}
+					}
 				}
 				if(GetClientTeam(target) == 2) {
 					disableFFClient = target;
@@ -101,6 +116,7 @@ public Action VoteStart(int client, const char[] command, int argc) {
 public Action VotePassFail(UserMsg msg_id, BfRead msg, const int[] players, int playersNum, bool reliable, bool init) {
 	disableFFClient = -1;
 	ffDamageCount = 0;
+	return Plugin_Continue;
 }	
 
 public Action OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
