@@ -42,7 +42,9 @@ void SetupsTrollCombos() {
     SetupCombo(combo, "Magnet Galore");
     combo.AddTroll("Special Magnet");
     combo.AddTroll("Tank Magnet");
+    #if defined _behavior_included
     combo.AddTroll("Witch Magnet");
+    #endif
 
     SetupCombo(combo, "Tank Run Noob");
     combo.AddTroll("Slow Speed");
@@ -52,7 +54,9 @@ void SetupsTrollCombos() {
     combo.AddTroll("Slow Speed");
     combo.AddTroll("Special Magnet");
     combo.AddTroll("Tank Magnet");
+    #if defined _behavior_included
     combo.AddTroll("Witch Magnet");
+    #endif
     combo.AddTroll("Reverse FF", .flags=2);
     combo.AddTroll("Vomit Player");
 

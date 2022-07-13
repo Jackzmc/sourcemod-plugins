@@ -18,7 +18,9 @@ void SetupTrolls() {
 	AddMagnetFlags(index);
 	index = SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant);
 	AddMagnetFlags(index);
+	#if defined _behavior_included
 	index = SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
+	#endif
 	// fireSpitMagnetTrollIndex = SetupTroll("Fire & Acid Magnet", "Make the player gravitate toward danger", TRollMod_Constant);
 
 	/// CATEGORY: Infected

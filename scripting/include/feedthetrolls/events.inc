@@ -737,6 +737,7 @@ public Action OnVocalizeCommand(int client, const char[] vocalize, int initiator
 	return Plugin_Continue;
 }
 
+#if defined _sceneprocessor_included
 public void OnSceneStageChanged(int scene, SceneStages stage) {
 	if(stage == SceneStage_Spawned) {
 		static int vocalGagID, vocalizeSpecials;
@@ -770,6 +771,7 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 		}
 	}
 }
+#endif
 
 public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char soundEntry[PLATFORM_MAX_PATH], int& seed) {
 	static int honkID;

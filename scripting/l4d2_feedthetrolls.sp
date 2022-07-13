@@ -11,12 +11,12 @@
 #include <sdkhooks>
 #include <jutils>
 #include <left4dhooks>
-#include <sceneprocessor>
-#include <l4d2_behavior>
+#tryinclude <sceneprocessor>
+#tryinclude <l4d2_behavior>
 #include <basecomm>
 #include <ftt>
 #include <multicolors>
-#include <l4d_anti_rush>
+#tryinclude <l4d_anti_rush>
 
 
 public Plugin myinfo = 

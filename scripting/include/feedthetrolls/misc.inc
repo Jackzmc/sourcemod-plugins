@@ -17,6 +17,7 @@ void ActivateAutoPunish(int client) {
 }
 
 void SetWitchTarget(int witch, int target) {
+	#if defined _behavior_included
 	Behavior behavior = Behavior(witch, WITCH_QUERY);
 	BehaviorAction action = behavior.CurrentAction.Last;
 	
@@ -25,6 +26,9 @@ void SetWitchTarget(int witch, int target) {
 	
 	IActionResult result; result.Init(CHANGE_TO, newaction);
 	result.ToAction(action);
+	#else
+	PrintToServer("[FTT] SetWitchTarget() called when behaviors plugin not found");
+	#endif
 }
 
 bool ToggleMarkPlayer(int client, int target) {
