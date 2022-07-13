@@ -84,7 +84,8 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
         }else{
             executor = "CONSOLE";
         }
-        static char query[255];
+
+        char query[512];
        
 
         // Setup expiration date
@@ -136,9 +137,9 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
     }
 
     GetClientIP(client, ip, sizeof(ip));
-    char query[255];
+    char query[512];
        
-    static char expiresDate[64];
+    char expiresDate[64];
     if(time > 0) {
         Format(expiresDate, sizeof(expiresDate), "%d", GetTime() + (time * 60));
     } else {
