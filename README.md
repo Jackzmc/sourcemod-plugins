@@ -198,9 +198,9 @@ This really only affects wandering zombies, mobs and panic events, but it may wo
 ### l4d2_feedthetrolls
 Requires:
 * [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
-* [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
-* [L4D2 Behavior](https://forums.alliedmods.net/showthread.php?p=2752139) - To be replaced with [Actions](https://forums.alliedmods.net/showthread.php?t=336374)
-* [Modified L4D Antirush](#l4d_anti_rush) - OPTIONAL
+* (Optional) [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
+* (Optional) [L4D2 Behavior](https://forums.alliedmods.net/showthread.php?p=2752139) - To be replaced with [Actions](https://forums.alliedmods.net/showthread.php?t=336374)
+* (Optional) [Modified L4D Antirush](#l4d_anti_rush)
 
 This plugin allows you to enact certain troll modes on any player, some are subtle some are less so. Either way, it works great to deal with a rusher, an asshole or even your friends.
 
