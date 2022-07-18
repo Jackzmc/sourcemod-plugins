@@ -63,23 +63,28 @@ void SetSlasher(int client, bool ignoreBalance = false) {
 	}
 	GameState state = GetState();
 	char buf[128];
+	ArrayList hiders = new ArrayList();
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && i != client) {
+		if(IsClientConnected(i) && IsClientInGame(i) && i != client && GetClientTeam(i) == 2) {
 			for(int s = 0; s < 6; s++) {
 				int ent = GetPlayerWeaponSlot(i, s);
 				if(ent > 0) AcceptEntityInput(ent, "Kill");
 			}
+			hiders.Push(i);
 			if(state == State_Hunting)
 				CheatCommand(i, "give", "pistol_magnum");
 			else
 				CheatCommand(i, "give", "knife");
 		}
 	}
+	int defibHolder = hiders.Get(GetRandomInt(0, hiders.Length - 1));
+	CheatCommand(defibHolder, "give", "defibrillator");
 	Format(buf, sizeof(buf), "g_ModeScript.MutationState.CurrentSlasher = GetPlayerFromUserID(%d); g_ModeScript.GiveSeekerItem(GetPlayerFromUserID(%d))", GetClientUserId(client), GetClientUserId(client));
 	L4D2_ExecVScriptCode(buf);
 	currentSeeker = client;
-	// CheatCommand(client, "give", "fireaxe");
+	CheatCommand(client, "give", "fireaxe");
 	CheatCommand(client, "give", "adrenaline");
+	delete hiders;
 }
 
 int GetTick() {

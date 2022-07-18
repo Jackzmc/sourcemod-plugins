@@ -2,6 +2,7 @@
 #define ENT_BLOCKER_NAME "hsblocker"
 #define ENT_PORTAL_NAME "hsportal"
 #define ENT_ENV_NAME "hsenv"
+#define PORTAL_ENTER_SOUND "custom/xen_teleport.mp3"
 #include <gamemodes/ents>
 
 stock void CheatCommand(int client, const char[] command, const char[] argument1) {
@@ -28,7 +29,7 @@ stock void EntFire(const char[] name, const char[] input) {
 	for(int i = MaxClients + 1; i <= 4096; i++) {
 		if(IsValidEntity(i) && (IsValidEdict(i) || EntIndexToEntRef(i) != -1)) {
 			if(hammerId > 0) {
-				if(hammerId == GetHammerId(i)) {
+				if(hammerId == Entity_GetHammerId(i)) {
 					if(setTeam) {
 						SDKHook(i, SDKHook_TraceAttackPost, Hook_OnAttackPost);
 						SetEntProp(i, Prop_Send, "m_iTeamNum", 0);
@@ -86,6 +87,13 @@ void SetupEntities(bool blockers = true, bool props = true, bool portals = true)
 			} else if(StrEqual(config.type, "_portal")) {
 				if(portals && CreatePortal(Portal_Teleport, config.model, config.origin, config.offset, config.scale) == -1) {
 					PrintToServer("[H&S:WARN] Failed to spawn portal at (%.1f,%.1f, %.1f)", config.origin[0], config.origin[1], config.origin[2]);
+				}
+			} else if(StrEqual(config.type, "_portal_xen")) {
+				if(portals) {
+					if(CreatePortal(Portal_Teleport, config.model, config.origin, config.offset, config.scale) == -1) {
+						PrintToServer("[H&S:WARN] Failed to spawn portal at (%.1f,%.1f, %.1f)", config.origin[0], config.origin[1], config.origin[2]);
+					}
+					CreateParticle(PARTICLE_ELMOS,	config.origin, NULL_VECTOR); // Pulsating
 				}
 			} else if(StrEqual(config.type, "_lantern")) {
 				int parent = CreateProp("prop_dynamic", config.model, config.origin, config.rotation);

@@ -11,11 +11,31 @@
 	#define ENT_ENV_NAME "cenv"
 #endif
 
-void DeleteCustomEnts() {
-	EntFire(ENT_PROP_NAME, "Kill");
-	EntFire(ENT_BLOCKER_NAME, "Kill");
-	EntFire(ENT_PORTAL_NAME, "Kill");
-	EntFire(ENT_ENV_NAME, "Kill");
+stock void DeleteCustomEnts() {
+	EntFireTarget(ENT_PROP_NAME, "Kill");
+	EntFireTarget(ENT_BLOCKER_NAME, "Kill");
+	EntFireTarget(ENT_PORTAL_NAME, "Kill");
+	EntFireTarget(ENT_ENV_NAME, "Kill");
+}
+
+stock void EntFireTarget(const char[] name, const char[] input) {
+	static char targetname[64];
+	static char cmd[32];
+	#if defined DEBUG_LOG_MAPSTART
+	PrintToServer("EntFireTarget: %s \"%s\"", name, input);
+	#endif
+	int len = SplitString(input, " ", cmd, sizeof(cmd));
+	if(len > -1) SetVariantString(input[len]);
+
+	for(int i = MaxClients + 1; i <= 4096; i++) {
+		if(IsValidEntity(i) && (IsValidEdict(i) || EntIndexToEntRef(i) != -1)) {
+			GetEntPropString(i, Prop_Data, "m_iName", targetname, sizeof(targetname));
+			if(StrEqual(targetname, name, false)) {
+				if(len > -1) AcceptEntityInput(i, cmd);
+				else AcceptEntityInput(i, input);
+			}
+		}
+	}
 }
 
 stock int CreateEnvBlockerScaled(const char[] entClass, const float pos[3], const float scale[3] = { 5.0, 5.0, 5.0 }, bool enabled = true) {
@@ -120,6 +140,9 @@ void OnPortalTouch(const char[] output, int caller, int activator, float delay) 
 	} else {
 		TeleportEntity(activator, entData[caller].portalOffsets, NULL_VECTOR, NULL_VECTOR);
 	}
+	#if defined PORTAL_ENTER_SOUND
+	EmitSoundToClient(activator, PORTAL_ENTER_SOUND, activator);
+	#endif
 }
 
 stock int StartPropCreate(const char[] entClass, const char[] model, const float pos[3], const float ang[3]) {
@@ -199,7 +222,65 @@ stock int CreateDynamicLight(float vOrigin[3], float vAngles[3], int color, floa
 	return -1;
 }
 
+// From l4d_anomaly
+stock int CreateParticle(const char[] sParticle, const float vPos[3], const float vAng[3], int client = 0)
+{
+	int entity = CreateEntityByName("info_particle_system");
 
-int GetHammerId(int entity) {
-	return HasEntProp(entity, Prop_Data, "m_iHammerID") ? GetEntProp(entity, Prop_Data, "m_iHammerID") : -1;
+	if( entity != -1 )
+	{
+		DispatchKeyValue(entity, "effect_name", sParticle);
+		DispatchKeyValue(entity, "targetname", ENT_PORTAL_NAME)
+		DispatchSpawn(entity);
+		ActivateEntity(entity);
+		AcceptEntityInput(entity, "start");
+
+		if( client )
+		{
+			// Attach to survivor
+			SetVariantString("!activator"); 
+			AcceptEntityInput(entity, "SetParent", client);
+		}
+
+		TeleportEntity(entity, vPos, vAng, NULL_VECTOR);
+
+		// Refire
+		float refire = 0.2;
+		static char sTemp[64];
+		Format(sTemp, sizeof(sTemp), "OnUser1 !self:Stop::%f:-1", refire - 0.05);
+		SetVariantString(sTemp);
+		AcceptEntityInput(entity, "AddOutput");
+		Format(sTemp, sizeof(sTemp), "OnUser1 !self:FireUser2::%f:-1", refire);
+		SetVariantString(sTemp);
+		AcceptEntityInput(entity, "AddOutput");
+		AcceptEntityInput(entity, "FireUser1");
+
+		SetVariantString("OnUser2 !self:Start::0:-1");
+		AcceptEntityInput(entity, "AddOutput");
+		SetVariantString("OnUser2 !self:FireUser1::0:-1");
+		AcceptEntityInput(entity, "AddOutput");
+
+		return entity;
+	}
+
+	return 0;
 }
+
+// From l4d_anomaly
+stock void PrecacheParticle(const char[] sEffectName)
+{
+	static int table = INVALID_STRING_TABLE;
+	if( table == INVALID_STRING_TABLE )
+	{
+		table = FindStringTable("ParticleEffectNames");
+	}
+
+	if( FindStringIndex(table, sEffectName) == INVALID_STRING_INDEX )
+	{
+		bool save = LockStringTables(false);
+		AddToStringTable(table, sEffectName);
+		LockStringTables(save);
+	}
+}
+
+

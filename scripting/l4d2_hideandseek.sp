@@ -17,6 +17,9 @@
 #include <smlib/effects>
 #endif
 
+#define PARTICLE_ELMOS			"st_elmos_fire_cp0"
+#define PARTICLE_TES1			"electrical_arc_01"
+
 public Plugin myinfo = 
 {
 	name =  "L4D2 Hide & Seek", 
@@ -65,7 +68,8 @@ bool gameOver;
 int currentSeeker;
 int currentPlayers = 0;
 
-Handle suspenseTimer, thirdPersonTimer;
+Handle suspenseTimer, thirdPersonTimer, peekCamStopTimer, hiderCheckTimer;
+
 
 int g_BeamSprite;
 int g_HaloSprite;
@@ -76,6 +80,7 @@ bool ignoreSeekerBalance;
 ConVar cvar_peekCam;
 ConVar cvar_seekerBalance;
 ConVar cvar_abm_autohard;
+ConVar cvar_seekerHelpers;
 
 BaseGame Game;
 #include <gamemodes/base>
@@ -105,6 +110,7 @@ public void OnPluginStart() {
 
 	cvar_peekCam = CreateConVar("hs_peekcam", "3", "Controls the peek camera on events. Set bits\n0 = OFF, 1 = On Game End, 2 = Any death", FCVAR_NONE, true, 0.0, true, 3.0);
 	cvar_seekerBalance = CreateConVar("hs_seekerbalance", "1", "Enable or disable ensuring every player has played as seeker", FCVAR_NONE, true, 0.0, true, 1.0);
+	cvar_seekerHelpers = CreateConVar("hs_seekerhelper", "1", "Dev. 0 = off, 1 = Glow", FCVAR_NONE, true, 0.0);
 
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.AddChangeHook(Event_GamemodeChange);
@@ -178,8 +184,13 @@ public void OnMapStart() {
 	PrecacheSound(SOUND_SUSPENSE_1);
 	PrecacheSound(SOUND_SUSPENSE_1_FAST);
 	PrecacheSound(SOUND_SHAKE);
+	PrecacheSound("custom/xen_teleport.mp3");
 	AddFileToDownloadsTable("sound/custom/suspense1.mp3");
 	AddFileToDownloadsTable("sound/custom/suspense1fast.mp3");
+	AddFileToDownloadsTable("sound/custom/xen_teleport.mp3");
+
+	PrecacheParticle(PARTICLE_ELMOS);
+	PrecacheParticle(PARTICLE_TES1);
 
 	g_BeamSprite = PrecacheModel("sprites/laser.vmt");
 	g_HaloSprite = PrecacheModel("sprites/halo01.vmt");
@@ -244,9 +255,12 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		if(suspenseTimer != null)
 			delete suspenseTimer;
 		suspenseTimer = CreateTimer(20.0, Timer_Music, _, TIMER_REPEAT);
+		if(hiderCheckTimer != null)
+			delete hiderCheckTimer;
+		hiderCheckTimer = CreateTimer(30.0, Timer_CheckHiders, _, TIMER_REPEAT);
 		if(thirdPersonTimer != null)
 			delete thirdPersonTimer;
-		thirdPersonTimer = CreateTimer(1.0, Timer_CheckPlayers, _, TIMER_REPEAT);
+		thirdPersonTimer = CreateTimer(2.0, Timer_CheckPlayers, _, TIMER_REPEAT);
 		if(!lateLoaded) {
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i)) {
@@ -265,6 +279,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		Cleanup();
 		delete suspenseTimer;
 		delete thirdPersonTimer;
+		delete hiderCheckTimer;
 	}
 }
 
@@ -275,11 +290,25 @@ public Action Timer_StopPeekCam(Handle h) {
 			PeekCam.SetViewing(i, false);
 		}
 	}
+	RequestFrame(Frame_StopPeekCam);
+	return Plugin_Stop;
+}
+
+void Frame_StopPeekCam() {
 	PeekCam.Destroy();
-	return Plugin_Handled;
+	peekCamStopTimer = null;
+}
+
+public void OnEntityCreated(int entity, const char[] classname) {
+	if(isEnabled) {
+		if(StrEqual(classname, "infected"))
+			AcceptEntityInput(entity, "Kill");
+	}
 }
 
 public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) { 
+	if(gameOver) return;
+
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 
@@ -287,22 +316,23 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 		PeekCam.Target = attacker > 0 ? attacker : client;
 		PeekCam.Perspective = Cam_FirstPerson;
 
-		int alive = 0;
 		float pos[3], checkPos[3];
+		// If player died on their own, set attacker to themselves for viewing purposes
 		if(attacker <= 0) attacker = client;
 		GetClientAbsOrigin(attacker, pos);
 		PeekCam.SetViewing(attacker, true);
+
+		int alive = 0;
 		for(int i = 1; i <= MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-				if(attacker > 0 && attacker != client) {
-					if(cvar_peekCam.IntValue & 2) {
-						GetClientAbsOrigin(i, checkPos);
-						if(GetVectorDistance(checkPos, pos) > DEATH_CAM_MIN_DIST) {
-							PeekCam.SetViewing(i, true);
-						}
+			if(IsClientConnected(i) && IsClientInGame(i)) {
+				// If death was by a seeker:
+				if(attacker == currentSeeker && cvar_peekCam.IntValue & 2) {
+					GetClientAbsOrigin(i, checkPos);
+					if(GetVectorDistance(checkPos, pos) > DEATH_CAM_MIN_DIST) {
+						PeekCam.SetViewing(i, true);
 					}
-					alive++;
 				}
+				if(IsPlayerAlive(i) && GetClientTeam(i) == 2) alive++;
 			}
 		}
 		
@@ -321,17 +351,20 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 				} else {
 					CPrintToChatAll("{green}The seeker %N won!", currentSeeker);
 				}
+
 				if(cvar_peekCam.IntValue & 1) {
 					PeekCam.Target = client;
 					PeekCam.Perspective = Cam_ThirdPerson;
 				}
+
 				gameOver = true;
 				return;
 			} else if(alive > 2 && client != currentSeeker) {
 				CPrintToChatAll("{green}%d hiders remain", alive - 1);
 			}
 		}
-		CreateTimer(2.0, Timer_StopPeekCam);
+		if(peekCamStopTimer != null && IsValidHandle(peekCamStopTimer)) delete peekCamStopTimer;
+		peekCamStopTimer = CreateTimer(2.0, Timer_StopPeekCam);
 	}
 }
 
@@ -346,6 +379,7 @@ public void OnClientPutInServer(int client) {
 		TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
 	}
 }
+
 
 public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
@@ -417,8 +451,13 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	}
 	EntFire("relay_intro_start", "Kill");
 	EntFire("outro", "Kill");
-	SetupEntities();
+	CreateTimer(1.0, Timer_SetupEntities);
 	CreateTimer(15.0, Timer_RoundStart);
+}
+
+public Action Timer_SetupEntities(Handle h) {
+	SetupEntities();
+	return Plugin_Handled;
 }
 
 public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
@@ -447,9 +486,13 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 
 public Action Timer_CheckPlayers(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && i != currentSeeker)
+		if(!IsClientConnected(i) || !IsClientInGame(i)) continue;
+		if(GetClientTeam(i) == 2 && IsPlayerAlive(i) && i != currentSeeker)
 			QueryClientConVar(i, "cam_collision", QueryClientConVarCallback);
+		SetEntProp(i, Prop_Send, "m_audio.soundscapeIndex", -1);
+
 	}
+	ServerCommand("soundscape_flush");
 	return Plugin_Continue;
 }
 
@@ -473,6 +516,36 @@ public void QueryClientConVarCallback(QueryCookie cookie, int client, ConVarQuer
 	}
 }
 
+int PLAYER_GLOW_COLOR[3] = { 0, 255, 0 };
+public Action Timer_CheckHiders(Handle h) {
+	static float seekerLoc[3];
+	static float playerLoc[3];
+	if(cvar_seekerHelpers.IntValue != 0) return Plugin_Continue;
+	if(currentSeeker > 0) {
+		GetClientAbsOrigin(currentSeeker, seekerLoc);
+	}
+	for(int i = 1; i <= MaxClients; i++) {
+		if(i != currentSeeker && IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+			GetClientAbsOrigin(i, playerLoc);
+			float dist = GetVectorDistance(seekerLoc, playerLoc, true);
+			if(dist > 290000.0) {
+				L4D2_SetPlayerSurvivorGlowState(i, true);
+				L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 10, PLAYER_GLOW_COLOR, true);
+				CreateTimer(2.0, Timer_RemoveGlow, GetClientUserId(i));
+			}
+		}
+	}
+	return Plugin_Continue;
+}
+
+public Action Timer_RemoveGlow(Handle h, int userid) {
+	int client = GetClientOfUserId(userid);
+	if(client) {
+		L4D2_SetPlayerSurvivorGlowState(client, false);
+		L4D2_RemoveEntityGlow(client);
+	}
+	return Plugin_Handled;
+}
 GameState prevState;
 public Action Timer_Music(Handle h) {
 	static float seekerLoc[3];
@@ -504,7 +577,7 @@ public Action Timer_Music(Handle h) {
 				EmitSoundToClient(i, SOUND_SUSPENSE_1_FAST, i, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEPITCH, 1.0, 100, currentSeeker, seekerLoc, playerLoc, true);
 				isNearbyPlaying[i] = true;
 			} else if(dist <= 1000000.0) {
-				EmitSoundToClient(i, SOUND_SUSPENSE_1, i, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEPITCH, 0.2, 90, currentSeeker, seekerLoc, playerLoc, true);
+				EmitSoundToClient(i, SOUND_SUSPENSE_1, i, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEPITCH, 0.4, 90, currentSeeker, seekerLoc, playerLoc, true);
 				isNearbyPlaying[i] = true;
 				StopSound(i, SNDCHAN_AUTO, SOUND_SUSPENSE_1_FAST);
 			} else if(isNearbyPlaying[i]) {
@@ -545,10 +618,21 @@ public Action Timer_RoundStart(Handle h) {
 			SetEntProp(entity, Prop_Send, "m_iTeamNum", 0);
 		}		
 	}
+	entity = INVALID_ENT_REFERENCE;
 	while ((entity = FindEntityByClassname(entity, "env_soundscape")) != INVALID_ENT_REFERENCE) {
 		AcceptEntityInput(entity, "Disable");
 		AcceptEntityInput(entity, "Kill");
 	}	
+	entity = INVALID_ENT_REFERENCE;
+	while ((entity = FindEntityByClassname(entity, "env_soundscape_triggerable")) != INVALID_ENT_REFERENCE) {
+		AcceptEntityInput(entity, "Disable");
+		AcceptEntityInput(entity, "Kill");
+	}	
+	entity = INVALID_ENT_REFERENCE;
+	while ((entity = FindEntityByClassname(entity, "env_soundscape_proxy")) != INVALID_ENT_REFERENCE) {
+		AcceptEntityInput(entity, "Disable");
+		AcceptEntityInput(entity, "Kill");
+	}
 	if(mapConfig.mapTime > 0) {
 		SetMapTime(mapConfig.mapTime);
 	}
