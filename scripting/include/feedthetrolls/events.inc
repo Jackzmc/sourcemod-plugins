@@ -888,7 +888,7 @@ public Action OnAntiRush(int client, int &type, float distance) {
 			SpecialType special = view_as<SpecialType>(GetRandomInt(1,6));
 			iLastAntiRushEvent[client] = GetGameTime();
 			SpawnSpecialForTarget(special, client);
-			PrintToConsoleAll("[FTT] Spawning anti-rush special on %N (dist=%f) (special=%N)", client, distance, SPECIAL_NAMES[view_as<int>(special)-1]);
+			PrintToConsoleAll("[FTT] Spawning anti-rush special on %N (dist=%f) (special=%s)", client, distance, SPECIAL_NAMES[view_as<int>(special)-1]);
 		}
 	}
 	return Plugin_Continue;
