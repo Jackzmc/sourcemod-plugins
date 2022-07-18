@@ -28,7 +28,7 @@ stock void EntFire(const char[] name, const char[] input) {
 	for(int i = MaxClients + 1; i <= 4096; i++) {
 		if(IsValidEntity(i) && (IsValidEdict(i) || EntIndexToEntRef(i) != -1)) {
 			if(hammerId > 0) {
-				if(hammerId == GetHammerId(i)) {
+				if(hammerId == Entity_GetHammerId(i)) {
 					if(len > -1) AcceptEntityInput(i, cmd);
 					else AcceptEntityInput(i, input);
 				}
