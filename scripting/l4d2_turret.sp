@@ -13,15 +13,16 @@
 
 #include <sourcemod>
 #include <sdktools>
-//#include <sdkhooks>
-#include <profiler>
-#include <smlib/effects>
+#include <sdkhooks>
+#include <left4dhooks>
+// #include <profiler>
 
 
 #define PARTICLE_ELMOS			"st_elmos_fire_cp0"
 #define PARTICLE_TES1			"electrical_arc_01_system"
 #define ENT_PORTAL_NAME "turret"
-#define SOUND_LASER_FIRE "level/puck_impact.wav"
+#define SOUND_LASER_FIRE "custom/xen_teleport.mp3"
+// #define SOUND_LASER_FIRE "level/puck_impact.wav"
 #include <gamemodes/ents>
 
 int g_iLaserIndex;
@@ -75,7 +76,15 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_turret", Command_SpawnTurret, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_rmturrets", Command_RemoveTurrets, ADMFLAG_CHEATS);
 	CreateTimer(0.1, Timer_Think, _, TIMER_REPEAT);
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			SDKHook(i, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+		}
+	}
+}
 
+public void OnPluginEnd() {
+	OnMapEnd();
 }
 
 enum TurretState {
@@ -88,7 +97,9 @@ TurretState turretState[2048];
 int turretActivatorParticle[2048];
 int entityActiveTurret[2048]; // mapping the turret thats active on victim. [victim] = turret
 int turretActiveEntity[2048];
+bool turretIsActiveLaser[2048];
 bool pendingDeletion[2048];
+float turretDamage[2048];
 
 int turretCount;
 
@@ -99,6 +110,7 @@ void FindTurrets() {
 		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
 		if(StrEqual(targetname, "turret")) {
 			SetupTurret(entity);
+			PrintToServer("Found existing turret: %d", entity);
 		}
 	}
 }
@@ -143,6 +155,13 @@ int ClearTurrets() {
 			AcceptEntityInput(entity, "Kill");
 		}
 	}
+	entity = INVALID_ENT_REFERENCE;
+	while ((entity = FindEntityByClassname(entity, "env_laser")) != INVALID_ENT_REFERENCE) {
+		if(turretIsActiveLaser[entity]) {
+			AcceptEntityInput(entity, "TurnOff");
+			AcceptEntityInput(entity, "Kill");
+		}
+	}
 
 	for(int i = 1; i < 2048; i++) {
 		entityActiveTurret[i] = 0;
@@ -150,6 +169,20 @@ int ClearTurrets() {
 	}
 	turretCount = 0;
 	return count;
+}
+
+public void OnClientPutInServer(int client) {
+	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+}
+
+public Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
+	if(attacker > MaxClients && attacker < 2048 && turretIsActiveLaser[attacker] && GetClientTeam(victim) != 3) {
+		int health = L4D_GetPlayerTempHealth(victim);
+		L4D_SetPlayerTempHealth(victim, health);
+		damage = 0.0;
+		return Plugin_Stop;
+	}
+	return Plugin_Continue;
 }
 
 public void OnMapEnd() {
@@ -252,11 +285,11 @@ public Action Timer_Think(Handle h) {
 			GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
 			if(turretState[entity] == Turret_Active) {
 				// Keep targetting if can view
-				int target = EntRefToEntIndex(turretActiveEntity[entity]);
+				target = EntRefToEntIndex(turretActiveEntity[entity]);
 				if(target > 0 && IsValidEntity(target)) {
 					bool ragdoll = GetEntProp(target, Prop_Data, "m_bClientSideRagdoll") == 1;
 					if(!ragdoll && CanSeeEntity(pos, target)) {
-						FireTurret(pos, target);
+						FireTurret(pos, target, turretDamage[entity]);
 						continue;
 					}
 					entityActiveTurret[target] = 0;
@@ -276,11 +309,12 @@ public Action Timer_Think(Handle h) {
 			if(target == -1) target = FindNearestVisibleSpecial(pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED);
 			if(target == -1) target = FindNearestVisibleEntity("infected", pos, TURRET_MAX_RANGE_INFECTED_OPTIMIZED, entity); 
 			if(target > 0) {
+				turretDamage[entity] = damage;
 				entityActiveTurret[target] = entity;
 				turretActiveEntity[entity] = EntIndexToEntRef(target);
 				turretActivatorParticle[entity] = EntIndexToEntRef(CreateParticleNamed("turret_activate", PARTICLE_TES1, pos, NULL_VECTOR));
 				// AcceptEntityInput(turretActivatorParticle[entity], "Start");
-				FireTurret(pos, target), damage;
+				FireTurret(pos, target, turretDamage[entity]);
 				turretState[entity] = Turret_Active;
 			}
 			if(++count > turretCount) {
@@ -298,7 +332,8 @@ static float TURRET_LASER_COLOR[3] = { 0.0, 255.0, 255.0 };
 
 void FireTurret(const float origin[3], int target, float damage = 105.0) {
 	int laser = CreateLaser(origin, target, TURRET_LASER_COLOR, damage, 1.0, 0.2);
-	EmitSoundToAll(SOUND_LASER_FIRE, laser, SNDCHAN_WEAPON, .flags = SND_CHANGEPITCH, .pitch = 100);
+	EmitSoundToAll(SOUND_LASER_FIRE, laser, SNDCHAN_WEAPON, .flags = SND_CHANGEPITCH, .pitch = 150);
+	turretIsActiveLaser[laser] = true;
 }
 
 stock int CreateLaser(const float origin[3], int targetEnt, float color[3], float damage = 0.0, float width, float duration = 5.0) {
@@ -353,6 +388,7 @@ public Action Timer_ClearEnts(Handle h, DataPack pack) {
 		if(IsValidEntity(ent)) {
 			AcceptEntityInput(ent, "Kill");
 		}
+		turretIsActiveLaser[ent] = false;
 	}
 	return Plugin_Handled;
 }
@@ -439,7 +475,6 @@ stock int FindNearestVisibleEntity(const char[] classname, const float origin[3]
 
 
 stock int FindNearestInfected(const float origin[3], float maxRange = 0.0) {
-	// TODO: If maxrange provided, do ray trace? or GetVisibleInfected
 	int infected = -1;
 	float closestDist, pos[3];
 	int entity = INVALID_ENT_REFERENCE;
@@ -475,7 +510,6 @@ public void OnMapStart() {
 	PrecacheParticle(PARTICLE_ELMOS);
 	PrecacheParticle(PARTICLE_TES1);
 	g_iBeamSprite = PrecacheModel("sprites/laser.vmt", true);
-	g_iHaloSprite = PrecacheModel("sprites/halo01.vmt", true);
 	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt", true);
 	PrecacheSound(SOUND_LASER_FIRE);
 	if(g_iLaserIndex == 0) {
