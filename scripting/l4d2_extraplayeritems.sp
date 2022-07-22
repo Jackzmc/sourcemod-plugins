@@ -1149,7 +1149,7 @@ public void PopulateItems() {
 	float percentage = hExtraItemBasePercentage.FloatValue * survivors;
 	PrintToServer("[EPI] Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
 	PrintToConsoleAll("[EPI] Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
-	static char classname[32];
+	char classname[64];
 	int affected = 0;
 
 	for(int i = MaxClients + 1; i < 2048; i++) {
