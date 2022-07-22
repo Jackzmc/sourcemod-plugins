@@ -38,9 +38,35 @@ public void OnEntityCreated(int entity, const char[] classname) {
 			SDKHook(entity, SDKHook_OnTakeDamageAlive, NerfGun_OnTakeDamage);
 		else if(StrContains(classname, "_projectile", true) > -1 ) {
 			RequestFrame(EntityCreateCallback, entity);
-		}
+		} /*else if(g_iRockThrows > 0 && StrEqual(classname, "tank_rock")) {
+			--g_iRockThrows;
+			SDKHook(entity, SDKHook_SpawnPost, SpawnPost);
+		}*/
 	}
 }
+
+/*void SpawnPost(int entity) {
+	RequestFrame(SetRockVelocity, EntIndexToEntRef(entity))
+}
+
+void SetRockVelocity(int entity) {
+    entity = EntRefToEntIndex(entity);
+
+    if(!IsValidEntity(entity)) return;
+
+	float vel[3];
+
+    GetEntPropVector(entity, Prop_Send, "m_vecVelocity", vel);
+
+	ScaleVector(vel, 0.4);
+
+    // z_tank_throw_force
+    //SetEntPropVector(entity, Prop_Send, "m_vecVelocity", vel);
+    vel[2] += 150.0;
+    TeleportEntity(entity, NULL_VECTOR, NULL_VECTOR, vel);
+	PrintToChatAll("set rock %d vel", entity);
+
+}*/
 
 void EntityCreateCallback(int entity) {
 	if(!HasEntProp(entity, Prop_Send, "m_hOwnerEntity") || !IsValidEntity(entity)) return;

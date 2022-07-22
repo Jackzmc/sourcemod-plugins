@@ -146,6 +146,10 @@ void SetupTrolls() {
 
 	/// CATEGORY: MISC
 	SetCategory("Misc");
+	/*index = SetupTroll("Rock Dropper", "Drops on a rock. On their head.", TrollMod_Instant);
+	Trolls[index].AddFlagPrompt(false);
+	Trolls[index].AddFlag("Drop From Above", true);
+	Trolls[index].AddFlag("From behind", false);*/
 	SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
 	SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
 	index = SetupTroll("Car Splat", "Car. splats.", TrollMod_Instant);
@@ -302,6 +306,21 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 				SetEntProp(primaryWpn, Prop_Send, "m_iClip1", GetRandomInt(0, maxCap));
 			}
 		}
+	} else if(StrEqual(troll.name, "Rock Dropper")) {
+		float pos[3], dropPos[3];
+		GetClientEyePosition(victim, pos);
+		dropPos = pos;
+		dropPos[2] += 150.0;
+		TR_TraceRayFilter(pos, dropPos, MASK_SOLID, RayType_EndPoint, Filter_IgnorePlayer, victim);
+		if(TR_DidHit()) {
+			ReplyToCommand(activator, "Could not find a suitable area. Requires vertical space.");
+			return false;
+		}
+		PrintToServer("running: ThrowRockAtEntity at %f %f %f", dropPos[0], dropPos[1], dropPos[2]);
+		if(!ThrowRockAtEntity(dropPos, victim, 100.0)) {
+			ReplyToCommand(activator, "Rock dropper failed");
+			return false;
+		}
 	}  else if(~modifier & TrollMod_Constant) {
 		PrintToServer("[FTT] Warn: Possibly invalid troll, no apply action defined for \"%s\"", troll.name);
 		#if defined DEBUG
@@ -309,4 +328,8 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		#endif
 	} 
 	return true;
+}
+
+bool Filter_IgnorePlayer(int entity, int contentsMask, any data) {
+	return entity != data;
 }
