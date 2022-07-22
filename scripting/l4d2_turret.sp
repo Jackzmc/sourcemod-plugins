@@ -3,7 +3,7 @@
 
 //#define DEBUG
 
-#define TURRET_MAX_RANGE_HUMANS 100.0 // Max range to find humans near. Does not activate if found
+#define TURRET_MAX_RANGE_HUMANS 140.0 // Max range to find humans near. Does not activate if found
 #define TURRET_MAX_RANGE_SPECIALS 1700.0 // Max range of specials (including tanks, not witches)
 #define TURRET_MAX_RANGE_INFECTED 1500.0 // Max range of infected commons
 #define TURRET_ACTIVATION_TIME 5.0 // The time for a new turret to activate
@@ -82,7 +82,8 @@ public void OnPluginStart() {
 
 	RegAdminCmd("sm_turret", Command_SpawnTurret, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_rmturrets", Command_RemoveTurrets, ADMFLAG_CHEATS);
-	RegAdminCmd("sm_mturret", Command_ManualTarget, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_rmturret", Command_RemoveTurrets, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_manturret", Command_ManualTarget, ADMFLAG_CHEATS);
 	CreateTimer(0.1, Timer_Think, _, TIMER_REPEAT);
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
@@ -239,41 +240,11 @@ public void OnEntityDestroyed(int entity) {
 	}
 }
 
-/*public void OnPluginEnd() {
-	int entity = INVALID_ENT_REFERENCE;
-	char targetname[32];
-	while ((entity = FindEntityByClassname(entity, "info_particle_system")) != INVALID_ENT_REFERENCE) {
-		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
-		if(isTurret[entity]) {
-			AcceptEntityInput(entity, "Kill");
-			if(IsValidEntity(turretInfoTarget[turret])) {
-				AcceptEntityInput(turretInfoTarget[turret], "Kill"); 
-			}
-		}
-		if(StrEqual(targetname, "turret_activate")) {
-			AcceptEntityInput(entity, "Kill");
-		}
-	}
-	entity = INVALID_ENT_REFERENCE;
-	while ((entity = FindEntityByClassname(entity, "env_laser")) != INVALID_ENT_REFERENCE) {
-		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
-		if(StrContains(targetname, "sm_laser") > -1) {
-			AcceptEntityInput(entity, "Kill");
-		}
-	}
-	entity = INVALID_ENT_REFERENCE;
-	while ((entity = FindEntityByClassname(entity, "info_target")) != INVALID_ENT_REFERENCE) {
-		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
-		if(StrContains(targetname, "sm_laser") > -1) {
-			AcceptEntityInput(entity, "Kill");
-		}
-	}
-}*/
-
 
 public Action Command_SpawnTurret(int client, int args) {
 	float pos[3];
 	GetClientEyePosition(client, pos);
+	pos[2] += 20.0;
 	int base = CreateParticleNamed(ENT_PORTAL_NAME, PARTICLE_ELMOS, pos, NULL_VECTOR);
 	SetupTurret(base, TURRET_ACTIVATION_TIME);
 	ReplyToCommand(client, "New turret (%d) will activate in %.0f seconds", base, TURRET_ACTIVATION_TIME);
@@ -288,8 +259,12 @@ public Action Command_ManualTarget(int client, int args) {
 	} else if(manualTargetter > 0) {
 		ReplyToCommand(manualTargetter, "%N is now manually targetting", client);
 	}
-	manualTargetter = client;
-	ReplyToCommand(client, "Now manually targetting");
+	if(turretCount == 0) {
+		ReplyToCommand(client, "There are no turrets to manually target");
+	} else {
+		manualTargetter = client;
+		ReplyToCommand(client, "Now manually targetting");
+	}
 	return Plugin_Handled;
 }
 
@@ -346,7 +321,7 @@ public Action Timer_Think(Handle h) {
 			float damage = 100.0;
 			target = FindNearestVisibleEntity("tank_rock", pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED, entity);
 			if(target > 0) damage = 1000.0;
-			if(target == -1) target = FindNearestClient(TEAM_SPECIALS, pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED);
+			if(target == -1) target = FindNearestVisibleClient(TEAM_SPECIALS, pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED);
 			if(target == -1) target = FindNearestVisibleEntity("infected", pos, TURRET_MAX_RANGE_INFECTED_OPTIMIZED, entity); 
 			if(target > 0) {
 				turretDamage[entity] = damage;
@@ -462,13 +437,14 @@ int CreateTarget(const float origin[3], const char[] targetName, float duration 
 	return target;
 }
 
+
 stock int FindNearestClient(int team, const float origin[3], float maxRange = 0.0) {
 	int client = -1;
 	float closestDist, pos[3];
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == team && !pendingDeletion[i]) {
 			GetClientAbsOrigin(i, pos);
-			float distance = GetVectorDistance(origin, pos);
+			float distance = GetVectorDistance(origin, pos, true);
 			if(maxRange > 0.0 && distance > maxRange) continue;
 			if(client == -1 || distance <= closestDist) {
 				client = i;
@@ -479,12 +455,11 @@ stock int FindNearestClient(int team, const float origin[3], float maxRange = 0.
 	return client;
 }
 
-stock int FindNearestVisibleSpecial(const float origin[3], float maxRange = 0.0) {
+stock int FindNearestVisibleClient(int team, const float origin[3], float maxRange = 0.0) {
 	int client = -1;
-	static float closestDist;
-	static float pos[3];
+	float closestDist, pos[3];
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 3 && !pendingDeletion[i]) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == team && !pendingDeletion[i]) {
 			GetClientAbsOrigin(i, pos);
 			float distance = GetVectorDistance(origin, pos, true);
 			if(maxRange > 0.0 && distance > maxRange) continue;
@@ -517,36 +492,22 @@ stock int FindNearestVisibleEntity(const char[] classname, const float origin[3]
 	return -1;
 }
 
-
-stock int FindNearestInfected(const float origin[3], float maxRange = 0.0) {
-	int infected = -1;
-	float closestDist, pos[3];
-	int entity = INVALID_ENT_REFERENCE;
-	while ((entity = FindEntityByClassname(entity, "infected")) != INVALID_ENT_REFERENCE) {
-		if(GetEntProp(entity, Prop_Send, "m_iHealth") <= 0) continue;
-		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
-		float distance = GetVectorDistance(origin, pos);
-		if(maxRange > 0.0 && distance > maxRange) continue;
-		if(infected == -1 || distance <= closestDist) {
-			infected = entity;
-			closestDist = distance;
-		}
-	}
-	return infected;
-}
-
 stock bool CanSeePoint(const float origin[3], const float point[3]) {
 	TR_TraceRay(origin, point, MASK_ALL, RayType_EndPoint);
-	if(!TR_DidHit() ) {
-		return true;
-	}
-	return false;
+	
+	return !TR_DidHit(); // Can see point if no collisions
 }
 
 stock bool CanSeeEntity(const float origin[3], int entity) {
 	static float point[3];
 	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", point);
-	return CanSeePoint(origin, point);
+	TR_TraceRayFilter(origin, point, MASK_ALL, RayType_EndPoint, Filter_CanSeeEntity, entity);
+
+	return TR_GetEntityIndex() == entity; // Can see point if no collisions
+}
+
+bool Filter_CanSeeEntity(int entity, int contentsMask, int data) {
+	return entity != data;
 }
 
 
@@ -603,39 +564,78 @@ stock void SetParent(int child, int parent) {
 	AcceptEntityInput(child, "SetParent", parent);
 }
 
+/*#define MAX_IGNORE_TRACE 2
+static char IGNORE_TRACE[MAX_IGNORE_TRACE][] = {
+	"env_physics_blocker",
+	"env_player_blocker"
+};*/
+
 static int COLOR_RED[4] = { 255, 0, 0, 200 };
 int manualTarget = -1;
 #define MANUAL_TARGETNAME "turret_target_manual"
 
-bool Filter_IgnorePlayer(int entity, int contentsMask, any data) {
-	return entity != data && entity != manualTarget;
+bool Filter_ManualTarget(int entity, int contentsMask) {
+	if(entity == 0) return true;
+	if(entity == manualTarget || entity == manualTargetter) return false;
+	return true;
+	/*static char classname[32];
+	GetEntityClassname(entity, classname, sizeof(classname));
+	for(int i = 0; i < MAX_IGNORE_TRACE; i++) {
+		if(StrEqual(IGNORE_TRACE[i], classname)) {
+			return false;
+		}
+	}
+	return true;*/
 }
+
+#define MAX_WHITELISTED_AUTO_AIM_TARGETS 2
+static char WHITELISTED_AUTO_AIM_TARGETS[MAX_WHITELISTED_AUTO_AIM_TARGETS][] = {
+	"infected",
+	"witch"
+};
 
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	if(client == manualTargetter && turretCount > 0) {
 		static float pos[3], ang[3];
+		static char classname[32];
 		GetClientEyePosition(client, pos);
 		GetClientEyeAngles(client, ang);
-		// ang[2] += 10.0;
-		// GetHorizontalPositionFromOrigin(pos, ang, 15.0, pos);
-		// pos[2] += 50.0;
-		TR_TraceRayFilter(pos, ang, MASK_ALL, RayType_Infinite, Filter_IgnorePlayer, client);
+
+		// Run a ray trace to find a suitable position
+		// TODO: Possibly run per-turret for more accurate preview
+		TR_TraceRayFilter(pos, ang, MASK_SHOT, RayType_Infinite, Filter_ManualTarget);
 		if(!IsValidEntity(manualTarget)) manualTarget = CreateTarget(ang, MANUAL_TARGETNAME);
+		// Disable aim snapping if player is holding WALK (which is apparently IN_SPEED)
+		bool aimSnapping = ~buttons & IN_SPEED > 0;
 		int targetEntity = TR_GetEntityIndex();
-		if(targetEntity > 0 && (targetEntity > MaxClients || GetClientTeam(targetEntity) == 3)) {
-			GetEntPropVector(targetEntity, Prop_Send, "m_vecOrigin", ang);
-			ang[2] += 40.0;
-		} else {
-			TR_GetEndPosition(ang);
+		TR_GetEndPosition(ang);
+
+		if(aimSnapping && targetEntity > 0) {
+			if(targetEntity > MaxClients) {
+				// Check if aimed non-player entity is an entity to be auto aimed at 
+				GetEntityClassname(targetEntity, classname, sizeof(classname));
+				for(int i = 0; i < MAX_WHITELISTED_AUTO_AIM_TARGETS; i++) {
+					if(StrEqual(WHITELISTED_AUTO_AIM_TARGETS[i], classname)) {
+						GetEntPropVector(targetEntity, Prop_Send, "m_vecOrigin", ang);
+						ang[2] += 40.0;
+						break;
+					}
+				}
+			} else if(GetClientTeam(targetEntity) == 3) {
+				// Target is an infected player, auto aim
+				GetClientEyePosition(targetEntity, ang);
+				ang[2] -= 10.0;
+			}
 		}
 		TeleportEntity(manualTarget, ang, NULL_VECTOR, NULL_VECTOR);
 
 		if(buttons & IN_ATTACK) {
-			PhysicsExplode(ang, 10, 20.0, true);
+			PhysicsExplode(ang, 100, 20.0, true);
 			TE_SetupExplodeForce(ang, 20.0, 10.0);
 		}
 
+		// Activate all turrets
 		int entity = INVALID_ENT_REFERENCE;
 		while ((entity = FindEntityByClassname(entity, "info_particle_system")) != INVALID_ENT_REFERENCE) {
 			if(view_as<int>(turretState[entity]) > 0) {
@@ -643,10 +643,11 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				TE_SetupBeamPoints(pos, ang, g_iLaserIndex, 0, 0, 1, 0.1, 0.1, 0.1, 0, 0.0, COLOR_RED, 1);
 				TE_SendToAll();
 				if(buttons & IN_ATTACK) {
-					FireTurret(pos, MANUAL_TARGETNAME, 200.0, tickcount % 5 > 0);
+					FireTurret(pos, MANUAL_TARGETNAME, 50.0, tickcount % 10 > 0);
 				}
 			}
 		}
+
 		buttons &= ~IN_ATTACK;
 		SetEntPropFloat(client, Prop_Send, "m_flNextAttack", GetGameTime() + 1.0);
 		return Plugin_Changed;
