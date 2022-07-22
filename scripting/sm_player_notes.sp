@@ -82,7 +82,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		if(StrEqual(sArgs, "cancel", false)) {
 			PrintToChat(client, "Note cancelled.");
 		} else {
-			static char buffer[32];
+			char buffer[32];
 			GetClientAuthId(client, AuthId_Steam2, buffer, sizeof(buffer));
 			DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", menuNoteTarget, buffer, sArgs);
 			DB.Query(DB_AddNote, query);
@@ -97,9 +97,9 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 public Action Command_AddNote(int client, int args) {
 	if(args < 2) {
-		ReplyToCommand(client, "Syntax: sm_note <player> \"note in quotes\" or if they left, use sm_notedisconnected");
+		ReplyToCommand(client, "Syntax: sm_note <player> \"your message here\" or if they left, use sm_notedisconnected");
 	} else {
-		static char target_name[MAX_TARGET_LENGTH];
+		char target_name[MAX_TARGET_LENGTH];
 		GetCmdArg(1, target_name, sizeof(target_name));
 		GetCmdArg(2, reason, sizeof(reason));
 
@@ -118,9 +118,14 @@ public Action Command_AddNote(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		static char auth[32];
+		if(args == 1) {
+			ReplyToCommand(client, "Enter the note for %N in the chat: (type 'cancel' to cancel)", target_list[0]);
+			WaitingForNotePlayer = client;
+			return Plugin_Handled;
+		}
+		char auth[32];
 		GetClientAuthId(target_list[0], AuthId_Steam2, auth, sizeof(auth));
-		static char authMarker[32];
+		char authMarker[32];
 		if(client > 0)
 			GetClientAuthId(client, AuthId_Steam2, authMarker, sizeof(authMarker));
 		DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", auth, authMarker, reason);
@@ -135,7 +140,7 @@ public Action Command_ListNotes(int client, int args) {
 	if(args < 1) {
 		ReplyToCommand(client, "Syntax: sm_notes <player>");
 	} else {
-		static char target_name[MAX_TARGET_LENGTH];
+		char target_name[MAX_TARGET_LENGTH];
 		GetCmdArg(1, target_name, sizeof(target_name));
 		GetCmdArg(2, reason, sizeof(reason));
 
@@ -154,7 +159,7 @@ public Action Command_ListNotes(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		static char auth[32];
+		char auth[32];
 		GetClientAuthId(target_list[0], AuthId_Steam2, auth, sizeof(auth));
 
 		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s'", auth);
@@ -169,7 +174,7 @@ public Action Command_ListNotes(int client, int args) {
 }
 
 bool ConnectDB() {
-    static char error[255];
+    char error[255];
     DB = SQL_Connect("stats", true, error, sizeof(error));
     if (DB== null) {
 		LogError("Database error %s", error);
@@ -188,7 +193,7 @@ bool ConnectDB() {
 public void Event_FirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && client <= MaxClients && !IsFakeClient(client)) {
-		static char auth[32];
+		char auth[32];
 		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
 		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s'", auth);
 		DB.Query(DB_FindNotes, query, GetClientUserId(client));
