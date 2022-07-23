@@ -89,6 +89,8 @@ enum SpecialInternalFlags {
 int healTargetPlayer;
 float healTargetPos[3];
 
+int g_iRockThrows;
+
 #define MODEL_CAR "models/props_vehicles/cara_95sedan.mdl"
 
 #include <feedthetrolls/base>

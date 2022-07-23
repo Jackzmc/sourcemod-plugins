@@ -44,20 +44,33 @@ void SetupTrolls() {
 	Trolls[index].AddFlagPrompt(false);
 	Trolls[index].AddFlag("In Back", true);
 	Trolls[index].AddFlag("In Front", false);
+	index = SetupTroll("Smart Charge", "Waits until coast is clear to charge", TrollMod_Constant);
+	Trolls[index].AddCustomFlagPrompt("Attempt Timeout", false);
+	Trolls[index].AddFlag("15 Seconds", true);
+	Trolls[index].AddFlag("30 Seconds", false);
+	Trolls[index].AddFlag("1 minute", false);
+	Trolls[index].AddFlag("5 minutes", false);
 
-
-	// CATEGORY: Items
-	SetCategory("Items");
-	index = SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
-	//Can't add directly, is custom troll: 
-	// Trolls[index].AddFlag("Throw to Admin", true);
-	// Trolls[index].AddFlag("Drop At Feet", false);
-	// Trolls[index].AddFlag("Drop At Admin", false);
+	// CATEGORY: Projectiles
+	SetCategory("Projectiles");
+	index = SetupTroll("Rock Dropper", "Drops on a rock. On their head.", TrollMod_Instant);
+	// Trolls[index].AddFlagPrompt(false);
+	// Trolls[index].AddFlag("Drop From Above", true);
+	// Trolls[index].AddFlag("From behind", false);
+	index = SetupTroll("Car Splat", "Car. splats.", TrollMod_Instant);
+	Trolls[index].AddFlagPrompt(false);
+	Trolls[index].AddFlag("On Top", true);
+	Trolls[index].AddFlag("Into (Infront)", false);
+	Trolls[index].AddFlag("Into (Behind)", false);
 	index = SetupTroll("Bad Throw", "Player drops throwables on throw, and biles/molotovs themselves", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(true);
 	Trolls[index].AddFlag("Biles", true);
 	Trolls[index].AddFlag("Molotovs", true);
 	Trolls[index].AddFlag("Pipebombs", true);
+
+	// CATEGORY: Items
+	SetCategory("Items");
+	SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
 	index = SetupTroll("Spicy Gas", "Gascans player picks up just ignite. Magic.", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(false);
 	Trolls[index].AddFlag("Always (100%)", false);
@@ -83,6 +96,8 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("Rare (10%)", false);
 	SetupTroll("Nerf Gun", "When they shoot it does no damage.", TrollMod_Constant);
 	SetupTroll("Randomize Clip Ammo", "Randomly changes their clip ammo downwards", TrollMod_Constant | TrollMod_Instant);
+	SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
+
 
 	/// CATEGORY: Chat
 	SetCategory("Chat");
@@ -124,6 +139,21 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("0.0x Ratio (None)", false); //8
 	Trolls[index].AddFlag("3x Ratio", false); //16
 	Trolls[index].AddFlag("-2x Ratio", false); //16
+	/*index = SetupTroll("Dep Bots", "Makes bots heal a player. At any cost", TrollMod_Constant);
+	Trolls[index].AddFlagPrompt(false);
+	Trolls[index].AddFlag("Do not spawn extra", true);
+	Trolls[index].AddFlag("Spawn extra bots", false);
+	Trolls[index].AddCustomFlagPrompt("# Of Bots", false);
+	Trolls[index].AddFlag("1", false);
+	Trolls[index].AddFlag("2", false);
+	Trolls[index].AddFlag("3", false);
+	Trolls[index].AddFlag("4", true);
+	Trolls[index].AddFlag("5", false);
+	Trolls[index].AddCustomFlagPrompt("Auto Timeout", false);
+	Trolls[index].AddFlag("Forever / Until Healed", false);
+	Trolls[index].AddFlag("15 seconds", true);
+	Trolls[index].AddFlag("30", false);
+	Trolls[index].AddFlag("1 minute", false);*/
 
 	/// CATEGORY: Movement
 	SetCategory("Movement");
@@ -148,12 +178,6 @@ void SetupTrolls() {
 	SetCategory("Misc");
 	SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
 	SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
-	index = SetupTroll("Car Splat", "Car. splats.", TrollMod_Instant);
-	Trolls[index].AddFlagPrompt(false);
-	Trolls[index].AddFlag("On Top", true);
-	Trolls[index].AddFlag("Into (Infront)", false);
-	Trolls[index].AddFlag("Into (Behind)", false);
-	SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
 	index = SetupTroll("Meta: Inverse", "Uhm you are not supposed to see this...", TrollMod_Instant);
 	Trolls[index].hidden = true;
 	Trolls[index].AddFlagPrompt(false);
@@ -302,6 +326,32 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 				SetEntProp(primaryWpn, Prop_Send, "m_iClip1", GetRandomInt(0, maxCap));
 			}
 		}
+	} else if(StrEqual(troll.name, "Rock Dropper")) {
+		float pos[3], dropPos[3];
+		GetClientEyePosition(victim, pos);
+		dropPos = pos;
+		dropPos[2] += 150.0;
+		TR_TraceRayFilter(pos, dropPos, MASK_SOLID, RayType_EndPoint, Filter_IgnorePlayer, victim);
+		if(TR_DidHit()) {
+			ReplyToCommand(activator, "Could not find a suitable area. Requires vertical space.");
+			return false;
+		}
+		float vel[3];
+		vel[0] = 90.0;
+		L4D_TankRockPrj(0, dropPos, vel);
+	} else if(StrEqual(troll.name, "Smart Charge")) {
+		if(pdata[victim].smartChargeActivator > 0) {
+			ReplyToCommand(activator, "Target already has smart charge enabled");
+			return false;
+		} 
+		int timeout = 15;
+		if(flags & 2) timeout = 30;
+		else if(flags & 4) timeout = 60;
+		else if(flags & 8) timeout = 300;
+		pdata[victim].smartChargeAttempts = 0;
+		pdata[victim].smartChargeMaxAttempts = timeout;
+		pdata[victim].smartChargeActivator = GetClientUserId(activator);
+		CreateTimer(1.0, Timer_CheckForChargerOpportunity, GetClientUserId(victim), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}  else if(~modifier & TrollMod_Constant) {
 		PrintToServer("[FTT] Warn: Possibly invalid troll, no apply action defined for \"%s\"", troll.name);
 		#if defined DEBUG
@@ -309,4 +359,8 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		#endif
 	} 
 	return true;
+}
+
+bool Filter_IgnorePlayer(int entity, int contentsMask, any data) {
+	return entity != data;
 }

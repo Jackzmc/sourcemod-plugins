@@ -138,7 +138,8 @@ public Action Timer_KickBot(Handle timer, int client) {
 }
 
 public Action Timer_Delete(Handle h, int id) {
-	AcceptEntityInput(id, "Kill");
+	if(IsValidEntity(id))
+		AcceptEntityInput(id, "Kill");
 	return Plugin_Handled;
 }
 

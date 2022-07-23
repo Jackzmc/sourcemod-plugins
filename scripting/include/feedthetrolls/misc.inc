@@ -477,3 +477,52 @@ void StopHealingBots() {
 	if(hAbmAutoHard != null) hAbmAutoHard.IntValue = wasAbmAutoHard;
 	if(hSbFixEnabled != null) hSbFixEnabled.BoolValue = wasSbFixEnabled;
 }
+
+// Spawns a env_rock_launcher to throw at a random specified target name.
+// Does not auto fire, need to call input LaunchRock
+// Damage -1 will not override damage
+// autoDeleteTime of <= 0.0 will persist forever. 
+stock int CreateRockLauncher(const float origin[3], const float ang[3], const char[] targetName, float damage = -1.0, float autoDeleteTime = 0.0) {
+	int launcher = CreateEntityByName("env_rock_launcher");
+	if(launcher == -1) return -1;
+	// DispatchKeyValue(launcher, "targetname", "ftt_rock_launcher");
+	DispatchKeyValue(launcher, "RockTargetName", targetName);
+	if(damage >= 0.0) {
+		DispatchKeyValueFloat(launcher, "RockDamageOverride", damage);
+	}
+	if(autoDeleteTime > 0.0) CreateTimer(autoDeleteTime, Timer_Delete, launcher);
+	DispatchSpawn(launcher);
+	TeleportEntity(launcher, origin, ang, NULL_VECTOR);
+	PrintToChatAll("Created rock launcher at %f %f %f at ang %f %f %f", origin[0], origin[1], origin[2], ang[0], ang[1], ang[2]);
+	// AcceptEntityInput(launcher, "Kill");
+	return launcher;
+}
+
+#define FTT_TARGET_NAME "ftt_target"
+stock bool ThrowRockAtPosition(const float origin[3], float pos[3], float damage = -1.0) {
+	CreateTarget(pos, FTT_TARGET_NAME, 0.2);
+	GetVectorAngles(pos, pos);
+	int launcher = CreateRockLauncher(origin, pos, FTT_TARGET_NAME, damage, 0.0);
+	g_iRockThrows++;
+	AcceptEntityInput(launcher, "LaunchRock");
+	AcceptEntityInput(launcher, "Kill");
+	return true;
+}
+stock bool ThrowRockAtEntity(const float origin[3], int target, float damage = -1.0) {
+	float pos[3];
+	GetEntPropVector(target, Prop_Send, "m_vecOrigin", pos);
+	return ThrowRockAtPosition(origin, pos, damage);
+}
+
+int CreateTarget(const float origin[3], const char[] targetName, float duration = 0.0) {
+	int target = CreateEntityByName("info_target");
+	DispatchKeyValue(target, "targetname", targetName);
+
+	TeleportEntity(target, origin, NULL_VECTOR, NULL_VECTOR);
+	DispatchSpawn(target);
+	if(duration > 0.0) {
+		CreateTimer(duration, Timer_Delete, target);
+	}
+	PrintToServer("Created info_target at %f %f %f", origin[0], origin[1], origin[2]);
+	return target;
+}
