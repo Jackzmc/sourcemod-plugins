@@ -35,6 +35,10 @@ int g_iBeamSprite;
 int g_iHaloSprite;
 
 int manualTargetter;
+Handle thinkTimer;
+
+ConVar cv_autoBaseDamage;
+ConVar cv_manualBaseDamage;
 
 
 /* TODO: 
@@ -80,11 +84,13 @@ public void OnPluginStart() {
 
 	HookEvent("player_death", Event_PlayerDeath);
 
+	cv_autoBaseDamage = CreateConVar("turret_auto_damage", "50.0", "The base damage the automatic turret deals", FCVAR_NONE, true, 0.0);
+	cv_manualBaseDamage = CreateConVar("turret_manual_damage", "70.0", "The base damage the manual turret deals", FCVAR_NONE, true, 0.0);
+
 	RegAdminCmd("sm_turret", Command_SpawnTurret, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_rmturrets", Command_RemoveTurrets, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_rmturret", Command_RemoveTurrets, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_manturret", Command_ManualTarget, ADMFLAG_CHEATS);
-	CreateTimer(0.1, Timer_Think, _, TIMER_REPEAT);
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
 			SDKHook(i, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
@@ -134,6 +140,10 @@ void SetupTurret(int turret, float time = 0.0) {
 	Format(targetName, sizeof(targetName), "laser_target_%d", turret);
 	CreateTimer(time, Timer_ActivateTurret, turret);
 	turretCount++;
+	if(thinkTimer == null) {
+		PrintToServer("Created turret think timer");
+		thinkTimer = CreateTimer(0.1, Timer_Think, _, TIMER_REPEAT);
+	}
 }
 Action Timer_ActivateTurret(Handle h, int turret) {
 	turretState[turret] = Turret_Idle;
@@ -190,6 +200,9 @@ int ClearTurrets(bool fullClear = true) {
 		pendingDeletion[i] = false;
 	}
 	turretCount = 0;
+	if(IsValidHandle(thinkTimer)) {
+		delete thinkTimer;
+	}
 	return count;
 }
 
@@ -252,6 +265,14 @@ public Action Command_SpawnTurret(int client, int args) {
 }
 
 public Action Command_ManualTarget(int client, int args) {
+	// Remove the activator particles
+	int entity = INVALID_ENT_REFERENCE;
+	while ((entity = FindEntityByClassname(entity, "info_particle_system")) != INVALID_ENT_REFERENCE) {
+		if(view_as<int>(turretState[entity]) > 0) {
+			DeactivateTurret(entity);
+		}
+	}
+
 	if(manualTargetter == client) {
 		manualTargetter = 0;
 		ReplyToCommand(client, "No longer manually targetting");
@@ -287,9 +308,10 @@ public Action Command_RemoveTurrets(int client, int args) {
 }
 
 public Action Timer_Think(Handle h) {
-	if(turretCount == 0 || manualTargetter > 0) return Plugin_Continue;
+	if( manualTargetter > 0) return Plugin_Continue;
 	// Probably better to just store from CreateParticle
-	static int entity = INVALID_ENT_REFERENCE;
+	static int entity; 
+	entity = INVALID_ENT_REFERENCE;
 	// static char targetname[32];
 	static float pos[3];
 	static int count, target;
@@ -318,7 +340,7 @@ public Action Timer_Think(Handle h) {
 				continue;
 			}
 
-			float damage = 100.0;
+			float damage = cv_autoBaseDamage.FloatValue;
 			target = FindNearestVisibleEntity("tank_rock", pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED, entity);
 			if(target > 0) damage = 1000.0;
 			if(target == -1) target = FindNearestVisibleClient(TEAM_SPECIALS, pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED);
@@ -418,7 +440,7 @@ stock int CreateLaserAuto(const float origin[3], int targetEnt, float color[3], 
 
 	static float pos[3];
 	GetEntPropVector(targetEnt, Prop_Send, "m_vecOrigin", pos);
-	pos[2] += 40.0;
+	pos[2] += 30.0;
 	int target = CreateTarget(pos, targetName, duration);
 	SetParent(target, targetEnt);
 
@@ -603,9 +625,10 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		GetClientEyeAngles(client, ang);
 
 		// Run a ray trace to find a suitable position
-		// TODO: Possibly run per-turret for more accurate preview
+		// TODO: Possibly run per-turret for more accurate preview... but it's already lag fest
 		TR_TraceRayFilter(pos, ang, MASK_SHOT, RayType_Infinite, Filter_ManualTarget);
 		if(!IsValidEntity(manualTarget)) manualTarget = CreateTarget(ang, MANUAL_TARGETNAME);
+
 		// Disable aim snapping if player is holding WALK (which is apparently IN_SPEED)
 		bool aimSnapping = ~buttons & IN_SPEED > 0;
 		int targetEntity = TR_GetEntityIndex();
@@ -631,7 +654,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		TeleportEntity(manualTarget, ang, NULL_VECTOR, NULL_VECTOR);
 
 		if(buttons & IN_ATTACK) {
-			PhysicsExplode(ang, 100, 20.0, true);
+			PhysicsExplode(ang, 10, 20.0, true);
 			TE_SetupExplodeForce(ang, 20.0, 10.0);
 		}
 
@@ -643,7 +666,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				TE_SetupBeamPoints(pos, ang, g_iLaserIndex, 0, 0, 1, 0.1, 0.1, 0.1, 0, 0.0, COLOR_RED, 1);
 				TE_SendToAll();
 				if(buttons & IN_ATTACK) {
-					FireTurret(pos, MANUAL_TARGETNAME, 50.0, tickcount % 10 > 0);
+					FireTurret(pos, MANUAL_TARGETNAME, cv_manualBaseDamage.FloatValue, tickcount % 10 == 10);
 				}
 			}
 		}
@@ -656,14 +679,8 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 }
 
 public Action Timer_Kill(Handle h, int target) {
-	if(IsValidEntity(target))
+	if(IsValidEntity(target)) // TODO: See if necessary
 		AcceptEntityInput(target, "Kill");
 	return Plugin_Handled;
 }
 
-stock void GetHorizontalPositionFromOrigin(const float pos[3], const float ang[3], float units, float finalPosition[3]) {
-	float theta = DegToRad(ang[1]);
-	finalPosition[0] = units * Cosine(theta) + pos[0];
-	finalPosition[1] = units * Sine(theta) + pos[1];
-	finalPosition[2] = pos[2];
-}
