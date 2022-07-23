@@ -710,9 +710,9 @@ public void Frame_SetupNewClient(int client) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 			int wpn = GetPlayerWeaponSlot(client, 0);
 			if(wpn > 0) {
-				GetEdictClassname(wpn, weaponName, sizeof(weaponName));
+				GetEntityClassname(wpn, weaponName, sizeof(weaponName));
 				for(int j = 0; j < TIER2_WEAPON_COUNT; j++) {
-					if(StrEqual(TIER2_WEAPONS[j], weaponName[j])) {
+					if(StrEqual(TIER2_WEAPONS[j], weaponName[j][7])) {
 						tier2Weapons.PushString(weaponName);
 						break;
 					}
@@ -729,7 +729,7 @@ public void Frame_SetupNewClient(int client) {
 
 	if(tier2Weapons.Length > 0) {
 		tier2Weapons.GetString(GetRandomInt(0, tier2Weapons.Length), weaponName, sizeof(weaponName));
-		Format(weaponName, sizeof(weaponName), "weapon_%s", weaponName);
+		// Format(weaponName, sizeof(weaponName), "weapon_%s", weaponName);
 		PrintToServer("[EPI/debug] Giving new client (%N) tier 2: %s", client, weaponName);
 	} else {
 		Format(weaponName, sizeof(weaponName), "weapon_%s", TIER1_WEAPONS[GetRandomInt(0, TIER1_WEAPON_COUNT)]);
