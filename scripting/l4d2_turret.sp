@@ -619,20 +619,19 @@ static char WHITELISTED_AUTO_AIM_TARGETS[MAX_WHITELISTED_AUTO_AIM_TARGETS][] = {
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	if(client == manualTargetter && turretCount > 0) {
-		static float pos[3], ang[3];
+		static float pos[3], orgPos[3];
 		static char classname[32];
-		GetClientEyePosition(client, pos);
-		GetClientEyeAngles(client, ang);
+		GetClientEyePosition(client, orgPos);
 
 		// Run a ray trace to find a suitable position
 		// TODO: Possibly run per-turret for more accurate preview... but it's already lag fest
-		TR_TraceRayFilter(pos, ang, MASK_SHOT, RayType_Infinite, Filter_ManualTarget);
-		if(!IsValidEntity(manualTarget)) manualTarget = CreateTarget(ang, MANUAL_TARGETNAME);
+		TR_TraceRayFilter(orgPos, angles, MASK_SHOT, RayType_Infinite, Filter_ManualTarget);
+		if(!IsValidEntity(manualTarget)) manualTarget = CreateTarget(angles, MANUAL_TARGETNAME);
 
 		// Disable aim snapping if player is holding WALK (which is apparently IN_SPEED)
 		bool aimSnapping = ~buttons & IN_SPEED > 0;
 		int targetEntity = TR_GetEntityIndex();
-		TR_GetEndPosition(ang);
+		TR_GetEndPosition(pos);
 
 		if(aimSnapping && targetEntity > 0) {
 			if(targetEntity > MaxClients) {
@@ -640,22 +639,22 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				GetEntityClassname(targetEntity, classname, sizeof(classname));
 				for(int i = 0; i < MAX_WHITELISTED_AUTO_AIM_TARGETS; i++) {
 					if(StrEqual(WHITELISTED_AUTO_AIM_TARGETS[i], classname)) {
-						GetEntPropVector(targetEntity, Prop_Send, "m_vecOrigin", ang);
-						ang[2] += 40.0;
+						GetEntPropVector(targetEntity, Prop_Send, "m_vecOrigin", pos);
+						pos[2] += 40.0;
 						break;
 					}
 				}
 			} else if(GetClientTeam(targetEntity) == 3) {
 				// Target is an infected player, auto aim
-				GetClientEyePosition(targetEntity, ang);
-				ang[2] -= 10.0;
+				GetClientEyePosition(targetEntity, pos);
+				pos[2] -= 10.0;
 			}
 		}
-		TeleportEntity(manualTarget, ang, NULL_VECTOR, NULL_VECTOR);
+		TeleportEntity(manualTarget, pos, NULL_VECTOR, NULL_VECTOR);
 
 		if(buttons & IN_ATTACK) {
-			PhysicsExplode(ang, 10, 20.0, true);
-			TE_SetupExplodeForce(ang, 20.0, 10.0);
+			PhysicsExplode(pos, 10, 20.0, true);
+			TE_SetupExplodeForce(pos, 20.0, 10.0);
 		}
 
 		// Activate all turrets
@@ -663,7 +662,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		while ((entity = FindEntityByClassname(entity, "info_particle_system")) != INVALID_ENT_REFERENCE) {
 			if(view_as<int>(turretState[entity]) > 0) {
 				GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
-				TE_SetupBeamPoints(pos, ang, g_iLaserIndex, 0, 0, 1, 0.1, 0.1, 0.1, 0, 0.0, COLOR_RED, 1);
+				TE_SetupBeamPoints(pos, orgPos, g_iLaserIndex, 0, 0, 1, 0.1, 0.1, 0.1, 0, 0.0, COLOR_RED, 1);
 				TE_SendToAll();
 				if(buttons & IN_ATTACK) {
 					FireTurret(pos, MANUAL_TARGETNAME, cv_manualBaseDamage.FloatValue, tickcount % 10 == 10);
