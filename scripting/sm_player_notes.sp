@@ -40,6 +40,8 @@ public void OnPluginStart() {
 		SetFailState("Failed to connect to database.");
 	}
 
+	LoadTranslations("common.phrases");
+
 	lastPlayers = new ArrayList(sizeof(PlayerData));
 
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
