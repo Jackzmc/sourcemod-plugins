@@ -40,6 +40,9 @@ Handle thinkTimer;
 ConVar cv_autoBaseDamage;
 ConVar cv_manualBaseDamage;
 
+static int COLOR_RED[4] = { 255, 0, 0, 200 };
+int manualTarget = -1;
+#define MANUAL_TARGETNAME "turret_target_manual"
 
 /* TODO: 
 Entity_ChangeOverTime`
@@ -190,7 +193,7 @@ int ClearTurrets(bool fullClear = true) {
 	entity = INVALID_ENT_REFERENCE;
 	while ((entity = FindEntityByClassname(entity, "info_target")) != INVALID_ENT_REFERENCE) {
 		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
-		if(StrContains(targetname, "turret_target_") > -1) {
+		if(StrContains(targetname, "turret_target_") > -1 || StrEqual(targetname, MANUAL_TARGETNAME)) {
 			AcceptEntityInput(entity, "Kill");
 		}
 	}
@@ -592,9 +595,6 @@ static char IGNORE_TRACE[MAX_IGNORE_TRACE][] = {
 	"env_player_blocker"
 };*/
 
-static int COLOR_RED[4] = { 255, 0, 0, 200 };
-int manualTarget = -1;
-#define MANUAL_TARGETNAME "turret_target_manual"
 
 bool Filter_ManualTarget(int entity, int contentsMask) {
 	if(entity == 0) return true;
@@ -626,7 +626,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		// Run a ray trace to find a suitable position
 		// TODO: Possibly run per-turret for more accurate preview... but it's already lag fest
 		TR_TraceRayFilter(orgPos, angles, MASK_SHOT, RayType_Infinite, Filter_ManualTarget);
-		if(!IsValidEntity(manualTarget)) manualTarget = CreateTarget(angles, MANUAL_TARGETNAME);
+		if(!IsValidEntity(manualTarget)) manualTarget = CreateTarget(pos, MANUAL_TARGETNAME);
 
 		// Disable aim snapping if player is holding WALK (which is apparently IN_SPEED)
 		bool aimSnapping = ~buttons & IN_SPEED > 0;
@@ -653,19 +653,19 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		TeleportEntity(manualTarget, pos, NULL_VECTOR, NULL_VECTOR);
 
 		if(buttons & IN_ATTACK) {
-			PhysicsExplode(pos, 10, 20.0, true);
-			TE_SetupExplodeForce(pos, 20.0, 10.0);
+			PhysicsExplode(pos, 20, 20.0, true);
+			TE_SetupExplodeForce(pos, 20.0, 20.0);
 		}
 
 		// Activate all turrets
 		int entity = INVALID_ENT_REFERENCE;
 		while ((entity = FindEntityByClassname(entity, "info_particle_system")) != INVALID_ENT_REFERENCE) {
 			if(view_as<int>(turretState[entity]) > 0) {
-				GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
-				TE_SetupBeamPoints(pos, orgPos, g_iLaserIndex, 0, 0, 1, 0.1, 0.1, 0.1, 0, 0.0, COLOR_RED, 1);
+				GetEntPropVector(entity, Prop_Send, "m_vecOrigin", orgPos);
+				TE_SetupBeamPoints(orgPos, pos, g_iLaserIndex, 0, 0, 1, 0.1, 0.1, 0.1, 0, 0.0, COLOR_RED, 1);
 				TE_SendToAll();
 				if(buttons & IN_ATTACK) {
-					FireTurret(pos, MANUAL_TARGETNAME, cv_manualBaseDamage.FloatValue, tickcount % 10 == 10);
+					FireTurret(pos, MANUAL_TARGETNAME, cv_manualBaseDamage.FloatValue, tickcount % 10 == 0);
 				}
 			}
 		}
