@@ -255,19 +255,24 @@ public Action Timer_UpdateHealTargetPos(Handle h) {
 	return bots > 0 ? Plugin_Continue : Plugin_Stop;
 }
 
-Action Timer_SpawnBots(Handle h, int max) {
+Action Timer_SpawnHealBots(Handle h, int max) {
 	static int count;
 	if(count < max) {
-		if(!AddSurvivor()) return Plugin_Stop;
+		if(!AddSurvivor()) {
+			count = 0;
+			CreateTimer(0.3, Timer_SpawnHealBotsPost);
+			return Plugin_Stop;
+		}
 		count++;
 		return Plugin_Continue;
 	}
 	count = 0;
-	CreateTimer(0.2, Timer_SpawnBotsPost);
+	CreateTimer(0.3, Timer_SpawnHealBotsPost);
 	return Plugin_Stop;
 }
 
-Action Timer_SpawnBotsPost(Handle h) {
+Action Timer_SpawnHealBotsPost(Handle h) {
+	PrintToServer("bots post");
 	char classname[32];
 	for(int i = 1; i <= MaxClients; i++) {
 		if(isCustomSurvivor[i]) {
@@ -275,11 +280,17 @@ Action Timer_SpawnBotsPost(Handle h) {
 			if(kit > 0) {
 				GetEntityClassname(kit, classname, sizeof(classname));
 				if(!StrEqual(classname, "weapon_first_aid_kit")) {
-					kit = GiveClientWeapon(i, "weapon_first_aid_kit");
+					GiveClientWeapon(i, "weapon_first_aid_kit");
 				}
-				pdata[i].flags &= view_as<int>(Flag_IsTargettingHealer);
+			} else {
+				GiveClientWeapon(i, "weapon_first_aid_kit");
 			}
+			pdata[i].flags &= view_as<int>(Flag_IsTargettingHealer);
 		}
 	}
+	return Plugin_Handled;
+}
+Action Timer_StopHealBots(Handle h) {
+	StopHealingBots();
 	return Plugin_Handled;
 }

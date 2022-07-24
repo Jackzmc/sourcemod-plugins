@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 43
+    #define MAX_TROLLS 45
 #endif
 
 enum trollModifier {

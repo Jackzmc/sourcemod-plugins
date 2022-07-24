@@ -664,7 +664,7 @@ public Action Command_HealTarget(int client, int args) {
 			if(addBots && limit > 0) {
 				wasAbmAutoHard = hAbmAutoHard.IntValue;
 				hAbmAutoHard.IntValue = 0;
-				CreateTimer(0.2, Timer_SpawnBots, limit, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+				CreateTimer(0.2, Timer_SpawnHealBots, limit, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
 			}
 			ShowActivity(client, "made all bots heal %N", target);
 			wasSbFixEnabled = hSbFixEnabled.BoolValue;

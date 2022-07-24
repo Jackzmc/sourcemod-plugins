@@ -523,6 +523,19 @@ int CreateTarget(const float origin[3], const char[] targetName, float duration 
 	if(duration > 0.0) {
 		CreateTimer(duration, Timer_Delete, target);
 	}
-	PrintToServer("Created info_target at %f %f %f", origin[0], origin[1], origin[2]);
 	return target;
+}
+
+bool IsAnySurvivorInRange(const float origin[3], float range, int ignorePlayer = 0) {
+	float pos[3];
+	range = range * range;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(i != ignorePlayer && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			GetClientAbsOrigin(i, pos);
+			if(GetVectorDistance(origin, pos, true) <= range) {
+				return true;
+			}
+		}
+	}
+	return false;
 }

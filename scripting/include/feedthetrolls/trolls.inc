@@ -67,6 +67,7 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("Biles", true);
 	Trolls[index].AddFlag("Molotovs", true);
 	Trolls[index].AddFlag("Pipebombs", true);
+	SetupTroll("Molotov Bath", "Throws a molotov on their feet", TrollMod_Instant);
 
 	// CATEGORY: Items
 	SetCategory("Items");
@@ -139,21 +140,22 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("0.0x Ratio (None)", false); //8
 	Trolls[index].AddFlag("3x Ratio", false); //16
 	Trolls[index].AddFlag("-2x Ratio", false); //16
-	/*index = SetupTroll("Dep Bots", "Makes bots heal a player. At any cost", TrollMod_Constant);
+	index = SetupTroll("Dep Bots", "Makes bots heal a player. At any cost", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(false);
-	Trolls[index].AddFlag("Do not spawn extra", true);
-	Trolls[index].AddFlag("Spawn extra bots", false);
+	Trolls[index].AddFlag("Do not spawn extra", true); // 1 
+	Trolls[index].AddFlag("Spawn extra bots (broke)", false); // 2
 	Trolls[index].AddCustomFlagPrompt("# Of Bots", false);
-	Trolls[index].AddFlag("1", false);
-	Trolls[index].AddFlag("2", false);
-	Trolls[index].AddFlag("3", false);
-	Trolls[index].AddFlag("4", true);
-	Trolls[index].AddFlag("5", false);
+	Trolls[index].AddFlag("1", false); // 4
+	Trolls[index].AddFlag("2", false); // 8
+	Trolls[index].AddFlag("3", false); // 16
+	Trolls[index].AddFlag("4", true); // 32
+	Trolls[index].AddFlag("5", false); // 64
 	Trolls[index].AddCustomFlagPrompt("Auto Timeout", false);
-	Trolls[index].AddFlag("Forever / Until Healed", false);
-	Trolls[index].AddFlag("15 seconds", true);
-	Trolls[index].AddFlag("30", false);
-	Trolls[index].AddFlag("1 minute", false);*/
+	Trolls[index].AddFlag("Until Healed / Map Change", false); // 128
+	Trolls[index].AddFlag("15 seconds", true); // 255
+	Trolls[index].AddFlag("30 seconds", false); // 512
+	Trolls[index].AddFlag("1 minute", false); //1024
+	Trolls[index].AddFlag("5 minutes", false); //2048
 
 	/// CATEGORY: Movement
 	SetCategory("Movement");
@@ -336,9 +338,82 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 			ReplyToCommand(activator, "Could not find a suitable area. Requires vertical space.");
 			return false;
 		}
+		float ang[3];
+		ang[0] = 90.0;
+		L4D_TankRockPrj(0, dropPos, ang);
+	} else if(StrEqual(troll.name, "Molotov Bath")) {
+		float pos[3], dropPos[3];
+		GetClientEyePosition(victim, pos);
+		dropPos = pos;
+		dropPos[2] += 20.0;
+		TR_TraceRayFilter(pos, dropPos, MASK_SOLID, RayType_EndPoint, Filter_IgnorePlayer, victim);
+		if(TR_DidHit()) {
+			ReplyToCommand(activator, "Could not find a suitable area. Requires vertical space.");
+			return false;
+		}
+		if(IsAnySurvivorInRange(pos, 55.0, victim)) {
+			ReplyToCommand(activator, "Victim is too close to other players.");
+			return false;
+		}
 		float vel[3];
-		vel[0] = 90.0;
-		L4D_TankRockPrj(0, dropPos, vel);
+		vel[2] = -90.0;
+		L4D_MolotovPrj(victim, dropPos, vel);
+	} else if(StrEqual(troll.name, "Dep Bots")) {
+		if(!toActive) {
+			StopHealingBots();
+			return true;
+		}
+		bool spawnExtra = flags & 2 > 0;
+
+		int numBots = 4;
+		if(flags & 4) numBots = 1;
+		else if(flags & 8) numBots = 2;
+		else if(flags & 16) numBots = 3;
+		else if(flags & 64) numBots = 5;
+
+		float timeout = 0.0;
+		if(flags & 255) timeout = 15.0;
+		else if(flags & 512) timeout = 30.0;
+		else if(flags & 1024) timeout = 60.0;
+		else if(flags & 2048) timeout = 300.0;
+
+		// TODO: Extract this !!
+		healTargetPlayer = GetClientUserId(victim);
+
+		char buffer[32];
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && IsFakeClient(i)) {
+				int kit = GetPlayerWeaponSlot(i, 3);
+				if(kit > 0) {
+					GetEntityClassname(kit, buffer, sizeof(buffer));
+					if(StrEqual(buffer, "weapon_first_aid_kit")) {
+						PrintToServer("[FTT] Dep Bots: Found bot %N", i);
+						pdata[i].flags |= view_as<int>(Flag_IsTargettingHealer);
+
+						if(--numBots == 0) {
+							break;
+						}
+					}
+				}
+			}
+		}
+		CreateTimer(2.0, Timer_UpdateHealTargetPos, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+		if(timeout > 0.0) {
+			CreateTimer(timeout, Timer_StopHealBots);
+		}
+
+		if(spawnExtra && numBots > 0) {
+			if(hAbmAutoHard != null) {
+				wasAbmAutoHard = hAbmAutoHard.IntValue;
+				hAbmAutoHard.IntValue = 0;
+			}
+			CreateTimer(0.2, Timer_SpawnHealBots, numBots, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+		}
+
+		if(hSbFixEnabled != null) {
+			wasSbFixEnabled = hSbFixEnabled.BoolValue;
+			hSbFixEnabled.BoolValue = false;
+		}
 	} else if(StrEqual(troll.name, "Smart Charge")) {
 		if(pdata[victim].smartChargeActivator > 0) {
 			ReplyToCommand(activator, "Target already has smart charge enabled");
