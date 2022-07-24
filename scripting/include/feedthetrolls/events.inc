@@ -32,6 +32,17 @@ public void OnClientPutInServer(int client) {
 	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
 	SDKHook(client, SDKHook_OnTakeDamageAlive, NerfGun_OnTakeDamage);
 }
+/* Projectile Magnet:
+	1. Create watch timer on EntityCreateCallback
+	2. Test velocity over time
+	3. If velocity goes negative, its at apex:
+		- TraceRay to victim
+		- If collision && molotov (maybe acid/):
+			Get End Position
+			If Distance From End Position & Victim < 100 units or so
+				Allow
+		- If no collision, set angle to player, set velocity accordingly
+*/
 public void OnEntityCreated(int entity, const char[] classname) {
 	if(entity >= MaxClients) {
 		if(StrEqual(classname, "infected", false))
@@ -351,8 +362,14 @@ bool WillMagnetRun(const Troll troll, int i) {
 }
 
 public Action L4D2_OnEntityShoved(int client, int entity, int weapon, float vecDir[3], bool bIsHighPounce) {
-	if(client > 0 && client <= MaxClients && IsTrollActive(client, "No Shove") && hShoveFailChance.FloatValue > GetRandomFloat()) {
-		return Plugin_Handled;
+	if(client > 0 && client <= MaxClients) {
+		static int noShoveIndex;
+		if(noShoveIndex == 0) noShoveIndex == GetTrollID("No Shove");
+		if(Trolls[noShoveIndex].IsActive(client) && GetRandomFloat() < hShoveFailChance.FloatValue) {
+			float shoveTime = L4D2Direct_GetNextShoveTime(client);
+			L4D2Direct_SetNextShoveTime(client, shoveTime + 2.0);
+			return Plugin_Handled;
+		}
 	}
 	return Plugin_Continue;
 }

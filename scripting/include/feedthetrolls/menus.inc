@@ -82,9 +82,9 @@ public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int par
 		static char info[8];
 		menu.GetItem(param2, info, sizeof(info));
 		int userid = StringToInt(info);
-		int client = GetClientOfUserId(userid);
+		int victim = GetClientOfUserId(userid);
 
-		if(client == 0) {
+		if(victim == 0) {
 			ReplyToCommand(param1, "FTT: Could not acquire player");
 			return 0;
 		}
@@ -146,9 +146,9 @@ public int ChooseCategoryHandler(Menu menu, MenuAction action, int param1, int p
 		static char str[2][8];
 		ExplodeString(info, "|", str, 2, 8, false);
 		int userid = StringToInt(str[0]);
-		int client = GetClientOfUserId(userid);
-		if(client == 0) {
-			ReplyToCommand(param1, "FTT: Could not acquire player");
+		int victim = GetClientOfUserId(userid);
+		if(victim == 0) {
+			ReplyToCommand(param1, "FTT/ChooseCategoryHandler: Could not acquire player");
 			return 0;
 		}
 		
@@ -171,7 +171,7 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 	if (action == MenuAction_Cancel) {
 		if(param2 == MenuCancel_ExitBack) {
 			if(iMenuVictimID[param1] == 0) {
-				ReplyToCommand(param1, "FTT: Could not acquire player");
+				ReplyToCommand(param1, "FTT/ChooseModeMenuHandler: Could not acquire player");
 			}
 			SetupCategoryMenu(param1, iMenuVictimID[param1]);
 		}
@@ -236,6 +236,8 @@ public int ChooseClumsySlotHandler(Menu menu, MenuAction action, int param1, int
 			for(int i = 0; i <= 4; i++) {
 				ThrowItemToPlayer(client, param1, i);
 			}
+		} else if(slot == -2) {
+			ShowThrowItAllMenu(param1, userid);
 		} else {
 			ThrowItemToPlayer(client, param1, slot);
 		}
@@ -343,6 +345,7 @@ public void StopItemGive(int client) {
 }
 
 void SetupCategoryMenu(int client, int victimUserID) {
+	iMenuVictimID[client] = victimUserID;
 	Menu categoryMenu = new Menu(ChooseCategoryHandler);
 	static char category[64], id[16];
 	// Title with [ in name cause failure
@@ -495,6 +498,9 @@ void ShowThrowItAllMenu(int client, int userid) {
 	itmMenu.SetTitle("Choose Item To Throw");
 
 	static char itmName[32];
+	Format(info, sizeof(info), "%d|-2", userid);
+	itmMenu.AddItem(info, "Refresh");
+
 	Format(info, sizeof(info), "%d|-1", userid);
 	itmMenu.AddItem(info, "All Items");
 

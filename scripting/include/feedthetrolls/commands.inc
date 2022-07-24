@@ -256,7 +256,7 @@ public Action Command_ApplyUser(int client, int args) {
 		}
 		
 		SilentMenuSelected[client] = false;
-		SetupCategoryMenu(client, target_list[0]);
+		SetupCategoryMenu(client, GetClientUserId(target_list[0]));
 	}
 	return Plugin_Handled;
 }
@@ -285,7 +285,7 @@ public Action Command_ApplyComboTrolls(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
-		ShowTrollCombosMenu(client, target_list[0]);
+		ShowTrollCombosMenu(client, GetClientUserId(target_list[0]));
 	}
 	return Plugin_Handled;	
 }
@@ -329,7 +329,7 @@ public Action Command_ApplyUserSilent(int client, int args) {
 			} 
 			ReplyToCommand(client, "[FTT] Unknown category: '%s'", arg2);
 		}
-		SetupCategoryMenu(client, target_list[0]);
+		SetupCategoryMenu(client, GetClientUserId(target_list[0]));
 	}
 	return Plugin_Handled;
 }
