@@ -32,28 +32,39 @@ public void OnClientPutInServer(int client) {
 	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
 	SDKHook(client, SDKHook_OnTakeDamageAlive, NerfGun_OnTakeDamage);
 }
-/* Projectile Magnet:
-	1. Create watch timer on EntityCreateCallback
-	2. Test velocity over time
-	3. If velocity goes negative, its at apex:
-		- TraceRay to victim
-		- If collision && molotov (maybe acid/):
-			Get End Position
-			If Distance From End Position & Victim < 100 units or so
-				Allow
-		- If no collision, set angle to player, set velocity accordingly
-*/
+
+#define CAR_MODEL_COUNT 4
+static char CAR_MODELS[CAR_MODEL_COUNT][] = {
+	"props_vehicles\\car001a_phy.mdl",
+	"props_vehicles\\car001b_phy.mdl",
+	"props_vehicles\\car002a_physics.mdl",
+	"props_vehicles\\car002b_physics.mdl"
+};
+
 public void OnEntityCreated(int entity, const char[] classname) {
 	if(entity >= MaxClients) {
 		if(StrEqual(classname, "infected", false))
 			SDKHook(entity, SDKHook_OnTakeDamageAlive, NerfGun_OnTakeDamage);
-		else if(StrContains(classname, "_projectile", true) > -1 ) {
+		else if(StrEqual(classname, "prop_physics")) {
+			char model[64];
+			GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
+			for(int i = 0; i < CAR_MODEL_COUNT; i++) {
+				if(StrEqual(CAR_MODELS[i], model)) {
+					HookSingleEntityOutput(entity, "OnHitByTank", OnCarHitByTank);
+					break;
+				}
+			}
+		} else if(StrEqual(classname, "prop_car_alarm")) {
+			HookSingleEntityOutput(entity, "OnHitByTank", OnCarHitByTank);
+		} else if(StrEqual(classname, "tank_rock") || StrContains(classname, "_projectile", true) > -1 ) {
 			RequestFrame(EntityCreateCallback, entity);
-		} /*else if(g_iRockThrows > 0 && StrEqual(classname, "tank_rock")) {
-			--g_iRockThrows;
-			SDKHook(entity, SDKHook_SpawnPost, SpawnPost);
-		}*/
+		}
 	}
+}
+
+void OnCarHitByTank(const char[] output, int caller, int activator, float delay) {
+	entLastHeight[activator] = -10000.0;
+	CreateTimer(0.1, Timer_WaitForApex, EntIndexToEntRef(activator), TIMER_REPEAT);
 }
 
 /*void SpawnPost(int entity) {
@@ -61,24 +72,23 @@ public void OnEntityCreated(int entity, const char[] classname) {
 }
 
 void SetRockVelocity(int entity) {
-    entity = EntRefToEntIndex(entity);
+	entity = EntRefToEntIndex(entity);
 
-    if(!IsValidEntity(entity)) return;
+	if(!IsValidEntity(entity)) return;
 
 	float vel[3];
 
-    GetEntPropVector(entity, Prop_Send, "m_vecVelocity", vel);
+	GetEntPropVector(entity, Prop_Send, "m_vecVelocity", vel);
 
 	ScaleVector(vel, 0.4);
 
-    // z_tank_throw_force
-    //SetEntPropVector(entity, Prop_Send, "m_vecVelocity", vel);
-    vel[2] += 150.0;
-    TeleportEntity(entity, NULL_VECTOR, NULL_VECTOR, vel);
+	// z_tank_throw_force
+	//SetEntPropVector(entity, Prop_Send, "m_vecVelocity", vel);
+	vel[2] += 150.0;
+	TeleportEntity(entity, NULL_VECTOR, NULL_VECTOR, vel);
 	PrintToChatAll("set rock %d vel", entity);
 
 }*/
-
 void EntityCreateCallback(int entity) {
 	if(!HasEntProp(entity, Prop_Send, "m_hOwnerEntity") || !IsValidEntity(entity)) return;
 	static char class[16];
@@ -121,13 +131,25 @@ void EntityCreateCallback(int entity) {
 				}
 				SpawnItem("pipe_bomb", pos);
 			}
+			return;
 		} else if(Trolls[slipperyShoesIndex].IsActive(entOwner)) {
 			if(Trolls[slipperyShoesIndex].activeFlagClients[entOwner] & 4) {
 				L4D_StaggerPlayer(entOwner, entOwner, NULL_VECTOR);
 			}
+			return;
 		}
 	}
+	entLastHeight[entity] = -10000.0;
+	CreateTimer(0.1, Timer_WaitForApex, EntIndexToEntRef(entity), TIMER_REPEAT);
 }
+
+enum ProjectileMagnetType {
+	ProjType_Specials = 1,
+	ProjType_Survivors = 2,
+	ProjType_Cars = 4,
+}
+
+
 
 public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
@@ -666,7 +688,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				LookAtClient(client, pdata[client].shootAtTarget);
 			}
 		}
-    }
+	}
 
 	// Inverted control code:
  	if(Trolls[invertedTrollIndex].IsActive(client)) {
@@ -732,10 +754,10 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 		} else if(Trolls[reverseFF].IsActive(attacker) && damagetype != DMG_BURN && attacker != victim && GetClientTeam(attacker) == GetClientTeam(victim)) {
 			
 			float returnDmg = damage; //default is 1:1
-			if(Trolls[reverseFF].activeFlagClients[attacker] & 4) {
-				returnDmg /= 2.0;
-			} else if(Trolls[reverseFF].activeFlagClients[attacker] & 2) {
+			if(Trolls[reverseFF].activeFlagClients[attacker] & 2) {
 				returnDmg *= 2.0;
+			} else if(Trolls[reverseFF].activeFlagClients[attacker] & 4) {
+				returnDmg /= 2.0;
 			} else if(Trolls[reverseFF].activeFlagClients[attacker] & 8) {
 				returnDmg = 0.0;
 			} else if(Trolls[reverseFF].activeFlagClients[attacker] & 16) {
@@ -916,8 +938,8 @@ stock int FindClosestVisibleClient(int source) {
 	static float pos[3], ang[3];
 	GetClientEyePosition(source, pos);
 	GetClientEyeAngles(source, ang);
-	Handle handle = TR_TraceRayFilterEx(pos, ang, MASK_VISIBLE, RayType_Infinite, TraceEntityFilterPlayer, source);
-	return TR_GetEntityIndex(handle);
+	TR_TraceRayFilter(pos, ang, MASK_VISIBLE, RayType_Infinite, TraceEntityFilterPlayer, source);
+	return TR_GetEntityIndex();
 }
 
 public bool TraceEntityFilterPlayer(int entity, int mask, any data) {

@@ -223,6 +223,7 @@ public Action Timer_CheckForChargerOpportunity(Handle h, int userid) {
 			if(activator) PrintToChat(activator, "Auto charge timed out after %d attempts", pdata[client].smartChargeAttempts);
 			pdata[client].smartChargeAttempts = 0;
 			pdata[client].smartChargeActivator = 0;
+			DisableTroll(client, "Smart Charge");
 			return Plugin_Stop;
 		}
 		return Plugin_Continue;
@@ -237,7 +238,7 @@ public bool Filter_CheckChargerValid(int entity, int contentsMask, any data) {
 public Action Timer_UpdateHealTargetPos(Handle h) {
 	int healTarget = GetClientOfUserId(healTargetPlayer);
 	if(healTarget == 0) {
-		PrintToServer("[FTT] Lost heal target, stopping");
+		PrintToServer("[FTT] Dep Bots: Lost heal target, stopping");
 		return Plugin_Stop;
 	}
 	GetAbsOrigin(healTarget, healTargetPos);
@@ -290,7 +291,77 @@ Action Timer_SpawnHealBotsPost(Handle h) {
 	}
 	return Plugin_Handled;
 }
-Action Timer_StopHealBots(Handle h) {
-	StopHealingBots();
+Action Timer_StopHealBots(Handle h, DataPack pack) {
+	pack.Reset();
+	int activator = GetClientOfUserId(pack.ReadCell());
+	int victim = GetClientOfUserId(pack.ReadCell());
+	if(activator) {
+		PrintToChat(activator, "Dep bots has expired");
+	}
+	if(victim) {
+		DisableTroll(victim, "Dep Bots");
+	}
+	// TODO: stop right one
+	StopHealingBots(true);
+	return Plugin_Stop;
+}
+
+
+#define NO_ATTEMPT_MAX_DIST 1000.0
+#define NO_ATTEMPT_MAX_DIST_OPT NO_ATTEMPT_MAX_DIST * NO_ATTEMPT_MAX_DIST
+
+
+Action Timer_WaitForApex(Handle h, int entref) {
+	if(!IsValidEntity(entref)) return Plugin_Stop;
+	int entity = EntRefToEntIndex(entref);
+
+	static float pos[3];
+	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
+
+	if(entLastHeight[entity] > pos[2]) {
+		char classname[32];
+		GetEntityClassname(entity, classname, sizeof(classname));
+
+		int target;
+		if(StrEqual(classname, "tank_rock") || StrEqual(classname, "spitter_projectile"))
+			target = GetRandomThrowableMagnetTarget(ProjType_Specials);
+		else if(StrEqual(classname, "prop_physics") || StrEqual(classname, "prop_car_alarm"))
+			target = GetRandomThrowableMagnetTarget(ProjType_Cars)
+		else {
+			int entOwner = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
+			target = GetRandomThrowableMagnetTarget(ProjType_Survivors, entOwner);
+		}
+
+		if(target > 0) {
+			float targetPos[3], vel[3];
+			GetClientAbsOrigin(target, targetPos);
+			TR_TraceRay(pos, targetPos, MASK_SHOT, RayType_EndPoint);
+			if(TR_DidHit()) {
+				TR_GetEndPosition(pos);
+				if(GetVectorDistance(pos, targetPos, true) >  NO_ATTEMPT_MAX_DIST_OPT) {
+					return Plugin_Stop;
+				}
+			}
+
+			// SetEntityMoveType(entity, MOVETYPE_FLY);
+			SetEntityGravity(entity, 0.001);
+			float distance = GetVectorDistance(pos, targetPos);
+			SubtractVectors(targetPos, pos, vel);
+			ScaleVector(vel, 1000.0 / distance);
+			TeleportEntity(entity, NULL_VECTOR, NULL_VECTOR, vel);
+
+			CreateTimer(3.0, Timer_ResetGravity, entref);
+		}
+		return Plugin_Stop;
+	}
+	entLastHeight[entity] = pos[2];
+	return Plugin_Continue;
+}
+
+Action Timer_ResetGravity(Handle h, int entref) {
+	if(IsValidEntity(entref)) {
+		int entity = EntRefToEntIndex(entref);
+		SetEntityGravity(entity, 800.0);
+	}
 	return Plugin_Handled;
 }

@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 45
+    #define MAX_TROLLS 46
 #endif
 
 enum trollModifier {
@@ -278,7 +278,7 @@ int GetTroll(const char[] name, Troll troll) {
         troll = Trolls[i];
         return i;
     }
-    PrintToServer("GetTroll: Troll was not found \"%s\"", name);
+    ThrowError("GetTroll: Troll was not found \"%s\"", name);
     return -1;
 }
 int GetTrollID(const char[] name) {
@@ -309,6 +309,11 @@ void ToggleTroll(int client, const char[] name, int flags = 0) {
         troll.activeFlagClients[client] = -1;
     else
         troll.activeFlagClients[client] = flags;
+}
+
+void SetTrollFlags(int client, const char[] name, int flags = -1) {
+    int index = GetTrollID(name);
+    Trolls[index].activeFlagClients[client] = flags;
 }
 
 void ApplyTroll(int victim, const char[] name, int activator, trollModifier modifier, int flags = 0, bool silent = false) {
@@ -413,6 +418,7 @@ bool IsTrollActive(int client, const char[] troll) {
     }
     static int i = 0;
     if(trollKV.GetValue(troll, i)) {
+        PrintToChatAll("index: %d. val: %d", i, Trolls[i].activeFlagClients[client] );
         return Trolls[i].activeFlagClients[client] != -1;
     }
     ThrowError("Troll \"%s\" does not exist", troll);
@@ -425,15 +431,11 @@ bool IsTrollActiveByRawID(int client, int id) {
 
 
 void EnableTroll(int client, const char[] troll, int flags = 0) {
-    if(!IsTrollActive(client, troll)) {
-        ToggleTroll(client, troll, flags);
-    } 
+    SetTrollFlags(client, troll, flags);
 }
 
 void DisableTroll(int client, const char[] troll) {
-    if(IsTrollActive(client, troll)) {
-        ToggleTroll(client, troll);
-    } 
+    SetTrollFlags(client, troll, -1);
 }
 
 public void SetCategory(const char[] newCat) {

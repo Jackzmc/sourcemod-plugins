@@ -21,6 +21,12 @@ void SetupTrolls() {
 	#if defined _behavior_included
 	index = SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
 	#endif
+	index = SetupTroll("Projectile Magnet", "Makes all projectiles (biles, molotovs, pipes, tank rocks) go to player", TrollMod_Constant);
+	Trolls[index].AddCustomFlagPrompt("Target Sources", true);
+	// Tied to: ProjectileMagnetType
+	Trolls[index].AddFlag("Infected (rocks/goo)", true);
+	Trolls[index].AddFlag("Teammates (grenades)", false);
+	Trolls[index].AddFlag("Thrown Cars (wip)", false);
 
 	/// CATEGORY: Infected
 	SetCategory("Infected");
@@ -138,7 +144,6 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("0.5x Ratio", false); //4
 	Trolls[index].AddFlag("0.0x Ratio (None)", false); //8
 	Trolls[index].AddFlag("3x Ratio", false); //16
-	Trolls[index].AddFlag("-2x Ratio", false); //16
 	index = SetupTroll("Dep Bots", "Makes bots heal a player. At any cost", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(false);
 	Trolls[index].AddFlag("Do not spawn extra", true); // 1 
@@ -361,6 +366,11 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		if(!toActive) {
 			StopHealingBots();
 			return true;
+		} else if(healTargetPlayer != 0) {
+			if(IsValidHandle(stopHealingTimer)) {
+				TriggerTimer(stopHealingTimer);
+			}
+			return true;
 		}
 		bool spawnExtra = flags & 2 > 0;
 
@@ -398,7 +408,10 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		}
 		CreateTimer(2.0, Timer_UpdateHealTargetPos, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 		if(timeout > 0.0) {
-			CreateTimer(timeout, Timer_StopHealBots);
+			DataPack pack;
+			stopHealingTimer = CreateDataTimer(timeout, Timer_StopHealBots, pack);
+			pack.WriteCell(GetClientUserId(activator));
+			pack.WriteCell(GetClientUserId(victim))
 		}
 
 		if(spawnExtra && numBots > 0) {

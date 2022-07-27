@@ -88,8 +88,10 @@ enum SpecialInternalFlags {
 
 int healTargetPlayer;
 float healTargetPos[3];
+Handle stopHealingTimer;
 
-int g_iRockThrows;
+float entLastHeight[2048];
+
 
 #define MODEL_CAR "models/props_vehicles/cara_95sedan.mdl"
 
