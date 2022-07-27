@@ -503,9 +503,9 @@ int GetRandomThrowableMagnetTarget(ProjectileMagnetType type, int owner = -1) {
 	ArrayList checkList = new ArrayList();
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && Trolls[throwMagnetIndex].IsActive(i)) {
-			if(type == ProjType_Survivors && owner != i) {
+			if(type == ProjType_Survivors) {
 				// If the projectile is not owned by player, check if troll flag not enabled
-				if(~Trolls[throwMagnetIndex].activeFlagClients[i] & view_as<int>(ProjType_Survivors)) continue;
+				if(owner != i && ~Trolls[throwMagnetIndex].activeFlagClients[i] & view_as<int>(ProjType_Survivors)) continue;
 			} else if(~Trolls[throwMagnetIndex].activeFlagClients[i] & view_as<int>(type)) {
 				// Skip if client does not have flag
 				continue;

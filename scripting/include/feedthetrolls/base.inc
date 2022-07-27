@@ -418,7 +418,6 @@ bool IsTrollActive(int client, const char[] troll) {
     }
     static int i = 0;
     if(trollKV.GetValue(troll, i)) {
-        PrintToChatAll("index: %d. val: %d", i, Trolls[i].activeFlagClients[client] );
         return Trolls[i].activeFlagClients[client] != -1;
     }
     ThrowError("Troll \"%s\" does not exist", troll);
