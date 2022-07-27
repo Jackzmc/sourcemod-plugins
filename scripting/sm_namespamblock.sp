@@ -42,7 +42,7 @@ public Action Cmd_Status2(int client, int args) {
 	ReplyToCommand(client, "Index\tUserid\tName\tSteamID");
 	for(int i = 0; i < players.Length; i++) {
 		int player = players.Get(i);
-		GetClientAuthId(player, AuthId_Steam2, buffer, sizeof(buffer));
+		GetClientAuthId(player, AuthId_Steam2, steamid, sizeof(steamid));
 		GetClientName(player, buffer, sizeof(buffer));
 		if(StrEqual(buffer, firstName[player]))
 			ReplyToCommand(client, "%d.\t#%d\t%s\t%s", player, GetClientUserId(player), buffer, steamid);
