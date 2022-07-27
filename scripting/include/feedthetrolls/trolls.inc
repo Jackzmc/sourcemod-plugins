@@ -18,7 +18,7 @@ void SetupTrolls() {
 	AddMagnetFlags(index);
 	index = SetupTroll("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant);
 	AddMagnetFlags(index);
-	#if defined _behavior_included
+	#if defined _actions_included
 	index = SetupTroll("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
 	#endif
 	index = SetupTroll("Projectile Magnet", "Makes all projectiles (biles, molotovs, pipes, tank rocks) go to player", TrollMod_Constant);

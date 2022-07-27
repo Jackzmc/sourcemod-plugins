@@ -16,18 +16,20 @@ void ActivateAutoPunish(int client) {
 	}
 }
 
-void SetWitchTarget(int witch, int target) {
-	#if defined _behavior_included
-	Behavior behavior = Behavior(witch, WITCH_QUERY);
-	BehaviorAction action = behavior.CurrentAction.Last;
-	
-	BehaviorAction newaction = view_as<BehaviorAction>(AllocateMemory(18556));
-	SDKCall(g_hWitchAttack, newaction, target);
-	
-	IActionResult result; result.Init(CHANGE_TO, newaction);
-	result.ToAction(action);
+// NOTE: Only supports one target at a time, stored globally
+bool SetWitchTarget(int witch, int target) {
+	#if defined _actions_included
+		g_iWitchAttackVictim = target;
+		BehaviorAction action = ActionsManager.GetAction(witch, "WitchBehavior");
+		if(action == INVALID_ACTION) {
+			return false;
+		}
+		action = action.Child;
+		action.OnUpdate = OnWitchActionUpdate; 
+		return true;
 	#else
-	PrintToServer("[FTT] SetWitchTarget() called when behaviors plugin not found");
+		PrintToServer("[FTT] SetWitchTarget() called when behaviors plugin not found");
+		return false;
 	#endif
 }
 

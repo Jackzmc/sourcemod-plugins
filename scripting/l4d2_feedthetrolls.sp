@@ -12,7 +12,7 @@
 #include <jutils>
 #include <left4dhooks>
 #tryinclude <sceneprocessor>
-#tryinclude <l4d2_behavior>
+#tryinclude <actions>
 #include <basecomm>
 #include <ftt>
 #include <multicolors>
@@ -27,9 +27,6 @@ public Plugin myinfo =
 	version = PLUGIN_VERSION, 
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
-
-
-//TODO: Trolls: Force take pills, Survivor Bot Magnet
 
 
 public void OnPluginStart() {
@@ -50,16 +47,13 @@ public void OnPluginStart() {
 	g_spSpawnQueue = new ArrayList(sizeof(SpecialSpawnRequest));
 
 	// Witch target overwrite stuff:
-
-	GameData data = new GameData("l4d2_behavior");
-	
+	GameData data = new GameData("feedthetrolls");
 	StartPrepSDKCall(SDKCall_Raw);
 	PrepSDKCall_SetFromConf(data, SDKConf_Signature, "WitchAttack::WitchAttack");
 	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL | VDECODE_FLAG_ALLOWWORLD);
 	g_hWitchAttack = EndPrepSDKCall();
-	
 	delete data;
-
+	
 	hThrowItemInterval = CreateConVar("sm_ftt_throw_interval", "30", "The interval in seconds to throw items. 0 to disable", FCVAR_NONE, true, 0.0);
 	hThrowItemInterval.AddChangeHook(Change_ThrowInterval);
 	hAutoPunish 		= CreateConVar("sm_ftt_autopunish_action", "0", "Setup automatic punishment of players. Add bits together\n0=Disabled, 1=Tank magnet, 2=Special magnet, 4=Swarm, 8=InstantVomit", FCVAR_NONE, true, 0.0);
@@ -85,7 +79,9 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_mark", Command_MarkPendingTroll, ADMFLAG_KICK, "Marks a player as to be banned on disconnect");
 	RegAdminCmd("sm_ftp",  Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
 	RegAdminCmd("sm_ftc",  Command_ApplyComboTrolls, ADMFLAG_KICK, "Applies predefined combinations of trolls");
+	#if defined _actions_included
 	RegAdminCmd("sm_witch_attack", Command_WitchAttack, ADMFLAG_CHEATS, "Makes all witches target a player");
+	#endif
 	RegAdminCmd("sm_insta", Command_InstaSpecial, ADMFLAG_KICK, "Spawns a special that targets them, close to them.");
 	RegAdminCmd("sm_stagger", Command_Stagger, ADMFLAG_KICK, "Stagger a player");
 	RegAdminCmd("sm_inface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
@@ -197,3 +193,17 @@ bool IsPlayerFarDistance(int client, float distance) {
 	PrintToConsoleAll("Flow Check | Player2=%N Flow2=%f", secondClient, secondHighestFlow);
 	return client == farthestClient && difference > distance;
 }
+
+BehaviorAction CreateWitchAttackAction(int target = 0) {
+    BehaviorAction action = ActionsManager.Allocate(18556);    
+    SDKCall(g_hWitchAttack, action, target);
+    return action;
+}  
+
+Action OnWitchActionUpdate(BehaviorAction action, int actor, float interval, ActionResult result) {
+    /* Change to witch attack */
+    result.type = CHANGE_TO;
+    result.action = CreateWitchAttackAction(g_iWitchAttackVictim);
+    result.SetReason("FTT");
+    return Plugin_Handled;
+} 

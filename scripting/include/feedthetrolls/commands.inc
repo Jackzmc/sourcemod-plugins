@@ -127,23 +127,23 @@ public Action Command_InstaSpecialFace(int client, int args) {
 
 public Action Command_WitchAttack(int client, int args) {
 	if(args < 1) {
-		ReplyToCommand(client, "Usage: sm_witch_attack <user>");
-	} else {
+		ReplyToCommand(client, "Usage: sm_witch_attack <user> [# of witches or 0 for all]");
+	}else{
 		char arg1[32];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		char target_name[MAX_TARGET_LENGTH];
-		int target_list[MAXPLAYERS], target_count;
+		int target_list[1], target_count;
 		bool tn_is_ml;
 		if ((target_count = ProcessTargetString(
-			arg1,
-			client,
-			target_list,
-			1,
-			COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_MULTI, /* Only allow alive players */
-			target_name,
-			sizeof(target_name),
-			tn_is_ml)) <= 0
-		) {
+				arg1,
+				client,
+				target_list,
+				1,
+				COMMAND_FILTER_ALIVE, /* Only allow alive players */
+				target_name,
+				sizeof(target_name),
+				tn_is_ml)) <= 0)
+		{
 			/* This function replies to the admin with a failure message */
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
@@ -151,17 +151,24 @@ public Action Command_WitchAttack(int client, int args) {
 
 		int target = target_list[0];
 		if(GetClientTeam(target) == 2) {
+			GetCmdArg(2, arg1, sizeof(arg1));
+
+			int maxCount = StringToInt(arg1);
+			if(maxCount < 0) maxCount = 0;
+			int count;
+
 			int witch = INVALID_ENT_REFERENCE;
 			while ((witch = FindEntityByClassname(witch, "witch")) != INVALID_ENT_REFERENCE) {
-				SetWitchTarget(witch, target);
+				if(SetWitchTarget(witch, target)) {
+					++count;
+				}
+				if(maxCount > 0 && count >= maxCount) break;
 			}
-			ShowActivityEx(client, "[FTT] ", "set all witches to target %s", target_name);
-			LogAction(client, target, "\"%L\" set all witches to attack %s", client, target_name);
+			ShowActivity(client, "set %d witches to target %s", count, target_name);
 		}else{
 			ReplyToTargetError(client, target_count);
 		}
 	}
-
 	return Plugin_Handled;
 }
 

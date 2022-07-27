@@ -13,6 +13,7 @@ enum L4D2Infected
 
 GlobalForward g_PlayerMarkedForward;
 Handle g_hWitchAttack;
+int g_iWitchAttackVictim;
 Handle hThrowTimer;
 
 ConVar hThrowItemInterval;
