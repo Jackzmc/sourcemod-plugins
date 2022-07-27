@@ -462,7 +462,9 @@ public Action Command_SetClientModel(int client, int args) {
 		int survivorId;
 		L4DModelId modelId;
 
-		bool isL4D1 = isL4D1Survivors && hForceSurvivorSet != null && hForceSurvivorSet.IntValue < 2;
+
+		bool isL4D1 = isL4D1Survivors;
+		if(hForceSurvivorSet != null && hForceSurvivorSet.IntValue > 0) isL4D1 = hForceSurvivorSet.IntValue == 1;
 
 		char s = CharToLower(arg1[0]);
 		if(s == 'b') {
