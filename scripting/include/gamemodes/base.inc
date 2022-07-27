@@ -197,13 +197,24 @@ methodmap PeekCamera {
 			AcceptEntityInput(seekerCam, "Enable", client); // Need to always activate before deactivating to fix a semi-common bug
 			if(!active) {
 				AcceptEntityInput(seekerCam, "Disable", client);
-				AcceptEntityInput(seekerCam, "Kill");
-				seekerCam = INVALID_ENT_REFERENCE;
 			}
 		} else {
 			PrintToServer("WARN: SetPeekCamActive(%d, %b) when seekerCam invalid", client, active);
 		}
 		isViewingCam[client] = active;
+	}
+
+	public void Enable(int client = -1) {
+		AcceptEntityInput(seekerCam, "Enable", client);
+		if(client > 0) {
+			isViewingCam[client] = true;
+		}
+	}
+	public void Disable(int client = -1) {
+		AcceptEntityInput(seekerCam, "Disable", client);
+		if(client > 0) {
+			isViewingCam[client] = false;
+		}
 	}
 
 	public bool IsViewing(int client) {

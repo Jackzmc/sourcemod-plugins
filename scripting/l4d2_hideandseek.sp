@@ -108,7 +108,7 @@ public void OnPluginStart() {
 		SetFailState("Could not load entity config from data/hideandseek.cfg");
 	}
 
-	cvar_peekCam = CreateConVar("hs_peekcam", "3", "Controls the peek camera on events. Set bits\n0 = OFF, 1 = On Game End, 2 = Any death", FCVAR_NONE, true, 0.0, true, 3.0);
+	cvar_peekCam = CreateConVar("hs_peekcam", "0", "Controls the peek camera on events. Set bits\n0 = OFF, 1 = On Game End, 2 = Any death", FCVAR_NONE, true, 0.0, true, 3.0);
 	cvar_seekerBalance = CreateConVar("hs_seekerbalance", "1", "Enable or disable ensuring every player has played as seeker", FCVAR_NONE, true, 0.0, true, 1.0);
 	cvar_seekerHelpers = CreateConVar("hs_seekerhelper", "1", "Dev. 0 = off, 1 = Glow", FCVAR_NONE, true, 0.0);
 
@@ -201,7 +201,6 @@ public void OnMapStart() {
 		int seeker = GetSlasher();
 		if(seeker > -1) {
 			currentSeeker = seeker;
-			PeekCam.Target = currentSeeker;
 			PrintToServer("[H&S] Late load, found seeker %N", currentSeeker);
 		}
 		if(IsGameSoloOrPlayersLoading()) {
@@ -287,16 +286,17 @@ const float DEATH_CAM_MIN_DIST = 150.0;
 public Action Timer_StopPeekCam(Handle h) { 
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
-			PeekCam.SetViewing(i, false);
+			PeekCam.Disable(i);
 		}
 	}
+	PeekCam.Disable();
 	RequestFrame(Frame_StopPeekCam);
+	peekCamStopTimer = null;
 	return Plugin_Stop;
 }
 
 void Frame_StopPeekCam() {
 	PeekCam.Destroy();
-	peekCamStopTimer = null;
 }
 
 public void OnEntityCreated(int entity, const char[] classname) {
@@ -313,28 +313,30 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 
 	if(!gameOver && client && GetClientTeam(client) == 2) {
+		PeekCam.Create();
 		PeekCam.Target = attacker > 0 ? attacker : client;
 		PeekCam.Perspective = Cam_FirstPerson;
 
-		float pos[3], checkPos[3];
+		float seekerPos[3], pos[3];
 		// If player died on their own, set attacker to themselves for viewing purposes
 		if(attacker <= 0) attacker = client;
-		GetClientAbsOrigin(attacker, pos);
-		PeekCam.SetViewing(attacker, true);
+		GetClientAbsOrigin(attacker, seekerPos);
+		PeekCam.Enable(attacker);
 
 		int alive = 0;
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
 				// If death was by a seeker:
 				if(attacker == currentSeeker && cvar_peekCam.IntValue & 2) {
-					GetClientAbsOrigin(i, checkPos);
-					if(GetVectorDistance(checkPos, pos) > DEATH_CAM_MIN_DIST) {
-						PeekCam.SetViewing(i, true);
+					GetClientAbsOrigin(i, pos);
+					if(GetVectorDistance(seekerPos, pos) > DEATH_CAM_MIN_DIST) {
+						PeekCam.Enable(i);
 					}
 				}
 				if(IsPlayerAlive(i) && GetClientTeam(i) == 2) alive++;
 			}
 		}
+
 		
 		if(client == currentSeeker && alive == 1) {
 			// If seeker died
@@ -346,6 +348,9 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 			} else if(alive <= 0) {
 				// Player died and not seeker, therefore seeker killed em
 				// If who died was not the seeker
+				if(attacker == 0) {
+					CPrintToChatAll("Seeker has left, game over.");
+				}
 				if(client == currentSeeker) {
 					CPrintToChatAll("{green}Hiders win! The seeker has perished.");
 				} else {
@@ -411,6 +416,7 @@ public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast)
 							int newSlasher = notPlayedSeekers.Get(GetURandomInt() % notPlayedSeekers.Length);
 							PrintToServer("[H&S] Switching seeker to a new random seeker: %N", newSlasher);
 							SetSlasher(newSlasher);
+							delete notPlayedSeekers;
 							return;
 						} else {
 							PrintToServer("[H&S] All players have played as seeker, resetting");
@@ -437,16 +443,22 @@ public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast
 	if(client > 0 && mapConfig.hasSpawnpoint) {
 		TeleportEntity(client, mapConfig.spawnpoint, NULL_VECTOR, NULL_VECTOR);
 	}
-	PeekCam.SetViewing(client, false);
+	PeekCam.Disable(client);
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
 	if(mapConfig.hasSpawnpoint) {
 		PrintToServer("[H&S] Using provided spawnpoint: %.1f %.1f %.1f", mapConfig.spawnpoint[0], mapConfig.spawnpoint[1], mapConfig.spawnpoint[2]);
-		for(int i = 1; i <= MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i)) {
-				TeleportEntity(i, mapConfig.spawnpoint, NULL_VECTOR, NULL_VECTOR);
+	}
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			if(isPendingPlay[i]) {
+				L4D_RespawnPlayer(i);
+				isPendingPlay[i] = false;
+				ChangeClientTeam(i, 2);
 			}
+			if(mapConfig.hasSpawnpoint)
+				TeleportEntity(i, mapConfig.spawnpoint, NULL_VECTOR, NULL_VECTOR);
 		}
 	}
 	EntFire("relay_intro_start", "Kill");
@@ -470,7 +482,7 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	for(int i = 1; i <= MaxClients; i++) {
 		isNearbyPlaying[i] = false;
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 1) {
-			PeekCam.SetViewing(i, false);
+			PeekCam.Disable(i);
 			if(isPendingPlay[i]) {
 				ChangeClientTeam(i, 2);
 				L4D_RespawnPlayer(i);
@@ -480,9 +492,10 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 				isPendingPlay[i] = false;
 			}
 		}
-		PeekCam.Destroy();
 	}
+	PeekCam.Destroy();
 }
+
 
 public Action Timer_CheckPlayers(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
@@ -550,25 +563,25 @@ GameState prevState;
 public Action Timer_Music(Handle h) {
 	static float seekerLoc[3];
 	static float playerLoc[3];
-	bool changedToHunting;
 	if(currentSeeker > 0) {
 		GetClientAbsOrigin(currentSeeker, seekerLoc);
 		GameState state = GetState();
 		if(state == State_Hunting) {
 			if(prevState == State_Hiding) {
-				changedToHunting = true;
 				ShowBeacon(currentSeeker);
 				PeekCam.Target = currentSeeker;
+				PeekCam.Create();
+				PeekCam.Enable();
+				CreateTimer(2.2, Timer_StopPeekCam);
 			}
 			EmitSoundToClient(currentSeeker, SOUND_SUSPENSE_1, currentSeeker, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEPITCH, 0.2, 90, currentSeeker, seekerLoc, seekerLoc, true);
 		}
 		prevState = state;
 	}
 	int playerCount;
+
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && i != currentSeeker) {
-			if(changedToHunting)
-				PeekCam.SetViewing(i, true);
 			playerCount++;
 			GetClientAbsOrigin(i, playerLoc);
 			float dist = GetVectorDistance(seekerLoc, playerLoc, true);
@@ -587,9 +600,6 @@ public Action Timer_Music(Handle h) {
 			}
 		}
 	}
-	if(changedToHunting)
-		CreateTimer(2.2, Timer_StopPeekCam);
-	
 	return Plugin_Continue;
 }
 public Action Timer_RoundStart(Handle h) {
@@ -649,7 +659,7 @@ public void Hook_OnAttackPost(int entity, int attacker, int inflictor, float dam
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", origin);
 		GetEntPropVector(entity, Prop_Send, "m_vecMins", min);
 		GetEntPropVector(entity, Prop_Send, "m_vecMaxs", max);
-		PrintHintTextToAll("Shaking ladder");
+		PrintHintText(attacker, "Shaking ladder");
 		top = origin;
 		top[2] = max[2];
 		origin[2] = min[2];
@@ -673,6 +683,21 @@ public Action Timer_CheckWeapons(Handle h) {
 			int item = GetPlayerWeaponSlot(i, 0);
 			if(item != -1) AcceptEntityInput(item, "Kill");
 		}
+	}
+	if(currentSeeker) {
+		int wpn = GetPlayerWeaponSlot(currentSeeker, 1);
+		if(wpn > 0) {
+			char buffer[32];
+			GetEntityClassname(wpn, buffer, sizeof(buffer));
+			if(StrEqual(buffer, "melee")) {
+				GetEntPropString(wpn, Prop_Data, "m_strMapSetScriptName", buffer, sizeof(buffer));
+				if(StrEqual(buffer, "fireaxe")) {
+					return Plugin_Continue;
+				}
+			}
+			AcceptEntityInput(wpn, "Kill");
+		}
+		CheatCommand(currentSeeker, "give", "fireaxe");
 	}
 	return Plugin_Continue;
 }

@@ -62,19 +62,21 @@ void SetSlasher(int client, bool ignoreBalance = false) {
 		ignoreSeekerBalance = true;
 	}
 	GameState state = GetState();
-	char buf[128];
+	char buf[256];
 	ArrayList hiders = new ArrayList();
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && i != client && GetClientTeam(i) == 2) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			for(int s = 0; s < 6; s++) {
 				int ent = GetPlayerWeaponSlot(i, s);
 				if(ent > 0) AcceptEntityInput(ent, "Kill");
 			}
-			hiders.Push(i);
-			if(state == State_Hunting)
-				CheatCommand(i, "give", "pistol_magnum");
-			else
-				CheatCommand(i, "give", "knife");
+			if(i != client) {
+				hiders.Push(i);
+				if(state == State_Hunting)
+					CheatCommand(i, "give", "pistol_magnum");
+				else
+					CheatCommand(i, "give", "knife");
+			}
 		}
 	}
 	int defibHolder = hiders.Get(GetRandomInt(0, hiders.Length - 1));
