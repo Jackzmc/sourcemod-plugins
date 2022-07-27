@@ -131,9 +131,9 @@ Restore from saved inventory
 static StringMap weaponMaxClipSizes;
 static StringMap pInv;
 
-static char HUD_SCRIPT_DATA[] = "g_ModeScript.ExtraPlayerHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( g_ModeScript.ExtraPlayerHUD );g_ModeScript";
+static char HUD_SCRIPT_DATA[] = "g_ModeScript._eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( g_ModeScript._eph );g_ModeScript";
 
-static char HUD_SCRIPT_CLEAR[] = "g_ModeScript.ExtraPlayerHUD <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( g_ModeScript.ExtraPlayerHUD );g_ModeScript";
+static char HUD_SCRIPT_CLEAR[] = "g_ModeScript._eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( g_ModeScript._eph );g_ModeScript";
 
 
 #define CABINET_ITEM_BLOCKS 4
@@ -732,7 +732,7 @@ public void Frame_SetupNewClient(int client) {
 		// Format(weaponName, sizeof(weaponName), "weapon_%s", weaponName);
 		PrintToServer("[EPI/debug] Giving new client (%N) tier 2: %s", client, weaponName);
 	} else {
-		Format(weaponName, sizeof(weaponName), "weapon_%s", TIER1_WEAPONS[GetRandomInt(0, TIER1_WEAPON_COUNT)]);
+		Format(weaponName, sizeof(weaponName), "weapon_%s", TIER1_WEAPONS[GetRandomInt(0, TIER1_WEAPON_COUNT - 1)]);
 		PrintToServer("[EPI/debug] Giving new client (%N) tier 1: %s", client, weaponName);
 	}
 	int item = GivePlayerItem(client, weaponName);
@@ -1094,7 +1094,11 @@ void UnlockDoor(int entity, int flag) {
 }
 
 public Action Timer_UpdateHud(Handle h) {
-	if(!StrEqual(gamemode, "coop")) return Plugin_Stop;
+	if(hEPIHudState.IntValue == 1 && !StrEqual(gamemode, "coop")) { // TODO: Optimize
+		PrintToServer("[EPI] Gamemode no longer coop, stopping (hudState=%d, abmExtraCount=%d)", hEPIHudState.IntValue, abmExtraCount);
+		updateHudTimer = null;
+		return Plugin_Stop;
+	} 
 	int threshold = hEPIHudState.IntValue == 1 ? 4 : 0;
 	if(hEPIHudState.IntValue == 0 || abmExtraCount <= threshold) {
 		PrintToServer("[EPI] Less than threshold, stopping hud timer (hudState=%d, abmExtraCount=%d)", hEPIHudState.IntValue, abmExtraCount);

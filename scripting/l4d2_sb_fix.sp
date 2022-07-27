@@ -2189,7 +2189,7 @@ stock bool isVisibleTo(int client, int target)
 			ret = true;
 		}
 	}
-	CloseHandle(trace);
+	delete trace;
 	return ret;
 }
 
@@ -2234,7 +2234,7 @@ stock bool isInterruptTo(int client, int target)
 			ret = true;
 		}
 	}
-	CloseHandle(trace);
+	delete trace;
 	return ret;
 }
 
