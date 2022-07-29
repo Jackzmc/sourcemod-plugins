@@ -237,7 +237,7 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 	int client = GetClientOfUserId(data); 
 	if(client > 0 && results.RowCount > 0) {
 		static char noteCreator[32];
-		PrintChatToAdmins("Notes for %N", client);
+		PrintChatToAdmins("> Notes for %N", client);
 		while(results.FetchRow()) {
 			results.FetchString(0, reason, sizeof(reason));
 			results.FetchString(1, noteCreator, sizeof(noteCreator));
@@ -262,9 +262,9 @@ public void DB_ListNotesForPlayer(Database db, DBResultSet results, const char[]
 	if(client > 0) {
 		if(results.RowCount > 0) {
 			if(target > 0) {
-				PrintToChat(client, "Notes for %N:", target);
+				PrintToChat(client, "> Notes for %N:", target);
 			} else {
-				PrintToChat(client, "Notes for %s:", auth);
+				PrintToChat(client, "> Notes for %s:", auth);
 			}
 			char noteCreator[32];
 			while(results.FetchRow()) {

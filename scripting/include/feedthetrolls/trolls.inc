@@ -26,7 +26,7 @@ void SetupTrolls() {
 	// Tied to: ProjectileMagnetType
 	Trolls[index].AddFlag("Infected (rocks/goo)", true);
 	Trolls[index].AddFlag("Teammates (grenades)", false);
-	Trolls[index].AddFlag("Thrown Cars (wip)", false);
+	Trolls[index].AddFlag("Thrown Tank Objects", false);
 
 	/// CATEGORY: Infected
 	SetCategory("Infected");

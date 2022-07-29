@@ -46,14 +46,14 @@ public void OnEntityCreated(int entity, const char[] classname) {
 		if(StrEqual(classname, "infected", false))
 			SDKHook(entity, SDKHook_OnTakeDamageAlive, NerfGun_OnTakeDamage);
 		else if(StrEqual(classname, "prop_physics")) {
-			char model[64];
+			/*char model[64];
 			GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
 			for(int i = 0; i < CAR_MODEL_COUNT; i++) {
 				if(StrEqual(CAR_MODELS[i], model)) {
-					HookSingleEntityOutput(entity, "OnHitByTank", OnCarHitByTank);
 					break;
 				}
-			}
+			}*/
+			HookSingleEntityOutput(entity, "OnHitByTank", OnCarHitByTank);
 		} else if(StrEqual(classname, "prop_car_alarm")) {
 			HookSingleEntityOutput(entity, "OnHitByTank", OnCarHitByTank);
 		} else if(StrEqual(classname, "tank_rock") || StrContains(classname, "_projectile", true) > -1 ) {
