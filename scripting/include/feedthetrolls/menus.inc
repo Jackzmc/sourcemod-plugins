@@ -465,7 +465,7 @@ void ShowSelectFlagMenu(int activator, int victimUserID, int modifiers, Troll tr
 				troll.flagNames.GetString(i, name, sizeof(name));
 				// If flag is enabled, show indication (On)
 				if(prevFlags > 0 && prevFlags & a)
-					Format(name, sizeof(name), "%s (On)", name);
+					Format(name, sizeof(name), "%s ✓", name);
 				int newFlags = prevFlags ^ a; //Toggle the flag instead of setting like below, as it's toggleable here
 				Format(info, sizeof(info), "%d|%d|%d|%d|%d|0", victimUserID, troll.id, modifiers, newFlags, promptIndex);
 				flagMenu.AddItem(info, name);
