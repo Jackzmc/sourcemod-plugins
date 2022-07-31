@@ -19,7 +19,7 @@ public Action Command_InstaSpecial(int client, int args) {
 			GetCmdArg(2, arg2, sizeof(arg2));
 		}
 		char target_name[MAX_TARGET_LENGTH];
-		int target_list[MAXPLAYERS], target_count;
+		int target_list[MaxClients], target_count;
 		bool tn_is_ml;
 		if ((target_count = ProcessTargetString(
 			arg1,
@@ -35,11 +35,13 @@ public Action Command_InstaSpecial(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
+		
 		SpecialType specialType = GetSpecialType(arg2);
 		if(specialType == Special_Invalid) {
 			ReplyToCommand(client, "Unknown special \"%s\"", arg2);
 			return Plugin_Handled;
 		}
+
 		int successes = 0;
 		for (int i = 0; i < target_count; i++) {
 			int target = target_list[i];
@@ -50,7 +52,7 @@ public Action Command_InstaSpecial(int client, int args) {
 				} else {
 					ReplyToCommand(client, "[FTT] Could not spawn %s near %s", arg2, target_name);
 				}
-			}else{
+			} else {
 				ReplyToTargetError(client, target_count);
 			}
 		}
@@ -83,7 +85,7 @@ public Action Command_InstaSpecialFace(int client, int args) {
 			GetCmdArg(2, arg2, sizeof(arg2));
 		}
 		char target_name[MAX_TARGET_LENGTH];
-		int target_list[MAXPLAYERS], target_count;
+		int target_list[MaxClients], target_count;
 		bool tn_is_ml;
 		if ((target_count = ProcessTargetString(
 			arg1,
@@ -99,11 +101,13 @@ public Action Command_InstaSpecialFace(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
+
 		SpecialType specialType = GetSpecialType(arg2);
 		if(specialType == Special_Invalid) {
 			ReplyToCommand(client, "Unknown special \"%s\"", arg2);
 			return Plugin_Handled;
 		}
+
 		int successes = 0;
 		for (int i = 0; i < target_count; i++) {
 			int target = target_list[i];
@@ -211,10 +215,10 @@ public Action Command_ResetUser(int client, int args) {
 		for (int i = 0; i < target_count; i++) {
 			if(IsAnyTrollActive(target_list[i])) {
 				LogAction(client, target_list[i], "\"%L\" reset all troll effects for \"%L\"", client, target_list[i]);
-				ShowActivityEx(client, "[FTT] ", "reset troll effects for \"%N\". ", target_list[i]);
 			}
 			ResetClient(target_list[i], true);
 		}
+		ShowActivityEx(client, "[FTT] ", "reset troll effects for %s.",target_name);
 	}
 	return Plugin_Handled;
 }
@@ -342,11 +346,9 @@ public Action Command_ApplyUserSilent(int client, int args) {
 }
 
 public Action Command_ListModes(int client, int args) {
-	static Troll troll;
 	for(int i = 0; i <= MAX_TROLLS; i++) {
-		GetTrollByKeyIndex(i, troll);
-		if(troll.hidden) continue;
-		ReplyToCommand(client, "%d. %s - %s", i, troll.name, troll.description);
+		if(Trolls[i].hidden) continue;
+		ReplyToCommand(client, "%d. %s - %s", i, Trolls[i].name, Trolls[i].description);
 	}
 	return Plugin_Handled;
 }
@@ -456,7 +458,7 @@ public Action Command_MarkPendingTroll(int client, int args) {
 					Format(userid, sizeof(userid), "%d", GetClientUserId(i));
 					GetClientName(i, display, sizeof(display));
 					menu.AddItem(userid, display);
-				}else{
+				} else {
 					ReplyToCommand(client, "%N is an admin cannot be marked.", i);
 				}
 			}
@@ -467,7 +469,7 @@ public Action Command_MarkPendingTroll(int client, int args) {
 		static char arg1[32];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		char target_name[MAX_TARGET_LENGTH];
-		int target_list[MAXPLAYERS], target_count;
+		int target_list[1], target_count;
 		bool tn_is_ml;
 		if ((target_count = ProcessTargetString(
 			arg1,
@@ -516,7 +518,7 @@ public Action Command_BotsAttack(int client, int args) {
 			return Plugin_Handled;
 		}
 
-		int target_list[MAXPLAYERS], target_count;
+		int target_list[1], target_count;
 		static char target_name[MAX_TARGET_LENGTH];
 		bool tn_is_ml;
 		if ((target_count = ProcessTargetString(
@@ -533,6 +535,7 @@ public Action Command_BotsAttack(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
+
 		int target = target_list[0];
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && IsFakeClient(i) && GetClientTeam(i) == 2) {
@@ -570,6 +573,7 @@ public Action Command_Stagger(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
+
 		L4D_StaggerPlayer(target_list[0], target_list[0], NULL_VECTOR);
 	} else {
 		ReplyToCommand(client, "syntax: sm_stagger <target player>");
@@ -602,6 +606,7 @@ public Action Command_SmartCharge(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
+		
 		if(pdata[target_list[0]].smartChargeActivator > 0) {
 			ReplyToCommand(client, "Target already has auto smart charge enabled");
 		} else {
