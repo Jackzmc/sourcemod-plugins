@@ -83,7 +83,7 @@ bool ProcessSpecialQueue() {
 	if(g_spSpawnQueue.Length > 0) {
 		if(g_spSpawnQueue.GetArray(0, spActiveRequest, sizeof(spActiveRequest))) {
 			spIsActive = true;
-			CreateTimer(4.0, Timer_CheckSpecialSpawned, g_iSpId);
+			CreateTimer(2.0, Timer_CheckSpecialSpawned, g_iSpId);
 		}
 		g_spSpawnQueue.Erase(0);
 
@@ -125,10 +125,7 @@ stock bool FindSuitablePosition(const float pos[3], float outputPos[3], float mi
 	outputPos = pos;
 	for(int i = tries; i > 0; i--) {
 		// int nav = L4D_GetNearestNavArea(pos);
-		// L4D_FindRandomSpot(nav, testPos);
-		// float dist = GetVectorDistance(testPos, pos, true);
-		outputPos[0] += GetRandomFloat(-30.0, 30.0);
-		outputPos[1] += GetRandomFloat(-30.0, 30.0);
+ 		outputPos[1] += GetRandomFloat(-30.0, 30.0);
 		float dist = GetVectorDistance(outputPos, pos, true);
 		if(dist >= minDistance && L4D2Direct_GetTerrorNavArea(outputPos) != Address_Null) { //5m^2
 			return true;
@@ -148,14 +145,15 @@ float GetIdealMinDistance(SpecialType specialType) {
 	}
 }
 
+static float TARGET_GROUND_BOUNDS[3] = { 35.0, 35.0, 32.0 };
+
 stock bool GetGroundBehind(int client, float vPos[3], float vAng[3]) {
 	GetClientEyePosition(client, vPos);
 	GetClientEyeAngles(client, vAng);
 	vAng[1] -= 180.0; //Flip to behind
 	vAng[2] = 35.0; //Angle downwards
 	// vPos[2] -= 500.0;
-	float minmax[3] = { 35.0, 35.0, 32.0 };
-	Handle trace = TR_TraceHullFilterEx(vPos, vAng, minmax, minmax, MASK_SOLID, RayFilter_NonClient);
+	Handle trace = TR_TraceHullFilterEx(vPos, vAng, TARGET_GROUND_BOUNDS, TARGET_GROUND_BOUNDS, MASK_SOLID, RayFilter_NonClient);
 	if(!TR_DidHit(trace)) {
 		delete trace;
 		return false;

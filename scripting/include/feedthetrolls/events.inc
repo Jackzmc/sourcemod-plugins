@@ -18,7 +18,7 @@ public void OnMapStart() {
 	PrecacheSound("weapons/ceda_jar/ceda_jar_explode.wav");
 	PrecacheSound("weapons/molotov/molotov_detonate_1.wav");
 
-	PrecacheSound(MODEL_CAR);
+	PrecacheModel(MODEL_CAR);
 
 	g_spSpawnQueue.Clear();
 	spIsActive = false;
@@ -33,26 +33,19 @@ public void OnClientPutInServer(int client) {
 	SDKHook(client, SDKHook_OnTakeDamageAlive, NerfGun_OnTakeDamage);
 }
 
-#define CAR_MODEL_COUNT 4
-static char CAR_MODELS[CAR_MODEL_COUNT][] = {
-	"props_vehicles\\car001a_phy.mdl",
-	"props_vehicles\\car001b_phy.mdl",
-	"props_vehicles\\car002a_physics.mdl",
-	"props_vehicles\\car002b_physics.mdl"
-};
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
+	int userid = event.GetInt("userid");
+	if(spIsActive)
+		CreateTimer(0.1, Timer_CheckSpecial, userid);
+} 
+
+
 
 public void OnEntityCreated(int entity, const char[] classname) {
 	if(entity >= MaxClients) {
 		if(StrEqual(classname, "infected", false))
 			SDKHook(entity, SDKHook_OnTakeDamageAlive, NerfGun_OnTakeDamage);
 		else if(StrEqual(classname, "prop_physics")) {
-			/*char model[64];
-			GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
-			for(int i = 0; i < CAR_MODEL_COUNT; i++) {
-				if(StrEqual(CAR_MODELS[i], model)) {
-					break;
-				}
-			}*/
 			HookSingleEntityOutput(entity, "OnHitByTank", OnCarHitByTank);
 		} else if(StrEqual(classname, "prop_car_alarm")) {
 			HookSingleEntityOutput(entity, "OnHitByTank", OnCarHitByTank);
@@ -67,28 +60,6 @@ void OnCarHitByTank(const char[] output, int caller, int activator, float delay)
 	CreateTimer(0.1, Timer_WaitForApex, EntIndexToEntRef(activator), TIMER_REPEAT);
 }
 
-/*void SpawnPost(int entity) {
-	RequestFrame(SetRockVelocity, EntIndexToEntRef(entity))
-}
-
-void SetRockVelocity(int entity) {
-	entity = EntRefToEntIndex(entity);
-
-	if(!IsValidEntity(entity)) return;
-
-	float vel[3];
-
-	GetEntPropVector(entity, Prop_Send, "m_vecVelocity", vel);
-
-	ScaleVector(vel, 0.4);
-
-	// z_tank_throw_force
-	//SetEntPropVector(entity, Prop_Send, "m_vecVelocity", vel);
-	vel[2] += 150.0;
-	TeleportEntity(entity, NULL_VECTOR, NULL_VECTOR, vel);
-	PrintToChatAll("set rock %d vel", entity);
-
-}*/
 void EntityCreateCallback(int entity) {
 	if(!HasEntProp(entity, Prop_Send, "m_hOwnerEntity") || !IsValidEntity(entity)) return;
 	static char class[16];
@@ -102,7 +73,7 @@ void EntityCreateCallback(int entity) {
 		if(Trolls[badThrowID].IsActive(entOwner)) {
 			static float pos[3];
 			GetClientEyePosition(entOwner, pos);
-			if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_1) && StrContains(class, "vomitjar", true) > -1) {
+			if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_1) && StrEqual(class, "vomitjar_projectile", true)) {
 				AcceptEntityInput(entity, "Kill");
 				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
 					L4D_CTerrorPlayer_OnVomitedUpon(entOwner, entOwner);
@@ -110,21 +81,25 @@ void EntityCreateCallback(int entity) {
 					FindClosestClient(entOwner, false, pos);
 				}
 				SpawnItem("vomitjar", pos);
-			} else if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_2) && StrContains(class, "molotov", true) > -1) {
+			} else if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_2) && StrEqual(class, "molotov_projectile", true)) {
 				// Burn them if no one near :)
 				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
 					GetClientAbsOrigin(entOwner, pos);
+					// Kill molotov if too close to a player, else teleport to feet
 					if(IsAnyPlayerNear(entOwner, 500.0)) {
 						AcceptEntityInput(entity, "Kill");
 						EmitSoundToAll("weapons/molotov/molotov_detonate_1.wav", entOwner);
-					} else { // or delete if there is
-						TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
+					} else {
+						float vel[3];
+						vel[2] -= 50.0;
+						pos[2] += 50.0;
+						TeleportEntity(entity, pos, NULL_VECTOR, vel);
 					}
 				} else {
 					SpawnItem("molotov", pos);
 					AcceptEntityInput(entity, "Kill");
 				}
-			} else if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_3) && StrContains(class, "pipe_bomb", true) > -1) {
+			} else if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_3) && StrEqual(class, "pipe_bomb_projectile", true)) {
 				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
 					TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
 					ExplodeProjectile(entity);
@@ -151,23 +126,20 @@ enum ProjectileMagnetType {
 
 
 
-public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
-	int userid = event.GetInt("userid");
-	if(spIsActive)
-		CreateTimer(0.1, Timer_CheckSpecial, userid);
-}
 public void Event_DoorToggle(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && Trolls[slipperyShoesIndex].IsActive(client) && Trolls[slipperyShoesIndex].activeFlagClients[client] & 2) { 
 		L4D_StaggerPlayer(client, client, NULL_VECTOR);
 	}
 }
+
 public void Event_SecondaryHealthUsed(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && Trolls[slipperyShoesIndex].IsActive(client) && Trolls[slipperyShoesIndex].activeFlagClients[client] & 8) { 
 		L4D_StaggerPlayer(client, client, NULL_VECTOR);
 	}
 }
+
 static float SPIT_VEL[3] = { 0.0, 0.0, -1.0 };
 public Action Timer_CheckSpecial(Handle h, int specialID) {
 	int special = GetClientOfUserId(specialID);
@@ -216,31 +188,7 @@ public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroa
 	if(client > 0)
 		ResetClient(client, true);
 }
-public void OnClientAuthorized(int client, const char[] auth) {
-	if(!IsFakeClient(client)) {
-		strcopy(pdata[client].steamid, 64, auth);
-	}
-	for(int i = 1; i <= MAX_TROLLS; i++) {
-		if(Trolls[i].IsActive(client) && Trolls[i].HasMod(TrollMod_Constant)) { //Add activeFlagClients >= 0 check possibly?
-			ApplyAffect(client, Trolls[i], -1, TrollMod_Constant, Trolls[i].activeFlagClients[client]);
-		}
-	}
-}
-public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
-	int userid = event.GetInt("userid");
-	int client = GetClientOfUserId(userid);
-	if(client > 0 && pdata[client].pendingTrollBan > 0) {
-		if(!IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID) {
-			BanIdentity(pdata[client].steamid, 0, BANFLAG_AUTHID, "Marked as Troll", "ftt", GetClientOfUserId(pdata[client].pendingTrollBan));
-		}
-	}
-	pdata[client].shootAtTarget = 0;
-	pdata[client].Reset();
-	isCustomSurvivor[client] = false;
-	if(healTargetPlayer == userid) {
-		healTargetPlayer = 0;
-	}
-}
+
 public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
@@ -338,6 +286,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	float closestDistance, survPos[3], spPos[3];
 	GetClientAbsOrigin(attacker, spPos); 
 	int closestClient = -1;
+
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 			if(class == L4D2Infected_Tank) {
@@ -361,6 +310,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 			}
 		}
 	}
+
 	// If found, set, else just let game decide
 	if(closestClient > 0) {
 		PrintToConsoleAll("[FTT/Debug] infected %N -> attack -> %N", attacker, closestClient);
@@ -649,7 +599,6 @@ public Action Event_ItemPickup(int client, int weapon) {
 }
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
-	// If 'KillMeSoftly' activated:
 	int healTarget = GetClientOfUserId(healTargetPlayer);
 	if(healTarget > 0 && pdata[client].flags & view_as<int>(Flag_IsTargettingHealer) && healTarget != client) {
 		static float pos[3];
@@ -663,6 +612,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		}
 	}
 
+	// If 'KillMeSoftly' activated:
 	if(pdata[client].flags & view_as<int>(Flag_PendingItemGive) && !(buttons & IN_ATTACK2)) {
 		int target = GetClientAimTarget(client, true);
 		if(target > -1) {
@@ -675,7 +625,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	}
 
 
-	if (pdata[client].shootAtTarget > 0 && (buttons & IN_ATTACK) == 0)  {
+	if(pdata[client].shootAtTarget > 0 && (buttons & IN_ATTACK) == 0)  {
 		if(GetClientAimTarget(client, true) == pdata[client].shootAtTarget) {
 			if(!IsActorBusy(client))
 				PerformScene(client, "PlayerLaugh");
@@ -826,6 +776,7 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 				} else if(StrContains(sceneFile, "warncharger") > -1) {
 					SpawnSpecialForTarget(Special_Charger, activator, Special_OnTarget);
 				}
+				
 				if(Trolls[vocalizeSpecials].activeFlagClients[activator] & 1) {
 					CancelScene(scene);
 				}
