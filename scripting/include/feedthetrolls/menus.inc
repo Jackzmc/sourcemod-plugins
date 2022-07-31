@@ -393,14 +393,19 @@ void ShowTrollMenu(int client, bool isComboList) {
 	menu.SetTitle("Choose a player to troll");
 	static char userid[8], display[64];
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			IntToString(GetClientUserId(i), userid, sizeof(userid));
 			int specClient = GetSpectatorClient(i);
 			// Incase player is idle, grab their bot instead of them
-			if(specClient > 0) 
-				Format(display, sizeof(display), "%N (Idle)", specClient);
-			else
-				GetClientName(i, display, sizeof(display));
+			if(specClient > 0) {
+				if(IsPlayerAlive(specClient))
+					Format(display, sizeof(display), "%N (AFK)", specClient);
+				else
+					Format(display, sizeof(display), "%N (AFK/Dead)", specClient);
+			} else if(!IsPlayerAlive(i))
+				Format(display, sizeof(display), "%N (Dead)", i);
+
+			GetClientName(i, display, sizeof(display));
 			menu.AddItem(userid, display);
 		}
 	}
