@@ -743,12 +743,14 @@ public Action Event_OnWeaponDrop(int client, int weapon) {
 	if(!IsValidEntity(weapon) || !IsFakeClient(client)) return Plugin_Continue;
 	static char wpn[32];
 	GetEdictClassname(weapon, wpn, sizeof(wpn));
-	if(StrEqual(wpn, "weapon_melee") && GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
-		#if defined DEBUG
-		PrintToServer("Bot %N dropped melee weapon %s", client, wpn);
-		#endif
-		RequestFrame(Frame_HideEntity, weapon);
-		botDropMeleeWeapon[client] = weapon;
+	if(GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
+		if(StrEqual(wpn, "weapon_melee") || StrEqual(wpn, "weapon_pistol") || StrEqual(wpn, "weapon_pistol_magnum")) {
+			#if defined DEBUG
+			PrintToServer("Bot %N dropped melee weapon %s", client, wpn);
+			#endif
+			RequestFrame(Frame_HideEntity, weapon);
+			botDropMeleeWeapon[client] = weapon;
+		}
 	}
 	return Plugin_Continue;
 }
