@@ -91,7 +91,6 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_healbots", Command_HealTarget, ADMFLAG_CHEATS, "Make bots heal a player");
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
-	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 	HookEvent("player_death", Event_PlayerDeath);
 	HookEvent("triggered_car_alarm", Event_CarAlarm);

@@ -19,7 +19,7 @@ public Action Command_InstaSpecial(int client, int args) {
 			GetCmdArg(2, arg2, sizeof(arg2));
 		}
 		char target_name[MAX_TARGET_LENGTH];
-		int target_list[MaxClients], target_count;
+		int target_list[MAXPLAYERS], target_count;
 		bool tn_is_ml;
 		if ((target_count = ProcessTargetString(
 			arg1,
@@ -85,7 +85,7 @@ public Action Command_InstaSpecialFace(int client, int args) {
 			GetCmdArg(2, arg2, sizeof(arg2));
 		}
 		char target_name[MAX_TARGET_LENGTH];
-		int target_list[MaxClients], target_count;
+		int target_list[MAXPLAYERS], target_count;
 		bool tn_is_ml;
 		if ((target_count = ProcessTargetString(
 			arg1,
