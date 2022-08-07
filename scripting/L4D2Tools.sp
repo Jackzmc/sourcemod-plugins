@@ -722,17 +722,17 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
 	int bot = GetClientOfUserId(event.GetInt("bot"));
 	if(StrEqual(name, "player_bot_replace")) {
-		//Bot replaced player, hook any drop events
+		// Bot replaced player, hook any drop events
 		SDKHook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
-	}else{
-		//Player replaced a bot
+	} else {
+		// Player replaced a bot
 		int client = GetClientOfUserId(event.GetInt("player"));
-		if(botDropMeleeWeapon[bot] > 0) {
+		if(client && botDropMeleeWeapon[bot] > 0) {
 			int meleeOwnerEnt = GetEntPropEnt(botDropMeleeWeapon[bot], Prop_Send, "m_hOwnerEntity");
 			if(meleeOwnerEnt == -1) { 
 				EquipPlayerWeapon(client, botDropMeleeWeapon[bot]);
 				botDropMeleeWeapon[bot] = -1;
-			}else{
+			} else {
 				PrintToChat(client, "Could not give back your melee weapon, %N has it instead.", meleeOwnerEnt);
 			}
 		}
@@ -741,10 +741,10 @@ public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadca
 }
 public Action Event_OnWeaponDrop(int client, int weapon) {
 	if(!IsValidEntity(weapon) || !IsFakeClient(client)) return Plugin_Continue;
-	static char wpn[32];
-	GetEdictClassname(weapon, wpn, sizeof(wpn));
 	if(GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
-		if(StrEqual(wpn, "weapon_melee") || StrEqual(wpn, "weapon_pistol") || StrEqual(wpn, "weapon_pistol_magnum")) {
+		static char wpn[32];
+		GetEdictClassname(weapon, wpn, sizeof(wpn));
+		if(StrEqual(wpn, "weapon_melee") || StrEqual(wpn, "weapon_pistol_magnum")) {
 			#if defined DEBUG
 			PrintToServer("Bot %N dropped melee weapon %s", client, wpn);
 			#endif
