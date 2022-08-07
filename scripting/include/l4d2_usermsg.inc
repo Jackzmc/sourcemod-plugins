@@ -24,37 +24,34 @@ enum PZDamage_Type {
 }
 
 GlobalForward PlayersConnectedForward;
-void InitalizeUserMessageForwards() {
-    PlayersConnectedForward = CreateGlobalForward("GameStartedAllReady", ET_Ignore);
-    HookUserMessage(GetUserMessageId("PlayersConnectedForward"), Hook_GameStartedAllReady, false);
+public void InitalizeUserMessageForwards() {
+	PlayersConnectedForward = CreateGlobalForward("GameStartedAllReady", ET_Ignore);
+	HookUserMessage(GetUserMessageId("PlayersConnectedForward"), Hook_GameStartedAllReady, false);
 
 }
 
 Action Hook_GameStartedAllReady(UserMsg msg_id, BfRead msg, const int[] players, int playersNum, bool reliable, bool init) {
-    Call_StartForward(PlayersConnectedForward);
-    Call_Finish(0);
+	Call_StartForward(PlayersConnectedForward);
+	Call_Finish();
+	return Plugin_Continue;
 }
 
-void SendPZDamage(int reciever, PZDamage_Type type, int client, int target = -1) {
-    Handle msg = StartMessageOne("PZDmgMsg", reciever);
-	BfWriteByte(msg, type);
+stock void SendPZDamage(int reciever, PZDamage_Type type, int client, int target = -1) {
+	Handle msg = StartMessageOne("PZDmgMsg", reciever);
+	BfWriteByte(msg, view_as<int>(type));
 	BfWriteShort(msg, client);
 	BfWriteShort(msg, target);
 	BfWriteShort(msg, 0);
 	BfWriteShort(msg, 0);
 	EndMessage();
-
-    delete msg;
 }
 
-void SendPZDamageToAll(PZDamage_Type type,  int target = -1) {
-    Handle msg = StartMessageAll("PZDmgMsg");
-	BfWriteByte(msg, type);
+stock void SendPZDamageToAll(PZDamage_Type type, int client, int target = -1) {
+	Handle msg = StartMessageAll("PZDmgMsg");
+	BfWriteByte(msg, view_as<int>(type));
 	BfWriteShort(msg, client);
 	BfWriteShort(msg, target);
 	BfWriteShort(msg, 0);
 	BfWriteShort(msg, 0);
 	EndMessage();
-
-    delete msg;
 }
