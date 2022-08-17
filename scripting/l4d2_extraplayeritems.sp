@@ -683,15 +683,15 @@ char TIER1_WEAPONS[TIER1_WEAPON_COUNT][] = {
 
 #define TIER2_WEAPON_COUNT 9
 char TIER2_WEAPONS[9][] = {
-	"autoshotgun",
-	"rifle_ak47",
-	"sniper_military",
-	"rifle_sg552",
-	"rifle_desert",
-	"sniper_scout",
-	"rifle",
-	"hunting_rifle",
-	"shotgun_spas"
+	"weapon_autoshotgun",
+	"weapon_rifle_ak47",
+	"weapon_sniper_military",
+	"weapon_rifle_sg552",
+	"weapon_rifle_desert",
+	"weapon_sniper_scout",
+	"weapon_rifle",
+	"weapon_hunting_rifle",
+	"weapon_shotgun_spas"
 };
 
 public void Frame_SetupNewClient(int client) {
@@ -712,7 +712,7 @@ public void Frame_SetupNewClient(int client) {
 			if(wpn > 0) {
 				GetEntityClassname(wpn, weaponName, sizeof(weaponName));
 				for(int j = 0; j < TIER2_WEAPON_COUNT; j++) {
-					if(StrEqual(TIER2_WEAPONS[j], weaponName[j][7])) {
+					if(StrEqual(TIER2_WEAPONS[j], weaponName)) {
 						tier2Weapons.PushString(weaponName);
 						break;
 					}
@@ -745,9 +745,10 @@ public void Frame_SetupNewClient(int client) {
 
 	if(item > 0) {
 		if(L4D2_IsValidWeapon(weaponName)) {
-			L4D_SetReserveAmmo(client, item, L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_ClipSize));
+			L4D_SetReserveAmmo(client, item, L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_Bullets));
+			SetEntProp(item, Prop_Send, "m_iClip1", L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_ClipSize));
 		} else {
-			PrintToServer("INVALID WEAPON: %s for %N", weaponName, client);
+			LogError("EPI: INVALID WEAPON: %s for %N", weaponName, client);
 		}
 		EquipPlayerWeapon(client, item);
 	} else LogError("EPI Failed to give new late player weapon: %s", weaponName);
