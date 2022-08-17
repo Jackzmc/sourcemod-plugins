@@ -21,7 +21,7 @@ bool SetWitchTarget(int witch, int target) {
 	#if defined _actions_included
 		g_iWitchAttackVictim = target;
 		BehaviorAction action = ActionsManager.GetAction(witch, "WitchBehavior");
-		if(action == INVALID_ACTION) {
+		if(action == INVALID_ACTION || action.Child == INVALID_ACTION) {
 			return false;
 		}
 		action = action.Child;

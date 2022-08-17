@@ -352,11 +352,11 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
         }
     }
 
-    bool isActive = IsTrollActive(victim, troll.name);
+    bool isActive = Trolls[trollIndex].activeFlagClients[victim] > -1;
 
     // Toggle on flags for client, if it's not a single run.
     if(modifier & TrollMod_Constant) {
-        Trolls[troll.id].activeFlagClients[victim] = isActive ? -1 : flags;
+        Trolls[trollIndex].activeFlagClients[victim] = isActive ? -1 : flags;
     }
 
     // Applies any custom logic needed for a troll, mostly only used for TrollMod_Instant

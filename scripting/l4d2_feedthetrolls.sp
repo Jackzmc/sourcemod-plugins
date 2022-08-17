@@ -85,7 +85,6 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_insta", Command_InstaSpecial, ADMFLAG_KICK, "Spawns a special that targets them, close to them.");
 	RegAdminCmd("sm_stagger", Command_Stagger, ADMFLAG_KICK, "Stagger a player");
 	RegAdminCmd("sm_inface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
-	// TODO: Merge as trolls
 	RegAdminCmd("sm_bots_attack", Command_BotsAttack, ADMFLAG_CHEATS, "Instructs all bots to attack a player until they have X health.");
 	RegAdminCmd("sm_scharge", Command_SmartCharge, ADMFLAG_CHEATS, "Auto Smart charge");
 	RegAdminCmd("sm_healbots", Command_HealTarget, ADMFLAG_CHEATS, "Make bots heal a player");
