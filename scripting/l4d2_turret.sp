@@ -41,6 +41,7 @@ ConVar cv_autoBaseDamage;
 ConVar cv_manualBaseDamage;
 
 static int COLOR_RED[4] = { 255, 0, 0, 200 };
+static int COLOR_RED_LIGHT[4] = { 150, 0, 0, 150 };
 int manualTarget = -1;
 #define MANUAL_TARGETNAME "turret_target_manual"
 
@@ -378,7 +379,7 @@ void FireTurretAuto(const float origin[3], int targetEntity, float damage = 105.
 }
 
 void FireTurret(const float origin[3], const char[] targetName, float damage = 105.0, bool emitSound = true) {
-	int laser = CreateLaser(origin, targetName, TURRET_LASER_COLOR, damage, 1.0, 0.2);
+	int laser = CreateLaser(origin, targetName, TURRET_LASER_COLOR, damage, 1.0, 0.1);
 	if(emitSound)
 		EmitSoundToAll(SOUND_LASER_FIRE, laser, SNDCHAN_WEAPON, .flags = SND_CHANGEPITCH, .pitch = 150);
 	turretIsActiveLaser[laser] = true;
@@ -594,10 +595,16 @@ static char IGNORE_TRACE[MAX_IGNORE_TRACE][] = {
 	"env_physics_blocker",
 	"env_player_blocker"
 };*/
+#define MAX_WHITELISTED_AUTO_AIM_TARGETS 3
+static char WHITELISTED_AUTO_AIM_TARGETS[MAX_WHITELISTED_AUTO_AIM_TARGETS][] = {
+	"tank_rock",
+	"infected",
+	"witch"
+};
 
 
-bool Filter_ManualTarget(int entity, int contentsMask) {
-	if(entity == 0) return true;
+bool Filter_ManualTarget(int entity, int contentsMask, int data) {
+	if(entity == 0 || entity == data) return true;
 	if(entity == manualTarget || entity == manualTargetter) return false;
 	return true;
 	/*static char classname[32];
@@ -610,51 +617,46 @@ bool Filter_ManualTarget(int entity, int contentsMask) {
 	return true;*/
 }
 
-#define MAX_WHITELISTED_AUTO_AIM_TARGETS 2
-static char WHITELISTED_AUTO_AIM_TARGETS[MAX_WHITELISTED_AUTO_AIM_TARGETS][] = {
-	"infected",
-	"witch"
-};
+bool Filter_ManualTargetSights(int entity, int contentsMask, int data) {
+	if(entity == 0 || entity == data) return true;
+	if(entity == manualTarget || entity == manualTargetter) return false;
+	if(entity <= MaxClients) return GetClientTeam(entity) == 3;
+	static char classname[32];
+	GetEntityClassname(entity, classname, sizeof(classname));
+	for(int i = 0; i < MAX_WHITELISTED_AUTO_AIM_TARGETS; i++) {
+		if(StrEqual(WHITELISTED_AUTO_AIM_TARGETS[i], classname)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+
 
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
-	if(client == manualTargetter && turretCount > 0) {
-		static float pos[3], orgPos[3];
-		static char classname[32];
+	if(client == manualTargetter && turretCount > 0 && tickcount % 3 == 0) {
+		static float pos[3], aimPos[3], orgPos[3];
 		GetClientEyePosition(client, orgPos);
 
 		// Run a ray trace to find a suitable position
 		// TODO: Possibly run per-turret for more accurate preview... but it's already lag fest
 		TR_TraceRayFilter(orgPos, angles, MASK_SHOT, RayType_Infinite, Filter_ManualTarget);
-		if(!IsValidEntity(manualTarget)) manualTarget = CreateTarget(pos, MANUAL_TARGETNAME);
+		if(!IsValidEntity(manualTarget)) manualTarget = CreateTarget(aimPos, MANUAL_TARGETNAME);
 
 		// Disable aim snapping if player is holding WALK (which is apparently IN_SPEED)
 		bool aimSnapping = ~buttons & IN_SPEED > 0;
 		int targetEntity = TR_GetEntityIndex();
-		TR_GetEndPosition(pos);
+		TR_GetEndPosition(aimPos);
 
-		if(aimSnapping && targetEntity > 0) {
-			if(targetEntity > MaxClients) {
-				// Check if aimed non-player entity is an entity to be auto aimed at 
-				GetEntityClassname(targetEntity, classname, sizeof(classname));
-				for(int i = 0; i < MAX_WHITELISTED_AUTO_AIM_TARGETS; i++) {
-					if(StrEqual(WHITELISTED_AUTO_AIM_TARGETS[i], classname)) {
-						GetEntPropVector(targetEntity, Prop_Send, "m_vecOrigin", pos);
-						pos[2] += 40.0;
-						break;
-					}
-				}
-			} else if(GetClientTeam(targetEntity) == 3) {
-				// Target is an infected player, auto aim
-				GetClientEyePosition(targetEntity, pos);
-				pos[2] -= 10.0;
-			}
-		}
-		TeleportEntity(manualTarget, pos, NULL_VECTOR, NULL_VECTOR);
+		if(aimSnapping)
+			ComputeAutoAim(targetEntity, aimPos);
+		
+		TeleportEntity(manualTarget, aimPos, NULL_VECTOR, NULL_VECTOR);
 
 		if(buttons & IN_ATTACK) {
-			PhysicsExplode(pos, 20, 20.0, true);
-			TE_SetupExplodeForce(pos, 20.0, 20.0);
+			PhysicsExplode(aimPos, 20, 20.0, true);
+			TE_SetupExplodeForce(aimPos, 20.0, 20.0);
 		}
 
 		// Activate all turrets
@@ -662,10 +664,19 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		while ((entity = FindEntityByClassname(entity, "info_particle_system")) != INVALID_ENT_REFERENCE) {
 			if(view_as<int>(turretState[entity]) > 0) {
 				GetEntPropVector(entity, Prop_Send, "m_vecOrigin", orgPos);
-				TE_SetupBeamPoints(orgPos, pos, g_iLaserIndex, 0, 0, 1, 0.1, 0.1, 0.1, 0, 0.0, COLOR_RED, 1);
-				TE_SendToAll();
 				if(buttons & IN_ATTACK) {
-					FireTurret(pos, MANUAL_TARGETNAME, cv_manualBaseDamage.FloatValue, tickcount % 10 == 0);
+					FireTurret(orgPos, MANUAL_TARGETNAME, cv_manualBaseDamage.FloatValue, tickcount % 6 == 0);
+				} else {
+					TR_TraceRayFilter(orgPos, aimPos, MASK_SOLID, RayType_EndPoint, Filter_ManualTargetSights, targetEntity);
+					pos = aimPos;
+					if(TR_DidHit()) {
+						TR_GetEndPosition(pos);
+						TE_SetupBeamPoints(orgPos, pos, g_iLaserIndex, 0, 0, 1, 0.1, 0.1, 0.1, 0, 0.0, COLOR_RED_LIGHT, 1);
+					} else {
+						TE_SetupBeamPoints(orgPos, aimPos, g_iLaserIndex, 0, 0, 1, 0.1, 0.1, 0.1, 0, 0.0, COLOR_RED, 2);
+					}
+					// if(aimSnapping) ComputeAutoAim(TR_GetEntityIndex(), pos);
+					TE_SendToAll();
 				}
 			}
 		}
@@ -675,6 +686,31 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		return Plugin_Changed;
 	}
 	return Plugin_Continue;
+}
+
+bool ComputeAutoAim(int possibleTarget, float pos[3]) {
+
+	static char classname[64];
+
+	if(possibleTarget > 0) {
+		if(possibleTarget > MaxClients) {
+			// Check if aimed non-player entity is an entity to be auto aimed at 
+			GetEntityClassname(possibleTarget, classname, sizeof(classname));
+			for(int i = 0; i < MAX_WHITELISTED_AUTO_AIM_TARGETS; i++) {
+				if(StrEqual(WHITELISTED_AUTO_AIM_TARGETS[i], classname)) {
+					GetEntPropVector(possibleTarget, Prop_Send, "m_vecOrigin", pos);
+					pos[2] += 40.0;
+					return true;
+				}
+			}
+		} else if(GetClientTeam(possibleTarget) == 3) {
+			// Target is an infected player, auto aim
+			GetClientEyePosition(possibleTarget, pos);
+			pos[2] -= 15.0;
+			return true;
+		}
+	}
+	return false;
 }
 
 public Action Timer_Kill(Handle h, int target) {
