@@ -744,10 +744,20 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 
 public Action OnVocalizeCommand(int client, const char[] vocalize, int initiator) {
 	static int vocalGagID;
+	static int noRushingUsID;
 	if(vocalGagID == 0) vocalGagID = GetTrollID("Vocalize Gag");
+	if(noRushingUsID == 0) noRushingUsID = GetTrollID("No Rushing Us");
+	if(Trolls[noRushingUsID].IsActive(client) && StrEqual(vocalize, "PlayerHurryUp") || StrEqual(vocalize, "PlayerYellRun") || StrEqual(vocalize, "PlayerMoveOn") || StrEqual(vocalize, "PlayerLeadOn")) {
+		float speed = GetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue");
+		speed -= 0.01;
+		if(speed < 0.0) SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", 0.0);
+		else if(speed > 0.05) 
+			SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", speed);
+		PrintToConsoleAdmins("[FTT] NoRushingUs: Dropping speed for %N (now %.1f%)", client, speed * 100.0);
+	}
 	if(Trolls[vocalGagID].IsActive(client)) {
 		return Plugin_Handled;
-	}
+	} 
 	return Plugin_Continue;
 }
 

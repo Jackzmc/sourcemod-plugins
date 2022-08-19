@@ -545,3 +545,17 @@ stock LookAtPoint(int entity, const float destination[3]){
 	angles[1] -= 180;
 	TeleportEntity(entity, NULL_VECTOR, angles, NULL_VECTOR);
 }
+stock void PrintToConsoleAdmins(const char[] format, any ...) {
+	char buffer[254];
+
+	VFormat(buffer, sizeof(buffer), format, 2);
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			AdminId admin = GetUserAdmin(i);
+			if(admin != INVALID_ADMIN_ID) {
+				PrintToConsole(i, "%s", buffer);
+			}
+		}
+	}
+	PrintToServer("%s", buffer);
+}

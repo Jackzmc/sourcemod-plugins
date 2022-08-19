@@ -130,6 +130,7 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("Show Modified Only To Them", false);
 	SetupTroll("Reversed", "Reserves their message", TrollMod_Constant);
 	SetupTroll("Voice Mute", "Mutes from voice", TrollMod_Constant);
+	SetupTroll("No Rushing Us", "Decreases player speed everytime they yell hurry up", TrollMod_Constant);
 
 	/// CATEGORY: Health
 	SetCategory("Health");
@@ -217,7 +218,6 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		for(int i = 0; i <= MAX_TROLLS; i++) {
 			Trolls[i].activeFlagClients[victim] = -1;
 		}
-		SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
 		SetEntityGravity(victim, 1.0);
 		SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
 		return false;
@@ -439,12 +439,14 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		pdata[victim].smartChargeMaxAttempts = timeout;
 		pdata[victim].smartChargeActivator = GetClientUserId(activator);
 		CreateTimer(1.0, Timer_CheckForChargerOpportunity, GetClientUserId(victim), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
-	}  else if(~modifier & TrollMod_Constant) {
+	}  else if(StrEqual(troll.name, "No Rushing Us")) {
+		SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
+	} else if(~modifier & TrollMod_Constant) {
 		PrintToServer("[FTT] Warn: Possibly invalid troll, no apply action defined for \"%s\"", troll.name);
 		#if defined DEBUG
 		ReplyToCommand(activator, "[FTT/Debug] If nothing occurs, this troll possibly was not implemented correctly. ");
 		#endif
-	} 
+	}  
 	return true;
 }
 
