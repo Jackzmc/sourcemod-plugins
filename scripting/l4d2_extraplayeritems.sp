@@ -735,7 +735,6 @@ public void Frame_SetupNewClient(int client) {
 		Format(weaponName, sizeof(weaponName), "weapon_%s", TIER1_WEAPONS[GetRandomInt(0, TIER1_WEAPON_COUNT - 1)]);
 		PrintToServer("[EPI/debug] Giving new client (%N) tier 1: %s", client, weaponName);
 	}
-	int item = GivePlayerItem(client, weaponName);
 	if(lowestClient > 0) {
 		float pos[3];
 		GetClientAbsOrigin(lowestClient, pos);
@@ -743,15 +742,11 @@ public void Frame_SetupNewClient(int client) {
 	}
 	delete tier2Weapons;
 
-	if(item > 0) {
-		if(L4D2_IsValidWeapon(weaponName)) {
-			L4D_SetReserveAmmo(client, item, L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_Bullets));
-			SetEntProp(item, Prop_Send, "m_iClip1", L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_ClipSize));
-		} else {
-			LogError("EPI: INVALID WEAPON: %s for %N", weaponName, client);
-		}
-		EquipPlayerWeapon(client, item);
-	} else LogError("EPI Failed to give new late player weapon: %s", weaponName);
+	if(L4D2_IsValidWeapon(weaponName)) {
+		CheatCommand(client, "give", weaponName[7], "");
+	} else {
+		LogError("EPI: INVALID WEAPON: %s for %N", weaponName, client);
+	}
 }
 public Action Timer_RemoveInvincibility(Handle h, int client) {
 	SDKUnhook(client, SDKHook_OnTakeDamage, OnInvincibleDamageTaken);
