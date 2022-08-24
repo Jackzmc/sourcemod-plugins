@@ -129,7 +129,8 @@ public void Event_HealSuccess(Event event, const char[] name, bool dontBroadcast
 	if(client) {
 		int target = GetClientOfUserId(event.GetInt("subject"));
 		int amount = event.GetInt("health_restored");
-		PrintToConsoleAll("[Debug] %N healed %N (+%d health)", client, target, amount);
+		int orgHealth = GetClientHealth(target) - amount;
+		PrintToConsoleAll("[Debug] %N healed %N (+%d health, was %d)", client, target, amount, orgHealth);
 	}
 }
 
