@@ -5,6 +5,8 @@
 
 #define MAIN_TIMER_INTERVAL_S 5.0
 #define PLUGIN_VERSION "1.0"
+#define ANTI_RUSH_DEFAULT_FREQUENCY 30.0
+#define ANTI_RUSH_FREQ_INC 0.5
 
 #include <sourcemod>
 #include <sdktools>
@@ -43,6 +45,8 @@ public void OnPluginStart() {
 	LoadPhrases();
 	SetupTrolls();
 	SetupsTrollCombos();
+
+	CreateTimer(1.0, Timer_DecreaseAntiRush, TIMER_REPEAT);
 
 	g_spSpawnQueue = new ArrayList(sizeof(SpecialSpawnRequest));
 
