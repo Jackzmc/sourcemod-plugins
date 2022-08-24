@@ -27,6 +27,7 @@ public void OnMapStart() {
 public void OnClientPutInServer(int client) {
 	pdata[client].pendingTrollBan = 0;
 	pdata[client].shootAtTarget = 0;
+	fAntiRushFrequencyCounter[client] = 0.0;
 	if(IsTrollActive(client, "Voice Mute"))
 		BaseComm_SetClientMute(client, true);
 	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
@@ -907,14 +908,28 @@ public bool TraceEntityFilterPlayer(int entity, int mask, any data) {
 	return data != entity && entity <= MaxClients && GetClientTeam(entity) == 2 && IsPlayerAlive(entity);
 }
 
-float iLastAntiRushEvent[MAXPLAYERS+1];
+// TODO: Increase the frequency of spawns the longer they are in antirush. Possibly increase int and decrease over time
 public Action OnAntiRush(int client, int &type, float distance) {
 	if(client && client > 0 && client <= MaxClients && type == 3 && IsPlayerAlive(client) && !IsPlayerIncapped(client)) {
-		if(GetGameTime() - iLastAntiRushEvent[client] > 30.0) {
-			SpecialType special = view_as<SpecialType>(GetRandomInt(1,6));
-			iLastAntiRushEvent[client] = GetGameTime();
+		if(GetGameTime() - fLastAntiRushEvent[client] > ANTI_RUSH_DEFAULT_FREQUENCY - fAntiRushFrequencyCounter[client]) { <
+			if(fAntiRushFrequencyCounter[client] < ANTI_RUSH_DEFAULT_FREQUENCY) {
+            	fAntiRushFrequencyCounter[client] += ANTI_RUSH_FREQ_INC;
+			}
+            SpecialType special = view_as<SpecialType>(GetRandomInt(1,6));
+			fLastAntiRushEvent[client] = GetGameTime();
 			SpawnSpecialForTarget(special, client);
 			PrintToConsoleAll("[FTT] Spawning anti-rush special on %N (dist=%f) (special=%s)", client, distance, SPECIAL_NAMES[view_as<int>(special)-1]);
+		}
+	}
+	return Plugin_Continue;
+}
+
+Action Timer_DecreaseAntiRush(Handle h) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(fAntiRushFrequencyCounter[i] > 1.0) {
+			fAntiRushFrequencyCounter[i]--;
+		} else {
+			fAntiRushFrequencyCounter = 0.0;
 		}
 	}
 	return Plugin_Continue;

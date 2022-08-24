@@ -93,6 +93,9 @@ Handle stopHealingTimer;
 
 float entLastHeight[2048];
 
+float fLastAntiRushEvent[MAXPLAYERS+1];
+float fAntiRushFrequencyCounter[MAXPLAYERS+1];
+
 
 #define MODEL_CAR "models/props_vehicles/cara_95sedan.mdl"
 
