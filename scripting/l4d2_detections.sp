@@ -13,15 +13,28 @@
 #include <jutils>
 //#include <sdkhooks>
 
+enum KitDetectionState {
+	KDS_None,
+	KDS_NoKitEnteringSaferoom,
+	KDS_Healed
+}
+
 enum struct PlayerDetections {
 	int kitPickupsSaferoom;
 	int saferoomLastOpen;
 	int saferoomOpenCount;
+	// Do not reset normally; need to keep track during level transitions
+	KitDetectionState saferoomKitState;
 
+	// Called on PlayerDisconnect, which includes map changes
 	void Reset() {
 		this.kitPickupsSaferoom = 0;
 		this.saferoomLastOpen = 0;
 		this.saferoomOpenCount = 0;
+	}
+	// Called on normal intentional disconnect, ignoring map changes
+	void FullReset() {
+		this.saferoomKitState = KDS_None;
 	}
 	
 }
@@ -100,6 +113,11 @@ public void OnPluginStart() {
 
 	HookEvent("item_pickup", Event_ItemPickup);
 	HookEvent("door_close", Event_DoorClose);
+	HookEvent("player_disconnect", Event_PlayerDisconnect);
+}
+
+public void OnClientPutInServer(int client) {
+	CreateTimer(20.0, Timer_ClearDoubleKitDetection, _, GetClientUserId(client));
 }
 
 // Called on map changes too, we want this:
@@ -107,20 +125,65 @@ public void OnClientDisconnect(int client) {
 	detections[client].Reset();
 }
 
+public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client) {
+		detections[client].FullReset();
+	}
+}
+
+public void OnMapStart() {
+	checkpointReached = false;
+	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
+	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
+}
+
+// TODO: Check when player enters saferoom, and has no kit and heals and pickup another
 public Action Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && L4D_IsInLastCheckpoint(client)) {
 		static char itmName[32];
 		event.GetString("item", itmName, sizeof(itmName));
 		if(StrEqual(itmName, "first_aid_kit")) {
-			if(++detections[client].kitPickupsSaferoom == 2) {
+			if(detections[client].saferoomKitState == KDS_NoKitEnteringSaferoom) {
+				// Player had no kit entering saferoom and has healed
+				detections[client].saferoomKitState = KDS_Healed;
+			} else if(detections[client].saferoomKitState == KDS_Healed) {
+				// Player has healed. Double kit detected	
 				InternalDebugLog("DOUBLE_KIT", client);
+				Call_StartForward(fwd_PlayerDoubleKit);
+				Call_PushCell(client);
+				Call_Finish();
+			}
+			if(++detections[client].kitPickupsSaferoom == 2) {
+				InternalDebugLog("DOUBLE_KIT_LEGACY", client);
 				Call_StartForward(fwd_PlayerDoubleKit);
 				Call_PushCell(client);
 				Call_Finish();
 			}
 		}
 	}
+}
+
+bool checkpointReached;
+public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
+	if(!checkpointReached && client > 0 && client <= MaxClients && GetClientTeam(client) == 2) {
+		checkpointReached = true;
+		char itemName[32];
+		if(GetClientWeaponName(client, 3, itemName, sizeof(itemName))) {
+			if(StrEqual(itemName, "weapon_first_aid_kit")) {
+				detections[client].saferoomKitState = KDS_NoKitEnteringSaferoom;
+			}
+		}
+	}
+}
+
+Action Timer_ClearDoubleKitDetection(Handle h, int userid) {
+	int client = GetClientOfUserId(userid);
+	if(client) {
+		detections[client].saferoomKitState = KDS_None;
+	}
+	return Plugin_Continue;
 }
 
 public Action Event_DoorClose(Event event, const char[] name, bool dontBroadcast) {
