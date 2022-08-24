@@ -4,7 +4,7 @@
 //#define DEBUG
 
 #define PLUGIN_VERSION "1.0"
-#define BILE_NO_HORDE_THRESHOLD 20
+#define BILE_NO_HORDE_THRESHOLD 5
 #define DOOR_CLOSE_THRESHOLD 5000.0
 
 #include <sourcemod>
@@ -162,7 +162,7 @@ public void OnEntityDestroyed(int entity) {
 	static char classname[16];
 	if(IsValidEntity(entity) && entity <= 4096) {
 		GetEntityClassname(entity, classname, sizeof(classname));
-		if(StrEqual(classname, "vomitjar_projec")) {
+		if(StrEqual(classname, "vomitjar_projec")) { //t cut off by classname size
 			int thrower = GetEntPropEnt(entity, Prop_Send, "m_hThrower");
 			if(thrower > 0 && thrower <= MaxClients && IsClientConnected(thrower) && IsClientInGame(thrower)) {
 				static float src[3];
@@ -183,7 +183,7 @@ public void OnEntityDestroyed(int entity) {
 
 					if(result == Plugin_Stop) { 
 						AcceptEntityInput(entity, "kill");
-						GiveClientWeapon(thrower, "vomitjar");
+						// GiveClientWeapon(thrower, "vomitjar");
 					}
 				}
 			}
