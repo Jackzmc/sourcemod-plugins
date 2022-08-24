@@ -231,9 +231,3 @@ stock void GetViewVector(float fVecAngle[3], float fOutPut[3])
 	fOutPut[1] = Sine(fVecAngle[1] / (180 / FLOAT_PI));
 	fOutPut[2] = -Sine(fVecAngle[0] / (180 / FLOAT_PI));
 }
-
-
-bool Filter_IgnoreAll(int entity, int mask) {
-	return false;
-}
-

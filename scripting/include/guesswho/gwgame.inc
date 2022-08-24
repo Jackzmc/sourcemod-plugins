@@ -391,10 +391,6 @@ stock void LookAtPoint(int client, const float targetPos[3]) {
 	TeleportEntity(client, NULL_VECTOR, fFinalPos, NULL_VECTOR);
 }
 
-bool Filter_IgnoreAll(int entity, int mask) {
-	return false;
-}
-
 
 void SetPlayerBlind(int target, int amount) {
 	int targets[1];
