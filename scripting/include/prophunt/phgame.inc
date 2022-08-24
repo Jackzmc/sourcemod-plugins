@@ -42,34 +42,31 @@ bool FindSpawnPosition(float pos[3], bool includePlayers = true) {
 
 static char buffer[128];
 
-methodmap GuessWhoGame < BaseGame {
+bool isSeeker[MAXPLAYERS+1];
 
-	property int Seeker {
-		public get() { 
-			if(currentSeeker <= 0 || !IsClientConnected(currentSeeker))
-				currentSeeker = this._FindSeeker();
-			return currentSeeker;
-		}
-		public set(int client) {
-			int existingSeeker = currentSeeker;
-			currentSeeker = client;
+methodmap PropHuntGame < BaseGame {
+
+	property int Seekers {
+		public get() {
+			int count = 0;
 			for(int i = 1; i <= MaxClients; i++) {
-				if(IsClientConnected(i) && IsClientInGame(i)) {
-					this.SetupInventory(i);
-				}
+				if(isSeeker[i]) count++;
 			}
-			// Reset things incase set mid-start
-			if(existingSeeker > 0) {
-				SetEntPropFloat(existingSeeker, Prop_Send, "m_flLaggedMovementValue", 1.0);
-				SetPlayerBlind(existingSeeker, 0);
-				L4D2_RemoveEntityGlow(existingSeeker);
-			}
+			return count;
+		}
+	}
 
-			L4D2_SetEntityGlow(client, L4D2Glow_Constant, 0, 10, SEEKER_GLOW_COLOR, false);
+	public bool IsSeeker(int client) {
+		return isSeeker[client];
+	}
 
-			hasBeenSeeker[client] = true;
-			Format(buffer, sizeof(buffer), "g_ModeScript.MutationState.CurrentSeeker = GetPlayerFromUserID(%d);", GetClientUserId(client));
-			L4D2_ExecVScriptCode(buffer);
+	public void SetSeeker(int client, bool value) {
+		isSeeker[client] = value;
+	}
+
+	public void ClearSeekers() {
+		for(int i = 1; i <= MaxClients; i++) {
+			isSeeker[i] = false;
 		}
 	}
 
@@ -130,74 +127,13 @@ methodmap GuessWhoGame < BaseGame {
 	}
 
 	public void End(GameState state) {
-		if(recordTimer != null) {
-			PrintToChatAll("Active recording stopped due to end of game. %d ready to save. \"/guesswho points save\" to save", movePoints.Length);
-			delete recordTimer;
-		} 
-		if(acquireLocationsTimer != null) delete acquireLocationsTimer;
-		if(timesUpTimer != null) delete timesUpTimer;
-		if(hiderCheckTimer != null) delete hiderCheckTimer;
-		currentSeeker = 0;
 		this.State = state;
-		if(state == State_HidersWin) {
-			// Show the hiders
-			for(int i = 1; i <= MaxClients; i++) {
-				if(IsClientConnected(i) && IsClientInGame(i) && IsFakeClient(i)) {
-					if(IsFakeClient(i)) {
-						ClearInventory(i);
-						KickClient(i);
-					} else {
-						L4D2_SetEntityGlow(i, L4D2Glow_Constant, 0, 20, PLAYER_GLOW_COLOR, false);
-						L4D2_SetPlayerSurvivorGlowState(i, true);
-					}
-				}
-			}
-		}
-		this.CleanupGnomes(true);
 		CreateTimer(5.0, Timer_ResetAll);
 	}
 
 	public void Cleanup(bool noClearInv = false) {
 		DeleteCustomEnts();
-		PeekCam.Destroy();
-		if(recordTimer != null) delete recordTimer;
-		if(doorToggleTimer != null) delete doorToggleTimer;
-		if(waitForStartTimer != null && IsValidHandle(waitForStartTimer)) delete waitForStartTimer;
-		if(waitTimer != null) delete waitTimer;
-
-		for(int i = 1; i <= MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i)) {
-				if(!noClearInv && isEnabled)
-					ClearInventory(i);
-				Game.UnsetupPlayer(i);
-			}
-			if(moveTimers[i] != null) {
-				delete moveTimers[i];
-			}
-		}
-		// Annoying
-		this.CleanupGnomes();
 	}
-
-	public void CleanupGnomes(bool orphansOnly = false) {
-		int entity = INVALID_ENT_REFERENCE;
-		char model[32];
-		while ((entity = FindEntityByClassname(entity, "prop_physics")) != INVALID_ENT_REFERENCE) {
-			int parent = GetEntPropEnt(entity, Prop_Data, "m_hParent");
-			if(orphansOnly && parent >= 0) continue;
-			GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
-			if(StrEqual(model, "models/props_junk/gnome.mdl")) {
-				RemoveEntity(entity);
-			}
-        }
-		entity = INVALID_ENT_REFERENCE;
-		while ((entity = FindEntityByClassname(entity, "weapon_gnome")) != INVALID_ENT_REFERENCE) {
-			int owner = GetEntPropEnt(entity, Prop_Data, "m_hOwnerEntity");
-			if(orphansOnly && owner >= 0) continue;
-			GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
-        }
-	}
-
 
 	public int _FindSeeker() {
 		if(!isEnabled) return -1;
@@ -212,7 +148,7 @@ methodmap GuessWhoGame < BaseGame {
 					int entity = GetPlayerWeaponSlot(i, 1);
 					if(entity > -1 && GetEntityClassname(entity, buffer, sizeof(buffer)) && StrEqual(buffer, "melee")) {
 						GetEntPropString(entity, Prop_Data, "m_strMapSetScriptName", buffer, sizeof(buffer));
-						if(StrEqual(buffer, "fireaxe")) {
+						if(StrEqual(buffer, "smg")) {
 							return i;
 						}
 					}
@@ -256,23 +192,12 @@ methodmap GuessWhoGame < BaseGame {
 		}
 	}
 
-	public void SetPoints(MovePoints points) {
-		if(movePoints != null) {
-			delete movePoints;
-		}
-		if(points == null) {
-			movePoints = new MovePoints();
-		} else {
-			movePoints = points;
-		}
-	}
-
 	// Ignores seeker
 	property int AlivePlayers {
 		public get() {
 			int amount = 0;
 			for(int i = 1; i <= MaxClients; i++) {
-				if(i != currentSeeker && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && !IsFakeClient(i)) {
+				if(!this.IsSeeker(i) && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && !IsFakeClient(i)) {
 					amount++;
 				}
 			}
@@ -282,24 +207,18 @@ methodmap GuessWhoGame < BaseGame {
 
 	public void SetupInventory(int client) {
 		ClearInventory(client);
-		ignoreDrop[client] = true;
-		if(client == this.Seeker) {
-			CheatCommand(client, "give", "fireaxe");
-		} else {
-			GivePlayerItem(client, "weapon_gnome");
+		if(this.IsSeeker(client)) {
+			CheatCommand(client, "give", "smg");
 		}
-		ignoreDrop[client] = false;
 	}
 
 	public void SetupPlayer(int client) {
 		this.SetupInventory(client);
 		SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
-		SDKHook(client, SDKHook_WeaponEquip, OnWeaponEquip);
 	}
 
 	public void UnsetupPlayer(int client) {
 		SDKUnhook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
-		SDKUnhook(client, SDKHook_WeaponEquip, OnWeaponEquip);
 	}
 }
 

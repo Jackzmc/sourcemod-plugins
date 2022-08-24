@@ -231,6 +231,7 @@ public Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float
 }
 
 public void OnMapEnd() {
+	manualTarget = -1;
 	ClearTurrets();
 }
 
@@ -261,7 +262,7 @@ public void OnEntityDestroyed(int entity) {
 public Action Command_SpawnTurret(int client, int args) {
 	float pos[3];
 	GetClientEyePosition(client, pos);
-	pos[2] += 20.0;
+	pos[2] += 40.0;
 	int base = CreateParticleNamed(ENT_PORTAL_NAME, PARTICLE_ELMOS, pos, NULL_VECTOR);
 	SetupTurret(base, TURRET_ACTIVATION_TIME);
 	ReplyToCommand(client, "New turret (%d) will activate in %.0f seconds", base, TURRET_ACTIVATION_TIME);
@@ -642,7 +643,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		// Run a ray trace to find a suitable position
 		// TODO: Possibly run per-turret for more accurate preview... but it's already lag fest
 		TR_TraceRayFilter(orgPos, angles, MASK_SHOT, RayType_Infinite, Filter_ManualTarget);
-		if(!IsValidEntity(manualTarget)) manualTarget = CreateTarget(aimPos, MANUAL_TARGETNAME);
+		if(manualTarget <= 0 || !IsValidEntity(manualTarget)) manualTarget = CreateTarget(aimPos, MANUAL_TARGETNAME);
 
 		// Disable aim snapping if player is holding WALK (which is apparently IN_SPEED)
 		bool aimSnapping = ~buttons & IN_SPEED > 0;

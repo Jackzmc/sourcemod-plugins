@@ -246,6 +246,9 @@ methodmap PeekCamera {
 	}
 }
 
+bool Filter_IgnoreAll(int entity, int mask) {
+	return false;
+}
 
 enum struct EntityConfig {
 	float origin[3];

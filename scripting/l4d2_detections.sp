@@ -48,7 +48,7 @@ Bile Detections:
 */
 
 stock bool IsPlayerBoomed(int client) {
-	return GetEntPropFloat(%0, Prop_Send, "m_vomitStart") + 20.1 > GetGameTime();
+	return GetEntPropFloat(client, Prop_Send, "m_vomitStart") + 20.1 > GetGameTime();
 }
 stock bool IsAnyPlayerBoomed() {
 	for(int i = 1; i <= MaxClients; i++) {
@@ -63,7 +63,7 @@ stock bool AnyRecentBileInPlay(int ignore) {
 	return false;
 }
 
-stock int GetEntityCountNear(const float[3] srcPos, float radius = 50000.0) {
+stock int GetEntityCountNear(const float srcPos[3], float radius = 50000.0) {
 	float pos[3];
 	int count;
 	int entity = -1;
@@ -87,7 +87,7 @@ stock int L4D_SpawnCommonInfected2(const float vPos[3], const float vAng[3] = { 
 	return entity;
 }
 
-PlayerDetections[MAXPLAYERS+1] detections;
+PlayerDetections detections[MAXPLAYERS+1];
 
 GlobalForward fwd_PlayerDoubleKit, fwd_NoHordeBileWaste, fwd_DoorFaceCloser, fwd_CheckpointDoorFaceCloser;
 
@@ -114,6 +114,7 @@ public void OnPluginStart() {
 	HookEvent("item_pickup", Event_ItemPickup);
 	HookEvent("door_close", Event_DoorClose);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
+	HookEvent("heal_success", Event_HealSuccess);
 }
 
 public void OnClientPutInServer(int client) {
@@ -139,7 +140,7 @@ public void OnMapStart() {
 }
 
 // TODO: Check when player enters saferoom, and has no kit and heals and pickup another
-public Action Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
+public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && L4D_IsInLastCheckpoint(client)) {
 		static char itmName[32];
@@ -186,7 +187,17 @@ Action Timer_ClearDoubleKitDetection(Handle h, int userid) {
 	return Plugin_Continue;
 }
 
-public Action Event_DoorClose(Event event, const char[] name, bool dontBroadcast) {
+public void Event_HealSuccess(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client) {
+		int target = GetClientOfUserId(event.GetInt("subject"));
+		int amount = event.GetInt("health_restored");
+		int orgHealth = GetClientHealth(target) - amount;
+		PrintToConsoleAll("[Debug] %N healed %N (+%d health, was %d)", client, target, amount, orgHealth);
+	}
+}
+
+public void Event_DoorClose(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(fwd_DoorFaceCloser.FunctionCount > 0 && client) {
 		bool isCheckpoint = event.GetBool("checkpoint");
