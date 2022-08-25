@@ -88,6 +88,7 @@ stock int L4D_SpawnCommonInfected2(const float vPos[3], const float vAng[3] = { 
 }
 
 PlayerDetections detections[MAXPLAYERS+1];
+bool checkpointReached;
 
 GlobalForward fwd_PlayerDoubleKit, fwd_NoHordeBileWaste, fwd_DoorFaceCloser, fwd_CheckpointDoorFaceCloser;
 
@@ -166,7 +167,6 @@ public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast)
 	}
 }
 
-bool checkpointReached;
 public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
 	if(!checkpointReached && client > 0 && client <= MaxClients && GetClientTeam(client) == 2) {
 		checkpointReached = true;
