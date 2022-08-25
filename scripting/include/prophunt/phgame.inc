@@ -42,15 +42,23 @@ bool FindSpawnPosition(float pos[3], bool includePlayers = true) {
 
 static char buffer[128];
 
-bool isSeeker[MAXPLAYERS+1];
 
 methodmap PropHuntGame < BaseGame {
 
-	property int Seekers {
+	property int SeekersCount {
 		public get() {
 			int count = 0;
 			for(int i = 1; i <= MaxClients; i++) {
 				if(isSeeker[i]) count++;
+			}
+			return count;
+		}
+	}
+	property int PropsCount {
+		public get() {
+			int count = 0;
+			for(int i = 1; i <= MaxClients; i++) {
+				if(!isSeeker[i]) count++;
 			}
 			return count;
 		}
@@ -60,8 +68,11 @@ methodmap PropHuntGame < BaseGame {
 		return isSeeker[client];
 	}
 
-	public void SetSeeker(int client, bool value) {
+	public bool SetSeeker(int client, bool value) {
 		isSeeker[client] = value;
+		hasBeenSeeker[client] = true;
+		DispatchKeyValue(client, "rendercolor", value ? WHITE : TRANSPARENT);
+		return true;
 	}
 
 	public void ClearSeekers() {
@@ -135,36 +146,6 @@ methodmap PropHuntGame < BaseGame {
 		DeleteCustomEnts();
 	}
 
-	public int _FindSeeker() {
-		if(!isEnabled) return -1;
-		L4D2_GetVScriptOutput("g_ModeScript.MutationState.CurrentSeeker && \"GetPlayerUserId\" in g_ModeScript.MutationState.CurrentSeeker ? g_ModeScript.MutationState.CurrentSeeker.GetPlayerUserId() : -1", buffer, sizeof(buffer));
-		int uid = StringToInt(buffer);
-		if(uid > 0) {
-			return GetClientOfUserId(uid);
-		} else {
-			Game.Debug("Mutation has no seeker, manually attempting to find seeker");
-			for(int i = 1; i <= MaxClients; i++) {
-				if(IsClientConnected(i) && IsClientInGame(i)) {
-					int entity = GetPlayerWeaponSlot(i, 1);
-					if(entity > -1 && GetEntityClassname(entity, buffer, sizeof(buffer)) && StrEqual(buffer, "melee")) {
-						GetEntPropString(entity, Prop_Data, "m_strMapSetScriptName", buffer, sizeof(buffer));
-						if(StrEqual(buffer, "smg")) {
-							return i;
-						}
-					}
-				}
-			}
-		}
-		Game.Debug("All attempts to find a seeker failed");
-		return -1;
-	}
-
-
-	public void ForceSetSeeker(int client, bool ignoreBalance = false) { 
-		ignoreSeekerBalance = true;
-		this.Seeker = client;
-	}
-
 	public bool TeleportToSpawn(int client) {
 		if(mapConfig.hasSpawnpoint) {
 			TeleportEntity(client, mapConfig.spawnpoint, NULL_VECTOR, NULL_VECTOR);
@@ -193,11 +174,22 @@ methodmap PropHuntGame < BaseGame {
 	}
 
 	// Ignores seeker
-	property int AlivePlayers {
+	property int PropsAlive {
 		public get() {
 			int amount = 0;
 			for(int i = 1; i <= MaxClients; i++) {
-				if(!this.IsSeeker(i) && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && !IsFakeClient(i)) {
+				if(!isSeeker[i] && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) > 1 && IsPlayerAlive(i) && !IsFakeClient(i)) {
+					amount++;
+				}
+			}
+			return amount;
+		}
+	}
+	property int SeekersAlive {
+		public get() {
+			int amount = 0;
+			for(int i = 1; i <= MaxClients; i++) {
+				if(!isSeeker[i] && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) > 1 && IsPlayerAlive(i) && !IsFakeClient(i)) {
 					amount++;
 				}
 			}
@@ -205,20 +197,35 @@ methodmap PropHuntGame < BaseGame {
 		}
 	}
 
-	public void SetupInventory(int client) {
-		ClearInventory(client);
-		if(this.IsSeeker(client)) {
-			CheatCommand(client, "give", "smg");
-		}
+	public void SetupProp(int client) {
+		PrintToChatAll("SetupProp");
+		int propIndex = GetURandomInt() % MAX_VALID_MODELS;
+
+		propData[client].prop = CreatePropInternal(VALID_MODELS[propIndex]);
+		DispatchKeyValue(client, "rendercolor", TRANSPARENT);
+		SDKHook(client, SDKHook_SetTransmit, OnPlayerTransmit);
+	}
+
+	public void SetupSeeker(int client) {
+		CheatCommand(client, "give", "smg");
 	}
 
 	public void SetupPlayer(int client) {
-		this.SetupInventory(client);
+		ClearInventory(client);
+		
+		ChangeClientTeam(client, 2);
+		SetEntProp(client, Prop_Send, "m_survivorCharacter", GetURandomInt() % 7);
 		SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 	}
 
 	public void UnsetupPlayer(int client) {
+		DispatchKeyValue(client, "rendercolor", WHITE);
 		SDKUnhook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+		hasBeenSeeker[client] = false;
+		isSeeker[client] = false;
+		SDKUnhook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+		SetPlayerBlind(client, 0);
+		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", 1.0);
 	}
 }
 
@@ -348,43 +355,3 @@ static char AUTO_VOCALIZATIONS[MAX_AUTO_VOCALIZATIONS][] = {
 	"ResponseSoftDispleasureSwear",
 	"PlayerAreaClear"
 };
-
-enum struct HiderDistQueue {
-	int index;
-	float list[HIDER_DISTANCE_MAX_SIZE];
-	int lastVocalize;
-
-	void AddPos(const float pos[3]) {
-		this.list[this.index] = GetVectorDistance(seekerPos, pos);
-		if(++this.index == HIDER_DISTANCE_MAX_SIZE) {
-			this.index = 0;
-		}
-	}
-
-	void Clear() {
-		for(int i = 0; i < HIDER_DISTANCE_MAX_SIZE; i++) {
-			this.list[i] = 0.0;
-		}
-	}
-
-	float GetAverage() {
-		float sum = 0.0;
-		for(int i = 0; i < HIDER_DISTANCE_MAX_SIZE; i++) {
-			sum += this.list[i];
-		}
-		return sum / float(HIDER_DISTANCE_MAX_SIZE);
-	}
-
-	void Check(int i) {
-		if(this.GetAverage() > HIDER_MIN_AVG_DISTANCE_AUTO_VOCALIZE) {
-			int time = GetTime();
-			if(time - this.lastVocalize > HIDER_AUTO_VOCALIZE_GRACE_TIME) {
-				this.lastVocalize = time;
-				int index = GetRandomInt(0, MAX_AUTO_VOCALIZATIONS - 1);
-				PerformScene(i, AUTO_VOCALIZATIONS[index]);
-			}
-		}
-	}
-}
-
-HiderDistQueue distQueue[MAXPLAYERS+1];

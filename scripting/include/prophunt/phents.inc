@@ -126,3 +126,8 @@ void SetupEntities(bool blockers = true, bool props = true, bool portals = true)
 	}
 }
 
+
+stock int Entity_GetHammerId(int entity)
+{
+	return GetEntProp(entity, Prop_Data, "m_iHammerID");
+}

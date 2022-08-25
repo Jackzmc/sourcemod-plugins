@@ -166,13 +166,13 @@ public Action Command_PropHunt(int client, int args) {
 			return Plugin_Handled;
 		} else if(StrEqual(subcmd, "pos", false)) {
 			float pos[3];
-			GetAbsOrigin(client, pos);
+			GetClientAbsOrigin(client, pos);
 			ReplyToCommand(client, "\"origin\" \"%f %f %f\"", pos[0], pos[1], pos[2]);
 			GetClientEyeAngles(client, pos);
 			ReplyToCommand(client, "\"rotation\" \"%f %f %f\"", pos[0], pos[1], pos[2]);
 		} else if(StrEqual(subcmd, "prop", false)) {
 			float pos[3];
-			GetAbsOrigin(client, pos);
+			GetClientAbsOrigin(client, pos);
 			ReplyToCommand(client, "\"MYPROP\"");
 			ReplyToCommand(client, "{");
 			ReplyToCommand(client, "\t\"origin\" \"%f %f %f\"", pos[0], pos[1], pos[2]);
@@ -220,10 +220,36 @@ public Action Command_PropHunt(int client, int args) {
 					ReplyToTargetError(client, target_count);
 					return Plugin_Handled;
 				}
-				Game.ForceSetSeeker(target_list[0]);
-				ReplyToCommand(client, "Set the current seeker to %N", target_list[0]);
+				Game.SetSeeker(target_list[0], true);
+				ReplyToCommand(client, "Made %N a seeker", target_list[0]);
 			} else {
-				ReplyToCommand(client, "The current seeker is: %N", Game.Seeker);
+				ReplyToCommand(client, "Specify a player to make a seeker");
+			}
+		} else if(StrEqual(subcmd, "prop")) {
+			if(args == 2) {
+				char arg1[32];
+				GetCmdArg(2, arg1, sizeof(arg1));
+				char target_name[MAX_TARGET_LENGTH];
+				int target_list[1], target_count;
+				bool tn_is_ml;
+				if ((target_count = ProcessTargetString(
+					arg1,
+					client,
+					target_list,
+					1,
+					0,
+					target_name,
+					sizeof(target_name),
+					tn_is_ml)) <= 0
+				|| target_list[0] <= 0){
+					/* This function replies to the admin with a failure message */
+					ReplyToTargetError(client, target_count);
+					return Plugin_Handled;
+				}
+				Game.SetSeeker(target_list[0], false);
+				ReplyToCommand(client, "Made %N a prop", target_list[0]);
+			} else {
+				ReplyToCommand(client, "Specify a player to make a prop");
 			}
 		} else if(StrEqual(subcmd, "debug")) {
 			ReplyToCommand(client, "- Game Info -");
@@ -236,9 +262,6 @@ public Action Command_PropHunt(int client, int args) {
 			else
 				ReplyToCommand(client, "Has Spawnpoint: no (possibly map spawn %f %f %f)", mapConfig.spawnpoint[0], mapConfig.spawnpoint[1], mapConfig.spawnpoint[2]);
 			ReplyToCommand(client, "Map Time: %d", mapConfig.mapTime);
-			ReplyToCommand(client, "Flow Bounds: (%f, %f)", movePoints.MinFlow, movePoints.MaxFlow);
-		} else if(StrEqual(subcmd, "test")) {
-			
 		} else {
 			ReplyToCommand(client, "Unknown option. Leave blank for help");
 		}
@@ -266,12 +289,18 @@ public Action Command_PropHunt(int client, int args) {
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
 	if(isEnabled) {
 		if(!StrEqual(command, "say")) { //Is team message
-			if(currentSeeker <= 0 || currentSeeker == client) {
-				return Plugin_Continue;
-			}
-			for(int i = 1; i <= MaxClients; i++) {
-				if(IsClientConnected(i) && IsClientInGame(i) && i != currentSeeker)
-					PrintToChat(i, "[Hiders] %N: %s", client, sArgs);
+			if(Game.IsSeeker(client)) {
+				for(int i = 1; i <= MaxClients; i++) {
+					if(IsClientConnected(i) && IsClientInGame(i) && Game.IsSeeker(i)) {
+						PrintToChat(i, "[Seekers] %N: %s", client, sArgs);
+					}
+				}
+			} else {
+				for(int i = 1; i <= MaxClients; i++) {
+					if(IsClientConnected(i) && IsClientInGame(i) && !Game.IsSeeker(i)) {
+						PrintToChat(i, "[Hiders] %N: %s", client, sArgs);
+					}
+				}
 			}
 			return Plugin_Handled;
 		}
@@ -316,7 +345,7 @@ public Action Command_Join(int client, int args) {
 		}
 		ReplyToCommand(client, "Joined %s", target_name);
 	} else {
-		if(currentSeeker == client) {
+		if(Game.IsSeeker(client)) {
 			ReplyToCommand(client, "You are already in-game as a seeker.");
 			return Plugin_Handled;
 		}
