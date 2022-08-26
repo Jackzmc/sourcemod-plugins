@@ -24,11 +24,18 @@ public Plugin myinfo =
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
+enum struct PlayerInventory {
+	char primarySlot[64];
+	char secondarySlot[32];
+	char throwableSlot[32];
+	char usableSlot[32];
+	char consumableSlot[32];
+}
+
 enum struct PlayerState {
 	int incapState; //0 -> Not incapped, # -> # of incap
 	bool isAlive;
-	char kitSlotItem[32];
-	char pillSlotItem[32];
+	PlayerInventory inventory;
 
 	int permHealth;
 	float tempHealth;
@@ -36,11 +43,11 @@ enum struct PlayerState {
 	float position[3];
 	float angles[3];
 
-	char recordType[32];
-	int timeRecorded;
+	char recordReason[32];
+	int timestamp;
 }
 
-static PlayerState[MAXIMUM_STAGES_STORED][MAXPLAYERS+1] playerStatesList; //Newest -> Oldest
+static PlayerState playerStatesList[MAXIMUM_STAGES_STORED][MAXPLAYERS+1]; //Newest -> Oldest
 
 static bool isHealing[MAXPLAYERS+1], bMapStarted; //Is player healing (self, or other)
 static ConVar hMaxIncapCount, hDecayRate;
@@ -92,12 +99,12 @@ public Action Command_SaveGlobalState(int client, int args) {
 public Action Command_ViewStateInfo(int client, int args) {
 	int time = GetTime(), index;
 	for(int state = 0; state < MAXIMUM_STAGES_STORED; state++) {
-		if(state == 0 || playerStatesList[state][0].timeRecorded > 0)
+		if(state == 0 || playerStatesList[state][0].timestamp > 0)
 			ReplyToCommand(client, "---== Recorded Player States ==--- [Age: %d]", state);
 		for(int i = 1; i <= MaxClients; i++) {
-			if(playerStatesList[state][i].timeRecorded > 0) {
-				int minutes = RoundToNearest((time - playerStatesList[state][i].timeRecorded) / 60.0);
-				ReplyToCommand(client, "%2.d. %-16.16N | %-16.20s | %3d min. ago", ++index, i, playerStatesList[state][i].recordType, minutes);
+			if(playerStatesList[state][i].timestamp > 0) {
+				int minutes = RoundToNearest((time - playerStatesList[state][i].timestamp) / 60.0);
+				ReplyToCommand(client, "%2.d. %-16.16N | %-16.20s | %3d min. ago", ++index, i, playerStatesList[state][i].recordReason, minutes);
 			}
 		}
 		index = 0;
@@ -114,7 +121,10 @@ public Action Command_RestoreState(int client, int args) {
 
 		int index = StringToInt(arg2);
 		if(index > MAXIMUM_STAGES_STORED) {
-			ReplyToCommand(client, "Age is above maximum amount of ages saved of %d.", MAXIMUM_STAGES_STORED);
+			ReplyToCommand(client, "Age is above the maximum amount of ages saved of %d.", MAXIMUM_STAGES_STORED);
+			return Plugin_Handled;
+		} else if(index < 0) {
+			ReplyToCommand(client, "Age is invalid. Must be between 0 and %d", MAXIMUM_STAGES_STORED);
 			return Plugin_Handled;
 		}
 
@@ -139,7 +149,7 @@ public Action Command_RestoreState(int client, int args) {
 			int target = target_list[i];
 			if(IsClientConnected(target) && IsClientInGame(target) && GetClientTeam(target) == 2) {
 				RestoreState(target);
-				if(playerStatesList[index][target].timeRecorded == 0) {
+				if(playerStatesList[index][target].timestamp == 0) {
 					ReplyToCommand(client, "%N does not have a state, using bare state.");
 				}else{
 					ReplyToCommand(client, "Restored %N's state to age %d", target, index);
@@ -165,7 +175,7 @@ public void OnClientPutInServer(int client) {
 	}
 }
 
-public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
+public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	//Ignore admins
 	if(!IsFakeClient(client) && GetClientTeam(client) == 2 && GetUserAdmin(client) == INVALID_ADMIN_ID) {
@@ -185,7 +195,7 @@ public void OnClientDisconnect(int client) {
 	}
 }
 
-public Action Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) {
+public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) {
 	float currentTime = GetGameTime();
 	if(currentTime - lastDamageTime >= LAST_FF_TIME_THRESHOLD) {
 		int client = GetClientOfUserId(event.GetInt("userid"));
@@ -202,16 +212,16 @@ public Action Event_PlayerHurt(Event event, const char[] name, bool dontBroadcas
 	}
 }
 
-public Action Event_HealBegin(Event event, const char[] name, bool dontBroadcast) {
+public void Event_HealBegin(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	isHealing[client] = true;
 }
-public Action Event_HealStop(Event event, const char[] name, bool dontBroadcast) {
+public void Event_HealStop(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	isHealing[client] = false;
 }
 
-public Action Event_ReviveBegin(Event event, const char[] name, bool dontBroadcast) {
+public void Event_ReviveBegin(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	int subject = GetClientOfUserId(event.GetInt("subject"));
 	if(client && subject) {
@@ -230,6 +240,7 @@ public void FTT_OnClientMarked(int troll, int marker) {
 // /////////////////////////////////////////////////////////////////////////////
 public Action Timer_AutoRecord(Handle h) {
 	RecordGlobalState("AUTO_TIMER", 50000);
+	return Plugin_Continue;
 }
 // /////////////////////////////////////////////////////////////////////////////
 // METHODS
@@ -243,12 +254,11 @@ void RecordGlobalState(const char[] type, int skipTime = 0) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			//If skipTime set, do not record if last recording was <= skipTime ms ago
-			if(skipTime > 0 && playerStatesList[0][i].timeRecorded > 0 && time - playerStatesList[0][i].timeRecorded <= skipTime) continue; 
+			if(skipTime > 0 && playerStatesList[0][i].timestamp > 0 && time - playerStatesList[0][i].timestamp <= skipTime) continue; 
 
 			playerStatesList[0][i].incapState = GetEntProp(i, Prop_Send, "m_currentReviveCount");
 			playerStatesList[0][i].isAlive = IsPlayerAlive(i);
-			GetClientWeaponName(i, 3, playerStatesList[0][i].kitSlotItem, 32);
-			GetClientWeaponName(i, 4, playerStatesList[0][i].pillSlotItem, 32);
+			_RecordInventory(i, playerStatesList[0][i].inventory);
 
 			playerStatesList[0][i].permHealth = GetClientHealth(i);
 			playerStatesList[0][i].tempHealth = GetClientHealthBuffer(i);
@@ -256,20 +266,50 @@ void RecordGlobalState(const char[] type, int skipTime = 0) {
 			GetClientAbsOrigin(i, playerStatesList[0][i].position);
 			GetClientAbsAngles(i, playerStatesList[0][i].angles);
 
-			strcopy(playerStatesList[0][i].recordType, 32, type);
-			playerStatesList[0][i].timeRecorded = time;
+			strcopy(playerStatesList[0][i].recordReason, 32, type);
+			playerStatesList[0][i].timestamp = time;
 		}
-		playerStatesList[0][0].timeRecorded = time;
+		playerStatesList[0][0].timestamp = time;
 	}
 	//PrintToConsoleAll("[Rollback] Recorded all player states for: %s", type);
 }
+
+void _RecordInventory(int client, PlayerInventory inventory) {
+	GetClientWeaponName(client, 0, inventory.primarySlot, sizeof(inventory.primarySlot));
+	GetClientWeaponName(client, 1, inventory.secondarySlot, sizeof(inventory.secondarySlot));
+	GetClientWeaponName(client, 2, inventory.throwableSlot, sizeof(inventory.throwableSlot));
+	GetClientWeaponName(client, 3, inventory.usableSlot, sizeof(inventory.usableSlot));
+	GetClientWeaponName(client, 4, inventory.consumableSlot, sizeof(inventory.consumableSlot));
+}
+
+void _RestoreInventory(PlayerInventory inventory, int client) {
+	if(inventory.primarySlot[0] != '\0')
+		CheatCommand(client, "give", inventory.primarySlot, "");
+	if(inventory.secondarySlot[0] != '\0')
+		CheatCommand(client, "give", inventory.secondarySlot, "");
+	if(inventory.throwableSlot[0] != '\0')
+		CheatCommand(client, "give", inventory.throwableSlot, "");
+	if(inventory.usableSlot[0] != '\0')
+		CheatCommand(client, "give", inventory.usableSlot, "");
+	if(inventory.consumableSlot[0] != '\0')
+		CheatCommand(client, "give", inventory.consumableSlot, "");
+}
+
+void _ClearInventory(PlayerInventory inventory) {
+	inventory.primarySlot[0] = '\0';
+	inventory.secondarySlot[0] = '\0';
+	inventory.throwableSlot[0] = '\0';
+	inventory.usableSlot[0] = '\0';
+	inventory.consumableSlot[0] = '\0';
+}
+
 
 void TransferArray(int oldIndex, int newIndex) {
 	for(int i = 1; i <= MaxClients; i++) {
 		playerStatesList[newIndex][i].incapState = playerStatesList[oldIndex][i].incapState;
 		playerStatesList[newIndex][i].isAlive = playerStatesList[oldIndex][i].isAlive;
-		strcopy(playerStatesList[newIndex][i].kitSlotItem, 32, playerStatesList[oldIndex][i].kitSlotItem);
-		strcopy(playerStatesList[newIndex][i].pillSlotItem, 32, playerStatesList[oldIndex][i].pillSlotItem);
+		playerStatesList[newIndex][i].inventory = playerStatesList[oldIndex][i].inventory;
+		_ClearInventory(playerStatesList[oldIndex][i].inventory);
 
 		playerStatesList[newIndex][i].permHealth = playerStatesList[oldIndex][i].permHealth;
 		playerStatesList[newIndex][i].tempHealth = playerStatesList[oldIndex][i].tempHealth;
@@ -277,10 +317,10 @@ void TransferArray(int oldIndex, int newIndex) {
 		playerStatesList[newIndex][i].position = playerStatesList[oldIndex][i].position;
 		playerStatesList[newIndex][i].angles = playerStatesList[oldIndex][i].angles;
 
-		strcopy(playerStatesList[newIndex][i].recordType, 32, playerStatesList[oldIndex][i].recordType);
-		playerStatesList[newIndex][i].timeRecorded = playerStatesList[oldIndex][i].timeRecorded;
+		strcopy(playerStatesList[newIndex][i].recordReason, 32, playerStatesList[oldIndex][i].recordReason);
+		playerStatesList[newIndex][i].timestamp = playerStatesList[oldIndex][i].timestamp;
 	}
-	playerStatesList[newIndex][0].timeRecorded = playerStatesList[oldIndex][0].timeRecorded;
+	playerStatesList[newIndex][0].timestamp = playerStatesList[oldIndex][0].timestamp;
 }
 
 void RestoreState(int client, int index = 0) {
@@ -310,30 +350,26 @@ void RestoreState(int client, int index = 0) {
 
 	if(!respawned) {
 		GetClientWeaponName(client, 3, item, sizeof(item));
-		if(!StrEqual(playerStatesList[index][client].pillSlotItem, item) && !isHealing[client]) {
-			CheatCommand(client, "give", item, "");
-		}
-		GetClientWeaponName(client, 4, item, sizeof(item));
-		if(!StrEqual(playerStatesList[index][client].pillSlotItem, item)) {
-			CheatCommand(client, "give", item, "");
-		}
+		_RestoreInventory(playerStatesList[index][client].inventory, client);
 	}
 	SetEntProp(client, Prop_Send, "m_iHealth", playerStatesList[index][client].permHealth > 0 ? playerStatesList[index][client].permHealth : 10); 
 	SetEntPropFloat(client, Prop_Send, "m_healthBuffer", playerStatesList[index][client].tempHealth);
 	SetEntPropFloat(client, Prop_Send, "m_healthBufferTime", GetGameTime());
 }
 
+
+
 void ResetStates(int client) {
 	for(int stage = 0; stage < MAXIMUM_STAGES_STORED; stage++) {
 		playerStatesList[stage][client].incapState = 0;
-		playerStatesList[stage][client].pillSlotItem[0] = '\0';
-		playerStatesList[stage][client].kitSlotItem[0] = '\0';
 		playerStatesList[stage][client].permHealth = 0;
 		playerStatesList[stage][client].tempHealth = 0.0;
-		playerStatesList[stage][client].timeRecorded = 0;
-		playerStatesList[stage][client].recordType[0] = '\0';
+		playerStatesList[stage][client].timestamp = 0;
+		playerStatesList[stage][client].recordReason[0] = '\0';
+		_ClearInventory(playerStatesList[stage][client].inventory);
 	}
 }
+
 
 float GetClientHealthBuffer(int client, float defaultVal=0.0) {
     // https://forums.alliedmods.net/showpost.php?p=1365630&postcount=1
@@ -344,6 +380,7 @@ float GetClientHealthBuffer(int client, float defaultVal=0.0) {
     return tempHealth < 0.0 ? defaultVal : tempHealth;
 }
 
+// Teleports player to position after a tick. Index, pos[3], ang[3]
 public Action Timer_Teleport(Handle handle, DataPack pack) {
 	pack.Reset();
 	int client = pack.ReadCell();
@@ -357,4 +394,5 @@ public Action Timer_Teleport(Handle handle, DataPack pack) {
 	}
 
 	TeleportEntity(client, position, angles, ZERO_VECTOR);
+	return Plugin_Handled;
 }
