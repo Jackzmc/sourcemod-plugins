@@ -235,7 +235,7 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
             } else {
                 int flags = results.FetchInt(4);
                 if(!expired && (~flags & BANFLAG_SUSPENDED)) {
-                    LogAction(-1, client, "\"%L\" is banned from server: \"%s\"", client, reason);
+                    LogAction(-1, client, "\"%L\" (%s), is banned from server: \"%s\"", client, steamid, reason);
                     // Fetch public message
                     results.FetchString(3, public_message, sizeof(public_message), colResult);
                     if(colResult == DBVal_Null || strlen(public_message) == 0) {
@@ -259,9 +259,9 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
                     g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);
                     g_db.Query(DB_GenericCallback, query);
                 } else {
-                    LogAction(-1, client, "%N was previously banned from server: \"%s\"", client, reason);
+                    LogAction(-1, client, "%N (%s) was previously banned from server: \"%s\"", client, steamid, reason);
                     // User was previously banned
-                    PrintChatToAdmins("%N has a previous suspended/expired ban of reason \"%s\"", client, reason);
+                    PrintChatToAdmins("%N (%s) has a previous suspended/expired ban of reason \"%s\"", client, steamid, reason);
                 }
             }
         }
