@@ -138,7 +138,7 @@ stock bool IsActivationAllowed(float flowmax, float threshold) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 			if(flowRate[i] < flowmax - threshold) {
-				PrintDebug("Adding %N of flow %f to average", i, flowRate[i]);
+				PrintDebug("Adding %N with flow of %.2f to far survivors average", i, flowRate[i]);
 				farSurvivors++;
 				totalFlow += flowRate[i];
 			}
@@ -149,11 +149,16 @@ stock bool IsActivationAllowed(float flowmax, float threshold) {
 	float average = totalFlow / farSurvivors;
 	float percentFar = float(farSurvivors) / float(totalSurvivors);
 	
-	PrintDebug("average %f - difference %f - % far %f%% ", average, flowmax - average, percentFar);
+	PrintDebug("Average Flow %f - Difference %f - Far % %f%% ", average, flowmax - average, percentFar * 100);
 	//If the average is in the range, allow
-	if(flowmax - average <= threshold) return true;
+	if(flowmax - average <= threshold) {
+		PrintDebug("Activation is allowed (in range)");
+		return true;
+	}
 	//If not, check the ratio of players
-	return percentFar <= 0.30;
+	bool isAllowed = percentFar <= 0.30;
+	PrintDebug("Activation is %s", isAllowed ? "allowed" : "blocked");
+	return isAllowed;
 }
 
 stock float GetAverageFlowBehind(float flowmax) {
