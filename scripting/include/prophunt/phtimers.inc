@@ -23,7 +23,7 @@ Action Timer_StartGame(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
 			if(Game.IsSeeker(i)) {
-				Game.SetupSeeker(i);
+				Game.SetupSeekerTeam(i);
 			}
 			SetPlayerBlind(i, 0);
 			SetEntPropFloat(i, Prop_Send, "m_flLaggedMovementValue", 1.0);

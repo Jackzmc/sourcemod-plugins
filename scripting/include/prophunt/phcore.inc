@@ -6,42 +6,73 @@
 #include <prophunt/phtimers>
 
 
-static KeyValues kv;
+static KeyValues mapsKv;
 StringMap mapConfigs;
 
 bool ReloadMapDB() {
-	if(kv != null) {
-		delete kv;
+	if(mapsKv != null) {
+		delete mapsKv;
 	}
-	kv = new KeyValues("prophunt");
+	mapsKv = new KeyValues("prophunt");
 
 	char sPath[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, sPath, sizeof(sPath), "data/prophunt");
 	CreateDirectory(sPath, FOLDER_PERMS);
-	Format(sPath, sizeof(sPath), "%s/config.cfg", sPath);
+	Format(sPath, sizeof(sPath), "%s/maps.cfg", sPath);
 
-	if(!FileExists(sPath) || !kv.ImportFromFile(sPath)) {
-		delete kv;
+	if(!FileExists(sPath) || !mapsKv.ImportFromFile(sPath)) {
+		delete mapsKv;
 		return false;
 	}
 
 	validMaps.Clear();
 
 	char map[64];
-	kv.GotoFirstSubKey(true);
+	mapsKv.GotoFirstSubKey(true);
 	do {
-		kv.GetSectionName(map, sizeof(map));
+		mapsKv.GetSectionName(map, sizeof(map));
 		validMaps.PushString(map);
-	} while(kv.GotoNextKey(true));
-	kv.GoBack();
+	} while(mapsKv.GotoNextKey(true));
+	mapsKv.GoBack();
+
+	PrintToServer("[PropHunt] Loaded %d map configs", validMaps.Length);
+	return true;
+}
+
+bool ReloadPropDB() {
+	if(propHealths != null)
+		delete propHealths;
+	propHealths = new StringMap();
+	KeyValues propKv = new KeyValues("props");
+
+	char sPath[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, sPath, sizeof(sPath), "data/prophunt");
+	CreateDirectory(sPath, FOLDER_PERMS);
+	Format(sPath, sizeof(sPath), "%s/props.cfg", sPath);
+
+	if(!FileExists(sPath) || !propKv.ImportFromFile(sPath)) {
+		delete propKv;
+		return false;
+	}
+
+	char model[64];
+	propKv.GotoFirstSubKey(false);
+	do {
+		propKv.GetSectionName(model, sizeof(model));
+		propHealths.SetValue(model, propKv.GetNum(NULL_STRING));
+	} while(propKv.GotoNextKey(false));
+
+	PrintToServer("[PropHunt] Loaded %d models", propHealths.Size);
+
+	delete propKv;
 	return true;
 }
 
 static float DEFAULT_SCALE[3] = { 5.0, 5.0, 5.0 };
 
 bool LoadConfigForMap(const char[] map) {
-	kv.Rewind();
-	if (kv.JumpToKey(map)) {
+	mapsKv.Rewind();
+	if (mapsKv.JumpToKey(map)) {
 		MapConfig config;
 		config.entities = new ArrayList(sizeof(EntityConfig));
 		config.inputs = new ArrayList(ByteCountToCells(64));
@@ -49,24 +80,24 @@ bool LoadConfigForMap(const char[] map) {
 
 		static char buffer[64];
 		buffer[0] = '\0';
-		if(StrEqual(g_currentSet, "default") && kv.GetString("defaultset", buffer, sizeof(buffer)) && buffer[0] != '\0') {
+		if(StrEqual(g_currentSet, "default") && mapsKv.GetString("defaultset", buffer, sizeof(buffer)) && buffer[0] != '\0') {
 			strcopy(g_currentSet, sizeof(g_currentSet), buffer);
 		}
 		PrintToServer("[PropHunt] Loading config data for set %s on %s", g_currentSet, map);
 
-		if(kv.JumpToKey("ents")) {
-			kv.GotoFirstSubKey();
+		if(mapsKv.JumpToKey("props")) {
+			mapsKv.GotoFirstSubKey();
 			do {
 				EntityConfig entCfg;
-				kv.GetVector("origin", entCfg.origin, NULL_VECTOR);
-				kv.GetVector("rotation", entCfg.rotation, NULL_VECTOR);
-				kv.GetString("type", entCfg.type, sizeof(entCfg.type), "env_physics_blocker");
-				kv.GetString("model", entCfg.model, sizeof(entCfg.model), "");
+				mapsKv.GetVector("origin", entCfg.origin, NULL_VECTOR);
+				mapsKv.GetVector("rotation", entCfg.rotation, NULL_VECTOR);
+				mapsKv.GetString("type", entCfg.type, sizeof(entCfg.type), "prop_dynamic");
+				mapsKv.GetString("model", entCfg.model, sizeof(entCfg.model), "");
 				if(entCfg.model[0] != '\0')
 					Format(entCfg.model, sizeof(entCfg.model), "models/%s", entCfg.model);
-				kv.GetVector("scale", entCfg.scale, DEFAULT_SCALE);
-				kv.GetVector("offset", entCfg.offset, NULL_VECTOR);
-				kv.GetString("set", buffer, sizeof(buffer), "default");
+				mapsKv.GetVector("scale", entCfg.scale, DEFAULT_SCALE);
+				mapsKv.GetVector("offset", entCfg.offset, NULL_VECTOR);
+				mapsKv.GetString("set", buffer, sizeof(buffer), "default");
 				if(validSets.FindString(buffer) == -1) {
 					validSets.PushString(buffer);
 				}
@@ -74,68 +105,68 @@ bool LoadConfigForMap(const char[] map) {
 					
 					config.entities.PushArray(entCfg);
 				} else {
-					kv.GetSectionName(buffer, sizeof(buffer));
+					mapsKv.GetSectionName(buffer, sizeof(buffer));
 					PrintToServer("Skipping %s", buffer);
 				}
-			} while (kv.GotoNextKey());
+			} while (mapsKv.GotoNextKey());
 			// JumpToKey and GotoFirstSubKey both traverse, i guess, go back
-			kv.GoBack();
-			kv.GoBack();
+			mapsKv.GoBack();
+			mapsKv.GoBack();
 		}
-		if(kv.JumpToKey("inputs")) {
-			kv.GotoFirstSubKey(false);
+		if(mapsKv.JumpToKey("inputs")) {
+			mapsKv.GotoFirstSubKey(false);
 			do {
-				kv.GetSectionName(buffer, sizeof(buffer));
+				mapsKv.GetSectionName(buffer, sizeof(buffer));
 				config.inputs.PushString(buffer);
 
-				kv.GetString(NULL_STRING, buffer, sizeof(buffer));
+				mapsKv.GetString(NULL_STRING, buffer, sizeof(buffer));
 				config.inputs.PushString(buffer);
-			} while (kv.GotoNextKey(false));
-			kv.GoBack();
-			kv.GoBack();
+			} while (mapsKv.GotoNextKey(false));
+			mapsKv.GoBack();
+			mapsKv.GoBack();
 		}
 		int mapTime;
 
 		config.hasSpawnpoint = false;
 		config.canClimb = true;
 		config.pressButtons = true;
-		if(!StrEqual(g_currentSet, "default") && kv.JumpToKey("sets")) {
+		if(!StrEqual(g_currentSet, "default") && mapsKv.JumpToKey("sets")) {
 			char set[16];
-			kv.GotoFirstSubKey(true);
+			mapsKv.GotoFirstSubKey(true);
 			do {
-				kv.GetSectionName(set, sizeof(set));
+				mapsKv.GetSectionName(set, sizeof(set));
 				if(validSets.FindString(set) == -1) {
 					validSets.PushString(set);
 				}
 				if(StrEqual(g_currentSet, set, false)) {
-					kv.GetVector("spawnpoint", config.spawnpoint);
+					mapsKv.GetVector("spawnpoint", config.spawnpoint);
 					if(config.spawnpoint[0] != 0.0 && config.spawnpoint[1] != 0.0 && config.spawnpoint[2] != 0.0) {
 						PrintToServer("[PropHunt] Using provided custom spawnpoint for set %s at %0.1f, %0.1f, %0.1f", g_currentSet, config.spawnpoint[0], config.spawnpoint[1], config.spawnpoint[2]);
 						config.hasSpawnpoint = true;
 					} 
-					mapTime = kv.GetNum("maptime", 0);
-					if(kv.JumpToKey("inputs")) {
-						kv.GotoFirstSubKey(false);
+					mapTime = mapsKv.GetNum("maptime", 0);
+					if(mapsKv.JumpToKey("inputs")) {
+						mapsKv.GotoFirstSubKey(false);
 						do {
-							kv.GetSectionName(buffer, sizeof(buffer));
+							mapsKv.GetSectionName(buffer, sizeof(buffer));
 							config.inputs.PushString(buffer);
 
-							kv.GetString(NULL_STRING, buffer, sizeof(buffer));
+							mapsKv.GetString(NULL_STRING, buffer, sizeof(buffer));
 							config.inputs.PushString(buffer);
-						} while (kv.GotoNextKey(false));
-						kv.GoBack();
-						kv.GoBack();
+						} while (mapsKv.GotoNextKey(false));
+						mapsKv.GoBack();
+						mapsKv.GoBack();
 					}
 					break;
 				}
 				
-			} while(kv.GotoNextKey(true));
-			kv.GoBack();
-			kv.GoBack();
+			} while(mapsKv.GotoNextKey(true));
+			mapsKv.GoBack();
+			mapsKv.GoBack();
 		}
 		
 		if(!config.hasSpawnpoint) {
-			kv.GetVector("spawnpoint", config.spawnpoint);
+			mapsKv.GetVector("spawnpoint", config.spawnpoint);
 			if(config.spawnpoint[0] != 0.0 && config.spawnpoint[1] != 0.0 && config.spawnpoint[2] != 0.0) {
 				PrintToServer("[PropHunt] Using provided custom spawnpoint at %0.1f, %0.1f, %0.1f", config.spawnpoint[0], config.spawnpoint[1], config.spawnpoint[2]);
 				config.hasSpawnpoint = true;
@@ -150,7 +181,7 @@ bool LoadConfigForMap(const char[] map) {
 
 		// Use default maptime if exists
 		if(mapTime == 0)
-			mapTime = kv.GetNum("maptime", 0);
+			mapTime = mapsKv.GetNum("maptime", 0);
 		if(mapTime > 0) {
 			config.mapTime = mapTime;
 			PrintToServer("[PropHunt] Map time overwritten to %d seconds", mapTime);

@@ -52,7 +52,7 @@ stock void EntFire(const char[] name, const char[] input) {
 
 
 
-void SetupEntities(bool blockers = true, bool props = true, bool portals = true) {
+void SetupEntities(bool blockers = true, bool props = true) {
 	#if defined DEBUG_BLOCKERS
 	if(mapConfig.hasSpawnpoint) {
 		PrecacheModel("survivors/survivor_teenangst.mdl", true);
@@ -64,7 +64,7 @@ void SetupEntities(bool blockers = true, bool props = true, bool portals = true)
 	EntFire("info_changelevel", "Kill");
 	#endif
 	if(mapConfig.entities != null) {
-		PrintToServer("[GuessWho] Deploying %d custom entities (Set: %s) (blockers:%b props:%b portals:%b)", mapConfig.entities.Length, g_currentSet, blockers, props, portals);
+		PrintToServer("[PropHunt] Deploying %d custom entities (Set: %s) (blockers:%b props:%b)", mapConfig.entities.Length, g_currentSet, blockers, props);
 		for(int i = 0; i < mapConfig.entities.Length; i++) {
 			EntityConfig config;
 			mapConfig.entities.GetArray(i, config);
@@ -74,34 +74,6 @@ void SetupEntities(bool blockers = true, bool props = true, bool portals = true)
 			if(StrEqual(config.type, "env_physics_blocker")) {
 				if(blockers && CreateEnvBlockerScaled(config.type, config.origin, config.scale, isNavBlockersEnabled) == -1) { 
 					Game.Warn("Failed to spawn blocker [type=%s] at (%.1f,%.1f, %.1f)", config.type, config.origin[0], config.origin[1], config.origin[2]);
-				}
-			} else if(StrEqual(config.type, "_relportal")) {
-				if(portals && CreatePortal(Portal_Relative, config.model, config.origin, config.offset, config.scale) == -1) {
-					Game.Warn("Failed to spawn rel portal at (%.1f,%.1f, %.1f)", config.origin[0], config.origin[1], config.origin[2]);
-				}
-			} else if(StrEqual(config.type, "_portal")) {
-				if(portals && CreatePortal(Portal_Teleport, config.model, config.origin, config.offset, config.scale) == -1) {
-					Game.Warn("Failed to spawn portal at (%.1f,%.1f, %.1f)", config.origin[0], config.origin[1], config.origin[2]);
-				}
-			} else if(StrEqual(config.type, "_lantern")) {
-				int parent = CreateProp("prop_dynamic", config.model, config.origin, config.rotation);
-				if(parent == -1) { 
-					Game.Warn("Failed to spawn prop [type=%s] [model=%s] at (%.1f,%.1f, %.1f)", config.type, config.model, config.origin[0], config.origin[1], config.origin[2]);
-				} else {
-					float pos[3];
-					pos = config.origin;
-					pos[2] += 15.0;
-					int child = CreateDynamicLight(pos, config.rotation, GetColorInt(255, 255, 242), 80.0, 11);
-					if(child == -1) { 
-						Game.Warn("Failed to spawn light source for _lantern");
-					} else {
-						SetParent(child, parent);
-						TeleportEntity(parent, config.origin, NULL_VECTOR, NULL_VECTOR);
-					}
-				}
-			} else if(StrEqual(config.type, "_dummy")) {
-				if(CreateDummy(config.model, "hitby_tankpunch", config.origin, config.rotation) == -1) { 
-					Game.Warn("Failed to spawn dummy [model=%s] at (%.1f,%.1f, %.1f)", config.model, config.origin[0], config.origin[1], config.origin[2]);
 				}
 			} else if(StrEqual(config.type, "env_fire")) {
 				if(props && CreateFire(config.origin, config.scale[0], config.scale[1], config.scale[2]) == -1) { 
@@ -124,10 +96,4 @@ void SetupEntities(bool blockers = true, bool props = true, bool portals = true)
 			}
 		}
 	}
-}
-
-
-stock int Entity_GetHammerId(int entity)
-{
-	return GetEntProp(entity, Prop_Data, "m_iHammerID");
 }

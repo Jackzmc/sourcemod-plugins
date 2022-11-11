@@ -11,6 +11,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <left4dhooks>
+#include <smlib/effects>
 
 
 enum GameState {
@@ -27,11 +28,14 @@ char VALID_MODELS[MAX_VALID_MODELS][] = {
 	"models/props_junk/gnome.mdl"
 };
 
+#define SOUND_SWITCH_MODEL "buttons/button22.wav"
+
 #define TRANSPARENT "255 255 255 0"
 #define WHITE "255 255 255 255"
 
 enum struct PropData {
 	int prop;
+	float verticalOffset;
 	bool rotationLock;
 }
 
@@ -46,7 +50,9 @@ bool isStarting, firstCheckDone;
 Handle timesUpTimer;
 Handle waitTimer;
 
+StringMap propHealths;
 PropHuntGame Game;
+
 
 #include <gamemodes/base>
 #include <prophunt/phcore>
@@ -65,6 +71,10 @@ public void OnPluginStart() {
 	if(g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
+	validMaps = new ArrayList(ByteCountToCells(64));
+	validSets = new ArrayList(ByteCountToCells(16));
+	mapConfigs = new StringMap();
+
 	Game.Init("PropHunt");
 
 	g_FadeUserMsgId = GetUserMessageId("Fade");
@@ -106,7 +116,7 @@ public void OnClientPutInServer(int client) {
 
 
 public void OnClientDisconnect(int client) {
-	if(!isEnabled) return;
+	if(!isEnabled || IsFakeClient(client)) return;
 	ResetPlayerData(client);
 	if(Game.IsSeeker(client)) {
 		if(Game.SeekersAlive == 0) {
@@ -139,20 +149,24 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 }
 
 public void OnMapStart() {
+	if(!isEnabled) return;
 	for(int i = 0; i < MAX_VALID_MODELS; i++) {
 		PrecacheModel(VALID_MODELS[i]);
 	}
+	PrecacheSound(SOUND_SWITCH_MODEL);
 	isStarting = false;
-	if(!isEnabled) return;
 
 	char map[128];
 	GetCurrentMap(map, sizeof(map));
 	if(!StrEqual(g_currentMap, map)) {
 		firstCheckDone = false;
 		strcopy(g_currentSet, sizeof(g_currentSet), "default");
+		ReloadPropDB();
 		ReloadMapDB();
 		strcopy(g_currentMap, sizeof(g_currentMap), map);
 	}
+
+	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt", true);
 
 
 	if(lateLoaded) {
@@ -163,6 +177,7 @@ public void OnMapStart() {
 		}
 		InitGamemode();
 	}
+
 	Game.State = State_Unknown;
 }
 
@@ -214,8 +229,7 @@ void InitGamemode() {
 	Game.State = State_Hiding;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && !Game.IsSeeker(i)) {
-			PrintToChatAll("setting up non seeker %N", i);
-			Game.SetupProp(i);
+			Game.SetupPropTeam(i);
 		}
 	}
 	CreateTimer(float(BLIND_TIME), Timer_StartGame);
@@ -224,6 +238,15 @@ void InitGamemode() {
 void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	if(!Game.IsSeeker(client)) {
+		if(attacker > 0)
+			PrintToChatAll("%N was killed by %N", client, attacker);
+		else
+			PrintToChatAll("%N died", client);
+	}
+
+	ResetPlayerData(client);
+
 	if(client > 0 && Game.State == State_Active) {
 		if(Game.SeekersAlive == 0) {
 			Game.Broadcast("All seekers have perished. Hiders win!");
@@ -236,7 +259,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 }
 
 void ResetPlayerData(int client) {
-	if(propData[client].prop > 0) {
+	if(propData[client].prop > 0 && IsValidEntity(propData[client].prop)) {
 		AcceptEntityInput(propData[client].prop, "Kill");
 		propData[client].prop = 0;
 	}
@@ -275,7 +298,7 @@ Action OnPlayerTransmit(int entity, int client) {
 }
 
 int CreatePropInternal(const char[] model) {
-	int entity = CreateEntityByName("prop_dynamic");
+	int entity = CreateEntityByName("prop_physics_override");
 	DispatchKeyValue(entity, "model", model);
 	DispatchKeyValue(entity, "disableshadows", "1");
 	DispatchKeyValue(entity, "targetname", "phprop");
@@ -286,18 +309,74 @@ int CreatePropInternal(const char[] model) {
 	return entity;
 }
 
+stock int CloneProp(int prop) {
+	char model[64];
+	GetEntPropString(prop, Prop_Data, "m_ModelName", model, sizeof(model));
+	return CreatePropInternal(model);
+}
+
+stock void GlowNearbyProps(int client, float range, bool optimizeRange = false) {
+	int entity = INVALID_ENT_REFERENCE;
+	static float pos[3], clientPos[3];
+	GetClientAbsOrigin(client, clientPos);
+	static char model[64];
+	while ((entity = FindEntityByClassname(entity, "prop_dynamic")) != -1) {
+		GetEntPropVector(entity, Prop_Data, "m_vecOrigin", pos);
+		float distance = GetVectorDistance(clientPos, pos, optimizeRange);
+		if (distance < range) {
+			GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
+			GlowEntity(entity, client, 2.0);
+		}
+	}
+	while ((entity = FindEntityByClassname(entity, "prop_physics")) != -1) {
+		GetEntPropVector(entity, Prop_Data, "m_vecOrigin", pos);
+		float distance = GetVectorDistance(clientPos, pos, optimizeRange);
+		if (distance < range) {
+			GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
+			GlowEntity(entity, client, 2.0);
+		}
+	}
+}
+
+static int COLOR_PROPFINDER[4] = { 255, 255, 255, 128 };
+
+stock void GlowEntity(int entity, int client, float lifetime = 5.0) {
+	static float pos[3], mins[3], maxs[3], ang[3];
+	GetEntPropVector(entity, Prop_Data, "m_vecOrigin", pos);
+	GetEntPropVector(entity, Prop_Data, "m_vecMins", mins);
+	GetEntPropVector(entity, Prop_Data, "m_vecMaxs", maxs);
+	GetEntPropVector(entity, Prop_Data, "m_angRotation", ang);
+
+	Effect_DrawBeamBoxRotatableToClient(client, pos, mins, maxs, ang, g_iLaserIndex, 0, 0, 1, lifetime, 1.0, 1.0, 100, 0.1, COLOR_PROPFINDER, 0.0);
+}
+
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
-	// if(!isEnabled) return Plugin_Continue;
+	if(!isEnabled || !IsPlayerAlive(client) || GetClientTeam(client) < 2 || Game.IsSeeker(client)) return Plugin_Continue;
+	// TODO: Check team
 	int oldButtons = GetEntProp(client, Prop_Data, "m_nOldButtons");
 	if(buttons & IN_RELOAD && !(oldButtons & IN_RELOAD)) {
 		propData[client].rotationLock = !propData[client].rotationLock;
 		PrintHintText(client, "Rotation lock now %s", propData[client].rotationLock ? "enabled" : "disabled"); 
 		return Plugin_Continue;
+	} else if(buttons & IN_ATTACK && !(oldButtons & IN_ATTACK)) {
+		GlowNearbyProps(client, 200.0);
+		int lookAtProp = GetLookingProp(client, 100.0);
+		if(lookAtProp > 0) {
+			int prop = CloneProp(lookAtProp);
+			if(prop > 0) {
+				EmitSoundToClient(client, SOUND_SWITCH_MODEL);
+				Game.SetupProp(client, prop);
+				PrintHintText(client, "Changed prop"); 
+				SetEntPropFloat(client, Prop_Send, "m_flNextAttack", GetGameTime() + 1.0);
+				return Plugin_Handled;
+			}
+		}
 	}
-	if(propData[client].prop > 0) {
+	if(propData[client].prop > 0 && IsValidEntity(propData[client].prop)) {
 		static float pos[3], ang[3];
 		GetClientAbsOrigin(client, pos);
 		TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
+		pos[2] += propData[client].verticalOffset;
 		if(propData[client].rotationLock)
 			TeleportEntity(propData[client].prop, pos, NULL_VECTOR, NULL_VECTOR);
 		else {
@@ -310,16 +389,42 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	return Plugin_Continue;
 }
 
+int GetLookingProp(int client, float distance = 0.0, bool optimizeDist = false) {
+	static float pos[3], ang[3];
+	GetClientEyePosition(client, pos);
+	GetClientEyeAngles(client, ang);
+	TR_TraceRayFilter(pos, ang, MASK_SHOT, RayType_Infinite, Filter_FindProp, propData[client].prop);
+	if(TR_DidHit()) {
+		if(distance > 0) {
+			TR_GetEndPosition(ang);
+			if(GetVectorDistance(pos, ang, optimizeDist) > distance) {
+				return -1;
+			}
+		}
+		return TR_GetEntityIndex();
+	}
+	return -1;
+}
+
+bool Filter_FindProp(int entity, int mask, int data) {
+	if(entity <= MaxClients || data == entity) return false;
+	static char classname[32];
+	GetEntityClassname(entity, classname, sizeof(classname));
+	return StrEqual(classname, "prop_dynamic") || StrEqual(classname, "prop_physics");
+}
+
 Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
-	if(Game.IsSeeker(attacker)) {
+	if(attacker > MaxClients || Game.IsSeeker(attacker)) {
 		if(victim <= MaxClients && victim > 0) {
-			damage = 10.0;
+			damage = 5.0;
 			return Plugin_Changed;
 		} else {
 			SDKHooks_TakeDamage(attacker, 0, 0, 10.0, DMG_DIRECT);
 			damage = 0.0;
 			return Plugin_Handled;
 		}
+	} else if(attacker == victim || attacker == 0) {
+		return Plugin_Continue;
 	} else {
 		damage = 0.0;
 		return Plugin_Handled;

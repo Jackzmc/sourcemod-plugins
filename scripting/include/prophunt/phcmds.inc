@@ -12,6 +12,7 @@ public Action Command_PropHunt(int client, int args) {
 			GetCurrentMap(g_currentMap, sizeof(g_currentMap));
 			char arg[4];
 			GetCmdArg(2, arg, sizeof(arg));
+			ReloadPropDB();
 			if(ReloadMapDB()) {
 				if(!LoadConfigForMap(g_currentMap)) {
 					ReplyToCommand(client, "Warn: Map has no config file");
@@ -20,7 +21,7 @@ public Action Command_PropHunt(int client, int args) {
 				if(arg[0] == 'f') {
 					InitGamemode();
 				}
-				SetupEntities(Game.Blockers, Game.Props, Game.Portals);
+				SetupEntities(Game.Blockers, Game.Props);
 				ReplyToCommand(client, "Reloaded map from config");
 			} else {
 				ReplyToCommand(client, "Error occurred while reloading map file");
@@ -46,7 +47,7 @@ public Action Command_PropHunt(int client, int args) {
 							ReplyToCommand(client, "Warn: No config entry for %s", g_currentMap);
 						}
 						Game.Cleanup();
-						SetupEntities(Game.Blockers, Game.Props, Game.Portals);
+						SetupEntities(Game.Blockers, Game.Props);
 						PrintToChatAll("[PropHunt] Map set has been changed to \"%s\"", g_currentSet);
 						return Plugin_Handled;
 					}

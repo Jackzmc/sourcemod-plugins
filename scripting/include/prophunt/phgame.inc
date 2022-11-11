@@ -197,16 +197,44 @@ methodmap PropHuntGame < BaseGame {
 		}
 	}
 
-	public void SetupProp(int client) {
-		PrintToChatAll("SetupProp");
-		int propIndex = GetURandomInt() % MAX_VALID_MODELS;
+	public void SetupProp(int client, int prop) {
+		if(!IsValidEntity(prop)) {
+			ThrowError("Invalid prop (id %d)", prop);
+			return;
+		}
+		if(propData[client].prop > 0 && IsValidEntity(propData[client].prop)) {
+			AcceptEntityInput(propData[client].prop, "Kill");
+		}
+		static char model[64];
+		GetEntPropString(prop, Prop_Data, "m_ModelName", model, sizeof(model));
+		PrintToConsole(client, "Setup prop model: %s", model);
 
-		propData[client].prop = CreatePropInternal(VALID_MODELS[propIndex]);
+		int health = 1;
+		if(!propHealths.GetValue(model[7], health)) {
+			PrintToServer("[PropHunt] Missing health for model: %s", model[7]);
+		}
+		float mins[3];
+		GetEntPropVector(prop, Prop_Data, "m_vecMins", mins);
+		propData[client].verticalOffset = -mins[2];
+		SetEntProp(client, Prop_Send, "m_iHealth", health);
+		propData[client].prop = prop;
 		DispatchKeyValue(client, "rendercolor", TRANSPARENT);
 		SDKHook(client, SDKHook_SetTransmit, OnPlayerTransmit);
 	}
 
-	public void SetupSeeker(int client) {
+	public void SetupRandomProp(int client) {
+		int propIndex = GetURandomInt() % MAX_VALID_MODELS;
+		int prop = CreatePropInternal(VALID_MODELS[propIndex]);
+		this.SetupProp(client, prop);
+	}
+
+	public void SetupPropTeam(int client) {
+		DispatchKeyValue(client, "rendercolor", TRANSPARENT);
+		SDKHook(client, SDKHook_SetTransmit, OnPlayerTransmit);
+		this.SetupRandomProp(client);
+	}
+
+	public void SetupSeekerTeam(int client) {
 		CheatCommand(client, "give", "smg");
 	}
 
