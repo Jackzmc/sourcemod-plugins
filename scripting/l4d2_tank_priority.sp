@@ -7,6 +7,7 @@
 
 #include <sourcemod>
 #include <sdktools>
+#include <left4dhooks>
 //#include <sdkhooks>
 
 public Plugin myinfo = 
@@ -22,8 +23,13 @@ public Plugin myinfo =
 
 static int tankChooseVictimTicks[MAXPLAYERS+1]; //Per tank
 static int tankChosenVictim[MAXPLAYERS+1];
-static int totalTankDamage[MAXPLAYERS+1]; //Per survivor
+static int targettingTank[MAXPLAYERS+1];
+// tankDamage[tank][client]
+static int totalTankDamage[MAXPLAYERS+1][MAXPLAYERS+1];
+static float highestFlow[MAXPLAYERS+1];
 static ArrayList clients;
+
+static bool finaleStarted;
 
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
@@ -31,10 +37,11 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
-	clients = new ArrayList(2);
+	clients = new ArrayList(3);
 
 	HookEvent("player_hurt", Event_PlayerHurt);
 	HookEvent("tank_spawn", Event_TankSpawn);
+	HookEvent("tank_killed", Event_TankKilled);
 }
 
 
@@ -49,17 +56,33 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 		static float tankPos[3], clientPos[3];
 		GetClientAbsOrigin(attacker, tankPos);
 
+		float tankFlow = L4D2Direct_GetFlowDistance(attacker);
+
+		// TODO: check if player has been set with tankChosenVictim (or make clone var)
 		for(int i = 1; i <= MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && !IsPlayerIncapacitated(i)) {
+			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && !IsPlayerIncapacitated(i) && !IsFakeClient(i) && targettingTank[curTarget] == 0) {
 				//If a player does less than 50 damage, and has green health add them to list
-				if(totalTankDamage[i] < 100 && GetClientHealth(i) > 40) {
+				if(totalTankDamage[attacker][i] < 100 && GetClientHealth(i) > 40) {
 					GetClientAbsOrigin(i, clientPos);
-					float dist = GetVectorDistance(clientPos, tankPos);
+					float flow = L4D2Direct_GetFlowDistance(i);
+					if(flow > highestFlow[i]) {
+						highestFlow[i] = flow;
+					} 
+					// Ignore far behind players who never reached the tank
+					if(highestFlow[i] < tankFlow) continue;
+					// float dist = GetVectorDistance(clientPos, tankPos);
 					// Only add targets who are far enough away from tank
-					if(dist > 3000.0) {
-						PrintToConsoleAll("[TankPriority/debug] Adding player %N to possible victim list. Dist=%f Dmg=%d", i, dist, totalTankDamage[i]);
+					// Add targets where their flow difference is greater than 100
+					/*
+					[TankPriority/debug] Adding player CoCo Nibbz to possible victim list. TankFlow=11057.665039 Flow=10753.859375 Dmg=0
+					[TankPriority] Player Selected to target: CoCo Nibbz
+					[TankPriority/debug] Adding player CoCo Nibbz to possible victim list. TankFlow=10650.624023 Flow=9850.155273 Dmg=0
+					*/
+					if(tankFlow - flow > 500.0) {
+						PrintToConsoleAll("[TankPriority/debug] Add %N to possible targets. TankFlow=%f Flow=%f HighestFlow=%f Dmg=%d", i, tankFlow, flow, highestFlow[i], totalTankDamage[i]);
 						int index = clients.Push(i);
-						clients.Set(index, dist, 1);
+						clients.Set(index, GetVectorDistance(clientPos, tankPos, true), 1);
+						clients.Set(index, attacker, 2);
 					}
 				}
 			}
@@ -70,6 +93,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 		clients.SortCustom(Sort_TankTargetter);
 		curTarget = clients.Get(0);
 		tankChosenVictim[attacker] = curTarget;
+		targettingTank[curTarget] = attacker;
 		PrintToConsoleAll("[TankPriority] Player Selected to target: %N", curTarget);
 		//TODO: Possibly clear totalTankDamage
 		return Plugin_Changed;
@@ -89,14 +113,15 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 int Sort_TankTargetter(int index1, int index2, Handle array, Handle hndl) {
 	int client1 = GetArrayCell(array, index1);
 	int client2 = GetArrayCell(array, index2);
-	float distance1 = GetArrayCell(array, index2, 0);
+	float distance1 = GetArrayCell(array, index1, 1);
 	float distance2 = GetArrayCell(array, index2, 1);
+	int tankIndex = GetArrayCell(array, index2, 2);
 	/*500 units away, 0 damage vs 600 units away, 0 damage
 		-> target closest 500
 	  500 units away, 10 damage, vs 600 units away 0 damage
 	  500 - 10 = 450 vs 600
 	*/
-	return (totalTankDamage[client1] + RoundFloat(distance1)) - (totalTankDamage[client2] + RoundFloat(distance2));
+	return (totalTankDamage[tankIndex][client1] + RoundFloat(distance1)) - (totalTankDamage[tankIndex][client2] + RoundFloat(distance2));
 }
 
 public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) {
@@ -105,7 +130,7 @@ public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 	int dmg = event.GetInt("dmg_health");
 	if(dmg > 0 && attacker > 0 && victim > 0 && IsFakeClient(victim) && GetEntProp(victim, Prop_Send, "m_zombieClass") == TANK_CLASS_ID) {
 		if(GetClientTeam(victim) == 3 && GetClientTeam(attacker) == 2) {
-			totalTankDamage[victim] += dmg;
+			totalTankDamage[victim][attacker] += dmg;
 		}
 	}
 }
@@ -117,15 +142,43 @@ public void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) 
 	}
 }
 
+public void L4D2_OnChangeFinaleStage_Post(int finaleType, const char[] arg) {
+	if(finaleType == 1) {
+		finaleStarted = true;
+	}
+}
+
+public void Event_TankKilled(Event event, const char[] name, bool dontBroadcast) {
+	int tank = GetClientOfUserId(GetEventInt(event, "userid"));
+	if(tank > 0 && IsFakeClient(tank)) {
+		targettingTank[tankChosenVictim[tank]] = 0;
+		tankChosenVictim[tank] = 0;
+		for(int i = 1; i <= MaxClients; i++) {
+			totalTankDamage[tank][i] = 0;
+		}
+	}
+}
+
 bool IsPlayerIncapacitated(int client) {
     return (GetEntProp(client, Prop_Send, "m_isIncapacitated") == 1);
 }
 
 public void OnClientDisconnect(int client) {
 	tankChosenVictim[client] = 0;
+	targettingTank[client] = 0;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(tankChosenVictim[i] == client) {
 			tankChosenVictim[i] = 0;
+			targettingTank[i] = 0;
 		}
+		// If tank:
+		totalTankDamage[client][i] = 0;
+		// If player:
+		totalTankDamage[i][client] = 0;
 	}
+	highestFlow[client] = 0.0;
+}
+
+public void OnMapEnd() {
+	finaleStarted = false;
 }
