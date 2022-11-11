@@ -79,12 +79,13 @@ int lastCrescendoUser;
 bool spIsActive;
 enum SpecialSpawnFlags {
 	Special_Anywhere = 0,
-	Special_OnTarget = 1
+	Special_OnTarget = 1,
+	Special_SpawnDirectOnFailure = 2
 }
 
 enum SpecialInternalFlags {
 	SPI_KillOnSpawn = 1,
-	SPI_AlwaysTarget = 2
+	SPI_AlwaysTarget = 2,
 }
 
 int healTargetPlayer;
