@@ -146,9 +146,9 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_KICK);
 	RegAdminCmd("sm_surv", Cmd_SetSurvivor, ADMFLAG_KICK);
 	RegAdminCmd("sm_respawn_all", Command_RespawnAll, ADMFLAG_CHEATS, "Makes all dead players respawn in a closet");
-	RegAdminCmd("sm_playsound", Command_PlaySound, ADMFLAG_CHEATS, "Plays a gamesound for player");
-	RegAdminCmd("sm_stopsound", Command_StopSound, ADMFLAG_CHEATS, "Stops the last played gamesound for player");
-	RegAdminCmd("sm_swap", Command_SwapPlayer, ADMFLAG_CHEATS, "Swarms two player's locations");
+	RegAdminCmd("sm_playsound", Command_PlaySound, ADMFLAG_KICK, "Plays a gamesound for player");
+	RegAdminCmd("sm_stopsound", Command_StopSound, ADMFLAG_GENERIC, "Stops the last played gamesound for player");
+	RegAdminCmd("sm_swap", Command_SwapPlayer, ADMFLAG_KICK, "Swarms two player's locations");
 	RegAdminCmd("sm_perm", Command_SetServerPermissions, ADMFLAG_KICK, "Sets the server's permissions.");
 	RegAdminCmd("sm_perms", Command_SetServerPermissions, ADMFLAG_KICK, "Sets the server's permissions.");
 	RegAdminCmd("sm_permissions", Command_SetServerPermissions, ADMFLAG_KICK, "Sets the server's permissions.");
@@ -304,7 +304,7 @@ public Action Command_SwapPlayer(int client, int args) {
 				client,
 				target_list,
 				1,
-				COMMAND_FILTER_CONNECTED,
+				COMMAND_FILTER_CONNECTED | COMMAND_FILTER_NO_IMMUNITY,
 				target_name,
 				sizeof(target_name),
 				tn_is_ml)) <= 0)
@@ -321,7 +321,7 @@ public Action Command_SwapPlayer(int client, int args) {
 					client,
 					target_list,
 					1,
-					COMMAND_FILTER_CONNECTED,
+					COMMAND_FILTER_CONNECTED | COMMAND_FILTER_NO_IMMUNITY,
 					target_name,
 					sizeof(target_name),
 					tn_is_ml)) <= 0)
@@ -649,7 +649,7 @@ public void OnClientPutInServer(int client) {
 public void OnClientDisconnect(int client) {
 	isHighPingIdle[client] = false;
 	iHighPingCount[client] = 0;
-	if(IsClientConnected(client) && IsClientInGame(client) && botDropMeleeWeapon[client] > -1) {
+	if(IsClientConnected(client) && IsClientInGame(client) && botDropMeleeWeapon[client] > -1 && IsValidEntity(botDropMeleeWeapon[client])) {
 		float pos[3];
 		GetClientAbsOrigin(client, pos);
 		TeleportEntity(botDropMeleeWeapon[client], pos, NULL_VECTOR, NULL_VECTOR);
@@ -692,6 +692,8 @@ public void OnMapStart() {
 	PrecacheSound("custom/xen_teleport.mp3");
 	AddFileToDownloadsTable("sound/custom/mariokartmusic.mp3");
 	PrecacheSound("custom/mariokartmusic.mp3");	
+	AddFileToDownloadsTable("sound/custom/spookyscaryskeletons.mp3");
+	PrecacheSound("custom/spookyscaryskeletons.mp3");
 	
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);

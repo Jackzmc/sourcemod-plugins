@@ -195,7 +195,7 @@ bool ConnectDB() {
 public void Event_FirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && client <= MaxClients && !IsFakeClient(client)) {
-		char auth[32];
+		static char auth[32];
 		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
 		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s'", auth);
 		DB.Query(DB_FindNotes, query, GetClientUserId(client));
