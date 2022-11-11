@@ -119,7 +119,7 @@ public void OnPluginStart() {
 }
 
 public void OnClientPutInServer(int client) {
-	CreateTimer(20.0, Timer_ClearDoubleKitDetection, _, GetClientUserId(client));
+	CreateTimer(20.0, Timer_ClearDoubleKitDetection, GetClientUserId(client));
 }
 
 // Called on map changes too, we want this:
@@ -193,7 +193,7 @@ public void Event_HealSuccess(Event event, const char[] name, bool dontBroadcast
 		int target = GetClientOfUserId(event.GetInt("subject"));
 		int amount = event.GetInt("health_restored");
 		int orgHealth = GetClientHealth(target) - amount;
-		PrintToConsoleAll("[Debug] %N healed %N (+%d health, was %d)", client, target, amount, orgHealth);
+		PrintToConsoleAll("[Debug] %N healed %N (+%d health, was perm. %d)", client, target, amount, orgHealth);
 	}
 }
 

@@ -30,6 +30,8 @@ public Plugin myinfo =
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
+
+// Socket infoSocket;
 //TODO: Transition state
 
 public OnPluginStart()
