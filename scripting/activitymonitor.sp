@@ -2,6 +2,7 @@
 #pragma newdecls required
 
 //#define DEBUG
+#define PUSH_TIMER 90.0
 
 #define PLUGIN_VERSION "1.0"
 
@@ -41,6 +42,8 @@ static EngineVersion g_Game;
 static char L4D2_ZDifficulty[16];
 //Generic
 static char currentGamemode[32];
+
+char playerLastName[MAXPLAYERS+1][32];
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
@@ -90,7 +93,7 @@ public void OnPluginStart() {
 		AddLog("INFO", "", "", "Server has started up");
 	}
 
-	pushTimer = CreateTimer(60.0, Timer_PushLogs, _, TIMER_REPEAT);
+	pushTimer = CreateTimer(PUSH_TIMER, Timer_PushLogs, _, TIMER_REPEAT);
 	// AutoExecConfig(true, "activitymonitor");
 }
 
@@ -168,9 +171,10 @@ public Action Timer_PushLogs(Handle h) {
 		logs.Resize(logs.Length - length);
 	}
 	g_db.Execute(transaction, _, SQL_TransactionFailed, length, DBPrio_Low);
+	return Plugin_Continue;
 }
 public void SQL_TransactionFailed(Database db, any data, int numQueries, const char[] error, int failIndex, any[] queryData) {
-	PrintToServer("[ActivityMonitor] Push failure: %s at query %d/%d", error, failIndex, numQueries);
+	LogError("Push transaction failed: %s at query %d/%d", error, failIndex, numQueries);
 }
 
 public void Event_Connection(Event event, const char[] name, bool dontBroadcast) {
@@ -180,6 +184,7 @@ public void Event_Connection(Event event, const char[] name, bool dontBroadcast)
 		if(GetClientAuthId(client, AuthId_Steam2, clientName, sizeof(clientName))) {
 			if(name[7] == 'f') {
 				AddLog("JOIN", clientName, "", "");
+				GetClientName(client, playerLastName[client], 32);
 			} else {
 				static char reason[64];
 				event.GetString("reason", reason, sizeof(reason));
@@ -189,6 +194,18 @@ public void Event_Connection(Event event, const char[] name, bool dontBroadcast)
 		}
 	}
 }
+
+public void Event_PlayerInfo(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client && !IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID) {
+		char clientName[32];
+		if(GetClientAuthId(client, AuthId_Steam2, clientName, sizeof(clientName))) {
+			AddLogCustom("INFO", clientName, "", "\"%s\" changed their name to \"%L\"", playerLastName[client], client);
+			GetClientName(client, playerLastName[client], 32);
+		}
+	}
+}
+
 public Action OnLogAction(Handle source, Identity identity, int client, int target, const char[] message) {
 	// Ignore cvar changed msgs (from server.cfg)
 	if(client == 0 && !hLogCvarChanges.BoolValue && strcmp(message[31], "changed cvar") >= 0) return Plugin_Continue;
