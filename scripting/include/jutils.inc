@@ -249,7 +249,7 @@ stock bool GetGround(int client, float vPos[3], float vAng[3]) {
 	vAng[2] += 5.0;
 	vPos[2] -= 500.0;
 
-	Handle trace = TR_TraceRayFilterEx(vAng, vPos, MASK_SHOT, RayType_EndPoint, TraceFilter);
+	Handle trace = TR_TraceRayFilterEx(vAng, vPos, MASK_SOLID, RayType_EndPoint, TraceFilter);
 	if(!TR_DidHit(trace)) {
 		delete trace;
 		return false;
@@ -662,4 +662,21 @@ stock void SetParentAttachment(int child, const char[] attachment, bool withOffs
 
 stock void ClearParent(int child) {
 	AcceptEntityInput(child, "ClearParent");
+}
+
+stock void GetForwardVector(float vPos[3], float vAng[3], float vReturn[3], float fDistance) {
+    float vDir[3];
+    GetAngleVectors(vAng, vDir, NULL_VECTOR, NULL_VECTOR);
+    ScaleVector(vDir, fDistance);
+    AddVectors(vPos, vDir, vReturn);
+}
+
+stock void GetDirectionVector(float pos1[3], float angle[3], float rVec[3], float distance, float force) {
+	float endPos[3];
+	GetForwardVector(pos1, angle, endPos, distance);
+
+	MakeVectorFromPoints(pos1, endPos, rVec);
+	NormalizeVector(rVec, rVec);
+
+	ScaleVector(rVec, force);
 }
