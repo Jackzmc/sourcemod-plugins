@@ -392,7 +392,7 @@ stock int CreateLaser(const float origin[3], const char[] targetName, float colo
 		DispatchKeyValue(laser, "targetname", "sm_laser");
 		DispatchKeyValue(laser, "LaserTarget", targetName);
 		DispatchKeyValue(laser, "spawnflags", "1");
-		DispatchKeyValue(laser, "dissolvetype", "2");
+		// DispatchKeyValue(laser, "dissolvetype", "2");
 		DispatchKeyValue(laser, "NoiseAmplitude", "1");
 		DispatchKeyValueFloat(laser, "damage", damage);
 		DispatchKeyValueFloat(laser, "life", duration); 
@@ -420,7 +420,7 @@ stock int CreateBeam(const char[] beginTarget, const float center[3], const char
 		if(endTarget[0] != '\0')
 			DispatchKeyValue(laser, "LightningEnd", endTarget);
 		DispatchKeyValue(laser, "spawnflags", "1");
-		DispatchKeyValue(laser, "dissolvetype", "2");
+		// DispatchKeyValue(laser, "dissolvetype", "2");
 		DispatchKeyValue(laser, "NoiseAmplitude", "1");
 		DispatchKeyValueFloat(laser, "damage", damage);
 		DispatchKeyValueFloat(laser, "life", duration); 
