@@ -24,10 +24,10 @@ ArrayList g_spSpawnQueue;
 
 // Finds position, sends to SpawnSpecialAtPosition
 // target client index
-stock bool SpawnSpecialForTarget(SpecialType specialType, int target, SpecialSpawnFlags spawnFlags = Special_Anywhere) {
+stock bool SpawnSpecialForTarget(SpecialType specialType, int target, int spawnFlags = view_as<int>(Special_Anywhere)) {
 	static float pos[3];
 	int internalFlags = view_as<int>(SPI_AlwaysTarget);
-	if(spawnFlags == Special_OnTarget) {
+	if(spawnFlags & view_as<int>(Special_OnTarget)) {
 		static float ang[3];
 		static float testPos[3];
 		testPos = pos;
@@ -45,7 +45,10 @@ stock bool SpawnSpecialForTarget(SpecialType specialType, int target, SpecialSpa
 			float minDistance = GetIdealMinDistance(specialType);
 			GetHorizontalPositionFromOrigin(pos, ang, minDistance, testPos);
 			if(!FindSuitablePosition(pos, testPos, minDistance, 100)) {
-				L4D_GetRandomPZSpawnPosition(target, view_as<int>(specialType), 10, testPos);
+				if(spawnFlags & view_as<int>(Special_SpawnDirectOnFailure))
+					GetClientAbsOrigin(target, pos);
+				else
+					L4D_GetRandomPZSpawnPosition(target, view_as<int>(specialType), 10, testPos);
 			}
 			pos = testPos;
 		} 

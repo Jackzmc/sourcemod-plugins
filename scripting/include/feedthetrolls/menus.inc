@@ -44,7 +44,7 @@ public int Insta_SpecialHandler(Menu menu, MenuAction action, int client, int pa
 		}
 		SpecialType special = view_as<SpecialType>(specialInt);
 		if(inFace) {
-			if(SpawnSpecialForTarget(special, target, Special_OnTarget)) {
+			if(SpawnSpecialForTarget(special, target, view_as<int>(Special_OnTarget))) {
 				LogAction(client, target, "\"%L\" spawned Insta-%s™ on \"%L\"", client, SPECIAL_NAMES[specialInt-1], target);
 				ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ on %N", SPECIAL_NAMES[specialInt-1], target);
 			} else {

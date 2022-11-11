@@ -84,14 +84,14 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_ftp",  Command_FeedTheCrescendoTroll, ADMFLAG_KICK, "Applies a manual punish on the last crescendo activator");
 	RegAdminCmd("sm_ftc",  Command_ApplyComboTrolls, ADMFLAG_KICK, "Applies predefined combinations of trolls");
 	#if defined _actions_included
-	RegAdminCmd("sm_witch_attack", Command_WitchAttack, ADMFLAG_CHEATS, "Makes all witches target a player");
+	RegAdminCmd("sm_witch_attack", Command_WitchAttack, ADMFLAG_BAN, "Makes all witches target a player");
 	#endif
 	RegAdminCmd("sm_insta", Command_InstaSpecial, ADMFLAG_KICK, "Spawns a special that targets them, close to them.");
 	RegAdminCmd("sm_stagger", Command_Stagger, ADMFLAG_KICK, "Stagger a player");
 	RegAdminCmd("sm_inface", Command_InstaSpecialFace, ADMFLAG_KICK, "Spawns a special that targets them, right in their face.");
-	RegAdminCmd("sm_bots_attack", Command_BotsAttack, ADMFLAG_CHEATS, "Instructs all bots to attack a player until they have X health.");
-	RegAdminCmd("sm_scharge", Command_SmartCharge, ADMFLAG_CHEATS, "Auto Smart charge");
-	RegAdminCmd("sm_healbots", Command_HealTarget, ADMFLAG_CHEATS, "Make bots heal a player");
+	RegAdminCmd("sm_bots_attack", Command_BotsAttack, ADMFLAG_BAN, "Instructs all bots to attack a player until they have X health.");
+	RegAdminCmd("sm_scharge", Command_SmartCharge, ADMFLAG_BAN, "Auto Smart charge");
+	RegAdminCmd("sm_healbots", Command_HealTarget, ADMFLAG_BAN, "Make bots heal a player");
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);

@@ -112,7 +112,7 @@ public Action Command_InstaSpecialFace(int client, int args) {
 		for (int i = 0; i < target_count; i++) {
 			int target = target_list[i];
 			if(GetClientTeam(target) == 2) {
-				if(SpawnSpecialForTarget(specialType, target, Special_OnTarget)) {
+				if(SpawnSpecialForTarget(specialType, target, view_as<int>(Special_OnTarget))) {
 					LogAction(client, target, "\"%L\" spawned Insta-%s™ at player \"%L\"", client, arg2, target);
 					successes++;
 				} else {

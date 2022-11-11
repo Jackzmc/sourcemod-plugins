@@ -41,21 +41,25 @@ bool ToggleMarkPlayer(int client, int target) {
 		return true;
 	}else{
 		bool isClientAdmin = GetUserAdmin(client) != INVALID_ADMIN_ID;
+		if(!isClientAdmin) {
+			ReplyToCommand(client, "cannot mark %N as troll as you are not an admin.", target);
+			return false;
+		}
 		bool isTargetAdmin = GetUserAdmin(target) != INVALID_ADMIN_ID;
-		if(isClientAdmin && !isTargetAdmin) {
-			Call_StartForward(g_PlayerMarkedForward);
-			Call_PushCell(client);
-			Call_PushCell(target);
-			Call_Finish();
-			pdata[target].pendingTrollBan = GetClientUserId(client);
-			EnableTroll(target, "No Profanity");
-			LogAction(client, target, "\"%L\" marked \"%L\" as troll", client, target);
-			ShowActivityEx(client, "[FTT] ", "marked %N as troll", target);
-			return true;
-		}else{
+		if(isTargetAdmin) {
 			ReplyToCommand(client, "cannot mark %N as troll as they are an admin.", target);
 			return false;
 		}
+
+		Call_StartForward(g_PlayerMarkedForward);
+		Call_PushCell(client);
+		Call_PushCell(target);
+		Call_Finish();
+		pdata[target].pendingTrollBan = GetClientUserId(client);
+		EnableTroll(target, "No Profanity");
+		LogAction(client, target, "\"%L\" marked \"%L\" as troll", client, target);
+		ShowActivityEx(client, "[FTT] ", "marked %N as troll", target);
+		return true;
 	}
 }
 

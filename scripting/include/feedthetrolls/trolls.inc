@@ -37,7 +37,10 @@ void SetupTrolls() {
 	SetupTroll("Goo", "Spawns a spitter puddle underneath them", TrollMod_Instant);
 	index = SetupTroll("Sticky Goo", "Slows player down in goo", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(false);
-	Trolls[index].AddFlag("60% Movement Speed", true);
+	Trolls[index].AddFlag("90% Movement Speed", true);
+	Trolls[index].AddFlag("80% Movement Speed", false);
+	Trolls[index].AddFlag("70% Movement Speed", false);
+	Trolls[index].AddFlag("50% Movement Speed", false);
 	Trolls[index].AddFlag("30% Movement Speed", false);
 	Trolls[index].AddFlag("0% Movement Speed", false);
 	stickyGooIndex = index;
@@ -166,7 +169,10 @@ void SetupTrolls() {
 	SetCategory("Movement");
 	index = SetupTroll("Slow Speed", "Sets player speed to 0.8x of normal speed", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(false);
-	Trolls[index].AddFlag("60% Movement Speed", true);
+	Trolls[index].AddFlag("90% Movement Speed", true);
+	Trolls[index].AddFlag("80% Movement Speed", false);
+	Trolls[index].AddFlag("70% Movement Speed", false);
+	Trolls[index].AddFlag("50% Movement Speed", false);
 	Trolls[index].AddFlag("30% Movement Speed", false);
 	Trolls[index].AddFlag("0% Movement Speed", false);
 	SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
@@ -185,6 +191,7 @@ void SetupTrolls() {
 	SetCategory("Misc");
 	SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
 	SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
+	SetupTroll("No Button Touchie", "Stops people from pressing buttons", TrollMod_Constant);
 	index = SetupTroll("Meta: Inverse", "Uhm you are not supposed to see this...", TrollMod_Instant);
 	Trolls[index].hidden = true;
 	Trolls[index].AddFlagPrompt(false);
@@ -224,8 +231,11 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 	} else if(StrEqual(troll.name, "Slow Speed")) {
 		if(toActive) {
 			float movement = 0.0;
-			if(flags & 1) movement = 0.6;
-			else if(flags & 2) movement = 0.3;
+			if(flags & 1) movement = 0.9;
+			else if(flags & 2) movement = 0.8;
+			else if(flags & 4) movement = 0.7;
+			else if(flags & 8) movement = 0.5;
+			else if(flags & 16) movement = 0.3;
 			SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", movement);
 		} else 
 			SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);

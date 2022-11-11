@@ -219,10 +219,21 @@ public Action Event_WeaponReload(int weapon) {
 	return Plugin_Continue;
 }
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
+	static int noButtonPressIndex;
+	if(!noButtonPressIndex) noButtonPressIndex = GetTrollID("No Button Touchie");
 	if(client > 0 && client <= MaxClients) {
+		if(Trolls[noButtonPressIndex].IsActive(client)) {
+			AcceptEntityInput(entity, "Lock");
+			RequestFrame(Frame_ResetButton, entity);
+			return Plugin_Handled;
+		}
 		lastButtonUser = client;
 	}
 	return Plugin_Continue;
+}
+
+public void Frame_ResetButton(int entity) {
+	AcceptEntityInput(entity, "Unlock");
 }
 
 public void Event_PanicEventCreate(Event event, const char[] name, bool dontBroadcast) {
@@ -301,8 +312,6 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 				if(class !=  L4D2Infected_Tank && hMagnetTargetMode.IntValue & 1 == 0) continue;
 			}
 
-			PrintToConsoleAll("[FTT/Debug] Adding possible magnet victim %N for %N", i, attacker);
-
 			GetClientAbsOrigin(i, survPos);
 			float dist = GetVectorDistance(survPos, spPos, true);
 			if(dist < closestDistance || closestClient == -1) {
@@ -314,7 +323,6 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 
 	// If found, set, else just let game decide
 	if(closestClient > 0) {
-		PrintToConsoleAll("[FTT/Debug] infected %N -> attack -> %N", attacker, closestClient);
 		pdata[attacker].attackerTargetUid = GetClientUserId(closestClient);
 		curTarget = closestClient;
 		return Plugin_Changed;
@@ -748,7 +756,7 @@ public Action OnVocalizeCommand(int client, const char[] vocalize, int initiator
 	static int noRushingUsID;
 	if(vocalGagID == 0) vocalGagID = GetTrollID("Vocalize Gag");
 	if(noRushingUsID == 0) noRushingUsID = GetTrollID("No Rushing Us");
-	if(Trolls[noRushingUsID].IsActive(client) && StrEqual(vocalize, "PlayerHurryUp") || StrEqual(vocalize, "PlayerYellRun") || StrEqual(vocalize, "PlayerMoveOn") || StrEqual(vocalize, "PlayerLeadOn")) {
+	if(Trolls[noRushingUsID].IsActive(client) && (StrEqual(vocalize, "PlayerHurryUp") || StrEqual(vocalize, "PlayerYellRun") || StrEqual(vocalize, "PlayerMoveOn") || StrEqual(vocalize, "PlayerLeadOn"))) {
 		float speed = GetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue");
 		speed -= 0.01;
 		if(speed < 0.0) SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", 0.0);
@@ -775,17 +783,17 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 				static char sceneFile[32];
 				GetSceneFile(scene, sceneFile, sizeof(sceneFile));
 				if(StrContains(sceneFile, "warnboomer") > -1) {
-					SpawnSpecialForTarget(Special_Boomer, activator, Special_OnTarget);
+					SpawnSpecialForTarget(Special_Boomer, activator, view_as<int>(Special_OnTarget));
 				} else if(StrContains(sceneFile, "warnhunter") > -1) {
-					SpawnSpecialForTarget(Special_Hunter, activator, Special_OnTarget);
+					SpawnSpecialForTarget(Special_Hunter, activator, view_as<int>(Special_OnTarget));
 				} else if(StrContains(sceneFile, "warnsmoker") > -1) {
-					SpawnSpecialForTarget(Special_Smoker, activator, Special_OnTarget);
+					SpawnSpecialForTarget(Special_Smoker, activator, view_as<int>(Special_OnTarget));
 				} else if(StrContains(sceneFile, "warnspitter") > -1) {
-					SpawnSpecialForTarget(Special_Spitter, activator, Special_OnTarget);
+					SpawnSpecialForTarget(Special_Spitter, activator, view_as<int>(Special_OnTarget));
 				} else if(StrContains(sceneFile, "warnjockey") > -1) {
-					SpawnSpecialForTarget(Special_Jockey, activator, Special_OnTarget);
+					SpawnSpecialForTarget(Special_Jockey, activator, view_as<int>(Special_OnTarget));
 				} else if(StrContains(sceneFile, "warncharger") > -1) {
-					SpawnSpecialForTarget(Special_Charger, activator, Special_OnTarget);
+					SpawnSpecialForTarget(Special_Charger, activator, view_as<int>(Special_OnTarget));
 				}
 				
 				if(Trolls[vocalizeSpecials].activeFlagClients[activator] & 1) {
@@ -911,13 +919,13 @@ public bool TraceEntityFilterPlayer(int entity, int mask, any data) {
 // TODO: Increase the frequency of spawns the longer they are in antirush. Possibly increase int and decrease over time
 public Action OnAntiRush(int client, int &type, float distance) {
 	if(client && client > 0 && client <= MaxClients && type == 3 && IsPlayerAlive(client) && !IsPlayerIncapped(client)) {
-		if(GetGameTime() - fLastAntiRushEvent[client] > ANTI_RUSH_DEFAULT_FREQUENCY - fAntiRushFrequencyCounter[client]) { <
+		if(GetGameTime() - fLastAntiRushEvent[client] > ANTI_RUSH_DEFAULT_FREQUENCY - fAntiRushFrequencyCounter[client]) {
 			if(fAntiRushFrequencyCounter[client] < ANTI_RUSH_DEFAULT_FREQUENCY) {
-            	fAntiRushFrequencyCounter[client] += ANTI_RUSH_FREQ_INC;
+				fAntiRushFrequencyCounter[client] += ANTI_RUSH_FREQ_INC;
 			}
-            SpecialType special = view_as<SpecialType>(GetRandomInt(1,6));
+			SpecialType special = view_as<SpecialType>(GetRandomInt(1,6));
 			fLastAntiRushEvent[client] = GetGameTime();
-			SpawnSpecialForTarget(special, client);
+			SpawnSpecialForTarget(special, client, view_as<int>(Special_SpawnDirectOnFailure | Special_OnTarget));
 			PrintToConsoleAll("[FTT] Spawning anti-rush special on %N (dist=%f) (special=%s)", client, distance, SPECIAL_NAMES[view_as<int>(special)-1]);
 		}
 	}
@@ -929,7 +937,7 @@ Action Timer_DecreaseAntiRush(Handle h) {
 		if(fAntiRushFrequencyCounter[i] > 1.0) {
 			fAntiRushFrequencyCounter[i]--;
 		} else {
-			fAntiRushFrequencyCounter = 0.0;
+			fAntiRushFrequencyCounter[i] = 0.0;
 		}
 	}
 	return Plugin_Continue;
@@ -943,10 +951,13 @@ public void L4D2_CInsectSwarm_CanHarm_Post(int acid, int spitter, int entity) {
 public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(Trolls[stickyGooIndex].IsActive(stickyGooIndex)) {
+		int flags = Trolls[stickyGooIndex].activeFlagClients[client];
 		float movement = 0.0;
-		if(Trolls[stickyGooIndex].activeFlagClients[client] & 1) movement = 0.6;
-		else if(Trolls[stickyGooIndex].activeFlagClients[client] & 2) movement = 0.3;
-
+		if(flags & 1) movement = 0.9;
+		else if(flags & 2) movement = 0.8;
+		else if(flags & 4) movement = 0.7;
+		else if(flags & 8) movement = 0.5;
+		else if(flags & 16) movement = 0.3;
 		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", movement);
 		pdata[client].lastInSpitTime = GetGameTime();
 		if(~pdata[client].flags & view_as<int>(Flag_HasSpitTimer)) {
