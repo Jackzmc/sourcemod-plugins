@@ -50,7 +50,15 @@ enum struct PlayerData {
 
 PlayerData pData[MAXPLAYERS+1];
 
-ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime, hTKAction, hSuicideAction, hSuicideLimit, hFFAutoScaleAmount, hFFAutoScaleForgivenessAmount, hFFAutoScaleMaxRatio, hFFAutoScaleIgnoreAdmins;
+ConVar hForgivenessTime, hBanTime, hThreshold, hJoinTime, hTKAction, hSuicideAction, hSuicideLimit, hFFAutoScaleAmount, hFFAutoScaleForgivenessAmount, hFFAutoScaleMaxRatio, hFFAutoScaleActivateTypes;
+
+enum RffActTypes {
+	RffActType_None,
+	RffActType_AdminDamage = 1,
+	RffActType_BlastDamage = 2,
+	RffActType_MolotovDamage = 4,
+	RffActType_BlackAndWhiteDamage = 8
+}
 char gamemode[64];
 bool isEnabled = true;
 
@@ -86,8 +94,8 @@ public void OnPluginStart() {
 	hFFAutoScaleAmount = CreateConVar("l4d2_tk_auto_ff_rate", "0.02", "The rate at which auto reverse-ff is scaled by.", FCVAR_NONE, true, 0.0);
 	hFFAutoScaleMaxRatio = CreateConVar("l4d2_tk_auto_ff_max_ratio", "5.0", "The maximum amount that the reverse ff can go. 0.0 for unlimited", FCVAR_NONE, true, 0.0);
 	hFFAutoScaleForgivenessAmount = CreateConVar("l4d2_tk_auto_ff_forgive_rate", "0.05", "This amount times amount of minutes since last ff is removed from ff rate", FCVAR_NONE, true, 0.0);
-	hFFAutoScaleIgnoreAdmins = CreateConVar("l4d2_tk_auto_ff_ignore_admins", "1", "Should automatic reverse ff ignore admins? 0 = Admins are subjected\n1 = Admins are excempt", FCVAR_NONE, true, 0.0, true, 1.0);
-
+	hFFAutoScaleActivateTypes = CreateConVar("l4d2_tk_auto_ff_activate_types", "7", "The types of damages to ignore. Add bits together.\n0 = Just direct fire\n1 = Damage from admins\n2 = Blast damage (pipes, grenade launchers)\n4 = Molotov/gascan/firework damage\n8 = Killing black and white players", FCVAR_NONE, true, 0.0, true, 15.0);
+	
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.AddChangeHook(Event_GamemodeChange);
 	Event_GamemodeChange(hGamemode, gamemode, gamemode);
@@ -212,8 +220,12 @@ public void OnClientPutInServer(int client) {
 }
 
 public void OnClientPostAdminCheck(int client) {
-	if(GetUserAdmin(client) != INVALID_ADMIN_ID && hFFAutoScaleIgnoreAdmins.BoolValue) {
-		pData[client].immunityFlags = Immune_TK | Immune_RFF;
+	if(GetUserAdmin(client) != INVALID_ADMIN_ID) {
+		pData[client].immunityFlags = Immune_TK;
+		// If no admins can do ff and they 
+		if(~hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_AdminDamage)) {
+			pData[client].immunityFlags |= Immune_RFF;
+		}
 	}
 }
 
@@ -263,29 +275,36 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 	if(isEnabled && damage > 0.0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
 		if(GetClientTeam(victim) != GetClientTeam(attacker) || attacker == victim) 
 			return Plugin_Continue;
-		else if(damagetype & DMG_BURN && IsFakeClient(attacker) && GetClientTeam(attacker) == 2) {
+		else if(damagetype & DMG_BURN && hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_MolotovDamage) && IsFakeClient(attacker) && GetClientTeam(attacker) == 2) {
 			// Ignore damage from fire caused by bots (players who left after causing fire)
+			damage = 0.0;
+			return Plugin_Changed;
+		} else if((damagetype & DMG_BLAST || damagetype & DMG_BLAST_SURFACE) && hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_BlastDamage) && IsFakeClient(attacker) && GetClientTeam(attacker) == 2) {
 			damage = 0.0;
 			return Plugin_Changed;
 		}
 		// Otherwise if attacker was ignored or is a bot, stop here and let vanilla handle it
-		else if(pData[attacker].immunityFlags & Immune_TK || IsFakeClient(attacker)) return Plugin_Continue;
+		else if(pData[attacker].immunityFlags & Immune_RFF || IsFakeClient(attacker)) return Plugin_Continue;
+		// If victim is black and white and rff damage isnt turned on for it, allow it:
+		else if(GetEntProp(victim, Prop_Send, "m_isGoingToDie") && ~hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_BlackAndWhiteDamage)) {
+			return Plugin_Continue;
+		}
 
-		bool isAdmin = GetUserAdmin(attacker) != INVALID_ADMIN_ID;
 		
 		//Allow friendly firing BOTS that aren't idle players:
 		//if(IsFakeClient(victim) && !HasEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") || GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) return Plugin_Continue;
 		
 		// Stop all damage early if already marked as troll
-		if(pData[attacker].isTroll) {
+		else if(pData[attacker].isTroll) {
 			SDKHooks_TakeDamage(attacker, attacker, attacker, pData[attacker].autoRFFScaleFactor * damage);
 			return Plugin_Stop;
 		}
 		// Allow vanilla-damage if being attacked by special (example, charger carry)
-		if(pData[victim].underAttack) return Plugin_Continue;
+		else if(pData[victim].underAttack) return Plugin_Continue;
 	
+		bool isAdmin = GetUserAdmin(attacker) != INVALID_ADMIN_ID;
 		// Is damage not caused by fire or pipebombs?
-		bool isDamageDirect = damagetype & (DMG_BLAST|DMG_BURN|DMG_BLAST_SURFACE) == 0;
+		bool isDamageDirect = damagetype & (DMG_BURN) == 0;
 		int time = GetTime();
 		// If is a fall within first 2 minutes, do appropiate action
 		if(!isAdmin && damagetype & DMG_FALL && attacker == victim && damage > 0.0 && time - pData[victim].joinTime <= hJoinTime.IntValue * 60) {
