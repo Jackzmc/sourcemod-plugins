@@ -168,9 +168,13 @@ public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
 	if (g_Models[player][0] != '\0')
 	{
 		int playerType = GetEntProp(player, Prop_Send, "m_survivorCharacter");
-		SetEntProp(bot, Prop_Send, "m_survivorCharacter", playerType);
+		if(playerType >= 0 && playerType <= 7) {
+			SetEntProp(bot, Prop_Send, "m_survivorCharacter", playerType);
+			SetClientInfo(bot, "name", survivor_names[playerType]);
+		} else {
+			PrintToServer("[l4d_survivor_identity_fix]: Ignoring player's (%N) m_survivorCharacter due to out of range (%d)", player, playerType);
+		}
 		SetEntityModel(bot, g_Models[player]); // Restore saved model. Player model is hunter at this point
-		SetClientInfo(bot, "name", survivor_names[playerType]);
 	}
 }
 
