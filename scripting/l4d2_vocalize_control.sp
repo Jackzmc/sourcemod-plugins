@@ -35,7 +35,7 @@ public void OnPluginStart()
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 
 	RegConsoleCmd("sm_vgag", Cmd_VGag, "Gags a player\'s vocalizations locally");
-	AddNormalSoundHook(view_as<NormalSHook>(SoundHook));
+	AddNormalSoundHook(SoundHook);
 }
 
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
@@ -67,7 +67,7 @@ public Action Cmd_VGag(int client, int args) {
 				client,
 				target_list,
 				MAXPLAYERS,
-				COMMAND_FILTER_ALIVE,
+				COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_IMMUNITY,
 				target_name,
 				sizeof(target_name),
 				tn_is_ml)) <= 0)
@@ -79,17 +79,17 @@ public Action Cmd_VGag(int client, int args) {
             int playerIndex = gaggedPlayers[client].FindValue(target_list[i]);
             if(playerIndex > -1) {
                 gaggedPlayers[client].Erase(playerIndex);
-                ReplyToCommand(client, "Locally vocalize ungagged %s", target_name);
+                ReplyToCommand(client, "Locally vocalize ungagged %N", target_list[i]);
             }else{
                 gaggedPlayers[client].Push(target_list[i]);
-                ReplyToCommand(client, "Locally vocalize gagged %s", target_name);
+                ReplyToCommand(client, "Locally vocalize gagged %N", target_list[i]);
             }
 		}
 	}
     return Plugin_Handled;
 }
 
-public Action SoundHook(int[] clients, int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char[] soundEntry, int& seed) {
+public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char soundEntry[PLATFORM_MAX_PATH], int& seed) {
 	if(numClients > 0 && entity > 0 && entity <= MaxClients) {
 		if(StrContains(sample, "survivor\\voice") > -1) {
 			for(int i = 0; i < numClients; i++) {
