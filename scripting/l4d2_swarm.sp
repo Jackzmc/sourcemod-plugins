@@ -40,16 +40,16 @@ public void OnPluginStart()
 	SwarmRadius = hSwarmDefaultRange.IntValue;
 
 	LoadTranslations("common.phrases");
-	RegAdminCmd("sm_swarm", Cmd_Swarm, ADMFLAG_CHEATS, "sm_swarm [player] [range] - Zombies swarm player (or random if not set)");
-	RegAdminCmd("sm_rush", Cmd_Swarm, ADMFLAG_ROOT, "sm_swarm [player] [range] - Zombies swarm player (or random if not set)");
-	RegAdminCmd("sm_rushmenu", Cmd_SwarmMenu, ADMFLAG_ROOT, "sm_swarmmenu - Open swarm menu");
-	RegAdminCmd("sm_rmenu", Cmd_SwarmMenu, ADMFLAG_ROOT, "sm_swarmmenu - Open swarm menu");
+	RegAdminCmd("sm_swarm", Cmd_Swarm, ADMFLAG_BAN, "sm_swarm [player] [range] - Zombies swarm player (or random if not set)");
+	RegAdminCmd("sm_rush", Cmd_Swarm, ADMFLAG_BAN, "sm_swarm [player] [range] - Zombies swarm player (or random if not set)");
+	RegAdminCmd("sm_rushmenu", Cmd_SwarmMenu, ADMFLAG_BAN, "sm_swarmmenu - Open swarm menu");
+	RegAdminCmd("sm_rmenu", Cmd_SwarmMenu, ADMFLAG_BAN, "sm_swarmmenu - Open swarm menu");
 
-	RegAdminCmd("sm_swarmtoggle", Cmd_SwarmToggle, ADMFLAG_ROOT, "sm_swarmtoggle <player> [range]");
-	RegAdminCmd("sm_rushtoggle", Cmd_SwarmToggle, ADMFLAG_ROOT, "sm_swarmtoggle <player> [range]");
-	RegAdminCmd("sm_rt", Cmd_SwarmToggle, ADMFLAG_ROOT, "sm_swarmtoggle <player> [range]");
-	RegAdminCmd("sm_rushtogglemenu", Cmd_SwarmToggleMenu, ADMFLAG_ROOT, "sm_swarmtogglemenu - Open swarm toggle menu");
-	RegAdminCmd("sm_rtmenu", Cmd_SwarmToggleMenu, ADMFLAG_ROOT, "sm_swarmtogglemenu - Open swarm toggle menu");
+	RegAdminCmd("sm_swarmtoggle", Cmd_SwarmToggle, ADMFLAG_BAN | ADMFLAG_CHEATS, "sm_swarmtoggle <player> [range]");
+	RegAdminCmd("sm_rushtoggle", Cmd_SwarmToggle, ADMFLAG_BAN | ADMFLAG_CHEATS, "sm_swarmtoggle <player> [range]");
+	RegAdminCmd("sm_rt", Cmd_SwarmToggle, ADMFLAG_BAN | ADMFLAG_CHEATS, "sm_swarmtoggle <player> [range]");
+	RegAdminCmd("sm_rushtogglemenu", Cmd_SwarmToggleMenu, ADMFLAG_BAN | ADMFLAG_CHEATS, "sm_swarmtogglemenu - Open swarm toggle menu");
+	RegAdminCmd("sm_rtmenu", Cmd_SwarmToggleMenu, ADMFLAG_BAN | ADMFLAG_CHEATS, "sm_swarmtogglemenu - Open swarm toggle menu");
 
 	HookEvent("triggered_car_alarm", Event_CarAlarm);
 }
