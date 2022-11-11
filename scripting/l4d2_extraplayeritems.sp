@@ -77,13 +77,24 @@ public Plugin myinfo =
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
-static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance;
+static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty;
 static int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
 static int currentChapter;
 static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound, areItemsPopulated;
 static ArrayList ammoPacks;
 static Handle updateHudTimer;
 static char gamemode[32];
+
+bool isCoop;
+
+enum Difficulty {
+	Difficulty_Easy,
+	Difficulty_Normal,
+	Difficulty_Advanced,
+	Difficulty_Expert,
+}
+
+Difficulty zDifficulty;
 
 static bool allowTankSplit = true;
 
@@ -131,9 +142,11 @@ Restore from saved inventory
 static StringMap weaponMaxClipSizes;
 static StringMap pInv;
 
-static char HUD_SCRIPT_DATA[] = "g_ModeScript._eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( g_ModeScript._eph );HUDPlace( g_ModeScript.HUD_RIGHT_BOT, 0.72, 0.78, 0.3, 0.3 );g_ModeScript";
+static char HUD_SCRIPT_DATA[] = "g_ModeScript._eph <- {Fields = {players = {slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG}}};HUDSetLayout(g_ModeScript._eph);HUDPlace(g_ModeScript.HUD_RIGHT_BOT, 0.72,0.78,0.3,0.3);g_ModeScript";
 
 static char HUD_SCRIPT_CLEAR[] = "g_ModeScript._eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( g_ModeScript._eph );g_ModeScript";
+
+static char HUD_SCRIPT_DEBUG[] = "g_ModeScript._ephdebug <- {Fields = {players = {slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"DEBUG!!! %s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG}}};HUDSetLayout(g_ModeScript._ephdebug);HUDPlace(g_ModeScript.HUD_RIGHT_BOT, 0.72,0.78,0.3,0.3);g_ModeScript";
 
 
 #define CABINET_ITEM_BLOCKS 4
@@ -197,10 +210,11 @@ public void OnPluginStart() {
 	hMinPlayersSaferoomDoor  = CreateConVar("l4d2_extraitems_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
 	hSaferoomDoorWaitSeconds = CreateConVar("l4d2_extraitems_doorunlock_wait", "55", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
 	hSaferoomDoorAutoOpen 	 = CreateConVar("l4d2_extraitems_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
-	hEPIHudState 			 = CreateConVar("l4d2_extraitems_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 2.0);
+	hEPIHudState 			 = CreateConVar("l4d2_extraitems_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 3.0);
 	hExtraFinaleTank 		 = CreateConVar("l4d2_extraitems_extra_tanks", "3", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 3.0);
 	hSplitTankChance 		 = CreateConVar("l4d2_extraitems_splittank_chance", "0.5", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 1.0);
 	cvDropDisconnectTime     = CreateConVar("l4d2_extraitems_disconnect_time", "120.0", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
+	cvFFDecreaseRate         = CreateConVar("l4d2_extraitems_ff_decrease_rate", "0.3", "The friendly fire factor is subtracted from the formula (playerCount-4) * this rate. Effectively reduces ff penalty when more players. 0.0 to subtract none", FCVAR_NONE, true, 0.0);
 
 	hEPIHudState.AddChangeHook(Cvar_HudStateChange);
 	
@@ -220,7 +234,7 @@ public void OnPluginStart() {
 		int count = GetRealSurvivorsCount();
 		abmExtraCount = count;
 		int threshold = hEPIHudState.IntValue == 1 ? 5 : 0;
-		if(true || hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
+		if(hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
 			PrintToServer("[EPI] Creating new hud timer");
 			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
 		}
@@ -229,6 +243,12 @@ public void OnPluginStart() {
 	#if defined DEBUG_FORCE_PLAYERS 
 	abmExtraCount = DEBUG_FORCE_PLAYERS;
 	#endif
+
+	char buffer[16];
+	cvZDifficulty = FindConVar("z_difficulty");
+	cvZDifficulty.GetString(buffer, sizeof(buffer));
+	cvZDifficulty.AddChangeHook(Event_DifficultyChange);
+	Event_DifficultyChange(cvZDifficulty, buffer, buffer);
 
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.GetString(gamemode, sizeof(gamemode));
@@ -262,6 +282,12 @@ public void OnClientPutInServer(int client) {
 	if(!IsFakeClient(client) && GetClientTeam(client) == 2 && !StrEqual(gamemode, "hideandseek")) {
 		CreateTimer(0.2, Timer_CheckInventory, client);
 	}
+}
+
+public void OnPluginEnd() {
+	delete weaponMaxClipSizes;
+	delete ammoPacks;
+	L4D2_ExecVScriptCode(HUD_SCRIPT_CLEAR);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -298,21 +324,12 @@ public Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcas
 	return Plugin_Continue; 
 }
 
-public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
-	cvar.GetString(gamemode, sizeof(gamemode));
-}
-
-public void OnPluginEnd() {
-	delete weaponMaxClipSizes;
-	delete ammoPacks;
-	L4D2_ExecVScriptCode(HUD_SCRIPT_CLEAR);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // CVAR HOOKS 
 ///////////////////////////////////////////////////////////////////////////////
 public void Cvar_HudStateChange(ConVar convar, const char[] oldValue, const char[] newValue) {
 	if(convar.IntValue == 0 && updateHudTimer != null) {
+		PrintToServer("[EPI] Stopping timer externally: Cvar changed to 0");
 		delete updateHudTimer;
 	}else {
 		int count = GetRealSurvivorsCount();
@@ -322,7 +339,39 @@ public void Cvar_HudStateChange(ConVar convar, const char[] oldValue, const char
 			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
 		}
 	}
-	
+}
+
+public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
+	cvar.GetString(gamemode, sizeof(gamemode));
+	isCoop = StrEqual(gamemode, "coop", false);
+}
+
+ConVar GetActiveFriendlyFireFactor() {
+	if(zDifficulty == Difficulty_Easy) {
+		// Typically is 0 but doesn't matter
+		return FindConVar("survivor_friendly_fire_factor_easy");
+	} else if(zDifficulty == Difficulty_Normal) {
+		return FindConVar("survivor_friendly_fire_factor_normal");
+	} else if(zDifficulty == Difficulty_Advanced) {
+		return FindConVar("survivor_friendly_fire_factor_hard");
+	} else if(zDifficulty == Difficulty_Expert) {
+		return FindConVar("survivor_friendly_fire_factor_expert");
+	} else {
+		return null;
+	}
+}
+
+public void Event_DifficultyChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
+	if(StrEqual(newValue, "easy", false)) {
+		zDifficulty = Difficulty_Easy;
+	} else if(StrEqual(newValue, "normal", false)) {
+		zDifficulty = Difficulty_Normal;
+	} else if(StrEqual(newValue, "hard", false)) {
+		zDifficulty = Difficulty_Advanced;
+	} else if(StrEqual(newValue, "impossible", false)) {
+		zDifficulty = Difficulty_Expert;
+	}
+	// Unknown difficulty, silently ignore
 }
 
 /////////////////////////////////////
@@ -545,6 +594,13 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 				if(newCount > abmExtraCount && abmExtraCount > 4) {
 					abmExtraCount = newCount;
 					hMinPlayers.IntValue = abmExtraCount;
+					
+					ConVar friendlyFireFactor = GetActiveFriendlyFireFactor();
+					// TODO: Get previous default
+					friendlyFireFactor.FloatValue = friendlyFireFactor.FloatValue - ((newCount - 4) * cvFFDecreaseRate.FloatValue);
+					if(friendlyFireFactor.FloatValue < 0.0) {
+						friendlyFireFactor.FloatValue = 0.01;
+					}
 				}
 				// If 5 survivors, then set them up, TP them.
 				if(newCount > 4) {
@@ -582,6 +638,7 @@ public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadca
 	int count = GetRealSurvivorsCount();
 	int threshold = hEPIHudState.IntValue == 1 ? 5 : 0;
 	if(hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
+		PrintToServer("[EPI] Creating new hud timer (player spawn)");
 		updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
 	}
 	UpdatePlayerInventory(client);
@@ -707,10 +764,10 @@ public void Frame_SetupNewClient(int client) {
 	ArrayList tier2Weapons = new ArrayList(ByteCountToCells(32));
 
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-			int wpn = GetPlayerWeaponSlot(client, 0);
+		if(i != client && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			int wpn = GetPlayerWeaponSlot(i, 0);
 			if(wpn > 0) {
-				GetEntityClassname(wpn, weaponName, sizeof(weaponName));
+				GetEdictClassname(wpn, weaponName, sizeof(weaponName));
 				for(int j = 0; j < TIER2_WEAPON_COUNT; j++) {
 					if(StrEqual(TIER2_WEAPONS[j], weaponName)) {
 						tier2Weapons.PushString(weaponName);
@@ -728,7 +785,7 @@ public void Frame_SetupNewClient(int client) {
 	}
 
 	if(tier2Weapons.Length > 0) {
-		tier2Weapons.GetString(GetRandomInt(0, tier2Weapons.Length), weaponName, sizeof(weaponName));
+		tier2Weapons.GetString(GetRandomInt(0, tier2Weapons.Length - 1), weaponName, sizeof(weaponName));
 		// Format(weaponName, sizeof(weaponName), "weapon_%s", weaponName);
 		PrintToServer("[EPI/debug] Giving new client (%N) tier 2: %s", client, weaponName);
 	} else {
@@ -786,6 +843,7 @@ public Action Timer_GiveKits(Handle timer) {
 }
 
 public void OnMapStart() {
+	isCheckpointReached = false;
 	//If previous round was a failure, restore the amount of kits that were left directly after map transition
 	if(isFailureRound) {
 		extraKitsAmount = extraKitsStarted;
@@ -866,6 +924,8 @@ public void OnMapEnd() {
 	ammoPacks.Clear();
 	playersLoadedIn = 0;
 	abmExtraCount = 4;
+	PrintToServer("[EPI] Stopping timer for map ending");
+	delete updateHudTimer;
 }
 
 public void Event_RoundFreezeEnd(Event event, const char[] name, bool dontBroadcast) {
@@ -915,7 +975,6 @@ public Action Event_MapTransition(Event event, const char[] name, bool dontBroad
 	#if defined DEBUG
 	PrintToServer("Map transition | %d Extra Kits", extraKitsAmount);
 	#endif
-	isCheckpointReached = false;
 	isLateLoaded = false;
 	extraKitsStarted = extraKitsAmount;
 	abmExtraCount = GetRealSurvivorsCount();
@@ -1090,20 +1149,23 @@ void UnlockDoor(int entity, int flag) {
 }
 
 public Action Timer_UpdateHud(Handle h) {
-	if(hEPIHudState.IntValue == 1 && !StrEqual(gamemode, "coop")) { // TODO: Optimize
+	if(hEPIHudState.IntValue == 1 && !isCoop) { // TODO: Optimize
 		PrintToServer("[EPI] Gamemode no longer coop, stopping (hudState=%d, abmExtraCount=%d)", hEPIHudState.IntValue, abmExtraCount);
+		L4D2_RunScript(HUD_SCRIPT_CLEAR);
 		updateHudTimer = null;
 		return Plugin_Stop;
 	} 
-	int threshold = hEPIHudState.IntValue == 1 ? 4 : 0;
-	if(hEPIHudState.IntValue == 0 || abmExtraCount <= threshold) {
+	// int threshold = hEPIHudState.IntValue == 1 ? 4 : 0;
+	if(hEPIHudState.IntValue == 0) { //|| abmExtraCount <= threshold broke
 		PrintToServer("[EPI] Less than threshold, stopping hud timer (hudState=%d, abmExtraCount=%d)", hEPIHudState.IntValue, abmExtraCount);
 		L4D2_RunScript(HUD_SCRIPT_CLEAR);
 		updateHudTimer = null;
 		return Plugin_Stop;
 	}
+
 	static char players[512], data[32], prefix[16];
 	players[0] = '\0';
+
 	for(int i = 1; i <= MaxClients; i++) { 
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			data[0] = '\0';
@@ -1111,27 +1173,33 @@ public Action Timer_UpdateHud(Handle h) {
 			int health = GetClientRealHealth(i);
 			if(IsFakeClient(i) && HasEntProp(i, Prop_Send, "m_humanSpectatorUserID")) {
 				int client = GetClientOfUserId(GetEntProp(i, Prop_Send, "m_humanSpectatorUserID"));
-				if(client > 0) {
+				if(client > 0)
 					Format(prefix, 13, "AFK %N", client);
-				}else{
+				else
 					Format(prefix, 8, "%N", i);
-				}
-			}else{
+				
+			} else {
 				Format(prefix, 8, "%N", i);
 			}
+
 			if(!IsPlayerAlive(i)) 
 				Format(data, sizeof(data), "xx");
 			else if(GetEntProp(i, Prop_Send, "m_bIsOnThirdStrike") == 1) 
 				Format(data, sizeof(data), "+%d b&w %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
-			else if(GetEntProp(i, Prop_Send, "m_isIncapacitated") == 1) {
+			else if(GetEntProp(i, Prop_Send, "m_isIncapacitated") == 1)
 				Format(data, sizeof(data), "+%d --", health);
-			}else{
+			else
 				Format(data, sizeof(data), "+%d %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
-			}
+			
 			Format(players, sizeof(players), "%s%s %s\\n", players, prefix, data);
 		}
 	}
-	RunVScriptLong(HUD_SCRIPT_DATA, players);
+	if(hEPIHudState.IntValue == 3) {
+		PrintHintTextToAll("DEBUG HUD TIMER");
+		RunVScriptLong(HUD_SCRIPT_DEBUG, players);
+	} else
+		RunVScriptLong(HUD_SCRIPT_DATA, players);
+	
 	return Plugin_Continue;
 }
 
