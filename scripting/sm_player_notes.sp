@@ -311,6 +311,7 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 	// If action is 'fta*' or 'ftas'
 	int target = GetClientOfUserId(targetUserId);
 	if(target == 0) return false;
+	LogAction(-1, target, "activating automatic action on \"%L\": @%s.%s.%s", target, action, key, value);
 	if(strncmp(action, "fta", 4) >= 0) {
 		#if defined _ftt_included_
 			// Replace under scores with spaces
@@ -338,7 +339,7 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 		#endif
 	} else if(strncmp(action, "slap", 4) == 0) {
 		float delay = StringToFloat(key);
-		CreateTimer(delay, SlapPlayer, targetUserId);
+		CreateTimer(delay, Timer_SlapPlayer, targetUserId);
 	} else {
 		PrintToServer("[PlayerNotes] Warn: Action (\"%s\") for %N is not valid", action, target);
 		return false;
@@ -347,7 +348,7 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 	return true;
 }
 
-Action SlapPlayer(Handle h, int userid) {
+Action Timer_SlapPlayer(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0) {
 		SlapPlayer(client, 0, true);
