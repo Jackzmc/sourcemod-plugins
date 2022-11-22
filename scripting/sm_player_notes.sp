@@ -5,6 +5,7 @@
 
 #define PLUGIN_VERSION "1.0"
 #define MAX_PLAYER_HISTORY 25
+#define MAX_NOTES_TO_SHOW 10
 #define DATABASE_CONFIG_NAME "stats"
 
 #include <sourcemod>
@@ -254,16 +255,14 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 	if(client > 0 && results.RowCount > 0) {
 		static char noteCreator[32];
 		CPrintChatToAdmins("{yellow}> Notes for %N", client);
-		// PrintChatToAdmins("> Notes for %N", client);
 		int actions = 0;
 		while(results.FetchRow()) {
 			results.FetchString(0, reason, sizeof(reason));
 			results.FetchString(1, noteCreator, sizeof(noteCreator));
-			if(ParseActions(client, reason)) {
+			if(ParseActions(data, reason)) {
 				actions++;
 			} else {
 				CPrintChatToAdmins("  {olive}%s: {default}%s", noteCreator, reason);
-				// PrintChatToAdmins("%s: %s", noteCreator, reason);
 			}
 		}
 		
@@ -275,7 +274,7 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 
 #define ACTION_DESTINATOR '!'
 #define ACTION_SEPERATOR "."
-bool ParseActions(int client, const char[] input) {
+bool ParseActions(int userid, const char[] input) {
 	if(input[0] != ACTION_DESTINATOR) return false;
 
 	char piece[64], key[32], value[16];
@@ -302,14 +301,16 @@ bool ParseActions(int client, const char[] input) {
 	} else {
 		value[0] = '\0';
 	}
-	ApplyAction(client, piece[1], key, value);
+	ApplyAction(userid, piece[1], key, value);
 	// } while((index = SplitString(input[prevIndex], " ", piece, sizeof(piece))) != -1);
 
 	return true;
 }
 
-void ApplyAction(int target, const char[] action, const char[] key, const char[] value) {
+bool ApplyAction(int targetUserId, const char[] action, const char[] key, const char[] value) {
 	// If action is 'fta*' or 'ftas'
+	int target = GetClientOfUserId(targetUserId);
+	if(target == 0) return false;
 	if(strncmp(action, "fta", 4) >= 0) {
 		#if defined _ftt_included_
 			// Replace under scores with spaces
@@ -320,8 +321,9 @@ void ApplyAction(int target, const char[] action, const char[] key, const char[]
 			ApplyTroll(target, newKey, TrollMod_Invalid, flags, 0, action[4] == 's');
 		#else
 			PrintToServer("[PlayerNotes] Warn: Action \"%s\" for %N has missing plugin: Feed The Trolls", action, target);
+			return false;
 		#endif
-	} else if(StrEqual(action, "ignore")) {
+	} else if(strncmp(action, "ignore", 6) == 0) {
 		#if defined _tkstopper_included_
 			if(StrEqual(key, "rff")) {
 				SetImmunity(target, TKImmune_ReverseFriendlyFire, true);
@@ -332,10 +334,25 @@ void ApplyAction(int target, const char[] action, const char[] key, const char[]
 			}
 		#else
 			PrintToServer("[PlayerNotes] Warn: Action \"%s\" for %N has missing plugin: TKStopper", action, target);
+			return false;
 		#endif
+	} else if(strncmp(action, "slap", 4) == 0) {
+		float delay = StringToFloat(key);
+		CreateTimer(delay, SlapPlayer, targetUserId);
 	} else {
 		PrintToServer("[PlayerNotes] Warn: Action (\"%s\") for %N is not valid", action, target);
+		return false;
 	}
+
+	return true;
+}
+
+Action SlapPlayer(Handle h, int userid) {
+	int client = GetClientOfUserId(userid);
+	if(client > 0) {
+		SlapPlayer(client, 0, true);
+	}
+	return Plugin_Handled;
 }
 
 public void DB_ListNotesForPlayer(Database db, DBResultSet results, const char[] error, DataPack pack) {
