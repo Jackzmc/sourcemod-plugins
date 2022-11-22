@@ -193,11 +193,12 @@ enum struct Troll {
 
 /////// TROLL ACTIVATION
 
-    void Activate(int client, int activator, trollModifier modifier = TrollMod_Invalid, int flags = 0) {
+    void Activate(int client, int activator, trollModifier modifier = TrollMod_Invalid, int flags = 0, bool silent = false) {
         if(modifier == TrollMod_Invalid) modifier = this.GetDefaultMod();
         // Sadly, unable to pass in <this> to ApplyTroll, so it has to do unnecessary lookup via string
-        ApplyTroll(client, this.name, activator, modifier, flags);
+        ApplyTroll(client, this.name, activator, modifier, flags, silent);
     }
+
 
     void Toggle(int client, int flags) {
         ToggleTroll(client, this.name, flags);
@@ -371,6 +372,13 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
             LogAction(activator, victim, "\"%L\" deactivated {yellow}\"%s\"{default} on \"%L\"", activator, troll.name, victim);
         } else {
             static char flagName[MAX_TROLL_FLAG_LENGTH];
+            // strcopy(flagName, sizeof(flagName), troll.name)
+            // Call_StartForward(g_TrollAppliedForward);
+            // Call_PushCell(victim);
+            // Call_PushString(flagName);
+            // Call_PushCell(flags);
+            // Call_PushCell(activator);
+            // Call_Finish();
             flagName[0] = '\0';
             for(int i = 0; i < 32; i++) {
                 if(flags & (1 << i)) {
@@ -445,3 +453,25 @@ public void SetCategory(const char[] newCat) {
 void GetCategory(int category, char[] buffer, int size) {
     categories.GetString(category, buffer, size);
 } 
+
+
+public int Native_ApplyTroll(Handle plugin, int numParams) {
+    int victim = GetNativeCell(1);
+    char name[MAX_TROLL_NAME_LENGTH];
+    GetNativeString(2, name, sizeof(name));
+    trollModifier modifier = view_as<trollModifier>(GetNativeCell(3));
+    if(view_as<int>(modifier) < 0) {
+        ThrowNativeError(SP_ERROR_NATIVE, "Provided modifier is invalid (out of range)");
+    }
+    int flags = GetNativeCell(4);
+    int activator = GetNativeCell(5);
+
+    int index = GetTrollID(name);
+    if(index > 0) {
+        Trolls[index].Activate(victim, activator, modifier, flags, GetNativeCell(7));
+    } else {
+        ThrowNativeError(SP_ERROR_NATIVE, "Could not find troll with name \"%s\"", name);
+    }
+    return 0;
+}
+ 

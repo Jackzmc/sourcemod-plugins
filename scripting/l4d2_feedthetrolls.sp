@@ -30,6 +30,11 @@ public Plugin myinfo =
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
+	CreateNative("ApplyTroll", Native_ApplyTroll);
+	return APLRes_Success;
+}
+
 
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
@@ -38,7 +43,9 @@ public void OnPluginStart() {
 	}
 	LoadTranslations("common.phrases");
 
-	g_PlayerMarkedForward = new GlobalForward("FTT_OnClientMarked", ET_Ignore, Param_Cell, Param_Cell);
+	g_PlayerMarkedForward = new GlobalForward("OnTrollMarked", ET_Ignore, Param_Cell, Param_Cell);
+	g_TrollAppliedForward = new GlobalForward("OnTrollApplied", ET_Ignore, Param_Cell, Param_Cell);
+
 
 	// Load core things (trolls & phrases):
 	REPLACEMENT_PHRASES = new StringMap();
