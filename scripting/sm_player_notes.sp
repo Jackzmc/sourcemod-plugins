@@ -5,14 +5,18 @@
 
 #define PLUGIN_VERSION "1.0"
 #define MAX_PLAYER_HISTORY 25
+#define DATABASE_CONFIG_NAME "stats"
 
 #include <sourcemod>
 #include <sdktools>
-//#include <sdkhooks>
+#include <multicolors>
+// Addons:
+#tryinclude <feedthetrolls>
+#tryinclude <tkstopper>
 
 public Plugin myinfo = 
 {
-	name =  "Noob DB", 
+	name =  "Player Notes", 
 	author = "jackzmc", 
 	description = "", 
 	version = PLUGIN_VERSION, 
@@ -33,8 +37,8 @@ enum struct PlayerData {
 static ArrayList lastPlayers;
 
 public void OnPluginStart() {
-	if(!SQL_CheckConfig("stats")) {
-		SetFailState("No database entry for 'stats'; no database to connect to.");
+	if(!SQL_CheckConfig(DATABASE_CONFIG_NAME)) {
+		SetFailState("No database entry for %s; no database to connect to.", DATABASE_CONFIG_NAME);
 	}
 	if(!ConnectDB()) {
 		SetFailState("Failed to connect to database.");
@@ -50,6 +54,18 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_note", Command_AddNote, ADMFLAG_KICK, "Add a note to a player");
 	RegAdminCmd("sm_notes", Command_ListNotes, ADMFLAG_KICK, "List notes for a player");
 	RegAdminCmd("sm_notedisconnected", Command_AddNoteDisconnected, ADMFLAG_KICK, "Add a note to any disconnected players");
+
+	// PrintToServer("Parse Test #1");
+	// ParseActions(0, "!fta:Slow_Speed:16");
+	// PrintToServer("");
+
+	// PrintToServer("Parse Test #2");
+	// ParseActions(0, "SPACE !testSPACE:val1:val2");
+	// PrintToServer("");
+
+	// PrintToServer("Parse Test #3");
+	// ParseActions(0, "donotfire");
+	// PrintToServer("");
 }
 
 public Action Command_AddNoteDisconnected(int client, int args) {
@@ -90,7 +106,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			DB.Query(DB_AddNote, query);
 			LogAction(client, -1, "\"%L\" added note for \"%s\": \"%s\"", client, menuNoteTarget, sArgs);
 			Format(buffer, sizeof(buffer), "%N: ", client);
-			ShowActivity2(client, buffer, "added a note for %s: \"%s\"", menuNoteTarget, sArgs);
+			CShowActivity2(client, buffer, "added a note for {green}%s: {default}\"%s\"", menuNoteTarget, sArgs);
 		}
 		return Plugin_Stop;
 	}
@@ -133,7 +149,7 @@ public Action Command_AddNote(int client, int args) {
 		DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", auth, authMarker, reason);
 		DB.Query(DB_AddNote, query);
 		LogAction(client, target_list[0], "\"%L\" added note for \"%L\": \"%s\"", client, target_list[0], reason);
-		ShowActivity(client, "added a note for \"%N\": \"%s\"", target_list[0], reason);
+		CShowActivity(client, "added a note for {green}%N: {default}\"%s\"", target_list[0], reason);
 	}
 	return Plugin_Handled;
 }
@@ -177,13 +193,13 @@ public Action Command_ListNotes(int client, int args) {
 
 bool ConnectDB() {
     char error[255];
-    DB = SQL_Connect("stats", true, error, sizeof(error));
+    DB = SQL_Connect(DATABASE_CONFIG_NAME, true, error, sizeof(error));
     if (DB== null) {
 		LogError("Database error %s", error);
 		delete DB;
 		return false;
     } else {
-		PrintToServer("Connected to database stats");
+		PrintToServer("Connected to database %s", DATABASE_CONFIG_NAME);
 		SQL_LockDatabase(DB);
 		SQL_FastQuery(DB, "SET NAMES \"UTF8mb4\"");  
 		SQL_UnlockDatabase(DB);
@@ -237,15 +253,90 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 	int client = GetClientOfUserId(data); 
 	if(client > 0 && results.RowCount > 0) {
 		static char noteCreator[32];
-		PrintChatToAdmins("> Notes for %N", client);
+		CPrintChatToAdmins("{yellow}> Notes for %N", client);
+		// PrintChatToAdmins("> Notes for %N", client);
+		int actions = 0;
 		while(results.FetchRow()) {
 			results.FetchString(0, reason, sizeof(reason));
 			results.FetchString(1, noteCreator, sizeof(noteCreator));
-			PrintChatToAdmins("%s: %s", noteCreator, reason);
+			if(ParseActions(client, reason)) {
+				actions++;
+			} else {
+				CPrintChatToAdmins("  {olive}%s: {default}%s", noteCreator, reason);
+				// PrintChatToAdmins("%s: %s", noteCreator, reason);
+			}
+		}
+		
+		if(actions > 0) {
+			PrintChatToAdmins("  {olive}%d Auto Actions Applied", actions);
 		}
 	}
 }
 
+#define ACTION_DESTINATOR '!'
+#define ACTION_SEPERATOR "."
+bool ParseActions(int client, const char[] input) {
+	if(input[0] != ACTION_DESTINATOR) return false;
+
+	char piece[64], key[32], value[16];
+	// int prevIndex, index;
+	// Incase there is no space, have piece be filled in as input
+	strcopy(piece, sizeof(piece), input);
+	// Loop through all spaces
+	// do {
+		// prevIndex += index;
+		// If piece contains !flag, parse !flag:value
+	int keyIndex = StrContains(piece, ACTION_SEPERATOR);
+	if(keyIndex > -1) {
+		strcopy(value, sizeof(value), piece[keyIndex + 1]);
+		piece[keyIndex] = '\0';
+	} else {
+		key[0] = '\0';
+		value[0] = '\0';
+	}
+
+	int valueIndex = StrContains(key, ACTION_SEPERATOR);
+	if(valueIndex > -1) {
+		strcopy(value, sizeof(value), key[valueIndex + 1]);
+		key[valueIndex] = '\0';
+	} else {
+		value[0] = '\0';
+	}
+	ApplyAction(client, piece[1], key, value);
+	// } while((index = SplitString(input[prevIndex], " ", piece, sizeof(piece))) != -1);
+
+	return true;
+}
+
+void ApplyAction(int target, const char[] action, const char[] key, const char[] value) {
+	// If action is 'fta*' or 'ftas'
+	if(strncmp(action, "fta", 4) >= 0) {
+		#if defined _ftt_included_
+			// Replace under scores with spaces
+			char newKey[32];
+			strcopy(newKey, sizeof(newKey), key);
+			ReplaceString(newKey, sizeof(newKey), "_", " ", true);
+			int flags = StringToInt(value);
+			ApplyTroll(target, newKey, TrollMod_Invalid, flags, 0, action[4] == 's');
+		#else
+			PrintToServer("[PlayerNotes] Warn: Action \"%s\" for %N has missing plugin: Feed The Trolls", action, target);
+		#endif
+	} else if(StrEqual(action, "ignore")) {
+		#if defined _tkstopper_included_
+			if(StrEqual(key, "rff")) {
+				SetImmunity(target, TKImmune_ReverseFriendlyFire, true);
+			} else if(StrEqual(key, "tk")) {
+				SetImmunity(target, TKImmune_Teamkill, true);
+			} else {
+				PrintToServer("[PlayerNotes] Warn: Unknown ignore type \"%s\" for TKStopper", key, target);
+			}
+		#else
+			PrintToServer("[PlayerNotes] Warn: Action \"%s\" for %N has missing plugin: TKStopper", action, target);
+		#endif
+	} else {
+		PrintToServer("[PlayerNotes] Warn: Action (\"%s\") for %N is not valid", action, target);
+	}
+}
 
 public void DB_ListNotesForPlayer(Database db, DBResultSet results, const char[] error, DataPack pack) {
 	if(db == null || results == null) {
@@ -260,23 +351,20 @@ public void DB_ListNotesForPlayer(Database db, DBResultSet results, const char[]
 	pack.ReadString(auth, sizeof(auth));
 	delete pack;
 	if(client > 0) {
+		if(target > 0) {
+			GetClientName(target, auth, sizeof(auth));
+		}
 		if(results.RowCount > 0) {
-			if(target > 0) {
-				PrintToChat(client, "> Notes for %N:", target);
-			} else {
-				PrintToChat(client, "> Notes for %s:", auth);
-			}
+			CPrintToChat(client, "{green}> Notes for %s:", auth);
 			char noteCreator[32];
 			while(results.FetchRow()) {
 				results.FetchString(0, reason, sizeof(reason));
 				results.FetchString(1, noteCreator, sizeof(noteCreator));
-				PrintToChat(client, "%s: %s", noteCreator, reason);
+				CPrintToChat(client, "  {olive}%s: {default}%s", noteCreator, reason);
 			}
+			
 		} else {
-			if(target > 0)
-				PrintToChat(client, "No notes found for %N", target);
-			else
-				PrintToChat(client, "No notes found for %s", auth);
+			PrintToChat(client, "No notes found for %s", auth);
 		}
 	}
 }
@@ -300,4 +388,18 @@ stock void PrintChatToAdmins(const char[] format, any ...) {
 		}
 	}
 	PrintToServer("%s", buffer);
+}
+
+stock void CPrintChatToAdmins(const char[] format, any ...) {
+	char buffer[254];
+	VFormat(buffer, sizeof(buffer), format, 2);
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			AdminId admin = GetUserAdmin(i);
+			if(admin != INVALID_ADMIN_ID) {
+				CPrintToChat(i, "%s", buffer);
+			}
+		}
+	}
+	CPrintToServer("%s", buffer);
 }
