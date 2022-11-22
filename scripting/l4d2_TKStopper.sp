@@ -71,6 +71,8 @@ public Plugin myinfo = {
 };
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
+	CreateNative("SetImmunity", Native_SetImmunity);
+	CreateNative("GetImmunity", Native_GetImmunity);
 	if(late) {
 		lateLoaded = true;
 	}
@@ -286,7 +288,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		// Otherwise if attacker was ignored or is a bot, stop here and let vanilla handle it
 		else if(pData[attacker].immunityFlags & Immune_RFF || IsFakeClient(attacker)) return Plugin_Continue;
 		// If victim is black and white and rff damage isnt turned on for it, allow it:
-		else if(GetEntProp(victim, Prop_Send, "m_isGoingToDie") && ~hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_BlackAndWhiteDamage)) {
+		else if(damagetype & DMG_DIRECT && GetEntProp(victim, Prop_Send, "m_isGoingToDie") && ~hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_BlackAndWhiteDamage)) {
 			return Plugin_Continue;
 		}
 
@@ -593,7 +595,49 @@ public Action Command_IgnorePlayer(int client, int args) {
 	return Plugin_Handled;
 }
 
+public int Native_SetImmunity(Handle plugin, int numParams) {
+	int target = GetNativeCell(1);
+	int flag = GetNativeCell(2);
+	_CheckNative(target, flag);
+	bool value = GetNativeCell(3);
+	char flagName[32];
+	GetImmunityFlagName(flag, flagName, sizeof(flagName));
+	if(value) {
+		// Remove immunity
+		pData[target].immunityFlags &= ~flag;
+		LogAction(0, target, "removed immunity flag \"%s\" from \"%L\"", flagName, target);
+	} else {
+		// Add immunity
+		pData[target].immunityFlags |= flag;
+		LogAction(0, target, "added immunity flag \"%s\" to \"%L\"", flagName, target);
+	}
+	return 0;
+}
 
+void GetImmunityFlagName(int flag, char[] buffer, int bufferLength) {
+	if(flag == Immune_RFF) {
+		strcopy(buffer, bufferLength, "Reverse Friendly-Fire");
+	} else if(flag == Immune_TK) {
+		strcopy(buffer, bufferLength, "Reverse Friendly-Fire");
+	} else {
+		strcopy(buffer, bufferLength, "-unknown flag-");
+	}
+}
+
+public int Native_GetImmunity(Handle plugin, int numParams) {
+	int target = GetNativeCell(1);
+	int flag = GetNativeCell(2);
+	_CheckNative(target, flag);
+	return pData[target].immunityFlags & flag;
+}
+
+void _CheckNative(int target, int flag) {
+	if(target <= 0 || target >= MaxClients) {
+		ThrowNativeError(SP_ERROR_NATIVE, "Target is out of range (1 to MaxClients)");
+	} else if(flag <= 0) {
+		ThrowNativeError(SP_ERROR_NATIVE, "Flag is invalid");
+	}
+}
 /// STOCKS
 
 float GetLastFFMinutes(int client) {
