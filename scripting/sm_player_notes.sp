@@ -267,12 +267,12 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 		}
 		
 		if(actions > 0) {
-			PrintChatToAdmins("  {olive}%d Auto Actions Applied", actions);
+			CPrintChatToAdmins("  {olive}%d Auto Actions Applied", actions);
 		}
 	}
 }
 
-#define ACTION_DESTINATOR '!'
+#define ACTION_DESTINATOR '@'
 #define ACTION_SEPERATOR "."
 bool ParseActions(int userid, const char[] input) {
 	if(input[0] != ACTION_DESTINATOR) return false;
@@ -287,7 +287,7 @@ bool ParseActions(int userid, const char[] input) {
 		// If piece contains !flag, parse !flag:value
 	int keyIndex = StrContains(piece, ACTION_SEPERATOR);
 	if(keyIndex > -1) {
-		strcopy(value, sizeof(value), piece[keyIndex + 1]);
+		strcopy(key, sizeof(key), piece[keyIndex + 1]);
 		piece[keyIndex] = '\0';
 	} else {
 		key[0] = '\0';
@@ -301,6 +301,7 @@ bool ParseActions(int userid, const char[] input) {
 	} else {
 		value[0] = '\0';
 	}
+
 	ApplyAction(userid, piece[1], key, value);
 	// } while((index = SplitString(input[prevIndex], " ", piece, sizeof(piece))) != -1);
 
@@ -312,7 +313,7 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 	int target = GetClientOfUserId(targetUserId);
 	if(target == 0) return false;
 	LogAction(-1, target, "activating automatic action on \"%L\": @%s.%s.%s", target, action, key, value);
-	if(strncmp(action, "fta", 4) >= 0) {
+	if(StrContains(action, "fta") > -1) {
 		#if defined _ftt_included_
 			// Replace under scores with spaces
 			char newKey[32];
