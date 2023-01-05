@@ -202,7 +202,7 @@ public Action Command_ResetUser(int client, int args) {
 			client,
 			target_list,
 			MAXPLAYERS,
-			COMMAND_FILTER_CONNECTED, /* Only allow alive players */
+			COMMAND_FILTER_CONNECTED | COMMAND_FILTER_NO_IMMUNITY, /* Only allow alive players */
 			target_name,
 			sizeof(target_name),
 			tn_is_ml)) <= 0
@@ -241,7 +241,7 @@ public Action Command_ApplyUser(int client, int args) {
 			client,
 			target_list,
 			1,
-			COMMAND_FILTER_NO_MULTI, 
+			COMMAND_FILTER_NO_MULTI | COMMAND_FILTER_NO_IMMUNITY, 
 			target_name,
 			sizeof(target_name),
 			tn_is_ml)) <= 0
@@ -556,15 +556,15 @@ public Action Command_Stagger(int client, int args) {
 		static char arg1[32];
 		GetCmdArg(1, arg1, sizeof(arg1));
 
-		int target_list[1], target_count;
+		int target_list[MAXPLAYERS], target_count;
 		static char target_name[MAX_TARGET_LENGTH];
 		bool tn_is_ml;
 		if ((target_count = ProcessTargetString(
 			arg1,
 			client,
 			target_list,
-			1,
-			COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_MULTI,
+			MaxClients,
+			COMMAND_FILTER_ALIVE,
 			target_name,
 			sizeof(target_name),
 			tn_is_ml)) <= 0
@@ -574,7 +574,9 @@ public Action Command_Stagger(int client, int args) {
 			return Plugin_Handled;
 		}
 
-		L4D_StaggerPlayer(target_list[0], target_list[0], NULL_VECTOR);
+		for(int i = 0; i < target_count; i++) {
+			L4D_StaggerPlayer(target_list[i], target_list[i], NULL_VECTOR);
+		}
 	} else {
 		ReplyToCommand(client, "syntax: sm_stagger <target player>");
 	}
@@ -635,7 +637,7 @@ public Action Command_HealTarget(int client, int args) {
 			client,
 			target_list,
 			1,
-			COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_MULTI,
+			COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_MULTI | COMMAND_FILTER_NO_IMMUNITY,
 			target_name,
 			sizeof(target_name),
 			tn_is_ml)) <= 0

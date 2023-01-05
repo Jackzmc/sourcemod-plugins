@@ -314,9 +314,9 @@ public void Frame_CheckClient(int userid) {
 			//A model is set: Fetched from cookie
 			if(g_iPendingCookieModel[client]) {
 				CreateTimer(0.2, Timer_SetClientModel, client);
-			} else {
+			}/* else {
 				CreateTimer(0.2, Timer_SetAllCookieModels);
-			}
+			}*/ //FIXME: Possibly causing people to become rochelle weirdly  
 		}else{
 			//Model was not set: Use least-used survivor.
 			
@@ -365,11 +365,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	}
 	return Plugin_Continue;
 }
-public void OnClientPutInServer(int client) {
-	if(GetClientTeam(client) == 2 && StrEqual(currentMap, "c6m3_port")) {
-		
-	}
-}
+
 
 //On finale start: Set back to their L4D1 character.
 public Action Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {

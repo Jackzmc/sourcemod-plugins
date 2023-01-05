@@ -49,7 +49,9 @@ public void OnPluginStart() {
 
 	// Load core things (trolls & phrases):
 	REPLACEMENT_PHRASES = new StringMap();
+	TYPOS_DICT = new StringMap();
 	LoadPhrases();
+	LoadTypos();
 	SetupTrolls();
 	SetupsTrollCombos();
 

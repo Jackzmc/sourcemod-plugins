@@ -35,7 +35,7 @@ public void OnPluginStart()
 		SetFailState("This plugin is for L4D2 only.");	
 	}
 
-	hEnabled = CreateConVar("l4d2_crescendo_control", "1", "Should plugin be active?", FCVAR_NONE, true, 0.0, true, 1.0);
+	hEnabled = CreateConVar("l4d2_crescendo_control", "1", "Should plugin be active?\n 1 = Enabled normally\n2 = Admins with bypass allowed only", FCVAR_NONE, true, 0.0, true, 1.0);
 	hPercent = CreateConVar("l4d2_crescendo_percent", "0.5", "The percent of players needed to be in range for crescendo to start", FCVAR_NONE);
 	hRange = CreateConVar("l4d2_crescendo_range", "250.0", "How many units away something range brain no work", FCVAR_NONE);
 
@@ -84,7 +84,7 @@ public Action Timer_GetFlows(Handle h) {
 }
 
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
-	if(hEnabled.BoolValue && client > 0 && client <= MaxClients) {
+	if(hEnabled.IntValue > 0 && client > 0 && client <= MaxClients) {
 		AdminId admin = GetUserAdmin(client);
 		if(admin != INVALID_ADMIN_ID && admin.HasFlag(Admin_Custom1)) return Plugin_Continue;
 
@@ -98,7 +98,7 @@ public Action Event_ButtonPress(const char[] output, int entity, int client, flo
 		float activatorFlow = L4D2Direct_GetFlowDistance(client);
 
 		PrintToConsoleAll("[CC] Button Press by %N", client);
-		if(!IsActivationAllowed(activatorFlow, 1500.0)) {
+		if(hEnabled.IntValue == 2 || !IsActivationAllowed(activatorFlow, 1500.0)) {
 			ClientCommand(client, "play ui/menu_invalid.wav");
 			PrintToChat(client, "Please wait for players to catch up.");
 			AcceptEntityInput(entity, "Lock");
@@ -131,7 +131,7 @@ public void Frame_ResetButton(int entity) {
 
 stock bool IsActivationAllowed(float flowmax, float threshold) {
 	// Broken behavior, just short circuit true
-	if(flowmax == 0.0) return true;
+	if(flowmax <= 0.01) return true;
 
 	int farSurvivors, totalSurvivors;
 	float totalFlow;

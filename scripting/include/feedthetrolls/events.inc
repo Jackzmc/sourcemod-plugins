@@ -360,8 +360,10 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 	static int honkID;
 	static int profanityID;
+	static int typooId;
 	if(honkID == 0) honkID = GetTrollID("Honk / Meow / Woof");
 	if(profanityID == 0) profanityID = GetTrollID("No Profanity");
+	if(typooId == 0) typooId = GetTrollID("Typoos");
 
 	if(Trolls[honkID].IsActive(client) && Trolls[honkID].activeFlagClients[client] & 1) {
 		// Honk Processing
@@ -521,6 +523,23 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			CPrintToChatAll("{blue}%N {default}:  %s", client, message);
 		}
 		// Print original in console no matter what
+		PrintToServer("%N: %s", client, sArgs);
+		return Plugin_Handled;
+	} else if(Trolls[typooId].IsActive(client)) {
+		char strings[32][MAX_TYPOS_LENGTH];
+		int words = ExplodeString(sArgs, " ", strings, 32, MAX_TYPOS_LENGTH);
+		// Replace all typos
+		static char typoReplacement[32];
+		for(int i = 0; i < words; i++) {
+			if(TYPOS_DICT.GetString(strings[i], typoReplacement, sizeof(typoReplacement))) {
+				strcopy(strings[i], MAX_TYPOS_LENGTH, typoReplacement);
+			}
+		}
+		int length = MAX_TYPOS_LENGTH * words;
+		char[] message = new char[length];
+		ImplodeStrings(strings, 32, " ", message, length);
+
+		CPrintToChatAll("{blue}%N {default}:  %s", client, message);
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
 	}

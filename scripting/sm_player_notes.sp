@@ -101,13 +101,17 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		if(StrEqual(sArgs, "cancel", false)) {
 			PrintToChat(client, "Note cancelled.");
 		} else {
+			int size = strlen(sArgs);
+			char[] sArgsTrimmed = new char[size];
+			strcopy(sArgsTrimmed, size, sArgs);
+			TrimString(sArgsTrimmed);
 			char buffer[32];
 			GetClientAuthId(client, AuthId_Steam2, buffer, sizeof(buffer));
-			DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", menuNoteTarget, buffer, sArgs);
+			DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", menuNoteTarget, buffer, sArgsTrimmed);
 			DB.Query(DB_AddNote, query);
-			LogAction(client, -1, "\"%L\" added note for \"%s\": \"%s\"", client, menuNoteTarget, sArgs);
+			LogAction(client, -1, "\"%L\" added note for \"%s\": \"%s\"", client, menuNoteTarget, sArgsTrimmed);
 			Format(buffer, sizeof(buffer), "%N: ", client);
-			CShowActivity2(client, buffer, "added a note for {green}%s: {default}\"%s\"", menuNoteTarget, sArgs);
+			CShowActivity2(client, buffer, "added a note for {green}%s: {default}\"%s\"", menuNoteTarget, sArgsTrimmed);
 		}
 		return Plugin_Stop;
 	}
@@ -121,6 +125,7 @@ public Action Command_AddNote(int client, int args) {
 		char target_name[MAX_TARGET_LENGTH];
 		GetCmdArg(1, target_name, sizeof(target_name));
 		GetCmdArg(2, reason, sizeof(reason));
+		TrimString(reason);
 
 		int target_list[1], target_count;
 		bool tn_is_ml;
@@ -129,7 +134,7 @@ public Action Command_AddNote(int client, int args) {
 			client,
 			target_list,
 			1,
-			COMMAND_FILTER_NO_MULTI,
+			COMMAND_FILTER_NO_MULTI | COMMAND_FILTER_NO_IMMUNITY,
 			target_name,
 			sizeof(target_name),
 			tn_is_ml)) <= 0
@@ -170,7 +175,7 @@ public Action Command_ListNotes(int client, int args) {
 			client,
 			target_list,
 			1,
-			COMMAND_FILTER_NO_MULTI,
+			COMMAND_FILTER_NO_MULTI | COMMAND_FILTER_NO_IMMUNITY,
 			target_name,
 			sizeof(target_name),
 			tn_is_ml)) <= 0
@@ -259,6 +264,7 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 		while(results.FetchRow()) {
 			results.FetchString(0, reason, sizeof(reason));
 			results.FetchString(1, noteCreator, sizeof(noteCreator));
+			TrimString(reason);
 			if(ParseActions(data, reason)) {
 				actions++;
 			} else {

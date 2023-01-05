@@ -110,6 +110,7 @@ void SetupTrolls() {
 
 	/// CATEGORY: Chat
 	SetCategory("Chat");
+	SetupTroll("Typoos", "", TrollMod_Constant);
 	SetupTroll("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant);
 	index = SetupTroll("No Profanity", "Replaces some words with random phrases", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(false);

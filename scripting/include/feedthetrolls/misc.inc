@@ -79,11 +79,38 @@ stock bool IsPlayerIncapped(int client) {
 	return GetEntProp(client, Prop_Send, "m_isIncapacitated") == 1;
 }
 
+#define MAX_TYPOS_LENGTH 16
+StringMap TYPOS_DICT;
+void LoadTypos() {
+	TYPOS_DICT.Clear();
+	char sPath[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, sPath, sizeof(sPath), "data/ftt_typos.txt");
+
+	if(!FileExists(sPath)) {
+		PrintToServer("[FTT] Missing typos list: data/ftt_typos.txt");
+		return;
+	}
+	File file = OpenFile(sPath, "r", false, NULL_STRING);
+	if(file == null) {
+		PrintToServer("[FTT] Cannot open: data/ftt_typos.txt");
+		return;
+	}
+
+
+	char buffer[140], key[32];
+	while(file.ReadLine(buffer, sizeof(buffer))) {
+		int index = SplitString(buffer, " ", key, sizeof(key));
+		TYPOS_DICT.SetString(key, buffer[index]);
+	}
+
+	file.Close();
+}
 
 #define MAX_PHRASES_PER_WORD 8
 #define MAX_PHRASE_LENGTH 191
 StringMap REPLACEMENT_PHRASES; 
 ArrayList fullMessagePhraseList;
+
 /* Example:
 exWord 
 {

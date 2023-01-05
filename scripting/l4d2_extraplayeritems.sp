@@ -208,7 +208,7 @@ public void OnPluginStart() {
 	hAddExtraKits 			 = CreateConVar("l4d2_extraitems_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits, 1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
 	hUpdateMinPlayers		 = CreateConVar("l4d2_extraitems_updateminplayers", "1", "Should the plugin update abm\'s cvar min_players convar to the player count?\n 0 -> NO, 1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
 	hMinPlayersSaferoomDoor  = CreateConVar("l4d2_extraitems_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
-	hSaferoomDoorWaitSeconds = CreateConVar("l4d2_extraitems_doorunlock_wait", "55", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
+	hSaferoomDoorWaitSeconds = CreateConVar("l4d2_extraitems_doorunlock_wait", "25", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
 	hSaferoomDoorAutoOpen 	 = CreateConVar("l4d2_extraitems_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
 	hEPIHudState 			 = CreateConVar("l4d2_extraitems_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 3.0);
 	hExtraFinaleTank 		 = CreateConVar("l4d2_extraitems_extra_tanks", "3", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 3.0);
@@ -563,7 +563,8 @@ public Action Event_GameStart(Event event, const char[] name, bool dontBroadcast
 }
 
 public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) { 
-	int client = GetClientOfUserId(event.GetInt("userid"));
+	int userid = event.GetInt("userid");
+	int client = GetClientOfUserId(userid);
 	if(GetClientTeam(client) == 2) {
 		CreateTimer(1.5, Timer_RemoveInvincibility, client);
 		SDKHook(client, SDKHook_OnTakeDamage, OnInvincibleDamageTaken);
@@ -604,7 +605,7 @@ public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBr
 				}
 				// If 5 survivors, then set them up, TP them.
 				if(newCount > 4) {
-					RequestFrame(Frame_SetupNewClient, client);
+					CreateTimer(0.1, Timer_SetupNewClient, userid);
 				}
 			}
 		}
@@ -751,7 +752,9 @@ char TIER2_WEAPONS[9][] = {
 	"weapon_shotgun_spas"
 };
 
-public void Frame_SetupNewClient(int client) {
+public Action Timer_SetupNewClient(Handle h, int userid) {
+	int client = GetClientOfUserId(userid);
+	if(client == 0) return Plugin_Handled;
 	if(!DoesClientHaveKit(client)) {
 		int item = GivePlayerItem(client, "weapon_first_aid_kit");
 		EquipPlayerWeapon(client, item);
@@ -798,11 +801,31 @@ public void Frame_SetupNewClient(int client) {
 		TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
 	}
 	delete tier2Weapons;
+	float pos[3];
 
 	if(L4D2_IsValidWeapon(weaponName)) {
-		CheatCommand(client, "give", weaponName[7], "");
+		int wpn = CreateEntityByName(weaponName);
+		DispatchSpawn(wpn);
+		SetEntProp(wpn, Prop_Send, "m_iClip1", L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_ClipSize));
+		L4D_SetReserveAmmo(client, wpn, L4D2_GetIntWeaponAttribute(weaponName, L4D2IWA_Bullets));
+		GetClientAbsOrigin(client, pos);
+		TeleportEntity(wpn, pos, NULL_VECTOR, NULL_VECTOR);
+		DataPack pack;
+		CreateDataTimer(0.2, Timer_GiveWeapon, pack);
+		pack.WriteCell(userid);
+		pack.WriteCell(wpn);
 	} else {
 		LogError("EPI: INVALID WEAPON: %s for %N", weaponName, client);
+	}
+	return Plugin_Handled;
+}
+public Action Timer_GiveWeapon(Handle h, DataPack pack) {
+	pack.Reset();
+	int userid = pack.ReadCell();
+	int wpn = pack.ReadCell();
+	int client = GetClientOfUserId(userid);
+	if(client > 0) {
+		EquipPlayerWeapon(client, wpn);
 	}
 }
 public Action Timer_RemoveInvincibility(Handle h, int client) {
@@ -1139,7 +1162,7 @@ void UnlockDoor(int entity, int flag) {
 	if(IsValidEntity(entity)) {
 		SetEntProp(entity, Prop_Send, "m_bLocked", 0);
 		SDKUnhook(entity, SDKHook_Use, Hook_Use);
-		if(hSaferoomDoorAutoOpen.IntValue % flag == flag) {
+		if(hSaferoomDoorAutoOpen.IntValue & flag) {
 			AcceptEntityInput(entity, "Open");
 		}
 		firstSaferoomDoorEntity = -1;

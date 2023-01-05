@@ -428,7 +428,7 @@ public Action Command_StopSound(int client, int args) {
 				client,
 				target_list,
 				MAXPLAYERS,
-				COMMAND_FILTER_CONNECTED,
+				COMMAND_FILTER_CONNECTED | COMMAND_FILTER_NO_IMMUNITY,
 				target_name,
 				sizeof(target_name),
 				tn_is_ml)) <= 0)
@@ -511,7 +511,7 @@ public Action Command_SetClientModel(int client, int args) {
 					client,
 					target_list,
 					MAXPLAYERS,
-					COMMAND_FILTER_ALIVE,
+					COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_IMMUNITY,
 					target_name,
 					sizeof(target_name),
 					tn_is_ml)) <= 0)
@@ -616,7 +616,7 @@ public Action Cmd_SetSurvivor(int client, int args) {
 				client,
 				target_list,
 				MAXPLAYERS,
-				COMMAND_FILTER_CONNECTED,
+				COMMAND_FILTER_CONNECTED | COMMAND_FILTER_NO_IMMUNITY,
 				target_name,
 				sizeof(target_name),
 				tn_is_ml)) <= 0)
@@ -762,7 +762,7 @@ public void Frame_HideEntity(int entity) {
 //STUCK BOTS WITH ZOMBIES FIX
 public Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
 	if(attacker > MaxClients) {
-		char name[16];
+		static char name[16];
 		GetEdictClassname(attacker, name, sizeof(name));
 		if(!StrEqual(name, "infected", true)) {
 			return Plugin_Continue;

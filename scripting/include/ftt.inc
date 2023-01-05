@@ -101,6 +101,7 @@ float fAntiRushFrequencyCounter[MAXPLAYERS+1];
 
 #define MODEL_CAR "models/props_vehicles/cara_95sedan.mdl"
 
+
 #include <feedthetrolls/base>
 #include <feedthetrolls/trolls>
 #include <feedthetrolls/combos>

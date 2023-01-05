@@ -150,34 +150,62 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 // Special Infected Events 
 ///////////////////////////////////////////////////////////////////////////////
 public Action Event_ChargerCarry(Event event, const char[] name, bool dontBroadcast) {
-	int victim = GetClientOfUserId(event.GetInt("victim"));
+	int userid = event.GetInt("victim");
+	int victim = GetClientOfUserId(userid);
 	if(victim) {
-		pData[victim].underAttack = StrEqual(name, "charger_carry_start");
+		if(StrEqual(name, "charger_carry_start")) {
+			pData[victim].underAttack = true;
+		} else {
+			CreateTimer(1.0, Timer_StopSpecialAttackImmunity, userid);
+		}
 	}
 	return Plugin_Continue; 
 }
 
 public Action Event_HunterPounce(Event event, const char[] name, bool dontBroadcast) {
-	int victim = GetClientOfUserId(event.GetInt("victim"));
+	int userid = event.GetInt("victim");
+	int victim = GetClientOfUserId(userid);
 	if(victim) {
-		pData[victim].underAttack = StrEqual(name, "lunge_pounce");
+		if(StrEqual(name, "lunge_pounce")) {
+			pData[victim].underAttack = true;
+		} else {
+			CreateTimer(1.0, Timer_StopSpecialAttackImmunity, userid);
+		}
 	}
 	return Plugin_Continue; 
 }
 
 public Action Event_SmokerChoke(Event event, const char[] name, bool dontBroadcast) {
-	int victim = GetClientOfUserId(event.GetInt("victim"));
+	int userid = event.GetInt("victim");
+	int victim = GetClientOfUserId(userid);
 	if(victim) {
-		pData[victim].underAttack = StrEqual(name, "choke_start");
+		if(StrEqual(name, "choke_start")) {
+			pData[victim].underAttack = true;
+		} else {
+			CreateTimer(1.0, Timer_StopSpecialAttackImmunity, userid);
+		}
 	}
 	return Plugin_Continue; 
 }
 public Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcast) {
-	int victim = GetClientOfUserId(event.GetInt("victim"));
+	int userid = event.GetInt("victim");
+	int victim = GetClientOfUserId(userid);
 	if(victim) {
-		pData[victim].underAttack = StrEqual(name, "jockey_ride");
+		if(StrEqual(name, "jockey_ride")) {
+			pData[victim].underAttack = true;
+		} else {
+			CreateTimer(1.0, Timer_StopSpecialAttackImmunity, userid);
+		}
 	}
 	return Plugin_Continue; 
+}
+
+Action Timer_StopSpecialAttackImmunity(Handle h, int userid) {
+	int client = GetClientOfUserId(userid);
+	if(client > 0) {
+		pData[client].underAttack = false;
+	}
+	return Plugin_Continue;
 }
 ///////////////////////////////////////////////////////////////////////////////
 // IDLE 
@@ -463,7 +491,7 @@ public Action Command_TKInfo(int client, int args) {
 			client,
 			target_list,
 			1,
-			COMMAND_FILTER_NO_MULTI, 
+			COMMAND_FILTER_NO_MULTI | COMMAND_FILTER_NO_IMMUNITY, 
 			target_name,
 			sizeof(target_name),
 			tn_is_ml)) <= 0
@@ -551,7 +579,7 @@ public Action Command_IgnorePlayer(int client, int args) {
 		client,
 		target_list,
 		MaxClients,
-		COMMAND_FILTER_ALIVE, 
+		COMMAND_FILTER_NO_IMMUNITY | COMMAND_FILTER_NO_BOTS, 
 		target_name,
 		sizeof(target_name),
 		tn_is_ml)) <= 0
@@ -581,7 +609,6 @@ public Action Command_IgnorePlayer(int client, int args) {
 		if (flags & Immune_RFF) {
 			if (pData[target].immunityFlags & Immune_RFF) {
 				LogAction(client, target, "\"%L\" re-enabled auto reverse friendly-fire for \"%L\"",  client, target);
-				ShowActivity2(client, "[FTT] ", "%N has re-enabled auto reverse friendly-fire for %N", client, target);
 			} else {
 				LogAction(client, target, "\"%L\" disabled auto reverse friendly-fire for \"%L\"",  client, target);
 				ShowActivity2(client, "[FTT] ", "%N has disabled auto reverse friendly-fire for %N", client, target);

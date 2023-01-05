@@ -12,6 +12,11 @@
 #define TURRET_MAX_RANGE_SPECIALS_OPTIMIZED TURRET_MAX_RANGE_SPECIALS * TURRET_MAX_RANGE_SPECIALS
 #define TURRET_MAX_RANGE_INFECTED_OPTIMIZED TURRET_MAX_RANGE_INFECTED * TURRET_MAX_RANGE_INFECTED
 
+#define TURRET_NORMAL_PHASE_TICKS 15 // The number of ticks to be in normal operation
+#define TURRET_COMMON_PHASE_TICKS 5 // The number of ticks to clear out commons exclusively
+
+#define _TURRET_PHASE_TICKS TURRET_NORMAL_PHASE_TICKS + TURRET_COMMON_PHASE_TICKS
+
 #define PLUGIN_VERSION "1.0"
 
 #include <sourcemod>
@@ -44,6 +49,8 @@ static int COLOR_RED[4] = { 255, 0, 0, 200 };
 static int COLOR_RED_LIGHT[4] = { 150, 0, 0, 150 };
 int manualTarget = -1;
 #define MANUAL_TARGETNAME "turret_target_manual"
+
+ArrayList turretIds;
 
 /* TODO: 
 Entity_ChangeOverTime`
@@ -84,16 +91,19 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
+	turretIds = new ArrayList();
+
 	FindTurrets();
 
 	HookEvent("player_death", Event_PlayerDeath);
+	HookEvent("tank_killed", Event_PlayerDeath);
 
 	cv_autoBaseDamage = CreateConVar("turret_auto_damage", "50.0", "The base damage the automatic turret deals", FCVAR_NONE, true, 0.0);
 	cv_manualBaseDamage = CreateConVar("turret_manual_damage", "70.0", "The base damage the manual turret deals", FCVAR_NONE, true, 0.0);
 
 	RegAdminCmd("sm_turret", Command_SpawnTurret, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_rmturrets", Command_RemoveTurrets, ADMFLAG_CHEATS);
-	RegAdminCmd("sm_rmturret", Command_RemoveTurrets, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_rmturret", Command_RemoveTurret, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_manturret", Command_ManualTarget, ADMFLAG_CHEATS);
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
@@ -117,6 +127,7 @@ TurretState turretState[2048];
 int turretActivatorParticle[2048];
 int entityActiveTurret[2048]; // mapping the turret thats active on victim. [victim] = turret
 int turretActiveEntity[2048];
+int turretPhaseOffset[2048]; // slight of offset so they dont all enter the same phase at same time
 bool turretIsActiveLaser[2048];
 bool pendingDeletion[2048];
 float turretDamage[2048];
@@ -148,6 +159,9 @@ void SetupTurret(int turret, float time = 0.0) {
 		PrintToServer("Created turret think timer");
 		thinkTimer = CreateTimer(0.1, Timer_Think, _, TIMER_REPEAT);
 	}
+	// Clamp to 0 -> _TURRET_PHASE_TICKS - 1
+	turretPhaseOffset[turret] = turretIds.Length % (_TURRET_PHASE_TICKS - 1);
+	turretIds.Push(turret);
 }
 Action Timer_ActivateTurret(Handle h, int turret) {
 	turretState[turret] = Turret_Idle;
@@ -164,6 +178,7 @@ void DeactivateTurret(int turret) {
 }
 
 int ClearTurrets(bool fullClear = true) {
+	turretIds.Clear();
 	int entity = INVALID_ENT_REFERENCE;
 	int count;
 	char targetname[32];
@@ -237,10 +252,11 @@ public void OnMapEnd() {
 
 public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	int index = event.GetInt("entindex");
+	int index = event.GetInt("entindex", 0);
 	int turret = entityActiveTurret[client];
 	if(turret > 0) {
 		pendingDeletion[client] = true;
+		turretActiveEntity[turret] = 0;
 		DeactivateTurret(turret);
 	}
 	entityActiveTurret[index] = 0;
@@ -262,7 +278,7 @@ public void OnEntityDestroyed(int entity) {
 public Action Command_SpawnTurret(int client, int args) {
 	float pos[3];
 	GetClientEyePosition(client, pos);
-	pos[2] += 40.0;
+	// pos[2] += 10.0;
 	int base = CreateParticleNamed(ENT_PORTAL_NAME, PARTICLE_ELMOS, pos, NULL_VECTOR);
 	SetupTurret(base, TURRET_ACTIVATION_TIME);
 	ReplyToCommand(client, "New turret (%d) will activate in %.0f seconds", base, TURRET_ACTIVATION_TIME);
@@ -312,6 +328,16 @@ public Action Command_RemoveTurrets(int client, int args) {
 	return Plugin_Handled;
 }
 
+public Action Command_RemoveTurret(int client, int args) {
+	if(turretIds.Length == 0) {
+		ReplyToCommand(client, "No turrets to remove");
+	} else {
+		int lastTurret = turretIds.Get(turretIds.Length - 1);
+		ReplyToCommand(client, "Removed last turret %d", lastTurret);
+	}
+	return Plugin_Handled;
+}
+
 public Action Timer_Think(Handle h) {
 	if( manualTargetter > 0) return Plugin_Continue;
 	// Probably better to just store from CreateParticle
@@ -319,7 +345,7 @@ public Action Timer_Think(Handle h) {
 	entity = INVALID_ENT_REFERENCE;
 	// static char targetname[32];
 	static float pos[3];
-	static int count, target;
+	static int count, target, tick;
 
 	while ((entity = FindEntityByClassname(entity, "info_particle_system")) != INVALID_ENT_REFERENCE) {
 		// GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
@@ -338,17 +364,25 @@ public Action Timer_Think(Handle h) {
 					entityActiveTurret[target] = 0;
 				}
 				DeactivateTurret(entity);
-				turretState[entity] = Turret_Idle;
 			}
 			// Skip activation if a survivor is too close
 			if(FindNearestClient(TEAM_SURVIVORS, pos, TURRET_MAX_RANGE_HUMANS_OPTIMIZED) > 0) {
 				continue;
 			}
 
+			bool inNormalPhase = ((tick + turretPhaseOffset[entity]) % _TURRET_PHASE_TICKS) <= TURRET_NORMAL_PHASE_TICKS;
+
+			// Find a target, in this order: Tank Rock -> Specials -> Infected
 			float damage = cv_autoBaseDamage.FloatValue;
-			target = FindNearestVisibleEntity("tank_rock", pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED, entity);
-			if(target > 0) damage = 1000.0;
-			if(target == -1) target = FindNearestVisibleClient(TEAM_SPECIALS, pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED);
+			target = -1;
+			if(inNormalPhase) {
+				target = FindNearestVisibleEntity("tank_rock", pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED, entity);
+				if(target > 0) {
+					CreateTimer(1.2, Timer_KillRock, EntIndexToEntRef(target));
+					damage = 1000.0;
+				}
+				if(target == -1) target = FindNearestVisibleClient(TEAM_SPECIALS, pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED);
+			}
 			if(target == -1) target = FindNearestVisibleEntity("infected", pos, TURRET_MAX_RANGE_INFECTED_OPTIMIZED, entity); 
 			if(target > 0) {
 				turretDamage[entity] = damage;
@@ -366,9 +400,19 @@ public Action Timer_Think(Handle h) {
 			}
 		}
 	}
-	
-
+	if(++tick >= _TURRET_PHASE_TICKS) {
+		tick = 0;
+	}
 	return Plugin_Continue;
+}
+
+
+public Action Timer_KillRock(Handle h, int ref) {
+	int rock = EntRefToEntIndex(ref);
+	if(rock != INVALID_ENT_REFERENCE) {
+		L4D_DetonateProjectile(rock);
+	}
+	return Plugin_Handled;
 }
 
 static float TURRET_LASER_COLOR[3] = { 0.0, 255.0, 255.0 };
@@ -486,12 +530,16 @@ stock int FindNearestVisibleClient(int team, const float origin[3], float maxRan
 	int client = -1;
 	float closestDist, pos[3];
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == team && !pendingDeletion[i]) {
+		if(!pendingDeletion[i] && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == team) {
 			GetClientAbsOrigin(i, pos);
 			float distance = GetVectorDistance(origin, pos, true);
 			if(maxRange > 0.0 && distance > maxRange) continue;
-			if(client == -1 || distance <= closestDist) {
+			if(distance <= closestDist || client == -1) {
 				if(CanSeePoint(origin, pos)) {
+					// Priority: Pinned survivors
+					if(L4D_GetPinnedSurvivor(i)) {
+						return i;
+					}
 					client = i;
 					closestDist = distance;
 				}
@@ -520,7 +568,7 @@ stock int FindNearestVisibleEntity(const char[] classname, const float origin[3]
 }
 
 stock bool CanSeePoint(const float origin[3], const float point[3]) {
-	TR_TraceRay(origin, point, MASK_ALL, RayType_EndPoint);
+	TR_TraceRay(origin, point, MASK_SOLID, RayType_EndPoint);
 	
 	return !TR_DidHit(); // Can see point if no collisions
 }

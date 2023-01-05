@@ -16,7 +16,7 @@ public Plugin myinfo =
 	author = "jackzmc", 
 	description = "", 
 	version = PLUGIN_VERSION, 
-	url = "https://github.com/Jackzmc/sourcemod-plugins"
+	url = "https://gi thub.com/Jackzmc/sourcemod-plugins"
 };
 
 #define TANK_CLASS_ID 8
@@ -83,6 +83,7 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 						int index = clients.Push(i);
 						clients.Set(index, GetVectorDistance(clientPos, tankPos, true), 1);
 						clients.Set(index, attacker, 2);
+						clients.Set(index, tankFlow - flow, 3);
 					}
 				}
 			}
@@ -116,12 +117,14 @@ int Sort_TankTargetter(int index1, int index2, Handle array, Handle hndl) {
 	float distance1 = GetArrayCell(array, index1, 1);
 	float distance2 = GetArrayCell(array, index2, 1);
 	int tankIndex = GetArrayCell(array, index2, 2);
+	float flowDiff1 = GetArrayCell(array, index1, 3);
+	float flowDiff2 = GetArrayCell(array, index2, 3);
 	/*500 units away, 0 damage vs 600 units away, 0 damage
 		-> target closest 500
 	  500 units away, 10 damage, vs 600 units away 0 damage
 	  500 - 10 = 450 vs 600
 	*/
-	return (totalTankDamage[tankIndex][client1] + RoundFloat(distance1)) - (totalTankDamage[tankIndex][client2] + RoundFloat(distance2));
+	return (totalTankDamage[tankIndex][client1] + RoundFloat(flowDiff1)) - (totalTankDamage[tankIndex][client2] + RoundFloat(flowDiff2));
 }
 
 public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) {
