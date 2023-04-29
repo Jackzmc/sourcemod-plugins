@@ -16,6 +16,7 @@
 enum KitDetectionState {
 	KDS_None,
 	KDS_NoKitEnteringSaferoom,
+	KDS_PickedUpKit,
 	KDS_Healed
 }
 
@@ -23,6 +24,7 @@ enum struct PlayerDetections {
 	int kitPickupsSaferoom;
 	int saferoomLastOpen;
 	int saferoomOpenCount;
+	bool hadKitBeforeHeal;
 	// Do not reset normally; need to keep track during level transitions
 	KitDetectionState saferoomKitState;
 
@@ -149,8 +151,8 @@ public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast)
 		if(StrEqual(itmName, "first_aid_kit")) {
 			if(detections[client].saferoomKitState == KDS_NoKitEnteringSaferoom) {
 				// Player had no kit entering saferoom and has healed
-				detections[client].saferoomKitState = KDS_Healed;
-			} else if(detections[client].saferoomKitState == KDS_Healed) {
+				detections[client].saferoomKitState = KDS_PickedUpKit;
+			} else if(detections[client].saferoomKitState == KDS_PickedUpKit) {
 				// Player has healed. Double kit detected	
 				InternalDebugLog("DOUBLE_KIT", client);
 				Call_StartForward(fwd_PlayerDoubleKit);

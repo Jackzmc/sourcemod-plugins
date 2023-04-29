@@ -46,6 +46,19 @@ void SetupsTrollCombos() {
     combo.AddTroll("Witch Magnet");
     #endif
 
+    SetupCombo(combo, "Rush Stopper");
+    combo.AddTroll("Special Magnet");
+    combo.AddTroll("Tank Magnet");
+    #if defined _behavior_included
+    combo.AddTroll("Witch Magnet");
+    #endif
+    combo.AddTroll("No Button Touchie", TrollMod_Constant, 17);
+    combo.AddTroll("Slow Speed", TrollMod_Constant, 2);
+    combo.AddTroll("Instant Commons", TrollMod_Instant, 1);
+    // combo.AddTroll("Swarm", TrollMod_Instant);
+    combo.AddTroll("Vomit Player");
+    combo.AddTroll("Dull Melee", .flags=2);
+
     SetupCombo(combo, "Tank Run Noob");
     combo.AddTroll("Slow Speed");
     combo.AddTroll("Tank Magnet");

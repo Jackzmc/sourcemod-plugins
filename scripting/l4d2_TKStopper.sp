@@ -46,6 +46,8 @@ enum struct PlayerData {
 	int immunityFlags;
 
 	bool pendingAction;
+
+	bool joined;
 }
 
 PlayerData pData[MAXPLAYERS+1];
@@ -96,7 +98,7 @@ public void OnPluginStart() {
 	hFFAutoScaleAmount = CreateConVar("l4d2_tk_auto_ff_rate", "0.02", "The rate at which auto reverse-ff is scaled by.", FCVAR_NONE, true, 0.0);
 	hFFAutoScaleMaxRatio = CreateConVar("l4d2_tk_auto_ff_max_ratio", "5.0", "The maximum amount that the reverse ff can go. 0.0 for unlimited", FCVAR_NONE, true, 0.0);
 	hFFAutoScaleForgivenessAmount = CreateConVar("l4d2_tk_auto_ff_forgive_rate", "0.05", "This amount times amount of minutes since last ff is removed from ff rate", FCVAR_NONE, true, 0.0);
-	hFFAutoScaleActivateTypes = CreateConVar("l4d2_tk_auto_ff_activate_types", "7", "The types of damages to ignore. Add bits together.\n0 = Just direct fire\n1 = Damage from admins\n2 = Blast damage (pipes, grenade launchers)\n4 = Molotov/gascan/firework damage\n8 = Killing black and white players", FCVAR_NONE, true, 0.0, true, 15.0);
+	hFFAutoScaleActivateTypes = CreateConVar("l4d2_tk_auto_ff_activate_types", "6", "The types of damages to ignore. Add bits together.\n0 = Just direct fire\n1 = Damage from admins\n2 = Blast damage (pipes, grenade launchers)\n4 = Molotov/gascan/firework damage\n8 = Killing black and white players", FCVAR_NONE, true, 0.0, true, 15.0);
 	
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.AddChangeHook(Event_GamemodeChange);
@@ -238,6 +240,7 @@ public void Event_FinaleVehicleReady(Event event, const char[] name, bool dontBr
 			PrintChatToAdmins("Note: %N is still marked as troll and will be banned after this game. Use \"/ignore <player> tk\" to ignore them.", i);
 		}
 	}
+	PrintToServer("[TKStopper] Escape vehicle active, 2x rff in effect");
 }
 
 public void OnMapEnd() {
@@ -250,7 +253,8 @@ public void OnClientPutInServer(int client) {
 }
 
 public void OnClientPostAdminCheck(int client) {
-	if(GetUserAdmin(client) != INVALID_ADMIN_ID) {
+	if(GetUserAdmin(client) != INVALID_ADMIN_ID && !pData[client].joined) {
+		pData[client].joined = true;
 		pData[client].immunityFlags = Immune_TK;
 		// If no admins can do ff and they 
 		if(~hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_AdminDamage)) {
@@ -298,6 +302,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 		pData[client].ffCount = 0;
 		pData[client].immunityFlags = 0;
 		pData[client].totalFFCount = 0;
+		pData[client].joined = false;
 	}
 }
 
@@ -314,7 +319,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 			return Plugin_Changed;
 		}
 		// Otherwise if attacker was ignored or is a bot, stop here and let vanilla handle it
-		else if(pData[attacker].immunityFlags & Immune_RFF || IsFakeClient(attacker)) return Plugin_Continue;
+		else if(pData[attacker].immunityFlags & Immune_RFF || IsFakeClient(attacker) || IsFakeClient(victim)) return Plugin_Continue;
 		// If victim is black and white and rff damage isnt turned on for it, allow it:
 		else if(damagetype & DMG_DIRECT && GetEntProp(victim, Prop_Send, "m_isGoingToDie") && ~hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_BlackAndWhiteDamage)) {
 			return Plugin_Continue;
@@ -462,7 +467,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 
 			SDKHooks_TakeDamage(attacker, attacker, attacker, pData[attacker].autoRFFScaleFactor * damage);
 			if(pData[attacker].autoRFFScaleFactor > 1.0)
-				damage /= pData[attacker].autoRFFScaleFactor;
+				damage = 0.0;
 			else
 				damage /= 2.0;
 			return Plugin_Changed;

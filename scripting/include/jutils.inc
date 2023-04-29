@@ -485,14 +485,16 @@ stock bool IsClientInSightRange(int client, int target, float angle = 90.0, floa
 	else return false;
 }
 
+/// Checks if entity is in sight of client. Angle is the FOV, distance to be squared
 stock bool IsEntityInSightRange(int client, int target, float angle = 90.0, float distance = 0.0, bool heightcheck = true, bool negativeangle = false) {
 	if(angle > 360.0 || angle < 0.0)
 		ThrowError("Angle Max : 360 & Min : 0. %d isn't proper angle.", angle);
-	else if(!IsValidClient(client))
+	else if(!IsClientConnected(client) || !IsClientInGame(client))
 		ThrowError("Client is not Alive.");
 	else if(target <= MaxClients || !IsValidEntity(target))
 		ThrowError("Target is not valid entity.");
-		
+
+
 	float clientPos[3], targetPos[3], angleVector[3], targetVector[3], resultAngle, resultDistance;
 	
 	GetClientEyeAngles(client, angleVector);
@@ -505,7 +507,7 @@ stock bool IsEntityInSightRange(int client, int target, float angle = 90.0, floa
 	GetClientAbsOrigin(client, clientPos);
 	GetEntPropVector(target, Prop_Send, "m_vecOrigin", targetPos);
 	if(heightcheck && distance > 0)
-		resultDistance = GetVectorDistance(clientPos, targetPos);
+		resultDistance = GetVectorDistance(clientPos, targetPos, true);
 	clientPos[2] = targetPos[2] = 0.0;
 	MakeVectorFromPoints(clientPos, targetPos, targetVector);
 	NormalizeVector(targetVector, targetVector);
@@ -517,7 +519,7 @@ stock bool IsEntityInSightRange(int client, int target, float angle = 90.0, floa
 		if(distance > 0)
 		{
 			if(!heightcheck)
-				resultDistance = GetVectorDistance(clientPos, targetPos);
+				resultDistance = GetVectorDistance(clientPos, targetPos, true);
 				
 			return distance >= resultDistance;
 		}
@@ -665,10 +667,10 @@ stock void ClearParent(int child) {
 }
 
 stock void GetForwardVector(float vPos[3], float vAng[3], float vReturn[3], float fDistance) {
-    float vDir[3];
-    GetAngleVectors(vAng, vDir, NULL_VECTOR, NULL_VECTOR);
-    ScaleVector(vDir, fDistance);
-    AddVectors(vPos, vDir, vReturn);
+	float vDir[3];
+	GetAngleVectors(vAng, vDir, NULL_VECTOR, NULL_VECTOR);
+	ScaleVector(vDir, fDistance);
+	AddVectors(vPos, vDir, vReturn);
 }
 
 stock void GetDirectionVector(float pos1[3], float angle[3], float rVec[3], float distance, float force) {
@@ -679,4 +681,61 @@ stock void GetDirectionVector(float pos1[3], float angle[3], float rVec[3], floa
 	NormalizeVector(rVec, rVec);
 
 	ScaleVector(rVec, force);
+}
+
+// Taken from https://gist.github.com/Aeldrion/48c82912f632eec4c8b9da7394b89c5d
+stock void HSVToRGB(const float vec[3], float out[3]) {
+	// Translates HSV color to RGB color
+	// H: 0.0 - 360.0, S: 0.0 - 100.0, V: 0.0 - 100.0
+	// R, G, B: 0.0 - 1.0
+
+	float hue = vec[0];
+	float saturation = vec[1];
+	float value = vec[2];
+
+	float c = (value / 100.0) * (saturation / 100.0);
+	float x = c * (1.0 - FloatAbs(float(RoundToFloor(hue / 60) % 2) - 1));
+	float m = (value / 100.0) - c;
+	
+	if (hue >= 0 && hue < 60.0) {
+		out[0] = c;
+		out[1] = x;
+		out[2] = 0.0;
+	} else if (hue >= 60.0 && hue < 120.0) {
+		out[0] = x;
+		out[1] = c;
+		out[2] = 0.0;
+	} else if (hue >= 120.0 && hue < 180.0) {
+		out[0] = 0.0;
+		out[1] = c;
+		out[2] = x;
+	} else if (hue >= 180.0 && hue < 240.0) {
+		out[0] = 0.0;
+		out[1] = x;
+		out[2] = c;
+	} else if (hue >= 240.0 && hue < 300.0) {
+		out[0] = x;
+		out[1] = 0.0;
+		out[2] = c;
+	} else if (hue >= 300.0 && hue < 360.0) {
+		out[0] = c;
+		out[1] = 0.0;
+		out[2] = x;
+	}
+
+	out[0] += m;
+	out[1] += m;
+	out[2] += m;
+
+	out[0] * 255.0;
+	out[1] * 255.0;
+	out[2] * 255.0;
+}
+stock void HSVToRGBInt(const float vec[3], int out[3]) {
+	// Don't initialize memory, just use the existing memory as int out[3], just tell it that is a float
+	HSVToRGB(vec, view_as<float>(out));
+	// Convert float to int:
+	out[0] = RoundToFloor(view_as<float>(out[0]));
+	out[1] = RoundToFloor(view_as<float>(out[1]));
+	out[2] = RoundToFloor(view_as<float>(out[2]));
 }

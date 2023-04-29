@@ -90,8 +90,9 @@ public int ChoosePlayerHandler(Menu menu, MenuAction action, int param1, int par
 		}
 		
 		SetupCategoryMenu(param1, userid);
-	} else if (action == MenuAction_End)
+	} else if (action == MenuAction_End) {
 		delete menu;
+	}
 	return 0;
 }
 
@@ -208,7 +209,7 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 
 			modiferMenu.ExitButton = true;
 			modiferMenu.Display(param1, 0);
-		} else if(troll.HasFlags() && !troll.IsActive(client)) {
+		} else if(!troll.IsActive(client) && troll.HasFlags()) {
  			ShowSelectFlagMenu(param1, userid, -1, troll);
 		} else {
 			troll.Activate(client, param1);
@@ -241,8 +242,10 @@ public int ChooseClumsySlotHandler(Menu menu, MenuAction action, int param1, int
 		} else {
 			ThrowItemToPlayer(client, param1, slot);
 		}
-		LogAction(param1, client, "\"%L\" activated troll \"Throw It all\" slot=%d for \"%L\"", param1, slot, client);
-		ShowActivityEx(param1, "[FTT] ", "activated troll \"Throw It All\" for %N. ", client);
+		if(slot != -2) {
+			LogAction(param1, client, "\"%L\" activated troll \"Throw It all\" slot=%d for \"%L\"", param1, slot, client);
+			ShowActivityEx(param1, "[FTT] ", "activated troll \"Throw It All\" for %N. ", client);
+		}
 
 		ShowThrowItAllMenu(param1, userid);
 	} else if (action == MenuAction_End)	
@@ -395,17 +398,19 @@ void ShowTrollMenu(int client, bool isComboList) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			IntToString(GetClientUserId(i), userid, sizeof(userid));
-			int specClient = GetSpectatorClient(i);
+			int realPlayer = L4D_GetBotOfIdlePlayer(i);
+			PrintToServer("%d/%d", i, realPlayer);
 			// Incase player is idle, grab their bot instead of them
-			if(specClient > 0) {
-				if(IsPlayerAlive(specClient))
-					Format(display, sizeof(display), "%N (AFK)", specClient);
+			if(realPlayer > 0 && IsClientConnected(realPlayer)) {
+				if(IsPlayerAlive(i))
+					Format(display, sizeof(display), "%N (AFK)", realPlayer);
 				else
-					Format(display, sizeof(display), "%N (AFK/Dead)", specClient);
+					Format(display, sizeof(display), "%N (AFK/Dead)", realPlayer);
 			} else if(!IsPlayerAlive(i))
 				Format(display, sizeof(display), "%N (Dead)", i);
-
-			GetClientName(i, display, sizeof(display));
+			else {
+				GetClientName(i, display, sizeof(display));
+			}
 			menu.AddItem(userid, display);
 		}
 	}

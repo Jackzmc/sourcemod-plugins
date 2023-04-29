@@ -240,6 +240,7 @@ void ResetClient(int victim, bool wipe = true) {
             Trolls[i].activeFlagClients[victim] = -1;
         }
     }
+    noRushingUsSpeed[victim] = 1.0;
     BaseComm_SetClientMute(victim, false);
     SetEntityGravity(victim, 1.0);
     SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
@@ -368,8 +369,8 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
     // Log all actions, indicating if constant or single-fire, and if any flags
     if(!silent) {
         if(isActive) {
-            CShowActivityEx(activator, "[FTT] ", "deactivated {yellow}\"%s\"{default} on %N. ", troll.name, victim);
-            LogAction(activator, victim, "\"%L\" deactivated {yellow}\"%s\"{default} on \"%L\"", activator, troll.name, victim);
+            CShowActivityEx(activator, "[FTT] ", "deactivated {yellow}%s{default} on %N. ", troll.name, victim);
+            LogAction(activator, victim, "\"%L\" deactivated \"%s\" on \"%L\"", activator, troll.name, victim);
         } else {
             static char flagName[MAX_TROLL_FLAG_LENGTH];
             // strcopy(flagName, sizeof(flagName), troll.name)

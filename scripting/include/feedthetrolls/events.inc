@@ -223,9 +223,27 @@ public Action Event_ButtonPress(const char[] output, int entity, int client, flo
 	if(!noButtonPressIndex) noButtonPressIndex = GetTrollID("No Button Touchie");
 	if(client > 0 && client <= MaxClients) {
 		if(Trolls[noButtonPressIndex].IsActive(client)) {
-			AcceptEntityInput(entity, "Lock");
-			RequestFrame(Frame_ResetButton, entity);
-			return Plugin_Handled;
+			if(Trolls[noButtonPressIndex].activeFlagClients[client] & 1) {
+				AcceptEntityInput(entity, "Lock");
+				RequestFrame(Frame_ResetButton, entity);
+				return Plugin_Handled;
+			}
+			if(Trolls[noButtonPressIndex].activeFlagClients[client] & 2) {
+				L4D_CTerrorPlayer_OnVomitedUpon(client, client);
+			}
+			if(Trolls[noButtonPressIndex].activeFlagClients[client] & 4) {
+				L4D_SetPlayerIncapacitatedState(client, true);
+			}
+			if(Trolls[noButtonPressIndex].activeFlagClients[client] & 8) {
+				ServerCommand("sm_slay #%d", GetClientUserId(client));
+			}
+			if(Trolls[noButtonPressIndex].activeFlagClients[client] & 16) {
+				float speed = GetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue");
+				if(speed > 0.9) speed = 0.80;
+				speed -= 5.0;
+				SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", speed);
+				PrintToConsoleAdmins("[FTT] NoButtonTouchie: %N speed is now %f", speed);
+			}
 		}
 		lastButtonUser = client;
 	}
@@ -776,12 +794,12 @@ public Action OnVocalizeCommand(int client, const char[] vocalize, int initiator
 	if(vocalGagID == 0) vocalGagID = GetTrollID("Vocalize Gag");
 	if(noRushingUsID == 0) noRushingUsID = GetTrollID("No Rushing Us");
 	if(Trolls[noRushingUsID].IsActive(client) && (StrEqual(vocalize, "PlayerHurryUp") || StrEqual(vocalize, "PlayerYellRun") || StrEqual(vocalize, "PlayerMoveOn") || StrEqual(vocalize, "PlayerLeadOn"))) {
-		float speed = GetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue");
-		speed -= 0.01;
-		if(speed < 0.0) SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", 0.0);
-		else if(speed > 0.05) 
-			SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", speed);
-		PrintToConsoleAdmins("[FTT] NoRushingUs: Dropping speed for %N (now %.1f%)", client, speed * 100.0);
+		noRushingUsSpeed[client] -= 0.01;
+		if(noRushingUsSpeed[client] < 0.05) {
+			noRushingUsSpeed[client] = 0.05;
+		}
+		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", noRushingUsSpeed[client]);
+		PrintToConsoleAdmins("[FTT] NoRushingUs: Dropping speed for %N (now %.1f%)", client, noRushingUsSpeed[client] * 100.0);
 	}
 	if(Trolls[vocalGagID].IsActive(client)) {
 		return Plugin_Handled;

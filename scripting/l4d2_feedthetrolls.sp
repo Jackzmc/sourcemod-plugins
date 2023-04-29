@@ -84,7 +84,7 @@ public void OnPluginStart() {
 	hBotReverseFFDefend.AddChangeHook(Change_BotDefend);
 
 	RegAdminCmd("sm_ftl",  Command_ListTheTrolls, ADMFLAG_GENERIC, "Lists all the trolls currently ingame.");
-	RegAdminCmd("sm_ftm",  Command_ListModes,     ADMFLAG_KICK, "Lists all the troll modes and their description");
+	RegAdminCmd("sm_ftm",  Command_ListModes,     ADMFLAG_GENERIC, "Lists all the troll modes and their description");
 	RegAdminCmd("sm_ftr",  Command_ResetUser, 	  ADMFLAG_GENERIC, "Resets user of any troll effects.");
 	RegAdminCmd("sm_fta",  Command_ApplyUser,     ADMFLAG_KICK, "Apply a troll mod to a player, or shows menu if no parameters.");
 	RegAdminCmd("sm_ftas", Command_ApplyUserSilent,  ADMFLAG_ROOT, "Apply a troll mod to a player, or shows menu if no parameters.");

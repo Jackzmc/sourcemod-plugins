@@ -54,10 +54,12 @@ public void OnPluginStart()
 			if(IsValidEntity(i)) {
 				GetEntityClassname(i, classname, sizeof(classname));
 				if(StrEqual(classname, "witch", false)) {
-					WitchList.Push(i);
-					#if defined DEBUG
-					PrintToServer("Found pre-existing witch %d", i);
-					#endif
+					if(HasEntProp(i, Prop_Send, "m_rage")) {
+						WitchList.Push(EntIndexToEntRef(i));
+						#if defined DEBUG
+						PrintToServer("Found pre-existing witch %d", i);
+						#endif
+					}
 					
 				}
 			}
@@ -136,29 +138,28 @@ public void Change_Gamemode(ConVar convar, const char[] oldValue, const char[] n
 
 }
 
-public Action Event_WitchSpawn(Event event, const char[] name, bool dontBroadcast) {
+public void Event_WitchSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int witchID = event.GetInt("witchid");
-	WitchList.Push(witchID);
-	#if defined DEBUG
-	PrintToServer("Witch spawned: %d", witchID);
-	#endif
-	//If not currently scanning, begin scanning ONLY if not active
-	if(timer == INVALID_HANDLE && AutoCrownBot == -1) {
-		timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT);
+	if(HasEntProp(witchID, Prop_Send, "m_rage")) {
+		WitchList.Push(EntIndexToEntRef(witchID));
+		#if defined DEBUG
+		PrintToServer("Witch spawned: %d", witchID);
+		#endif
+		//If not currently scanning, begin scanning ONLY if not active
+		if(timer == INVALID_HANDLE && AutoCrownBot == -1) {
+			timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT);
+		}
 	}
 }
 
-public Action Event_WitchKilled(Event event, const char[] name, bool dontBroadcast) {
-	int witchID = event.GetInt("witchid");
-	int index = FindValueInArray(WitchList, witchID);
-	#if defined DEBUG
-	PrintToServer("Witched killed: %d", witchID);
-	#endif
+public void Event_WitchKilled(Event event, const char[] name, bool dontBroadcast) {
+	int witchRef = EntIndexToEntRef(event.GetInt("witchid"));
+	int index = WitchList.FindValue(witchRef);
 	if(index > -1) {
-		RemoveFromArray(WitchList, index);
+		WitchList.Erase(index);
 	}
 	//If witch that was killed, terminate active loop
-	if(AutoCrownTarget == witchID) {
+	if(AutoCrownTarget == witchRef) {
 		ResetAutoCrown();
 		#if defined DEBUG
 		PrintToServer("AutoCrownTarget has died");
@@ -174,65 +175,67 @@ public Action Timer_Active(Handle hdl) {
 		return Plugin_Stop;
 	}
 	//TODO: Also check if startled and cancel it immediately. 
-	if(AutoCrownBot > -1) {
-		int client = GetClientOfUserId(AutoCrownBot);
-		if(!IsValidEntity(AutoCrownTarget) || IsPlayerIncapped(client)) {
-			ResetAutoCrown();
-			
-			#if defined DEBUG
-			PrintToServer("Could not find valid AutoCrownTarget");
-			#endif
-			return Plugin_Stop;
-		}else if(client <= 0 || !IsClientConnected(client) || !IsClientInGame(client) || !IsPlayerAlive(client)) {
-			ResetAutoCrown();
-			#if defined DEBUG
-			PrintToServer("Could not find valid AutoCrownBot");
-			#endif
-			return Plugin_Stop;
-		}
-
-		char wpn[32];
-		if(!GetClientWeapon(client, wpn, sizeof(wpn)) || !StrEqual(wpn, "weapon_autoshotgun") && !StrEqual(wpn, "weapon_shotgun_spas")) {
-			ResetAutoCrown();
-			#if defined DEBUG
-			PrintToServer("AutoCrownBot does not have a valid weapon (%s)", wpn);
-			#endif
-			return Plugin_Stop;
-		}
-
-		GetEntPropVector(AutoCrownTarget, Prop_Send, "m_vecOrigin", witchPos);
-		GetClientAbsOrigin(client, botPosition);
-
-		float distance = GetVectorDistance(botPosition, witchPos);
-		if(distance <= 60) {
-			float botAngles[3];
-			GetClientAbsAngles(client, botAngles);
-			botAngles[0] = 60.0; 
-			botAngles[1] = RadToDeg(ArcTangent2( botPosition[1] - witchPos[1], botPosition[0] - witchPos[0])) + 180.0;
-			//Is In Position
-
-			ClientCommand(client, "slot0");
-			TeleportEntity(client, NULL_VECTOR, botAngles, NULL_VECTOR);
-			AutoCrownInPosition = true;
-		}else{
-			L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", AutoCrownBot, witchPos[0], witchPos[1], witchPos[2]);
-			PathfindTries++;
-		}
-		if(PathfindTries > 30) {
-			ResetAutoCrown();
-			int index = FindValueInArray(WitchList, AutoCrownTarget);
-			if(index > -1)
-				RemoveFromArray(WitchList, index);
-			//remove witch
-			#if defined DEBUG
-			PrintToServer("Could not pathfind to witch in time.");
-			#endif
-		}
-		return Plugin_Continue;
-	}else{
+	if(AutoCrownBot == -1) {
 		timer = CreateTimer(SCAN_INTERVAL, Timer_Scan, _, TIMER_REPEAT);
 		return Plugin_Stop;
 	}
+
+	int client = GetClientOfUserId(AutoCrownBot);
+	int crownTarget = EntRefToEntIndex(AutoCrownTarget);
+	if(crownTarget == INVALID_ENT_REFERENCE) {
+		ResetAutoCrown();
+		
+		#if defined DEBUG
+		PrintToServer("Could not find valid AutoCrownTarget");
+		#endif
+		return Plugin_Stop;
+	}else if(client <= 0 || !IsPlayerAlive(client)) {
+		ResetAutoCrown();
+		#if defined DEBUG
+		PrintToServer("Could not find valid AutoCrownBot");
+		#endif
+		return Plugin_Stop;
+	}
+
+	char wpn[32];
+	if(!GetClientWeapon(client, wpn, sizeof(wpn)) || !StrEqual(wpn, "weapon_autoshotgun") && !StrEqual(wpn, "weapon_shotgun_spas")) {
+		ResetAutoCrown();
+		#if defined DEBUG
+		PrintToServer("AutoCrownBot does not have a valid weapon (%s)", wpn);
+		#endif
+		return Plugin_Stop;
+	}
+
+	GetEntPropVector(crownTarget, Prop_Send, "m_vecOrigin", witchPos);
+	GetClientAbsOrigin(client, botPosition);
+
+	float distance = GetVectorDistance(botPosition, witchPos, true);
+	if(distance <= 3600) {
+		float botAngles[3];
+		GetClientAbsAngles(client, botAngles);
+		botAngles[0] = 60.0; 
+		botAngles[1] = RadToDeg(ArcTangent2(botPosition[1] - witchPos[1], botPosition[0] - witchPos[0])) + 180.0;
+		//Is In Position
+
+		ClientCommand(client, "slot0");
+		TeleportEntity(client, NULL_VECTOR, botAngles, NULL_VECTOR);
+		AutoCrownInPosition = true;
+	} else {
+		L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", AutoCrownBot, witchPos[0], witchPos[1], witchPos[2]);
+		PathfindTries++;
+	}
+
+	if(PathfindTries > 40) {
+		ResetAutoCrown();
+		int index = WitchList.FindValue(AutoCrownTarget);
+		if(index > -1)
+			WitchList.Erase(index);
+		//remove witch
+		#if defined DEBUG
+		PrintToServer("Could not pathfind to witch in time.");
+		#endif
+	}
+	return Plugin_Continue;
 }
 public Action Timer_Scan(Handle hdl) {
 	float botPosition[3], witchPos[3];
@@ -253,8 +256,13 @@ public Action Timer_Scan(Handle hdl) {
 					
 					//Loop all witches, find any valid nearby witches:
 					for(int i = 0; i < WitchList.Length; i++) {
-						int witchID = WitchList.Get(i);
-						if(IsValidEntity(witchID) && HasEntProp(witchID, Prop_Send, "m_rage") && GetEntPropFloat(witchID, Prop_Send, "m_rage") <= 0.4) {
+						int witchRef = WitchList.Get(i);
+						int witchID = EntRefToEntIndex(witchRef);
+						if(witchID == INVALID_ENT_REFERENCE) {
+							WitchList.Erase(i);
+							continue;
+						}
+						if(GetEntPropFloat(witchID, Prop_Send, "m_rage") <= 0.4) {
 							GetEntPropVector(witchID, Prop_Send, "m_vecOrigin", witchPos);
 							if(GetVectorDistance(botPosition, witchPos) <= SCAN_RANGE) {
 								//GetEntPropVector(witchID, Prop_Send, "m_angRotation", witchAng);
@@ -264,7 +272,7 @@ public Action Timer_Scan(Handle hdl) {
 								#endif
 
 								L4D2_RunScript("CommandABot({cmd=1,bot=GetPlayerFromUserID(%i),pos=Vector(%f,%f,%f)})", GetClientUserId(bot), witchPos[0], witchPos[1], witchPos[2]);
-								AutoCrownTarget = witchID;
+								AutoCrownTarget = witchRef;
 								AutoCrownBot = GetClientUserId(bot);
 								AutoCrownInPosition = false;
 								CreateTimer(ACTIVE_INTERVAL, Timer_Active, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
@@ -282,19 +290,19 @@ public Action Timer_Scan(Handle hdl) {
 
 public Action Timer_StopFiring(Handle hdl) {
 	ResetAutoCrown();
+	return Plugin_Handled;
 }
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	if(AutoCrownInPosition && GetClientOfUserId(AutoCrownBot) == client && !(buttons & IN_ATTACK)) {
 		buttons |= IN_ATTACK;
-		//CreateTimer(0.4, Timer_StopFiring);
 		return Plugin_Changed;
 	}
 	return Plugin_Continue;
 }
 
 public void ResetAutoCrown() {
-	AutoCrownTarget = -1;
+	AutoCrownTarget = INVALID_ENT_REFERENCE;
 	AutoCrownInPosition = false;
 	if(AutoCrownBot > -1)
 		L4D2_RunScript("CommandABot({cmd=3,bot=GetPlayerFromUserID(%i)})", AutoCrownBot); 

@@ -101,20 +101,37 @@ bool ProcessSpecialQueue() {
 			CheatCommand(target, "z_spawn_old", SPECIAL_NAMES[view_as<int>(spActiveRequest.type) - 1], "auto");
 		} else if(spActiveRequest.type == Special_Witch) {
 			int witch = L4D2_SpawnWitch(spActiveRequest.position, spActiveRequest.angle);
+			DataPack pack;
+			CreateDataTimer(0.2, Timer_SetWitchTarget, pack);
+			pack.WriteCell(witch);
+			pack.WriteCell(GetClientUserId(target));
 			if(witch != -1)
 				SetWitchTarget(witch, target);
 			return ProcessSpecialQueue();
 		} else if(spActiveRequest.type == Special_Tank) {
 			// BypassLimit();
 			int tank = L4D2_SpawnTank(spActiveRequest.position, spActiveRequest.angle);
-			if(tank > 0 && IsClientConnected(tank))
+			if(tank > 0 && IsClientConnected(tank)) {
+				PrintToConsoleAll("[ftt/debug] requested tank spawned %d -> %N", tank, target)
 				pdata[tank].attackerTargetUid = spActiveRequest.targetUserId;
+				pdata[tank].specialAttackFlags = view_as<int>(SPI_AlwaysTarget);
+			}
 			return ProcessSpecialQueue();
 		}
 		return true;
 	}
 	spIsActive = false;
 	return false;
+}
+
+Action Timer_SetWitchTarget(Handle h, DataPack pack) {
+	pack.Reset();
+	int witch = pack.ReadCell();
+	int target = GetClientOfUserId(pack.ReadCell());
+	if(IsValidEntity(witch) && target > 0) {
+		SetWitchTarget(witch, target);
+	}
+	return Plugin_Handled;
 }
 
 stock SpecialType GetSpecialType(const char[] input) {

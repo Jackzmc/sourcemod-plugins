@@ -37,7 +37,7 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
-	clients = new ArrayList(3);
+	clients = new ArrayList(4);
 
 	HookEvent("player_hurt", Event_PlayerHurt);
 	HookEvent("tank_spawn", Event_TankSpawn);
@@ -93,8 +93,8 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 
 		clients.SortCustom(Sort_TankTargetter);
 		curTarget = clients.Get(0);
-		tankChosenVictim[attacker] = curTarget;
-		targettingTank[curTarget] = attacker;
+		// tankChosenVictim[attacker] = curTarget;
+		// targettingTank[curTarget] = attacker;
 		PrintToConsoleAll("[TankPriority] Player Selected to target: %N", curTarget);
 		//TODO: Possibly clear totalTankDamage
 		return Plugin_Changed;

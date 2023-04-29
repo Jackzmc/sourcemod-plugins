@@ -57,7 +57,7 @@ public Action Command_InstaSpecial(int client, int args) {
 			}
 		}
 		if(successes > 0)
-			ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ near %s", arg2, target_name);
+			CShowActivityEx(client, "[FTT] ", "spawned {green}Insta-%s™{default} near {green}%s", arg2, target_name);
 	}
 
 
@@ -123,7 +123,7 @@ public Action Command_InstaSpecialFace(int client, int args) {
 			}
 		}
 		if(successes > 0)
-			ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ on %s", arg2, target_name);
+			CShowActivityEx(client, "[FTT] ", "spawned {green}Insta-%s™{default} on {green}%s", arg2, target_name);
 	}
 	return Plugin_Handled;
 }

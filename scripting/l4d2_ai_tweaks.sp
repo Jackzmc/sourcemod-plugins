@@ -3,12 +3,15 @@
 
 //#define DEBUG
 
+#define ALLOW_HEALING_MIN_IDLE_TIME 180
 #define PLUGIN_VERSION "1.0"
 
 #include <sourcemod>
 #include <sdktools>
 #include <actions>
 //#include <sdkhooks>
+
+int idleTimeStart[MAXPLAYERS+1];
 
 public Plugin myinfo = 
 {
@@ -24,8 +27,16 @@ public void OnPluginStart() {
 	if(g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
+	// HookEvent("player_bot_replace", Event_PlayerOutOfIdle );
+	HookEvent("bot_player_replace", Event_PlayerToIdle);
 }
 
+public Action Event_PlayerToIdle(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0) {
+		idleTimeStart[client] = GetTime();
+	}
+}
 
 public void OnActionCreated( BehaviorAction action, int actor, const char[] name ) {
 	/* Hooking friend healing action (when bot wants to heal someone) */
@@ -37,7 +48,8 @@ public Action OnFriendAction( BehaviorAction action, int actor, BehaviorAction p
 	// Do not allow idle bots to heal another player, unless they are black and white.
 	// Do not let idle bots heal non-idle bots
 	int target = action.Get(0x34) & 0xFFF; 
-   	if(GetEntProp(actor, Prop_Send, "m_humanSpectatorUserID") > 0) { // If idle bot
+	int realPlayer = GetClientOfUserId(GetEntProp(actor, Prop_Send, "m_humanSpectatorUserID"));
+   	if(realPlayer > 0) { // If idle bot
 		if(IsFakeClient(target)) {
 			// If target is a bot, not idle player, ignore
 			if(GetEntProp(target, Prop_Send, "m_humanSpectatorUserID") == 0) {
@@ -46,7 +58,7 @@ public Action OnFriendAction( BehaviorAction action, int actor, BehaviorAction p
 			}
 		} 
 		// If they are not black and white, also stop
-		if(!GetEntProp(target, Prop_Send, "m_bIsOnThirdStrike")) { //If real player and not black and white, stop
+		if(!GetEntProp(target, Prop_Send, "m_bIsOnThirdStrike") && idleTimeStart[realPlayer] < ALLOW_HEALING_MIN_IDLE_TIME) { //If real player and not black and white, stop
 			result.type = DONE;
 			return Plugin_Handled;
 		}

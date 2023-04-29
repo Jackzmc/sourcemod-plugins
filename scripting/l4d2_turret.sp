@@ -160,7 +160,7 @@ void SetupTurret(int turret, float time = 0.0) {
 		thinkTimer = CreateTimer(0.1, Timer_Think, _, TIMER_REPEAT);
 	}
 	// Clamp to 0 -> _TURRET_PHASE_TICKS - 1
-	turretPhaseOffset[turret] = turretIds.Length % (_TURRET_PHASE_TICKS - 1);
+	turretPhaseOffset[turret] = (turretIds.Length + 1) % (_TURRET_PHASE_TICKS - 1);
 	turretIds.Push(turret);
 }
 Action Timer_ActivateTurret(Handle h, int turret) {
@@ -356,12 +356,15 @@ public Action Timer_Think(Handle h) {
 				// Keep targetting if can view
 				target = EntRefToEntIndex(turretActiveEntity[entity]);
 				if(target > 0 && IsValidEntity(target)) {
-					bool ragdoll = GetEntProp(target, Prop_Data, "m_bClientSideRagdoll") == 1;
-					if(!ragdoll && CanSeeEntity(pos, target)) {
+					if(target <= MaxClients) {
+						if(IsPlayerAlive(target) && GetEntProp(target, Prop_Data, "m_bClientSideRagdoll") == 0 && CanSeeEntity(pos, target)) {
+							FireTurretAuto(pos, target, turretDamage[entity]);
+							continue;
+						}
+					} else if(CanSeeEntity(pos, target)) {
 						FireTurretAuto(pos, target, turretDamage[entity]);
 						continue;
 					}
-					entityActiveTurret[target] = 0;
 				}
 				DeactivateTurret(entity);
 			}
@@ -381,9 +384,9 @@ public Action Timer_Think(Handle h) {
 					CreateTimer(1.2, Timer_KillRock, EntIndexToEntRef(target));
 					damage = 1000.0;
 				}
-				if(target == -1) target = FindNearestVisibleClient(TEAM_SPECIALS, pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED);
+				if(target <= 0) target = FindNearestVisibleClient(TEAM_SPECIALS, pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED);
 			}
-			if(target == -1) target = FindNearestVisibleEntity("infected", pos, TURRET_MAX_RANGE_INFECTED_OPTIMIZED, entity); 
+			if(target <= 0) target = FindNearestVisibleEntity("infected", pos, TURRET_MAX_RANGE_INFECTED_OPTIMIZED, entity); 
 			if(target > 0) {
 				turretDamage[entity] = damage;
 				entityActiveTurret[target] = entity;
@@ -537,7 +540,7 @@ stock int FindNearestVisibleClient(int team, const float origin[3], float maxRan
 			if(distance <= closestDist || client == -1) {
 				if(CanSeePoint(origin, pos)) {
 					// Priority: Pinned survivors
-					if(L4D_GetPinnedSurvivor(i)) {
+					if(L4D_GetPinnedSurvivor(i) > 0) {
 						return i;
 					}
 					client = i;
@@ -553,6 +556,7 @@ stock int FindNearestVisibleEntity(const char[] classname, const float origin[3]
 	int entity = INVALID_ENT_REFERENCE;
 	static float pos[3];
 	while ((entity = FindEntityByClassname(entity, classname)) != INVALID_ENT_REFERENCE) {
+		// Skip entity, it's already being targetted
 		if(entityActiveTurret[entity] > 0) continue;
 		bool ragdoll = GetEntProp(entity, Prop_Data, "m_bClientSideRagdoll") == 1;
 		if(ragdoll) continue;
@@ -568,7 +572,7 @@ stock int FindNearestVisibleEntity(const char[] classname, const float origin[3]
 }
 
 stock bool CanSeePoint(const float origin[3], const float point[3]) {
-	TR_TraceRay(origin, point, MASK_SOLID, RayType_EndPoint);
+	TR_TraceRay(origin, point, MASK_SHOT, RayType_EndPoint);
 	
 	return !TR_DidHit(); // Can see point if no collisions
 }
@@ -576,7 +580,7 @@ stock bool CanSeePoint(const float origin[3], const float point[3]) {
 stock bool CanSeeEntity(const float origin[3], int entity) {
 	static float point[3];
 	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", point);
-	TR_TraceRayFilter(origin, point, MASK_ALL, RayType_EndPoint, Filter_CanSeeEntity, entity);
+	TR_TraceRayFilter(origin, point, MASK_SHOT, RayType_EndPoint, Filter_CanSeeEntity, entity);
 
 	return TR_GetEntityIndex() == entity; // Can see point if no collisions
 }

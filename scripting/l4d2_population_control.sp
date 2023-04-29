@@ -67,6 +67,8 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
 
+	HookEvent("game_start", OnGameStart);
+
 	hPercentTotal  = CreateConVar("l4d2_population_global_chance", "1.0", "The % chance that any the below chances occur.\n0.0 = NEVER, 1.0: ALWAYS");
 	hPercentClown  = CreateConVar("l4d2_population_clowns", "0.0", "The % chance that a common spawns as a clown.\n0.0 = OFF, 1.0 = ALWAYS", FCVAR_NONE, true, 0.0, true, 1.0);
 	hPercentMud    = CreateConVar("l4d2_population_mud", "0.0", "The % chance that a common spawns as a mud zombie.\n0.0 = OFF, 1.0 = ALWAYS", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -87,6 +89,18 @@ public void OnPluginStart() {
 
 	//AutoExecConfig(true, "l4d2_population_control");
 }
+
+public void OnGameStart(Event event, const char[] name, bool dontBroadcast) {
+	hPercentTotal.FloatValue = 1.0;
+	hPercentClown.FloatValue = 0.0;
+	hPercentMud.FloatValue = 0.0;
+	hPercentCeda.FloatValue = 0.0;
+	hPercentWorker.FloatValue = 0.0;
+	hPercentRiot.FloatValue = 0.0;
+	hPercentJimmy.FloatValue = 0.0;
+	hTotalZombies.FloatValue = 0.0;
+}
+
 public void OnMapStart() {
 	for(int i = 0; i < COMMON_MODELS_COUNT; i++) {
 		PrecacheModel(INFECTED_MODELS[i], true);

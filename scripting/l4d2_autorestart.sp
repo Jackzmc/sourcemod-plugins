@@ -4,12 +4,14 @@
 //#define DEBUG
 
 #define PLUGIN_VERSION "1.0"
-#define MAX_TIME_ONLINE_MS 604800
+#define MAX_TIME_ONLINE_SECONDS 172800 
+//604800
 
 #include <sourcemod>
 #include <sdktools>
 //#include <sdkhooks>
 int startupTime, triesBots, triesEmpty;
+bool pendingRestart;
 
 public Plugin myinfo = {
 	name =  "L4D2 Autorestart", 
@@ -41,7 +43,7 @@ public Action Command_RequestRestart(int client, int args) {
 		ReplyToCommand(client, "Restarting...");
 		LogAction(client, -1, "requested to restart server if empty.");
 		ServerCommand("quit");
-	}else{
+	} else {
 		ReplyToCommand(client, "Players are online.");
 	}
 	return Plugin_Handled;
@@ -55,8 +57,9 @@ public Action Timer_Check(Handle h) {
 			ServerCommand("quit");
 		}
 		return Plugin_Continue;
-	} else if(GetTime() - startupTime > MAX_TIME_ONLINE_MS) {
+	} else if(GetTime() - startupTime > MAX_TIME_ONLINE_SECONDS) {
 		LogAction(0, -1, "Server has passed max online time threshold, will restart if remains empty");
+		pendingRestart = true;
 		noHibernate.BoolValue = true;
 		if(IsServerEmpty()) {
 			if(++triesEmpty > 4) {
@@ -65,10 +68,18 @@ public Action Timer_Check(Handle h) {
 			}
 			return Plugin_Continue;
 		}
+		// If server is occupied, falls down below and resets:
 	}
 	triesBots = 0;
 	triesEmpty = 0;
 	return Plugin_Continue;
+}
+
+public void OnConfigsExecuted() {
+	// Reset no hibernate setting when level changes:
+	if(pendingRestart) {
+		noHibernate.BoolValue = true;
+	}
 }
 
 // Returns true if server is empty, and there is only bots. No players

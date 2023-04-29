@@ -185,7 +185,7 @@ int GetAllowedPlayerIndex(const char[] authid2) {
 public void OnClientPostAdminCheck(int client) {
 	if(!IsFakeClient(client)) {
 		if(reserveMode == Reserve_AdminOnly && GetUserAdmin(client) == INVALID_ADMIN_ID) {
-			static char auth[32];
+			char auth[32];
 			GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
 			if(GetAllowedPlayerIndex(auth) == -1) {
 				KickClient(client, "Sorry, server is reserved");
@@ -454,7 +454,7 @@ public Action Command_SetClientModel(int client, int args) {
 	if(args < 1) {
 		ReplyToCommand(client, "Usage: sm_model <model> [player] ['keep']");
 	} else {
-		static char arg1[2], arg2[16], arg3[8];
+		char arg1[2], arg2[16], arg3[8];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		GetCmdArg(2, arg2, sizeof(arg2));
 		GetCmdArg(3, arg3, sizeof(arg3));
@@ -644,6 +644,8 @@ public Action VGUIMenu(UserMsg msg_id, Handle bf, const int[] players, int playe
 public void OnClientPutInServer(int client) {
 	if(!IsFakeClient(client))
 		SDKHook(client, SDKHook_WeaponEquip, Event_OnWeaponEquip);
+	else
+		SDKHook(client, SDKHook_OnTakeDamage, Event_OnTakeDamage);
 }
 
 public void OnClientDisconnect(int client) {
@@ -656,14 +658,16 @@ public void OnClientDisconnect(int client) {
 		botDropMeleeWeapon[client] = -1;
 	}
 }
+
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && !IsFakeClient(client)) {
-		static char auth[32];
+		char auth[32];
 		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
 		SteamIDs.Remove(auth);
 	}
 }
+
 int disabledItem[2048];
 //Can also probably prevent kit drop to pick them up 
 public void Event_WeaponDrop(Event event, const char[] name, bool dontBroadcast) {
@@ -744,7 +748,7 @@ public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadca
 public Action Event_OnWeaponDrop(int client, int weapon) {
 	if(!IsValidEntity(weapon) || !IsFakeClient(client)) return Plugin_Continue;
 	if(GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
-		static char wpn[32];
+		char wpn[32];
 		GetEdictClassname(weapon, wpn, sizeof(wpn));
 		if(StrEqual(wpn, "weapon_melee") || StrEqual(wpn, "weapon_pistol_magnum")) {
 			#if defined DEBUG
@@ -757,7 +761,8 @@ public Action Event_OnWeaponDrop(int client, int weapon) {
 	return Plugin_Continue;
 }
 public void Frame_HideEntity(int entity) {
-	TeleportEntity(entity, OUT_OF_BOUNDS, NULL_VECTOR, NULL_VECTOR);
+	if(IsValidEntity(entity))
+		TeleportEntity(entity, OUT_OF_BOUNDS, NULL_VECTOR, NULL_VECTOR);
 }
 //STUCK BOTS WITH ZOMBIES FIX
 public Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
@@ -768,11 +773,11 @@ public Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, floa
 			return Plugin_Continue;
 		}
 
-		bool attackerVisible = IsEntityInSightRange(victim, attacker, 130.0, 100.0);
+		bool attackerVisible = IsEntityInSightRange(victim, attacker, 130.0, 10000.0);
 		if(!attackerVisible) {
 			//Zombie is behind the bot, reduce damage taken and slowly kill zombie (1/10 of default hp per hit)
 			damage /= 2.0;
-			SDKHooks_TakeDamage(attacker, victim, victim, 10.0);
+			SDKHooks_TakeDamage(attacker, victim, victim, 30.0);
 			return Plugin_Changed;
 		}
 	}

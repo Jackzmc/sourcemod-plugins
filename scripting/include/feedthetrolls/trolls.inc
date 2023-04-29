@@ -192,7 +192,14 @@ void SetupTrolls() {
 	SetCategory("Misc");
 	SetupTroll("Gun Jam", "On reload, small chance their gun gets jammed - Can't reload.", TrollMod_Constant);
 	SetupTroll("No Shove", "Prevents a player from shoving", TrollMod_Constant);
-	SetupTroll("No Button Touchie", "Stops people from pressing buttons", TrollMod_Constant);
+	index = SetupTroll("No Button Touchie", "Stops people from pressing buttons", TrollMod_Constant);
+	Trolls[index].AddFlagPrompt(true);
+	Trolls[index].AddFlag("Prevent Use", true);
+	Trolls[index].AddFlag("Vomit On Touch", false);
+	Trolls[index].AddFlag("Incap On Touch", false);
+	Trolls[index].AddFlag("Slay On Touch", false);
+	Trolls[index].AddFlag("0.8x Speed", false);
+	// add flag: vomit on touch
 	index = SetupTroll("Meta: Inverse", "Uhm you are not supposed to see this...", TrollMod_Instant);
 	Trolls[index].hidden = true;
 	Trolls[index].AddFlagPrompt(false);
@@ -223,11 +230,12 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 	if(StrEqual(troll.name, "Reset User")) {
 		LogAction(activator, victim, "\"%L\" reset all effects for \"%L\"", activator, victim);
 		ShowActivityEx(activator, "[FTT] ", "reset effects for %N. ", victim);
-		for(int i = 0; i <= MAX_TROLLS; i++) {
-			Trolls[i].activeFlagClients[victim] = -1;
-		}
-		SetEntityGravity(victim, 1.0);
-		SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
+		// for(int i = 0; i <= MAX_TROLLS; i++) {
+		// 	Trolls[i].activeFlagClients[victim] = -1;
+		// }
+		// SetEntityGravity(victim, 1.0);
+		// SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
+		ResetClient(victim, true);
 		return false;
 	} else if(StrEqual(troll.name, "Slow Speed")) {
 		if(toActive) {
@@ -280,7 +288,6 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		if(modifier & TrollMod_Instant) {
 			L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", victim, 15000);
 		}
-		return true;
 	} else if(StrEqual(troll.name, "Gun Jam")) {
 		int wpn = GetClientWeaponEntIndex(victim, 0);
 		if(wpn > -1)

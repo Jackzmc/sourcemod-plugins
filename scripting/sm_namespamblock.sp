@@ -9,8 +9,8 @@
 #include <sdktools>
 //#include <sdkhooks>
 
-#define MIN_TIME_BETWEEN_NAME_CHANGES 10000
-#define MAX_NAME_COUNT 3
+#define MIN_TIME_BETWEEN_NAME_CHANGES 10000 // In seconds
+#define MAX_NAME_COUNT 3 // How many changes max within a MIN_TIME_BETWEEN_NAME_CHANGES
 
 public Plugin myinfo = 
 {

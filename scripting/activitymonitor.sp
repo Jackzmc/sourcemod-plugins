@@ -101,6 +101,10 @@ public void OnPluginEnd() {
 	TriggerTimer(pushTimer, true);
 }
 
+public void OnMapEnd() {
+	TriggerTimer(pushTimer, true);
+}
+
 public void OnMapStart() {
 	static char curMap[64];
 	GetCurrentMap(curMap, sizeof(curMap));
