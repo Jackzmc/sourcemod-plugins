@@ -6,6 +6,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <smlib/effects>
 
 public Plugin myinfo = 
 {
@@ -27,17 +28,19 @@ float g_fGrabDistance[MAXPLAYERS + 1];
 MoveType g_pLastMoveType[MAXPLAYERS + 1];
 bool g_pInRotationMode[MAXPLAYERS + 1];
 bool g_eReleaseFreeze[MAXPLAYERS + 1] =  { true, ... };
+bool g_bHighlightEntity[MAXPLAYERS+1];
 
 Handle g_eGrabTimer[MAXPLAYERS+1];
 
 int g_BeamSprite; 
 int g_HaloSprite;
+int g_iLaserIndex;
 
-#define MAX_FORBIDDEN_CLASSNAMES 10
+#define MAX_FORBIDDEN_CLASSNAMES 7
 static char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
-	"env_physics_blocker",
-	"env_player_blocker",
-	"func_brush",
+	// "env_physics_blocker",
+	// "env_player_blocker",
+	// "func_brush",
 	"func_simpleladder",
 	"func_button",
 	"func_elevator",
@@ -49,6 +52,13 @@ static char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"prop_ragdoll"
 };
 
+#define MAX_HIGHLIGHTED_CLASSNAMES 3
+static char HIGHLIGHTED_CLASSNAMES[MAX_HIGHLIGHTED_CLASSNAMES][] = {
+	"env_physics_blocker",
+	"env_player_blocker",
+	"func_brush"
+}
+
 public void OnPluginStart()
 {
 	RegAdminCmd("sm_grabent_freeze", Cmd_ReleaseFreeze, ADMFLAG_CHEATS, "<0/1> - Toggle entity freeze/unfreeze on release.");
@@ -59,6 +69,7 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt");
 	g_BeamSprite = PrecacheModel("materials/sprites/laser.vmt", true);
 	g_HaloSprite = PrecacheModel("materials/sprites/halo01.vmt", true);
 	
@@ -190,6 +201,14 @@ public Action Cmd_Grab(client, args) {
 	// Make sure rotation mode can immediately be entered
 	g_pLastButtonPress[client] = GetGameTime() - 2.0;
 	g_pInRotationMode[client] = false;
+
+	g_bHighlightEntity[client] = false;
+	for(int i = 0; i < MAX_HIGHLIGHTED_CLASSNAMES; i++) {
+		if(StrEqual(HIGHLIGHTED_CLASSNAMES[i], sClass)) {
+			g_bHighlightEntity[client] = true;
+			break;
+		}
+	}
 	
 	DataPack pack;
 	g_eGrabTimer[client] = CreateDataTimer(0.1, Timer_UpdateGrab, pack, TIMER_REPEAT);
@@ -214,6 +233,13 @@ public Action Timer_UpdateGrab(Handle timer, DataPack pack) {
 	
 	// Continuously delay use of weapon, as to not fire any bullets when pushing/pulling/rotating
 	SetWeaponDelay(client, 1.0);	
+
+	if(g_bHighlightEntity[client]) {
+		char targetname[64];
+		GetEntPropString(g_pGrabbedEnt[client], Prop_Data, "m_iName", targetname, sizeof(targetname));
+		PrintCenterText(client, "%s", targetname);
+		GlowEntity(g_pGrabbedEnt[client]);
+	}
 	
 	// *** Enable/Disable Rotation Mode
 	if (GetClientButtons(client) & IN_RELOAD) {
@@ -332,9 +358,10 @@ public Action Timer_UpdateGrab(Handle timer, DataPack pack) {
 
 	// *** Runs whether in rotation mode or not
 	float entNewPos[3];
-	entNewPos[0] = GetEntNewPosition(client, 'x') + g_fGrabOffset[client][0];
-	entNewPos[1] = GetEntNewPosition(client, 'y') + g_fGrabOffset[client][1];
-	entNewPos[2] = GetEntNewPosition(client, 'z') + g_fGrabOffset[client][2];
+	GetEntNewPosition(client, entNewPos);
+	entNewPos[0] += g_fGrabOffset[client][0];
+	entNewPos[1] += g_fGrabOffset[client][1];
+	entNewPos[2] += g_fGrabOffset[client][2];
 
 	float mins[3];
 	GetEntPropVector(g_pGrabbedEnt[client], Prop_Data, "m_vecMins", mins);
@@ -400,10 +427,10 @@ int GetLookingEntity(int client, TraceEntityFilter filter) {
 	return -1;
 }
 
-stock float GetEntNewPosition(int client, char axis)
+stock bool GetEntNewPosition(int client, float endPos[3])
 { 
 	if (client > 0 && client <= MaxClients && IsClientInGame(client)) {
-		float endPos[3], clientEye[3], clientAngle[3], direction[3];
+		float clientEye[3], clientAngle[3], direction[3];
 		GetClientEyePosition(client, clientEye);
 		GetClientEyeAngles(client, clientAngle);
 
@@ -411,17 +438,14 @@ stock float GetEntNewPosition(int client, char axis)
 		ScaleVector(direction, g_fGrabDistance[client]);
 		AddVectors(clientEye, direction, endPos);
 
-		TR_TraceRayFilter(clientEye, endPos, MASK_SOLID, RayType_EndPoint, TraceRayFilterEnt, client);
+		TR_TraceRayFilter(clientEye, endPos, MASK_OPAQUE, RayType_EndPoint, TraceRayFilterEnt, client);
 		if (TR_DidHit(INVALID_HANDLE)) {
 			TR_GetEndPosition(endPos);
 		}
-
-		if      (axis == 'x') return endPos[0]; 
-		else if (axis == 'y') return endPos[1];
-		else if (axis == 'z') return endPos[2];
+		return true;
 	}
 
-	return 0.0;
+	return false;
 }
 /////
 stock float GetInitialRayPosition(int client, char axis)
@@ -499,6 +523,15 @@ stock void CreateRing(int client, float ang[3], float pos[3], float diameter, in
 			axis += 1;
 		}
 	}
+}
+
+void GlowEntity(int entity) {
+	float pos[3], mins[3], maxs[3], angles[3];
+	GetEntPropVector(entity, Prop_Send, "m_angRotation", angles);
+	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
+	GetEntPropVector(entity, Prop_Send, "m_vecMins", mins);
+	GetEntPropVector(entity, Prop_Send, "m_vecMaxs", maxs);
+	Effect_DrawBeamBoxRotatableToAll(pos, mins, maxs, angles, g_iLaserIndex, 0, 0, 30, 0.1, 0.4, 0.4, 0, 0.1, { 0, 255, 0, 235 }, 0);
 }
 
 //============================================================================
