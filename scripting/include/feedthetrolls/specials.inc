@@ -112,6 +112,7 @@ bool ProcessSpecialQueue() {
 			// BypassLimit();
 			int tank = L4D2_SpawnTank(spActiveRequest.position, spActiveRequest.angle);
 			if(tank > 0 && IsClientConnected(tank)) {
+				TeleportEntity(tank, spActiveRequest.position, spActiveRequest.angle, NULL_VECTOR);
 				PrintToConsoleAll("[ftt/debug] requested tank spawned %d -> %N", tank, target)
 				pdata[tank].attackerTargetUid = spActiveRequest.targetUserId;
 				pdata[tank].specialAttackFlags = view_as<int>(SPI_AlwaysTarget);
@@ -159,6 +160,7 @@ float GetIdealMinDistance(SpecialType specialType) {
 		// /*Boomer*/ case 2: return 1200.0;
 		case Special_Charger: return 19510.0;
 		case Special_Smoker: return 20000.0;
+		case Special_Tank: return 20000.0;
 		case Special_Spitter: return 15000.0;
 		default:
 			return 12000.0;

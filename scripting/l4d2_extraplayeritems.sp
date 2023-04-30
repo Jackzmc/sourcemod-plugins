@@ -715,8 +715,6 @@ public Action Timer_DropSurvivor(Handle h, int client) {
 			hMinPlayers.IntValue = --abmExtraCount;
 			if(hMinPlayers.IntValue < 4) {
 				hMinPlayers.IntValue = 4;
-				PrintToConsoleAll("[EPI!!] hMinPlayers dropped below 4. This is a bug, please report to jackz.");
-				PrintToServer("[EPI!!] hMinPlayers dropped below 4. This is a bug, please report to jackz.");
 			}
 		}
 		DropDroppedInventories();
