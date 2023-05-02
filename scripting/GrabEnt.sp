@@ -40,7 +40,7 @@ int g_iLaserIndex;
 static char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	// "env_physics_blocker",
 	// "env_player_blocker",
-	// "func_brush",
+	"func_brush",
 	"func_simpleladder",
 	"func_button",
 	"func_elevator",
@@ -48,9 +48,9 @@ static char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	// "func_movelinear",
 	// "infected",
 	"func_lod",
-	"func_door",
 	"prop_ragdoll"
 };
+
 
 #define MAX_HIGHLIGHTED_CLASSNAMES 3
 static char HIGHLIGHTED_CLASSNAMES[MAX_HIGHLIGHTED_CLASSNAMES][] = {
@@ -58,6 +58,7 @@ static char HIGHLIGHTED_CLASSNAMES[MAX_HIGHLIGHTED_CLASSNAMES][] = {
 	"env_player_blocker",
 	"func_brush"
 }
+
 
 public void OnPluginStart()
 {
@@ -138,7 +139,13 @@ public Action Cmd_Grab(client, args) {
 	
 	if (ent == -1 || !IsValidEntity(ent))
 		return Plugin_Handled; //<-- timer to allow search for entity??
-		
+
+	// Grab the parent
+	int parent = GetEntPropEnt(ent, Prop_Data, "m_hParent");
+	if(parent > 0) {
+		ent = parent;
+	}
+
 	float entOrigin[3], playerGrabOrigin[3];
 	GetEntPropVector(ent, Prop_Send, "m_vecOrigin", entOrigin);
 	GetClientEyePosition(client, playerGrabOrigin);
@@ -238,7 +245,7 @@ public Action Timer_UpdateGrab(Handle timer, DataPack pack) {
 		char targetname[64];
 		GetEntPropString(g_pGrabbedEnt[client], Prop_Data, "m_iName", targetname, sizeof(targetname));
 		PrintCenterText(client, "%s", targetname);
-		GlowEntity(g_pGrabbedEnt[client]);
+		GlowEntity(client, g_pGrabbedEnt[client]);
 	}
 	
 	// *** Enable/Disable Rotation Mode
@@ -525,13 +532,13 @@ stock void CreateRing(int client, float ang[3], float pos[3], float diameter, in
 	}
 }
 
-void GlowEntity(int entity) {
+void GlowEntity(int client, int entity) {
 	float pos[3], mins[3], maxs[3], angles[3];
 	GetEntPropVector(entity, Prop_Send, "m_angRotation", angles);
 	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
 	GetEntPropVector(entity, Prop_Send, "m_vecMins", mins);
 	GetEntPropVector(entity, Prop_Send, "m_vecMaxs", maxs);
-	Effect_DrawBeamBoxRotatableToAll(pos, mins, maxs, angles, g_iLaserIndex, 0, 0, 30, 0.1, 0.4, 0.4, 0, 0.1, { 0, 255, 0, 235 }, 0);
+	Effect_DrawBeamBoxRotatableToClient(client, pos, mins, maxs, angles, g_iLaserIndex, 0, 0, 30, 0.1, 0.4, 0.4, 0, 0.1, { 0, 255, 0, 235 }, 0);
 }
 
 //============================================================================

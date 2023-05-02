@@ -739,3 +739,33 @@ stock void HSVToRGBInt(const float vec[3], int out[3]) {
 	out[1] = RoundToFloor(view_as<float>(out[1]));
 	out[2] = RoundToFloor(view_as<float>(out[2]));
 }
+
+// Gets a position from where the cursor is upto distance away (basically <= distance, going against walls)
+stock bool GetCursorLimited(int client, float distance, float endPos[3], TraceEntityFilter filter)
+{ 
+	if (client > 0 && client <= MaxClients && IsClientInGame(client)) {
+		float clientEye[3], clientAngle[3], direction[3];
+		GetClientEyePosition(client, clientEye);
+		GetClientEyeAngles(client, clientAngle);
+
+		GetAngleVectors(clientAngle, direction, NULL_VECTOR, NULL_VECTOR);
+		ScaleVector(direction, distance);
+		AddVectors(clientEye, direction, endPos);
+
+		TR_TraceRayFilter(clientEye, endPos, MASK_OPAQUE, RayType_EndPoint, filter, client);
+		if (TR_DidHit(INVALID_HANDLE)) {
+			TR_GetEndPosition(endPos);
+		}
+		return true;
+	}
+
+	return false;
+}
+
+stock void SetWeaponDelay(int client, float delay) {
+	int pWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+	if (pWeapon > -1) {
+		SetEntPropFloat(pWeapon, Prop_Send, "m_flNextPrimaryAttack", GetGameTime() + delay); 
+		SetEntPropFloat(pWeapon, Prop_Send, "m_flNextSecondaryAttack", GetGameTime() + delay); 
+	}
+}

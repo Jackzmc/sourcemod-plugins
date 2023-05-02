@@ -38,6 +38,12 @@ enum struct PlayerData {
 
 static ArrayList lastPlayers;
 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	CreateNative("AddNoteIdentity", Native_AddNoteIdentity);
+	return APLRes_Success;
+}
+
 public void OnPluginStart() {
 	if(!SQL_CheckConfig(DATABASE_CONFIG_NAME)) {
 		SetFailState("No database entry for %s; no database to connect to.", DATABASE_CONFIG_NAME);
@@ -197,8 +203,7 @@ void ApplyRep(int client, int target, int rep) {
 	char activatorId[32], targetId[32];
 	GetClientAuthId(client, AuthId_Steam2, activatorId, sizeof(activatorId));
 	GetClientAuthId(target, AuthId_Steam2, targetId, sizeof(targetId));
-	DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", targetId, activatorId, msg);
-	DB.Query(DB_AddNote, query);
+	AddNoteIdentity(activatorId, targetId, msg);
 }
 
 public Action Command_AddNoteDisconnected(int client, int args) {
@@ -348,20 +353,20 @@ public Action Command_ListNotes(int client, int args) {
 }
 
 bool ConnectDB() {
-    char error[255];
-    DB = SQL_Connect(DATABASE_CONFIG_NAME, true, error, sizeof(error));
-    if (DB== null) {
+	char error[255];
+	DB = SQL_Connect(DATABASE_CONFIG_NAME, true, error, sizeof(error));
+	if (DB== null) {
 		LogError("Database error %s", error);
 		delete DB;
 		return false;
-    } else {
+	} else {
 		PrintToServer("Connected to database %s", DATABASE_CONFIG_NAME);
 		SQL_LockDatabase(DB);
 		SQL_FastQuery(DB, "SET NAMES \"UTF8mb4\"");  
 		SQL_UnlockDatabase(DB);
 		DB.SetCharset("utf8mb4");
 		return true;
-    }
+	}
 }
 
 public void Event_FirstSpawn(Event event, const char[] name, bool dontBroadcast) {
@@ -369,7 +374,7 @@ public void Event_FirstSpawn(Event event, const char[] name, bool dontBroadcast)
 	if(client > 0 && client <= MaxClients && !IsFakeClient(client)) {
 		static char auth[32];
 		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
-		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s'", auth);
+		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias, markedBy FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s'", auth);
 		DB.Query(DB_FindNotes, query, GetClientUserId(client));
 	}
 }
@@ -402,9 +407,9 @@ bool IsPlayerInHistory(const char[] id) {
 
 public void DB_FindNotes(Database db, DBResultSet results, const char[] error, any data) {
 	if(db == null || results == null) {
-        LogError("DB_FindNotes returned error: %s", error);
-        return;
-    }
+		LogError("DB_FindNotes returned error: %s", error);
+		return;
+	}
 	//initialize variables
 	int client = GetClientOfUserId(data); 
 	if(client > 0 && results.RowCount > 0) {
@@ -413,8 +418,13 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 		int actions = 0;
 		int repP = 0, repN = 0;
 		while(results.FetchRow()) {
+			DBResult result;
 			results.FetchString(0, reason, sizeof(reason));
-			results.FetchString(1, noteCreator, sizeof(noteCreator));
+			results.FetchString(1, noteCreator, sizeof(noteCreator), result);
+			if(result == DBVal_Null) {
+				// No name for admin, get the raw id:
+				results.FetchString(2, noteCreator, sizeof(noteCreator), result);
+			}
 			TrimString(reason);
 			if(ParseActions(data, reason)) {
 				actions++;
@@ -525,9 +535,9 @@ Action Timer_SlapPlayer(Handle h, int userid) {
 
 public void DB_ListNotesForPlayer(Database db, DBResultSet results, const char[] error, DataPack pack) {
 	if(db == null || results == null) {
-        LogError("DB_ListNotesForPlayer returned error: %s", error);
-        return;
-    }
+		LogError("DB_ListNotesForPlayer returned error: %s", error);
+		return;
+	}
 	//initialize variables
 	static char auth[32];
 	pack.Reset();
@@ -556,9 +566,9 @@ public void DB_ListNotesForPlayer(Database db, DBResultSet results, const char[]
 
 public void DB_AddNote(Database db, DBResultSet results, const char[] error, any data) {
 	if(db == null || results == null) {
-        LogError("DB_AddNote returned error: %s", error);
-        return;
-    }
+		LogError("DB_AddNote returned error: %s", error);
+		return;
+	}
 }
 
 stock void PrintChatToAdmins(const char[] format, any ...) {
@@ -587,4 +597,24 @@ stock void CPrintChatToAdmins(const char[] format, any ...) {
 		}
 	}
 	CPrintToServer("%s", buffer);
+}
+
+any Native_AddNoteIdentity(Handle plugin, int numParams) {
+	char noteCreator[32];
+	char noteTarget[32];
+	int length;
+	GetNativeStringLength(3, length);
+	char[] message = new char[length + 1];
+	GetNativeString(1, noteCreator, sizeof(noteCreator));
+	GetNativeString(2, noteTarget, sizeof(noteTarget));
+	GetNativeString(3, message, length);
+	AddNoteIdentity(noteCreator, noteTarget, message);
+	return 0;
+}
+
+void AddNoteIdentity(const char noteCreator[32], const char noteTarget[32], const char[] message) {
+	// messaege length + steamids (32 + 32 + null term)
+	// char[] query = new char[strlen(message) + 65];
+	DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", noteCreator, noteTarget, message);
+	DB.Query(DB_AddNote, query);
 }
