@@ -42,6 +42,7 @@ Useful things:
 * [BetterWitchAvoidance](#betterwitchavoidance)
 * l4d_anti_rush - Modified plugin to add a forward, so other plugins (like feedthetrolls) can do something
 * [l4d2_sb_fix](#l4d2_sb_fix) - Updated to 1.11 & latest sourcepawn syntax & removed the FCVAR_NOTIFY from all cvars (why would you put that?)
+* GrabEnt - Improved version that prevents moving certain entities (such as invisual walls, ragdolls, etc) and improved some code
 
 ## Dependencies
 This is a list of most common dependencies, independent if they are used for a certain plugin.
