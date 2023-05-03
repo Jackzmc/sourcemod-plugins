@@ -116,7 +116,7 @@ public Action Cmd_ReleaseFreeze(client, args)
 		return Plugin_Handled;
 	}
 
-	g_eReleaseFreeze[client] = StrEqual(sArg, "1") ? true : false;
+	g_eReleaseFreeze[client] = StrEqual(sArg, "1");
 	
 	PrintToChat(client, "\x04[SM]\x01 Entities will now be \x05%s\x01 on Release!", g_eReleaseFreeze[client] == true ? "Frozen" : "Unfrozen");
 	return Plugin_Handled;
@@ -154,9 +154,7 @@ public Action Cmd_Grab(client, args) {
 	
 	// Get the point at which the ray first hit the entity
 	float initialRay[3];
-	initialRay[0] = GetInitialRayPosition(client, 'x');
-	initialRay[1] = GetInitialRayPosition(client, 'y');
-	initialRay[2] = GetInitialRayPosition(client, 'z');
+	GetInitialRayPosition(client, initialRay);
 	
 	// Calculate the offset between intitial ray hit and the entities origin
 	g_fGrabOffset[client][0] = entOrigin[0] - initialRay[0];
@@ -370,9 +368,10 @@ public Action Timer_UpdateGrab(Handle timer, DataPack pack) {
 	entNewPos[1] += g_fGrabOffset[client][1];
 	entNewPos[2] += g_fGrabOffset[client][2];
 
+
 	float mins[3];
 	GetEntPropVector(g_pGrabbedEnt[client], Prop_Data, "m_vecMins", mins);
-	entNewPos[2] += mins[2]; 
+	entNewPos[2] -= mins[2]; 
 	
 	TeleportEntity(g_pGrabbedEnt[client], entNewPos, NULL_VECTOR, NULL_VECTOR);
 	
@@ -427,7 +426,7 @@ int GetLookingEntity(int client, TraceEntityFilter filter) {
 	static float pos[3], ang[3];
 	GetClientEyePosition(client, pos);
 	GetClientEyeAngles(client, ang);
-	TR_TraceRayFilter(pos, ang, MASK_ALL, RayType_Infinite, filter, client);
+	TR_TraceRayFilter(pos, ang, MASK_OPAQUE, RayType_Infinite, filter, client);
 	if(TR_DidHit()) {
 		return TR_GetEntityIndex();
 	}
@@ -455,23 +454,19 @@ stock bool GetEntNewPosition(int client, float endPos[3])
 	return false;
 }
 /////
-stock float GetInitialRayPosition(int client, char axis)
+stock bool GetInitialRayPosition(int client, float endPos[3])
 { 
 	if (client > 0 && client <= MaxClients && IsClientInGame(client)) {
-		float endPos[3], clientEye[3], clientAngle[3];
+		float clientEye[3], clientAngle[3];
 		GetClientEyePosition(client, clientEye);
 		GetClientEyeAngles(client, clientAngle);
 
 		TR_TraceRayFilter(clientEye, clientAngle, MASK_SOLID, RayType_Infinite, TraceRayFilterActivator, client);
 		if (TR_DidHit(INVALID_HANDLE))
 			TR_GetEndPosition(endPos);
-
-		if      (axis == 'x') return endPos[0]; 
-		else if (axis == 'y') return endPos[1];
-		else if (axis == 'z') return endPos[2];
+		return true;
 	}
-
-	return 0.0;
+	return false;
 }
 /////
 stock void SetWeaponDelay(int client, float delay)

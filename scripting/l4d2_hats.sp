@@ -101,7 +101,6 @@ enum wallMode {
 	INACTIVE = 0,
 	MOVE_ORIGIN,
 	SCALE,
-	ROTATE,
 	FREELOOK
 }
 
@@ -171,27 +170,27 @@ enum struct WallBuilderData {
 			case MOVE_ORIGIN: {
 				if(this.canScale) {
 					this.mode = SCALE;
-					PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Scale\x01");
+					PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Scale\x01 (Press \x04RELOAD\x01 to change mode)");
 				} else {
 					this.mode = FREELOOK;
-					PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Freelook\x01");
+					PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Freelook\x01 (Press \x04RELOAD\x01 to change mode)");
 				}
 			}
 			case SCALE: {
 				this.mode = FREELOOK;
-				PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Freelook\x01");
+				PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Freelook\x01 (Press \x04RELOAD\x01 to change mode)");
 			}
 			case FREELOOK: {
 				this.mode = MOVE_ORIGIN;
-				PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Move & Rotate\x01");
-				// PrintToChat(client, "Controls: \x05RELOAD\x01 to change mode");
+				PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Move & Rotate\x01 (Press \x04RELOAD\x01 to change mode)");
+				// PrintToChat(client, "Hold \x04USE (E)\x01 to rotate, \x04WALK (SHIFT)\x01 to change speed");
 			}
 		}
 		cmdThrottle[client] = tick;
 	}
 
 	void CycleAxis(int client, float tick) {
-		if(tick - cmdThrottle[client] <= 0.25) return;
+		if(tick - cmdThrottle[client] <= 0.20) return;
 		if(this.axis == 0) {
 			this.axis = 1;
 			PrintToChat(client, "\x04[Walls]\x01 Rotate Axis: \x05HEADING (Y)\x01");
@@ -203,7 +202,7 @@ enum struct WallBuilderData {
 	}
 
 	void CycleSnapAngle(int client, float tick) {
-		if(tick - cmdThrottle[client] <= 0.25) return;
+		if(tick - cmdThrottle[client] <= 0.20) return;
 		switch(this.snapAngle) {
 			case 1: this.snapAngle = 15;
 			case 15: this.snapAngle = 30;
@@ -340,11 +339,9 @@ public void OnPluginStart() {
 	HookEvent("bot_player_replace", Event_PlayerToIdle);
 
 	RegConsoleCmd("sm_hat", Command_DoAHat, "Hats");
-	RegAdminCmd("sm_wall", Command_MakeWall, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_mkwall", Command_MakeWall, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_walls", Command_ManageWalls, ADMFLAG_CHEATS);
-
-	AddCommandListener(Command_ScrollWheelUp, "invnext");
-	AddCommandListener(Command_ScrollWheelDown, "invprev");
+	RegAdminCmd("sm_wall", Command_ManageWalls, ADMFLAG_CHEATS);
 
 	cvar_sm_hats_blacklist_enabled = CreateConVar("sm_hats_blacklist_enabled", "1", "Is the prop blacklist enabled", FCVAR_NONE, true, 0.0, true, 1.0);
 	cvar_sm_hats_enabled = CreateConVar("sm_hats_enabled", "1.0", "Enable hats.\n0=OFF, 1=Admins Only, 2=Any", FCVAR_NONE, true, 0.0, true, 2.0);
@@ -555,7 +552,7 @@ public Action Command_DoAHat(int client, int args) {
 			WallBuilder[client].Reset();
 			WallBuilder[client].entity = EntIndexToEntRef(entity);
 			WallBuilder[client].canScale = false;	
-			WallBuilder[client].SetMode(SCALE);
+			WallBuilder[client].SetMode(MOVE_ORIGIN);
 			PrintToChat(client, "\x04[Walls] \x01Beta Prop Mover active for \x04%d", entity);
 		} else {
 			PrintToChat(client, "[Hats] Restored hat to its original position.");
@@ -699,7 +696,7 @@ public Action Command_MakeWall(int client, int args) {
 				PrintToChat(client, "\x04[Walls]\x01 Wall Creation: \x04Cancelled\x01");
 			}
 		} else {
-			ReplyToCommand(client, "\x04[Walls]\x01 Unknown option, try \x05/wall build\x01 to finish or \x04/wall cancel\x01 to cancel");
+			ReplyToCommand(client, "\x04[Walls]\x01 Unknown option, try \x05/mkwall build\x01 to finish or \x04/mkwall cancel\x01 to cancel");
 		}
 
 	} else {
@@ -729,7 +726,7 @@ public Action Command_MakeWall(int client, int args) {
 		}
 		WallBuilder[client].SetMode(SCALE);
 		GetCursorLimited(client, 100.0, WallBuilder[client].origin, Filter_IgnorePlayer);
-		PrintToChat(client, "\x04[Walls]\x01 New Wall Started. End with \x05/wall build\x01 or \x04/wall cancel\x01");
+		PrintToChat(client, "\x04[Walls]\x01 New Wall Started. End with \x05/mkwall build\x01 or \x04/mkwall cancel\x01");
 		PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Scale\x01");
 	}
 	return Plugin_Handled;
@@ -761,7 +758,7 @@ public Action Command_ManageWalls(int client, int args) {
 			}
 		}
 	} else if(StrEqual(arg1, "create")) {
-		ReplyToCommand(client, "\x04[Walls]\x01 Syntax: /wall [size x] [size y] [size z]");
+		ReplyToCommand(client, "\x04[Walls]\x01 Syntax: /mkwall [size x] [size y] [size z]");
 	} else if(StrEqual(arg1, "toggle")) {
 		if(StrEqual(arg2, "all")) {
 			int walls = createdWalls.Length;
@@ -811,8 +808,20 @@ public Action Command_ManageWalls(int client, int args) {
 		if(id > -1) {
 			int entity = GetWallEntity(id);
 			WallBuilder[client].Import(entity);
-			PrintToChat(client, "\x04[Walls]\x01 Editing wall \x05%d\x01. End with \x05/wall build\x01 or \x04/wall cancel\x01", id);
+			PrintToChat(client, "\x04[Walls]\x01 Editing wall \x05%d\x01. End with \x05/mkwall build\x01 or \x04/mkwall cancel\x01", id);
 			PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Scale\x01");
+		}
+	} else if(StrEqual(arg1, "edite")) {
+		int index = StringToInt(arg2);
+		if(index > 0 && IsValidEntity(index)) {
+			WallBuilder[client].Reset();
+			WallBuilder[client].entity = EntIndexToEntRef(index);
+			WallBuilder[client].canScale = false;	
+			WallBuilder[client].SetMode(MOVE_ORIGIN);
+			PrintToChat(client, "\x04[Walls]\x01 Editing wall \x05%d\x01. End with \x05/mkwall build\x01 or \x04/mkwall cancel\x01", index);
+			PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Move & Rotate\x01");
+		} else {
+			ReplyToCommand(client, "\x04[Walls]\x01 Invalid or non existent entity");
 		}
 	} else if(StrEqual(arg1, "copy")) {
 		int id = GetWallId(client, arg2);
@@ -820,7 +829,7 @@ public Action Command_ManageWalls(int client, int args) {
 			int entity = GetWallEntity(id);
 			WallBuilder[client].Import(entity, true);
 			GetCursorLimited(client, 100.0, WallBuilder[client].origin, Filter_IgnorePlayer);
-			PrintToChat(client, "\x04[Walls]\x01 Editing copy of wall \x05%d\x01. End with \x05/wall build\x01 or \x04/wall cancel\x01", id);
+			PrintToChat(client, "\x04[Walls]\x01 Editing copy of wall \x05%d\x01. End with \x05/mkwall build\x01 or \x04/mkwall cancel\x01", id);
 			PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Scale\x01");
 		}
 	} else if(StrEqual(arg1, "list")) {
@@ -830,21 +839,6 @@ public Action Command_ManageWalls(int client, int args) {
 		}
 	}
 	return Plugin_Handled;
-}
-
-public Action Command_ScrollWheelUp(int client, const char[] command, int args) {
-	if(WallBuilder[client].IsActive()) {
-		WallBuilder[client].moveDistance++;
-		return Plugin_Handled;
-	}
-	return Plugin_Continue;
-}
-public Action Command_ScrollWheelDown(int client, const char[] command, int args) {
-	if(WallBuilder[client].IsActive()) {
-		WallBuilder[client].moveDistance--;
-		return Plugin_Handled;
-	}
-	return Plugin_Continue;
 }
 
 int GetWallId(int client, const char[] arg) {
@@ -1310,8 +1304,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			} else if(tick - cmdThrottle[client] > 0.25) {
 				if(buttons & IN_ATTACK) {
 					ClientCommand(client, "sm_hat %s", 'y');
-				} else if(buttons & IN_SPEED) {
-					ClientCommand(client, "sm_hat %s", 'n');
 				} else if(buttons & IN_DUCK) {
 					ClientCommand(client, "sm_hat %s", 'p');
 				}
@@ -1331,10 +1323,9 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		switch(WallBuilder[client].mode) {
 			case MOVE_ORIGIN: {
 				SetWeaponDelay(client, 0.5);
-				switch(buttons) {
-					case IN_SCORE: WallBuilder[client].CycleMoveMode(client, tick);
-					case IN_ZOOM: WallBuilder[client].CycleSpeed(client, tick);
-				}
+				// switch(buttons) {
+				// 	case IN_: WallBuilder[client].CycleSpeed(client, tick);
+				// }
 
 				if(WallBuilder[client].movetype == 0) {
 					bool isRotate;
@@ -1361,7 +1352,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 						switch(buttons) {
 							case IN_ATTACK: WallBuilder[client].moveDistance++;
 							case IN_ATTACK2: WallBuilder[client].moveDistance--;
-							case IN_WALK: WallBuilder[client].CycleSnapAngle(client, tick);
+							case IN_WALK: WallBuilder[client].CycleMoveMode(client, tick);
 						}
 					}
 					if(!isRotate && flags & FL_FROZEN) {
