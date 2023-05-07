@@ -218,6 +218,35 @@ public Action Event_WeaponReload(int weapon) {
 	}
 	return Plugin_Continue;
 }
+public Action L4D2_CGasCan_EventKilled(int gascan, int &inflictor, int &attacker) {
+	static int noButtonPressIndex;
+	if(!noButtonPressIndex) noButtonPressIndex = GetTrollID("No Button Touchie");
+	if(attacker > 0 && attacker <= MaxClients) {
+		if(Trolls[noButtonPressIndex].IsActive(attacker)) {
+			if(Trolls[noButtonPressIndex].activeFlagClients[attacker] & 1) {
+				return Plugin_Handled;
+			}
+			if(Trolls[noButtonPressIndex].activeFlagClients[attacker] & 2) {
+				L4D_CTerrorPlayer_OnVomitedUpon(attacker, attacker);
+			}
+			if(Trolls[noButtonPressIndex].activeFlagClients[attacker] & 4) {
+				L4D_SetPlayerIncapacitatedState(attacker, true);
+			}
+			if(Trolls[noButtonPressIndex].activeFlagClients[attacker] & 8) {
+				ServerCommand("sm_slay #%d", GetClientUserId(attacker));
+			}
+			if(Trolls[noButtonPressIndex].activeFlagClients[attacker] & 16) {
+				float speed = GetEntPropFloat(attacker, Prop_Send, "m_flLaggedMovementValue");
+				if(speed > 0.9) speed = 0.80;
+				speed -= 5.0;
+				SetEntPropFloat(attacker, Prop_Send, "m_flLaggedMovementValue", speed);
+				PrintToConsoleAdmins("[FTT] NoButtonTouchie: %N speed is now %f", speed);
+			}
+		}
+		lastButtonUser = attacker;
+	}
+	return Plugin_Continue;
+}
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
 	static int noButtonPressIndex;
 	if(!noButtonPressIndex) noButtonPressIndex = GetTrollID("No Button Touchie");

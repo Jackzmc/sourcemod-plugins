@@ -740,6 +740,23 @@ stock void HSVToRGBInt(const float vec[3], int out[3]) {
 	out[2] = RoundToFloor(view_as<float>(out[2]));
 }
 
+stock bool GetCursorLocation(int client, float outPos[3]) {
+	float angle[3];
+	GetClientEyePosition(client, outPos);
+	GetClientEyeAngles(client, angle);
+	TR_TraceRayFilter(outPos, angle, MASK_SOLID, RayType_Infinite, Filter_IgnorePlayer, client);
+	if(TR_DidHit()) {
+		TR_GetEndPosition(outPos);
+		return true;
+	} else {
+		return false;
+	}
+} 
+
+bool Filter_IgnorePlayer(int entity, int mask, int data) {
+	return entity > 0 && entity != data;
+}
+
 // Gets a position from where the cursor is upto distance away (basically <= distance, going against walls)
 stock bool GetCursorLimited(int client, float distance, float endPos[3], TraceEntityFilter filter)
 { 

@@ -52,9 +52,9 @@ void SetupsTrollCombos() {
     #if defined _behavior_included
     combo.AddTroll("Witch Magnet");
     #endif
-    combo.AddTroll("No Button Touchie", TrollMod_Constant, 17);
-    combo.AddTroll("Slow Speed", TrollMod_Constant, 2);
-    combo.AddTroll("Instant Commons", TrollMod_Instant, 1);
+    combo.AddTroll("No Button Touchie", 17, TrollMod_Constant);
+    combo.AddTroll("Slow Speed", 2, TrollMod_Constant);
+    combo.AddTroll("Instant Commons", 1, TrollMod_Instant);
     // combo.AddTroll("Swarm", TrollMod_Instant);
     combo.AddTroll("Vomit Player");
     combo.AddTroll("Dull Melee", .flags=2);

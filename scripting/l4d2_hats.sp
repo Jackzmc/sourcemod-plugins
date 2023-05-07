@@ -3,7 +3,7 @@
 
 #define PLUGIN_VERSION "1.0"
 #define PLAYER_HAT_REQUEST_COOLDOWN 10
-#define DEBUG_GLOW 1
+// #define DEBUG_GLOW 1
 static float EMPTY_ANG[3] = { 0.0, 0.0, 0.0 };
 
 #define DUMMY_MODEL "models/props/cs_office/vending_machine.mdl"
@@ -114,7 +114,6 @@ enum struct WallBuilderData {
 	wallMode mode;
 	int axis;
 	int snapAngle;
-	int movetype;
 	int moveSpeed;
 	float moveDistance;
 	int entity;
@@ -123,10 +122,9 @@ enum struct WallBuilderData {
 	void Reset() {
 		this.size[0] = this.size[1] = this.size[2] = 5.0;
 		this.angles[0] = this.angles[1] = this.angles[2] = 0.0;
-		this.axis = 0;
-		this.movetype = 0;
+		this.axis = 1;
 		this.canScale = true;
-		this.moveDistance = 100.0;
+		this.moveDistance = 200.0;
 		this.moveSpeed = 1;
 		this.snapAngle = 30;
 		this.entity = INVALID_ENT_REFERENCE;
@@ -190,19 +188,22 @@ enum struct WallBuilderData {
 	}
 
 	void CycleAxis(int client, float tick) {
-		if(tick - cmdThrottle[client] <= 0.20) return;
+		if(tick - cmdThrottle[client] <= 0.15) return;
 		if(this.axis == 0) {
 			this.axis = 1;
 			PrintToChat(client, "\x04[Walls]\x01 Rotate Axis: \x05HEADING (Y)\x01");
+		} else if(this.axis == 1) {
+			this.axis = 2;
+			PrintToChat(client, "\x04[Walls]\x01 Rotate Axis: \x05PITCH (X)\x01");
 		} else {
 			this.axis = 0;
-			PrintToChat(client, "\x04[Walls]\x01 Rotate Axis: \x05PITCH (X)\x01");
+			PrintToChat(client, "\x04[Walls]\x01 Rotate Axis: \x05ROLL (Z)\x01");
 		}
 		cmdThrottle[client] = tick;
 	}
 
 	void CycleSnapAngle(int client, float tick) {
-		if(tick - cmdThrottle[client] <= 0.20) return;
+		if(tick - cmdThrottle[client] <= 0.15) return;
 		switch(this.snapAngle) {
 			case 1: this.snapAngle = 15;
 			case 15: this.snapAngle = 30;
@@ -237,21 +238,6 @@ enum struct WallBuilderData {
 		cmdThrottle[client] = tick;
 	}
 
-	void CycleMoveMode(int client, float tick) {
-		if(tick - cmdThrottle[client] <= 0.25) return;
-		this.movetype++;
-		PrintToChat(client, "\x04[Walls]\x01 Move Type: \x05%d\x01", this.movetype);
-		// if(this.movetype == 0) {
-		// 	this.movetype = 1;
-		// 	PrintToChat(client, "\x04[SM]\x01 Move Type: \x05HEADING (Y)\x01");
-		// } else {
-		// 	this.movetype = 0;
-		// 	PrintToChat(client, "\x04[SM]\x01 Rotate Axis: \x05PITCH (X)\x01");
-		// }
-		if(this.movetype == 3) this.movetype = 0;
-		cmdThrottle[client] = tick;
-	}
-
 	int Build() {
 		if(!this.canScale) {
 			this.Reset();
@@ -259,39 +245,36 @@ enum struct WallBuilderData {
 		}
 		// Don't need to build a new one if we editing:
 		int blocker = this.entity;
-		bool isEdit = true;
-		if(blocker == INVALID_ENT_REFERENCE) {
-			isEdit = false;
-			blocker = CreateEntityByName("func_brush");
-			if(blocker == -1) return -1;
-			DispatchKeyValueVector(blocker, "mins", this.mins);
-			DispatchKeyValueVector(blocker, "maxs", this.size);
-			DispatchKeyValueVector(blocker, "boxmins", this.mins);
-			DispatchKeyValueVector(blocker, "boxmaxs", this.size);
-
-			DispatchKeyValueVector(blocker, "angles", this.angles);
-			DispatchKeyValue(blocker, "model", DUMMY_MODEL);
-			DispatchKeyValue(blocker, "intialstate", "1");
-			// DispatchKeyValueVector(blocker, "angles", this.angles);
-			DispatchKeyValue(blocker, "BlockType", "4");
-			char name[32];
-			Format(name, sizeof(name), "l4d2_hats_%d", createdWalls.Length);
-			DispatchKeyValue(blocker, "targetname", name);
-			// DispatchKeyValue(blocker, "excludednpc", "player");
-			TeleportEntity(blocker, this.origin, this.angles, NULL_VECTOR);
-			if(!DispatchSpawn(blocker)) return -1;
-			SetEntPropVector(blocker, Prop_Send, "m_vecMins", this.mins);
-			SetEntPropVector(blocker, Prop_Send, "m_vecMaxs", this.size);
-			SetEntProp(blocker, Prop_Send, "m_nSolidType", 2);
-			int enteffects = GetEntProp(blocker, Prop_Send, "m_fEffects");
-			enteffects |= 32; //EF_NODRAW
-			SetEntProp(blocker, Prop_Send, "m_fEffects", enteffects); 
-			AcceptEntityInput(blocker, "Enable");
-		} else {
-			TeleportEntity(this.entity, this.origin, this.angles, NULL_VECTOR);
-			SetEntPropVector(this.entity, Prop_Send, "m_vecMins", this.mins);
-			SetEntPropVector(this.entity, Prop_Send, "m_vecMaxs", this.size);
+		bool isEdit = false;
+		if(blocker != INVALID_ENT_REFERENCE) {
+			AcceptEntityInput(this.entity, "Kill");
+			isEdit = true;
 		}
+		blocker = CreateEntityByName("func_brush");
+		if(blocker == -1) return -1;
+		DispatchKeyValueVector(blocker, "mins", this.mins);
+		DispatchKeyValueVector(blocker, "maxs", this.size);
+		DispatchKeyValueVector(blocker, "boxmins", this.mins);
+		DispatchKeyValueVector(blocker, "boxmaxs", this.size);
+
+		DispatchKeyValueVector(blocker, "angles", this.angles);
+		DispatchKeyValue(blocker, "model", DUMMY_MODEL);
+		DispatchKeyValue(blocker, "intialstate", "1");
+		// DispatchKeyValueVector(blocker, "angles", this.angles);
+		DispatchKeyValue(blocker, "BlockType", "4");
+		char name[32];
+		Format(name, sizeof(name), "l4d2_hats_%d", createdWalls.Length);
+		DispatchKeyValue(blocker, "targetname", name);
+		// DispatchKeyValue(blocker, "excludednpc", "player");
+		TeleportEntity(blocker, this.origin, this.angles, NULL_VECTOR);
+		if(!DispatchSpawn(blocker)) return -1;
+		SetEntPropVector(blocker, Prop_Send, "m_vecMins", this.mins);
+		SetEntPropVector(blocker, Prop_Send, "m_vecMaxs", this.size);
+		SetEntProp(blocker, Prop_Send, "m_nSolidType", 2);
+		int enteffects = GetEntProp(blocker, Prop_Send, "m_fEffects");
+		enteffects |= 32; //EF_NODRAW
+		SetEntProp(blocker, Prop_Send, "m_fEffects", enteffects); 
+		AcceptEntityInput(blocker, "Enable");
 
 		this.Draw(WALL_COLOR, 5.0, 1.0);
 		this.Reset();
@@ -346,7 +329,7 @@ public void OnPluginStart() {
 	cvar_sm_hats_blacklist_enabled = CreateConVar("sm_hats_blacklist_enabled", "1", "Is the prop blacklist enabled", FCVAR_NONE, true, 0.0, true, 1.0);
 	cvar_sm_hats_enabled = CreateConVar("sm_hats_enabled", "1.0", "Enable hats.\n0=OFF, 1=Admins Only, 2=Any", FCVAR_NONE, true, 0.0, true, 2.0);
 	cvar_sm_hats_enabled.AddChangeHook(Event_HatsEnableChanged);
-	cvar_sm_hats_flags = CreateConVar("sm_hats_features", "153", "Toggle certain features. Add bits together\n1 = Player Hats\n2 = Respect Admin Immunity\n4 = Create a fake hat for hat wearer to view instead, and for yeeting\n8 = No saferoom hats\n16 = Player hatting requires victim consent\n32 = Infected Hats\n64 = Reverse hats", FCVAR_CHEAT, true, 0.0);
+	cvar_sm_hats_flags = CreateConVar("sm_hats_features", "27", "Toggle certain features. Add bits together\n1 = Player Hats\n2 = Respect Admin Immunity\n4 = Create a fake hat for hat wearer to view instead, and for yeeting\n8 = No saferoom hats\n16 = Player hatting requires victim consent\n32 = Infected Hats\n64 = Reverse hats", FCVAR_CHEAT, true, 0.0);
 	cvar_sm_hat_rainbow_speed = CreateConVar("sm_hats_rainbow_speed", "1", "Speed of rainbow", FCVAR_NONE, true, 0.0);
 
 	noHatVictimCookie = new Cookie("hats_no_target", "Disables other players from making you their hat", CookieAccess_Public);
@@ -410,25 +393,30 @@ public Action Command_DoAHat(int client, int args) {
 			char sizeStr[4];
 			GetCmdArg(2, sizeStr, sizeof(sizeStr));
 			float size = StringToFloat(sizeStr);
+			if(size == 0.0) {
+				ReplyToCommand(client, "[Hats] Invalid size");
+				return Plugin_Handled;
+			}
 			if(HasEntProp(entity, Prop_Send, "m_flModelScale"))
 				SetEntPropFloat(entity, Prop_Send, "m_flModelScale", size);
 			else
 				PrintHintText(client, "Hat does not support scaling");
+			// Change the size of it's parent instead
 			int child = -1;
 			while((child = FindEntityByClassname(child, "*")) != INVALID_ENT_REFERENCE )
 			{
 				int parent = GetEntPropEnt(child, Prop_Data, "m_pParent");
-				if(parent == entity && HasEntProp(child, Prop_Send, "m_flModelScale")) {
+				if(parent == entity) {
 					if(HasEntProp(child, Prop_Send, "m_flModelScale")) {
 						PrintToConsole(client, "found child %d for %d", child, entity);
 						SetEntPropFloat(child, Prop_Send, "m_flModelScale", size);
 					} else {
-						PrintToConsole(client, "Child %d for %d cannot be scaled", child, entity);
+						PrintToChat(client, "Child %d for %d cannot be scaled", child, entity);
 					}
-					
+					break;
 				}
 			}
-
+			// Reattach entity:
 			EquipHat(client, entity);
 			return Plugin_Handled;
 		} else if(arg[0] == 'r' && arg[1] == 'a') {
@@ -443,13 +431,16 @@ public Action Command_DoAHat(int client, int args) {
 			return Plugin_Handled;
 		}
 
-		
+		// Re-enable physics and restore collision/solidity
 		AcceptEntityInput(entity, "EnableMotion");
 		SetEntProp(entity, Prop_Send, "m_CollisionGroup", hatData[client].collisionGroup);
 		SetEntProp(entity, Prop_Send, "m_nSolidType", hatData[client].solidType);
 
-		int flags = ~GetEntityFlags(entity) & FL_FROZEN;
+		// Remove frozen flag (only "infected" and "witch" are frozen, but just incase:)
+		int flags = GetEntityFlags(entity) & ~FL_FROZEN;
 		SetEntityFlags(entity, flags);
+
+		// Clear visible hats (HatConfig_FakeHat is enabled)
 		int visibleEntity = EntRefToEntIndex(hatData[client].visibleEntity);
 		SDKUnhook(entity, SDKHook_SetTransmit, OnRealTransmit);
 		if(visibleEntity > 0) {
@@ -457,33 +448,39 @@ public Action Command_DoAHat(int client, int args) {
 			AcceptEntityInput(visibleEntity, "Kill");
 			hatData[client].visibleEntity = INVALID_ENT_REFERENCE;
 		}
+		// Grant temp god & remove after time
 		tempGod[client] = true;
+		if(client <= MaxClients) CreateTimer(2.0, Timer_RemoveGod, GetClientUserId(client));
+		if(entity <= MaxClients) CreateTimer(2.0, Timer_RemoveGod, GetClientUserId(entity));
 
-		CreateTimer(2.0, Timer_RemoveGod, GetClientUserId(client));
+		// Restore movement:
 		if(entity <= MaxClients) {
-			tempGod[entity] = true;
+			// If player, remove roll & and just default to WALK movetype
 			hatData[client].orgAng[2] = 0.0;
-			CreateTimer(2.5, Timer_RemoveGod, GetClientUserId(entity));
 			SetEntityMoveType(entity, MOVETYPE_WALK);
 		} else {
+			// If not player, then just use whatever they were pre-hat
 			SetEntProp(entity, Prop_Send, "movetype", hatData[client].moveType);
 		}
 
-		if(arg[0] == 'y') {
+		if(arg[0] == 'y') { // Hat yeeting:
 			GetClientEyeAngles(client, hatData[client].orgAng);
 			GetClientAbsOrigin(client, hatData[client].orgPos);
 			hatData[client].orgPos[2] += 45.0;
 			float ang[3], vel[3];
 			
+			// Calculate the angle to throw at
 			GetClientEyeAngles(client, ang);
 			ang[2] = 0.0;
 			if(ang[0] > 0.0) ang[0] = -ang[0];
 			// ang[0] = -45.0;
 
+			// Calculate velocity to throw based on direction
 			vel[0] = Cosine(DegToRad(ang[1])) * 1500.0;
 			vel[1] = Sine(DegToRad(ang[1])) * 1500.0;
 			vel[2] = 700.0;
 			if(entity <= MaxClients) {
+				// For players, use the built in fling function
 				TeleportEntity(entity, hatData[client].orgPos, hatData[client].orgAng, NULL_VECTOR);
 				L4D2_CTerrorPlayer_Fling(entity, client, vel);
 			} /*else if(visibleEntity > 0) {
@@ -506,49 +503,60 @@ public Action Command_DoAHat(int client, int args) {
 				hatData[client].visibleEntity = INVALID_ENT_REFERENCE;
 				hatData[client].entity = INVALID_ENT_REFERENCE;
 			} */ else {
+				// For actual props, offset it 35 units above and 80 units infront to reduce collision-incaps and then throw
 				GetHorizontalPositionFromClient(client, 80.0, hatData[client].orgPos);
 				hatData[client].orgPos[2] += 35.0;
 				TeleportEntity(entity, hatData[client].orgPos, hatData[client].orgAng, vel);
-				CreateTimer(6.0, Timer_PropSleep, hatData[client].entity);
+				// Sleep the physics after enoug time for it to most likely have landed
+				CreateTimer(5.7, Timer_PropSleep, hatData[client].entity);
 			}
 			PrintToChat(client, "[Hats] Yeeted hat");
 			hatData[client].entity = INVALID_ENT_REFERENCE;
 			return Plugin_Handled;
 		} else if(arg[0] == 'c') {
-			if(GetCursorLocation(client, hatData[client].orgPos)) {
-				GlowPoint(hatData[client].orgPos);
-				TeleportEntity(entity, hatData[client].orgPos, hatData[client].orgAng, NULL_VECTOR);
-				PrintToChat(client, "[Hats] Placed hat on cursor.");
+			float pos[3];
+			// Grabs a cursor position with some checks to prevent placing into (in)visible walls
+			if(GetSmartCursorLocation(client, pos)) {
+				if(CanHatBePlaced(client, pos)) {
+					if(entity <= MaxClients)
+						L4D_WarpToValidPositionIfStuck(entity);
+					hatData[client].orgPos = pos;
+					TeleportEntity(entity, hatData[client].orgPos, hatData[client].orgAng, NULL_VECTOR);
+					PrintToChat(client, "[Hats] Placed hat on cursor.");
+				}
 			} else {
 				PrintToChat(client, "[Hats] Could not find cursor position.");
 			}
 		} else if(arg[0] == 'p' || (entity <= MaxClients && arg[0] != 'r')) {
-			if(!HasFlag(client, HAT_REVERSED)) {
-
-				GetClientEyePosition(client, hatData[client].orgPos);
-				GetClientEyeAngles(client, hatData[client].orgAng);
-				GetHorizontalPositionFromOrigin(hatData[client].orgPos, hatData[client].orgAng, 80.0, hatData[client].orgPos);
-				hatData[client].orgAng[0] = 0.0;
-				// GlowPoint(hatData[client].orgPos, 2.0);
+			// Place the hat down on the cursor if specified OR if entity is hat
+			float pos[3], ang[3];
+			if(HasFlag(client, HAT_REVERSED)) {
+				// If we are reversed, then place ourselves where our "hatter" is
+				GetClientEyePosition(entity, hatData[client].orgPos);
+				GetClientEyeAngles(entity, hatData[client].orgAng);
+				TeleportEntity(client, hatData[client].orgPos, hatData[client].orgAng, NULL_VECTOR);
+				PrintToChat(entity, "[Hats] Placed hat in front of you.");
+			} else {
+				// If we are normal, then get position infront of us, offset by model size
+				GetClientEyePosition(client, pos);
+				GetClientEyeAngles(client, ang);
+				GetHorizontalPositionFromOrigin(pos, ang, 80.0, pos);
+				ang[0] = 0.0;
 				float mins[3];
 				GetEntPropVector(entity, Prop_Data, "m_vecMins", mins);
-				// GlowPoint(hatData[client].orgPos, 3.0);
-				hatData[client].orgPos[2] += mins[2]; 
-				FindGround(hatData[client].orgPos, hatData[client].orgPos);
-				// GlowPoint(hatData[client].orgPos);
+				pos[2] += mins[2]; 
+				// Find the nearest ground (raytrace bottom->up)
+				FindGround(pos, pos);
+				// Check if the destination is acceptable (not saferooms if enabled)
+				if(CanHatBePlaced(client, pos)) {
+					hatData[client].orgPos = pos;
+					hatData[client].orgAng = ang;
+					TeleportEntity(entity, hatData[client].orgPos, hatData[client].orgAng, NULL_VECTOR);
+					PrintToChat(client, "[Hats] Placed hat in front of you.");
+				}
 			}
-
-			
-			/*GetGroundTopDown(client,  hatData[client].orgPos, hatData[client].orgAng);
-			// GetGround(client, hatData[client].orgPos, hatData[client].orgAng);
-			float mins[3];
-			GetEntPropVector(entity, Prop_Data, "m_vecMins", mins);
-			hatData[client].orgPos[2] -= mins[2];
-			GetHorizontalPositionFromOrigin(hatData[client].orgPos, hatData[client].orgAng, 80.0, hatData[client].orgPos);*/
-			TeleportEntity(entity, hatData[client].orgPos, hatData[client].orgAng, NULL_VECTOR);
-			// hatData[client].orgPos[2] = mins[2];
-			PrintToChat(client, "[Hats] Placed hat in front of you.");
 		} else if(arg[0] == 'd') {
+			// Use the new wall editor
 			WallBuilder[client].Reset();
 			WallBuilder[client].entity = EntIndexToEntRef(entity);
 			WallBuilder[client].canScale = false;	
@@ -558,152 +566,132 @@ public Action Command_DoAHat(int client, int args) {
 			PrintToChat(client, "[Hats] Restored hat to its original position.");
 		}
 
+		// Restore the scale pre-hat
 		if(hatData[client].scale > 0 && HasEntProp(entity, Prop_Send, "m_flModelScale"))
 			SetEntPropFloat(entity, Prop_Send, "m_flModelScale", hatData[client].scale);
 
+		// If no other options performed, then restore to original position and remove our reference
 		AcceptEntityInput(entity, "Sleep");
 		TeleportEntity(entity, hatData[client].orgPos, hatData[client].orgAng, NULL_VECTOR);
 		hatData[client].entity = INVALID_ENT_REFERENCE;
 	} else {
+		// Find a new hatable entity
 		int flags = 0;
-		entity = GetLookingEntity(client, Filter_ValidHats); //GetClientAimTarget(client, false);
+		entity = GetLookingEntity(client, Filter_ValidHats);
 		if(entity <= 0) {
 			PrintCenterText(client, "[Hats] No entity found");
-		} else {
-			if(args > 0) {
-				char arg[4];
-				GetCmdArg(1, arg, sizeof(arg));
-				if(arg[0] == 'r') {
-					flags |= view_as<int>(HAT_REVERSED);
-				}
-			}
-			int parent = GetEntPropEnt(entity, Prop_Data, "m_hParent");
-			if(parent > 0 && entity > MaxClients) {
-				PrintToConsole(client, "[Hats] Selected a child entity, selecting parent (child %d -> parent %d)", entity, parent);
-				entity = parent;
-			} else if(entity <= MaxClients) {
-				if(GetClientTeam(entity) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
-					PrintToChat(client, "[Hats] Cannot make enemy a hat... it's dangerous");
-					return Plugin_Handled;
-				} else if(entity == EntRefToEntIndex(WallBuilder[client].entity)) {
-					PrintToChat(client, "[Hats] You are currently editing this entity");
-					return Plugin_Handled;
-				} else if(inSaferoom[client] && cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_NoSaferoomHats)) {
-					PrintToChat(client, "[Hats] Hats are not allowed in the saferoom");
-					return Plugin_Handled;
-				} else if(!IsPlayerAlive(entity) || GetEntProp(entity, Prop_Send, "m_isHangingFromLedge") || L4D_IsPlayerCapped(entity)) {
-					PrintToChat(client, "[Hats] Player is either dead, hanging or in the process of dying.");
-					return Plugin_Handled;
-				} else if(EntRefToEntIndex(hatData[entity].entity) == client) {
-					PrintToChat(client, "[Hats] Woah you can't be making a black hole, jesus be careful.");
-					return Plugin_Handled;
-				} else if(~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_PlayerHats)) {
-					PrintToChat(client, "[Hats] Player hats are disabled");
-					return Plugin_Handled;
-				} else if(!CanTarget(entity)) {
-					PrintToChat(client, "[Hats] Player has disabled player hats for themselves.");
-					return Plugin_Handled;
-				} else if(!CanTarget(client)) {
-					PrintToChat(client, "[Hats] Cannot hat a player when you have player hats turned off");
-					return Plugin_Handled;
-				} else if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_RespectAdminImmunity)) {
-					AdminId targetAdmin = GetUserAdmin(entity);
-					AdminId clientAdmin = GetUserAdmin(client);
-					if(targetAdmin != INVALID_ADMIN_ID && clientAdmin == INVALID_ADMIN_ID) {
-						PrintToChat(client, "[Hats] Cannot target an admin");
-						return Plugin_Handled;
-					} else if(targetAdmin != INVALID_ADMIN_ID && targetAdmin.ImmunityLevel > clientAdmin.ImmunityLevel) {
-						PrintToChat(client, "[Hats] Cannot target %N, they are immune to you", entity);
-						return Plugin_Handled;
-					}
-				}
-				if(!IsFakeClient(entity) && cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_PlayerHatConsent) && ~flags & view_as<int>(HAT_REVERSED)) {
-					int lastRequestDiff = GetTime() - lastHatRequestTime[client];
-					if(lastRequestDiff < PLAYER_HAT_REQUEST_COOLDOWN) {
-						PrintToChat(client, "[Hats] Player hat under %d seconds cooldown", lastRequestDiff);
-						return Plugin_Handled;
-					}
-
-					Menu menu = new Menu(HatConsentHandler);
-					menu.SetTitle("%N: Requests to hat you", client);
-					char id[8];
-					Format(id, sizeof(id), "%d|1", GetClientUserId(client));
-					menu.AddItem(id, "Accept");
-					Format(id, sizeof(id), "%d|0", GetClientUserId(client));
-					menu.AddItem(id, "Reject");
-					menu.Display(entity, 12);
-					PrintHintText(client, "Sent hat request to %N", entity);
-					PrintToChat(entity, "[Hats] %N requests to hat you, 1 to Accept, 2 to Reject. Expires in 12 seconds.", client);
-					return Plugin_Handled;
-				}
-			}
-
-
-			char classname[64];
-			GetEntityClassname(entity, classname, sizeof(classname));
-			if(cvar_sm_hats_blacklist_enabled.BoolValue) {
-				for(int i = 0; i < MAX_FORBIDDEN_CLASSNAMES; i++) {
-					if(StrEqual(FORBIDDEN_CLASSNAMES[i], classname)) {
-						PrintToChat(client, "[Hats] Entity (%s) is a blacklisted entity. Naughty.", classname);
-						return Plugin_Handled;
-					}
-				}
-			}
-
-			if(~flags & view_as<int>(HAT_REVERSED)) {
-				for(int i = 0; i < MAX_REVERSE_CLASSNAMES; i++) {
-					if(StrEqual(REVERSE_CLASSNAMES[i], classname)) {
-						flags |= view_as<int>(HAT_REVERSED);
-						break;
-					}
-				}
-			}
-			EquipHat(client, entity, classname, flags);
+			return Plugin_Handled;
+		} else if(entity == EntRefToEntIndex(WallBuilder[client].entity)) {
+			// Prevent making an entity you editing a hat
+			return Plugin_Handled;
 		}
+
+		// Make hat reversed if 'r' passed in
+		if(args > 0) {
+			char arg[4];
+			GetCmdArg(1, arg, sizeof(arg));
+			if(arg[0] == 'r') {
+				flags |= view_as<int>(HAT_REVERSED);
+			}
+		}
+
+		int parent = GetEntPropEnt(entity, Prop_Data, "m_hParent");
+		if(parent > 0 && entity > MaxClients) {
+			PrintToConsole(client, "[Hats] Selected a child entity, selecting parent (child %d -> parent %d)", entity, parent);
+			entity = parent;
+		} else if(entity <= MaxClients) { // Checks for hatting a player entity
+			if(GetClientTeam(entity) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
+				PrintToChat(client, "[Hats] Cannot make enemy a hat... it's dangerous");
+				return Plugin_Handled;
+			} else if(entity == EntRefToEntIndex(WallBuilder[client].entity)) {
+				// Old check left in in case you hatting child entity
+				PrintToChat(client, "[Hats] You are currently editing this entity");
+				return Plugin_Handled;
+			} else if(inSaferoom[client] && cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_NoSaferoomHats)) {
+				PrintToChat(client, "[Hats] Hats are not allowed in the saferoom");
+				return Plugin_Handled;
+			} else if(!IsPlayerAlive(entity) || GetEntProp(entity, Prop_Send, "m_isHangingFromLedge") || L4D_IsPlayerCapped(entity)) {
+				PrintToChat(client, "[Hats] Player is either dead, hanging, or in the process of dying.");
+				return Plugin_Handled;
+			} else if(EntRefToEntIndex(hatData[entity].entity) == client) {
+				PrintToChat(client, "[Hats] Woah you can't be making a black hole, jesus be careful.");
+				return Plugin_Handled;
+			} else if(~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_PlayerHats)) {
+				PrintToChat(client, "[Hats] Player hats are disabled");
+				return Plugin_Handled;
+			} else if(!CanTarget(entity)) {
+				PrintToChat(client, "[Hats] Player has disabled player hats for themselves.");
+				return Plugin_Handled;
+			} else if(!CanTarget(client)) {
+				PrintToChat(client, "[Hats] Cannot hat a player when you have player hats turned off");
+				return Plugin_Handled;
+			} else if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_RespectAdminImmunity)) {
+				AdminId targetAdmin = GetUserAdmin(entity);
+				AdminId clientAdmin = GetUserAdmin(client);
+				if(targetAdmin != INVALID_ADMIN_ID && clientAdmin == INVALID_ADMIN_ID) {
+					PrintToChat(client, "[Hats] Cannot target an admin");
+					return Plugin_Handled;
+				} else if(targetAdmin != INVALID_ADMIN_ID && targetAdmin.ImmunityLevel > clientAdmin.ImmunityLevel) {
+					PrintToChat(client, "[Hats] Cannot target %N, they are immune to you", entity);
+					return Plugin_Handled;
+				}
+			}
+			if(!IsFakeClient(entity) && cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_PlayerHatConsent) && ~flags & view_as<int>(HAT_REVERSED)) {
+				int lastRequestDiff = GetTime() - lastHatRequestTime[client];
+				if(lastRequestDiff < PLAYER_HAT_REQUEST_COOLDOWN) {
+					PrintToChat(client, "[Hats] Player hat under %d seconds cooldown", lastRequestDiff);
+					return Plugin_Handled;
+				}
+
+				Menu menu = new Menu(HatConsentHandler);
+				menu.SetTitle("%N: Requests to hat you", client);
+				char id[8];
+				Format(id, sizeof(id), "%d|1", GetClientUserId(client));
+				menu.AddItem(id, "Accept");
+				Format(id, sizeof(id), "%d|0", GetClientUserId(client));
+				menu.AddItem(id, "Reject");
+				menu.Display(entity, 12);
+				PrintHintText(client, "Sent hat request to %N", entity);
+				PrintToChat(entity, "[Hats] %N requests to hat you, 1 to Accept, 2 to Reject. Expires in 12 seconds.", client);
+				return Plugin_Handled;
+			}
+		}
+
+
+		char classname[64];
+		GetEntityClassname(entity, classname, sizeof(classname));
+		// Check is pretty redudant as the traceray itself shouldn't grab it, but just in case:
+		if(cvar_sm_hats_blacklist_enabled.BoolValue) {
+			for(int i = 0; i < MAX_FORBIDDEN_CLASSNAMES; i++) {
+				if(StrEqual(FORBIDDEN_CLASSNAMES[i], classname)) {
+					PrintToChat(client, "[Hats] Entity (%s) is a blacklisted entity. Naughty.", classname);
+					return Plugin_Handled;
+				}
+			}
+		}
+
+		// Check for any class that should always be reversed
+		if(~flags & view_as<int>(HAT_REVERSED)) {
+			for(int i = 0; i < MAX_REVERSE_CLASSNAMES; i++) {
+				if(StrEqual(REVERSE_CLASSNAMES[i], classname)) {
+					flags |= view_as<int>(HAT_REVERSED);
+					break;
+				}
+			}
+		}
+
+		EquipHat(client, entity, classname, flags);
 	}
 	return Plugin_Handled;
 }
 
 public Action Command_MakeWall(int client, int args) {
 	if(WallBuilder[client].IsActive()) {
-		if(args == 1) {
-			char arg1[16];
-			GetCmdArg(1, arg1, sizeof(arg1));
-			if(StrEqual(arg1, "build", false)) {
-				int flags = GetEntityFlags(client) & ~FL_FROZEN;
-				SetEntityFlags(client, flags);
-				int id = WallBuilder[client].Build();
-				if(id == -1) {
-					PrintToChat(client, "\x04[Walls]\x01 Wall Creation: \x04Error\x01");
-				} else if(id == -2) {
-					PrintToChat(client, "\x04[Walls]\x01 Wall Edit: \x04Complete\x01");
-				} else if(id == -3) {
-					PrintToChat(client, "\x04[Walls]\x01 Entity Edit: \x04Complete\x01");
-				} else {
-					PrintToChat(client, "\x04[Walls]\x01 Wall Creation: \x05Wall #%d Created\x01", id + 1);
-				}
-				return Plugin_Handled;
-			} else if(StrEqual(arg1, "export")) {
-				PrintToChat(client, "{");
-				PrintToChat(client, "\t\"origin\" \"%.2f %.2f %.2f\"", WallBuilder[client].origin[0], WallBuilder[client].origin[1], WallBuilder[client].origin[2]);
-				PrintToChat(client, "\t\"angles\" \"%.2f %.2f %.2f\"", WallBuilder[client].angles[0], WallBuilder[client].angles[1], WallBuilder[client].angles[2]);
-				PrintToChat(client, "\t\"size\" \"%.2f %.2f %.2f\"", WallBuilder[client].size[0], WallBuilder[client].size[1], WallBuilder[client].size[2]);
-				PrintToChat(client, "}");
-			} else if(StrEqual(arg1, "cancel")) {
-				int flags = GetEntityFlags(client) & ~FL_FROZEN;
-				SetEntityFlags(client, flags);
-				WallBuilder[client].SetMode(INACTIVE);
-				PrintToChat(client, "\x04[Walls]\x01 Wall Creation: \x04Cancelled\x01");
-			}
-		} else {
-			ReplyToCommand(client, "\x04[Walls]\x01 Unknown option, try \x05/mkwall build\x01 to finish or \x04/mkwall cancel\x01 to cancel");
-		}
-
+		ReplyToCommand(client, "\x04[Walls]\x01 You are already editing/building, either finish with \x05/wall build\x01 or cancel with \x04/wall cancel\x01");
 	} else {
 		WallBuilder[client].Reset();
 		if(args > 0) {
-			// TODO: Determine axis
-			
+			// Get values for X, Y and Z axis (defaulting to 1.0):
 			char arg2[8];
 			for(int i = 0; i < 3; i++) {
 				GetCmdArg(i + 1, arg2, sizeof(arg2));
@@ -716,6 +704,8 @@ public Action Command_MakeWall(int client, int args) {
 
 			float rot[3];
 			GetClientEyeAngles(client, rot);
+			// Flip X and Y depending on rotation
+			// TODO: Validate
 			if(rot[2] > 45 && rot[2] < 135 || rot[2] > -135 && rot[2] < -45) {
 				float temp = WallBuilder[client].size[0];
 				WallBuilder[client].size[0] = WallBuilder[client].size[1];
@@ -724,9 +714,10 @@ public Action Command_MakeWall(int client, int args) {
 			
 			WallBuilder[client].CalculateMins();
 		}
+
 		WallBuilder[client].SetMode(SCALE);
 		GetCursorLimited(client, 100.0, WallBuilder[client].origin, Filter_IgnorePlayer);
-		PrintToChat(client, "\x04[Walls]\x01 New Wall Started. End with \x05/mkwall build\x01 or \x04/mkwall cancel\x01");
+		PrintToChat(client, "\x04[Walls]\x01 New Wall Started. End with \x05/wall build\x01 or \x04/wall cancel\x01");
 		PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Scale\x01");
 	}
 	return Plugin_Handled;
@@ -743,7 +734,35 @@ public Action Command_ManageWalls(int client, int args) {
 	char arg1[16], arg2[16];
 	GetCmdArg(1, arg1, sizeof(arg1));
 	GetCmdArg(2, arg2, sizeof(arg2));
-	if(StrEqual(arg1, "delete")) {
+	if(StrEqual(arg1, "build") || StrEqual(arg1, "done")) {
+		// Remove frozen flag from user, as some modes use this
+		int flags = GetEntityFlags(client) & ~FL_FROZEN;
+		SetEntityFlags(client, flags);
+
+		int id = WallBuilder[client].Build();
+		if(id == -1) {
+			PrintToChat(client, "\x04[Walls]\x01 Wall Creation: \x04Error\x01");
+		} else if(id == -2) {
+			PrintToChat(client, "\x04[Walls]\x01 Wall Edit: \x04Complete\x01");
+		} else if(id == -3) {
+			PrintToChat(client, "\x04[Walls]\x01 Entity Edit: \x04Complete\x01");
+		} else {
+			PrintToChat(client, "\x04[Walls]\x01 Wall Creation: \x05Wall #%d Created\x01", id + 1);
+		}
+	} else if(StrEqual(arg1, "cancel")) {
+		int flags = GetEntityFlags(client) & ~FL_FROZEN;
+		SetEntityFlags(client, flags);
+		WallBuilder[client].SetMode(INACTIVE);
+		PrintToChat(client, "\x04[Walls]\x01 Wall Creation: \x04Cancelled\x01");
+	} else if(StrEqual(arg1, "export")) {
+		// TODO: support exp #id
+		// int wallId = GetwallId(client, arg2, false);
+		PrintToChat(client, "{");
+		PrintToChat(client, "\t\"origin\" \"%.2f %.2f %.2f\"", WallBuilder[client].origin[0], WallBuilder[client].origin[1], WallBuilder[client].origin[2]);
+		PrintToChat(client, "\t\"angles\" \"%.2f %.2f %.2f\"", WallBuilder[client].angles[0], WallBuilder[client].angles[1], WallBuilder[client].angles[2]);
+		PrintToChat(client, "\t\"size\" \"%.2f %.2f %.2f\"", WallBuilder[client].size[0], WallBuilder[client].size[1], WallBuilder[client].size[2]);
+		PrintToChat(client, "}");
+	} else if(StrEqual(arg1, "delete")) {
 		if(StrEqual(arg2, "all")) {
 			int walls = createdWalls.Length;
 			for(int i = 1; i <= createdWalls.Length; i++) {
@@ -808,17 +827,17 @@ public Action Command_ManageWalls(int client, int args) {
 		if(id > -1) {
 			int entity = GetWallEntity(id);
 			WallBuilder[client].Import(entity);
-			PrintToChat(client, "\x04[Walls]\x01 Editing wall \x05%d\x01. End with \x05/mkwall build\x01 or \x04/mkwall cancel\x01", id);
+			PrintToChat(client, "\x04[Walls]\x01 Editing wall \x05%d\x01. End with \x05/wall done\x01 or \x04/wall cancel\x01", id);
 			PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Scale\x01");
 		}
 	} else if(StrEqual(arg1, "edite")) {
-		int index = StringToInt(arg2);
-		if(index > 0 && IsValidEntity(index)) {
+		int index = GetLookingEntity(client, Filter_ValidHats); //GetClientAimTarget(client, false);
+		if(index > 0) {
 			WallBuilder[client].Reset();
 			WallBuilder[client].entity = EntIndexToEntRef(index);
 			WallBuilder[client].canScale = false;	
 			WallBuilder[client].SetMode(MOVE_ORIGIN);
-			PrintToChat(client, "\x04[Walls]\x01 Editing wall \x05%d\x01. End with \x05/mkwall build\x01 or \x04/mkwall cancel\x01", index);
+			PrintToChat(client, "\x04[Walls]\x01 Editing entity \x05%d\x01. End with \x05/wall done\x01", index);
 			PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Move & Rotate\x01");
 		} else {
 			ReplyToCommand(client, "\x04[Walls]\x01 Invalid or non existent entity");
@@ -829,7 +848,7 @@ public Action Command_ManageWalls(int client, int args) {
 			int entity = GetWallEntity(id);
 			WallBuilder[client].Import(entity, true);
 			GetCursorLimited(client, 100.0, WallBuilder[client].origin, Filter_IgnorePlayer);
-			PrintToChat(client, "\x04[Walls]\x01 Editing copy of wall \x05%d\x01. End with \x05/mkwall build\x01 or \x04/mkwall cancel\x01", id);
+			PrintToChat(client, "\x04[Walls]\x01 Editing copy of wall \x05%d\x01. End with \x05/wall build\x01 or \x04/wall cancel\x01", id);
 			PrintToChat(client, "\x04[Walls]\x01 Mode: \x05Scale\x01");
 		}
 	} else if(StrEqual(arg1, "list")) {
@@ -864,6 +883,7 @@ int GetWallEntity(int id) {
 	return createdWalls.Get(id - 1);
 }
 
+// Handles consent that a person to be hatted by another player
 public int HatConsentHandler(Menu menu, MenuAction action, int target, int param2) {
 	if (action == MenuAction_Select) {
 		static char info[8];
@@ -873,7 +893,7 @@ public int HatConsentHandler(Menu menu, MenuAction action, int target, int param
 		int activator = GetClientOfUserId(StringToInt(str[0]));
 		int hatAction = StringToInt(str[1]);
 		if(activator == 0) {
-			ReplyToCommand(target, "Player has gone idle or left");
+			ReplyToCommand(target, "Player has disconnected");
 			return 0;
 		} else if(hatAction == 1) {
 			EquipHat(activator, target, "player", 0);
@@ -891,22 +911,21 @@ public int HatConsentHandler(Menu menu, MenuAction action, int target, int param
 
 public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	for(int slot = 0; slot <= 5; slot++) {
-		int wpn = GetPlayerWeaponSlot(client, slot);
-		for(int i = 1; i <= MaxClients; i++) {
-			if(i != client && IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
-				int hat = GetHat(i);
-				if(hat == wpn) {
-				
-					break;
-				}
-			}
-		}
-	}
+	// Check if an item picked up a user's hat and do nothing... 
+	// for(int slot = 0; slot <= 5; slot++) {
+	// 	int wpn = GetPlayerWeaponSlot(client, slot);
+	// 	for(int i = 1; i <= MaxClients; i++) {
+	// 		if(i != client && IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
+	// 			int hat = GetHat(i);
+	// 			if(hat == wpn) {
+	// 				break;
+	// 			}
+	// 		}
+	// 	}
+	// }
 }
 
 
-// TODO: Possibly detect instead the hat itself entering saferoom
 public void OnEnterSaferoom(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
@@ -919,9 +938,6 @@ public void OnEnterSaferoom(Event event, const char[] name, bool dontBroadcast) 
 					ClearHat(client, true);
 				} else {
 					CreateTimer(2.0, Timer_PlaceHat, userid);
-					// float maxflow = L4D2Direct_GetMapMaxFlowDistance()
-					// L4D_GetNavArea_SpawnAttributes
-					// L4D_GetNavAreaPos
 				}
 			}
 		}
@@ -936,28 +952,12 @@ public void OnLeaveSaferoom(Event event, const char[] name, bool dontBroadcast) 
 	}
 }
 
-public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
-	if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_NoSaferoomHats) && client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
-		if(HasHat(client)) {
-			if(!IsHatAllowed(client)) {
-				PrintToChat(client, "[Hats] Hat is not allowed in the saferoom and has been returned");
-				ClearHat(client, true);
-			} else {
-				CreateTimer(2.0, Timer_PlaceHat, GetClientUserId(client));
-				// float maxflow = L4D2Direct_GetMapMaxFlowDistance()
-				// L4D_GetNavArea_SpawnAttributes
-				// L4D_GetNavAreaPos
-			}
-		}
-	}
-}
-
 Action Timer_PlaceHat(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0 && HasHat(client)) {
-		GetClientEyePosition(client, hatData[client].orgPos);
+		GetClientAbsOrigin(client, hatData[client].orgPos);
 		GetClientEyeAngles(client, hatData[client].orgAng);
-		GetHorizontalPositionFromOrigin(hatData[client].orgPos, hatData[client].orgAng, 80.0, hatData[client].orgPos);
+		GetHorizontalPositionFromOrigin(hatData[client].orgPos, hatData[client].orgAng, 40.0, hatData[client].orgPos);
 		hatData[client].orgAng[0] = 0.0;
 		PrintToChat(client, "[Hats] Hat has been placed down");
 		ClearHat(client, true);
@@ -982,13 +982,16 @@ Action Timer_Kill(Handle h, int entity) {
 	return Plugin_Handled;
 }
 
-stock bool GetCursorLocation(int client, float outPos[3]) {
+// Tries to find a valid location at user's cursor, avoiding placing into solid walls (such as invisible walls) or objects
+stock bool GetSmartCursorLocation(int client, float outPos[3]) {
 	float start[3], angle[3], ceilPos[3], wallPos[3], normal[3];
+	// Get the cursor location
 	GetClientEyePosition(client, start);
 	GetClientEyeAngles(client, angle);
 	TR_TraceRayFilter(start, angle, MASK_SOLID, RayType_Infinite, Filter_NoPlayers, client);
 	if(TR_DidHit()) {
 		TR_GetEndPosition(outPos);
+		// Check if the position is a wall
 		TR_GetPlaneNormal(null, normal);
 		if(normal[2] < 0.1) {
 
@@ -1001,6 +1004,7 @@ stock bool GetCursorLocation(int client, float outPos[3]) {
 			bool ceilOK = !TR_AllSolid();
 			TR_GetEndPosition(ceilPos);
 			float distCeil = GetVectorDistance(outPos, ceilPos, true);
+
 			// Find a suitable position backwards
 			angle[0] = 70.0;
 			angle[1] += 180.0;
@@ -1024,6 +1028,7 @@ stock bool GetCursorLocation(int client, float outPos[3]) {
 	}
 } 
 
+// Periodically fixes hat offsets, as some events/actions/anything can cause entities to offset from their parent
 Action Timer_RemountHats(Handle h) {
 	float p1[3], p2[3];
 	for(int i = 1; i <= MaxClients; i++) {
@@ -1049,6 +1054,7 @@ Action Timer_RemountHats(Handle h) {
 	return Plugin_Handled;
 }
 
+// Remounts entity in a new frame to ensure their parent was properly cleared
 void Frame_Remount(int i) {
 	int entity = GetHat(i);
 	if(entity == -1) return;
@@ -1064,10 +1070,11 @@ void Frame_Remount(int i) {
 	}
 }
 
-// TODO: toggle highlight
-// pick a diff model
+
+// Handles making a prop sleep after a set amount of time (called after hat yeet)
 Action Timer_PropSleep(Handle h, int ref) {
 	if(IsValidEntity(ref)) {
+		// Check if we should delete thrown hat objects, such as physic props
 		if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_DeleteThrownHats)) {
 			// Don't delete if someone has hatted it (including ourself):
 			for(int i = 1; i <= MaxClients; i++) {
@@ -1075,6 +1082,8 @@ Action Timer_PropSleep(Handle h, int ref) {
 					return Plugin_Handled;
 				}
 			}
+			// Check for prop_ class, only yeetable non-player entity we care as they may be large/collidabl
+			// Things like weapons aren't a problem as you can't "collide" and get thrown
 			char classname[64];
 			GetEntityClassname(ref, classname, sizeof(classname));
 			if(StrContains(classname, "prop_") > -1) {
@@ -1118,7 +1127,6 @@ Action Timer_RemoveGod(Handle h, int userid) {
 	}
 	return Plugin_Handled;
 }
-
 
 public void Event_PlayerOutOfIdle(Event event, const char[] name, bool dontBroadcast) {
 	int bot = GetClientOfUserId(event.GetInt("bot"));
@@ -1303,9 +1311,9 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				return Plugin_Handled;
 			} else if(tick - cmdThrottle[client] > 0.25) {
 				if(buttons & IN_ATTACK) {
-					ClientCommand(client, "sm_hat %s", 'y');
+					ClientCommand(client, "sm_hat y");
 				} else if(buttons & IN_DUCK) {
-					ClientCommand(client, "sm_hat %s", 'p');
+					ClientCommand(client, "sm_hat p");
 				}
 			}
 		} else if(tick - cmdThrottle[client] > 0.25 && L4D2_GetPlayerUseAction(client) == L4D2UseAction_None) {
@@ -1319,61 +1327,50 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
 	///#WALL BUILDER PROCESS
 	if(WallBuilder[client].IsActive()) { 
+		if(buttons & IN_USE && buttons & IN_RELOAD) {
+			ClientCommand(client, "sm_wall done");
+			return Plugin_Handled;
+		}
 		bool allowMove = true;
 		switch(WallBuilder[client].mode) {
 			case MOVE_ORIGIN: {
 				SetWeaponDelay(client, 0.5);
-				// switch(buttons) {
-				// 	case IN_: WallBuilder[client].CycleSpeed(client, tick);
-				// }
 
-				if(WallBuilder[client].movetype == 0) {
-					bool isRotate;
-					int flags = GetEntityFlags(client);
-					if(buttons & IN_USE) {
-						PrintCenterText(client, "%d %d", mouse[0], mouse[1]);
-						isRotate = true;
-						SetEntityFlags(client, flags |= FL_FROZEN);
-						if(buttons & IN_ATTACK) WallBuilder[client].CycleAxis(client, tick);
-						else if(buttons & IN_ATTACK2) WallBuilder[client].CycleSnapAngle(client, tick);
-						
-						if(tick - cmdThrottle[client] > 0.25) {
-							if(WallBuilder[client].axis == 0) {
-								if(mouse[1] > 10) WallBuilder[client].angles[0] += WallBuilder[client].snapAngle;
-								else if(mouse[1] < -10) WallBuilder[client].angles[0] -= WallBuilder[client].snapAngle;
-							} else if(WallBuilder[client].axis == 1) {
-								if(mouse[0] > 10) WallBuilder[client].angles[1] += WallBuilder[client].snapAngle;
-								else if(mouse[0] < -10) WallBuilder[client].angles[1] -= WallBuilder[client].snapAngle;
-							}
-							cmdThrottle[client] = tick;
+				bool isRotate;
+				int flags = GetEntityFlags(client);
+				if(buttons & IN_USE) {
+					PrintCenterText(client, "%d %d", mouse[0], mouse[1]);
+					isRotate = true;
+					SetEntityFlags(client, flags |= FL_FROZEN);
+					if(buttons & IN_ATTACK) WallBuilder[client].CycleAxis(client, tick);
+					else if(buttons & IN_ATTACK2) WallBuilder[client].CycleSnapAngle(client, tick);
+					
+					if(tick - cmdThrottle[client] > 0.20) {
+						if(WallBuilder[client].axis == 0) {
+							if(mouse[1] > 10) WallBuilder[client].angles[0] += WallBuilder[client].snapAngle;
+							else if(mouse[1] < -10) WallBuilder[client].angles[0] -= WallBuilder[client].snapAngle;
+						} else if(WallBuilder[client].axis  == 1) {
+							if(mouse[0] > 10) WallBuilder[client].angles[1] += WallBuilder[client].snapAngle;
+							else if(mouse[0] < -10) WallBuilder[client].angles[1] -= WallBuilder[client].snapAngle;
+						} else {
+							if(mouse[1] > 10) WallBuilder[client].angles[2] += WallBuilder[client].snapAngle;
+							else if(mouse[1] < -10) WallBuilder[client].angles[2] -= WallBuilder[client].snapAngle;
 						}
-						
-					} else {
-						switch(buttons) {
-							case IN_ATTACK: WallBuilder[client].moveDistance++;
-							case IN_ATTACK2: WallBuilder[client].moveDistance--;
-							case IN_WALK: WallBuilder[client].CycleMoveMode(client, tick);
-						}
+						cmdThrottle[client] = tick;
 					}
-					if(!isRotate && flags & FL_FROZEN) {
-						flags = ~flags & FL_FROZEN;
-						SetEntityFlags(client, flags);
-					}
-					GetCursorLimited(client, WallBuilder[client].moveDistance, WallBuilder[client].origin, Filter_IgnorePlayerAndWall);
-					// GetCursorLocationLimited(client, WallBuilder[client].moveDistance, WallBuilder[client].origin);
-				} else if(WallBuilder[client].movetype == 1) {
-					switch(buttons) {
-						case IN_FORWARD: WallBuilder[client].origin[0] += WallBuilder[client].moveSpeed;
-						case IN_BACK: WallBuilder[client].origin[0] -= WallBuilder[client].moveSpeed; 
-						case IN_MOVELEFT: WallBuilder[client].origin[1] += WallBuilder[client].moveSpeed;
-						case IN_MOVERIGHT: WallBuilder[client].origin[1] -= WallBuilder[client].moveSpeed; 
-						case IN_JUMP: WallBuilder[client].origin[2] += WallBuilder[client].moveSpeed;
-						case IN_DUCK: WallBuilder[client].origin[2] -= WallBuilder[client].moveSpeed; 
-					}
-					allowMove = false;
 				} else {
-					GetCursorLocation(client, WallBuilder[client].origin);
+					// Move position
+					if(buttons & IN_ATTACK) WallBuilder[client].moveDistance++;
+					else if(buttons & IN_ATTACK2) WallBuilder[client].moveDistance--;
 				}
+
+				// Clear IN_FROZEN when no longer rotate
+				if(!isRotate && flags & FL_FROZEN) {
+					flags = flags & ~FL_FROZEN;
+					SetEntityFlags(client, flags);
+				}
+
+				GetCursorLimited2(client, WallBuilder[client].moveDistance, WallBuilder[client].origin, Filter_IgnorePlayerAndWall, buttons & IN_SPEED == 0);
 			}
 			case SCALE: {
 				SetWeaponDelay(client, 0.5);
@@ -1418,6 +1415,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
 		return allowMove ? Plugin_Continue : Plugin_Handled;
 	}
+
 	return Plugin_Continue;
 }
 
@@ -1465,9 +1463,9 @@ public void OnClientDisconnect(int client) {
 public void OnEntityDestroyed(int entity) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
-			if(EntRefToEntIndex(hatData[i].entity) == entity) {
+			if(hatData[i].entity != INVALID_ENT_REFERENCE && EntRefToEntIndex(hatData[i].entity) == entity) {
 				ClearHat(i);
-				PrintHintText(i, "Hat entity has vanished");
+				PrintHintText(i, "Hat has vanished");
 				ClientCommand(i, "play ui/menu_back.wav");
 				break;
 			}
@@ -1484,8 +1482,6 @@ public void OnMapStart() {
 	}
 	NavAreas = GetSpawnLocations();
 
-	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
-	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 }
 
 public void OnMapEnd() {
@@ -1540,9 +1536,7 @@ stock bool Filter_IgnorePlayerAndWall(int entity, int mask, int data) {
 	return entity > 0 && entity != data && EntRefToEntIndex(WallBuilder[data].entity) != entity;
 }
 
-bool Filter_IgnorePlayer(int entity, int mask, int data) {
-	return entity > 0 && entity != data;
-}
+
 bool Filter_ValidHats(int entity, int mask, int data) {
 	if(entity == data) return false;
 	if(entity <= MaxClients) {
@@ -1588,7 +1582,7 @@ void ClearHat(int i, bool restore = false) {
 		return;
 	}
 	
-	int flags = ~GetEntityFlags(entity) & FL_FROZEN;
+	int flags = GetEntityFlags(entity) & ~FL_FROZEN;
 	SetEntityFlags(entity, flags);
 	// if(HasEntProp(entity, Prop_Send, "m_flModelScale"))
 		// SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 1.0);
@@ -1634,9 +1628,8 @@ int GetHat(int client) {
 }
 
 int GetHatter(int client) {
-	int myRef = EntIndexToEntRef(client);
 	for(int i = 1; i <= MaxClients; i++) {
-		if(hatData[client].entity == myRef) {
+		if(EntRefToEntIndex(hatData[client].entity) == client) {
 			return i;
 		}
 	}
@@ -1668,6 +1661,20 @@ bool IsHatAllowed(int client) {
 	return false;
 }
 
+bool CanHatBePlaced(int client, const float pos[3]) {
+	if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_NoSaferoomHats)) {
+		Address nav = L4D_GetNearestNavArea(pos, 200.0);
+		if(nav != Address_Null) {
+			int spawnFlags = L4D_GetNavArea_SpawnAttributes(nav) ;
+			if(spawnFlags & NAV_SPAWN_CHECKPOINT) {
+				PrintToServer("\"%L\" tried to place hat in saferoom, denied.", client);
+				PrintToChat(client, "[Hats] Hats are not allowed in saferoom and has been returned.");
+				return false;
+			}
+		}
+	}
+	return true;
+}
 
 void SetFlag(int client, hatFlags flag) {
 	hatData[client].flags |= view_as<int>(flag);
@@ -1694,9 +1701,11 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 	hatData[client].solidType = GetEntProp(modifyEntity, Prop_Send, "m_nSolidType");
 	hatData[client].moveType = GetEntProp(modifyEntity, Prop_Send, "movetype");
 
+	if(client <= MaxClients) SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+	if(entity <= MaxClients) SDKHook(entity, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 	
 	if(modifyEntity <= MaxClients) {
-		SDKHook(modifyEntity, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+
 		AcceptEntityInput(modifyEntity, "DisableLedgeHang");
 	} else if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_FakeHat)) {
 		return;
@@ -1753,7 +1762,7 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 				PrintToChat(entity, "[Hats] %N has set themselves as your hat", client);
 			}
 		} else {
-			if(StrEqual(classname, "infected")) {
+			if(StrEqual(classname, "infected") || StrEqual(classname, "witch")) {
 				int eflags = GetEntityFlags(entity) | FL_FROZEN;
 				SetEntityFlags(entity, eflags);
 				hatData[client].offset[2] = 36.0;
@@ -1780,11 +1789,6 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 	hatData[client].solidType = GetEntProp(modifyEntity, Prop_Send, "m_nSolidType");
 	hatData[client].moveType = GetEntProp(modifyEntity, Prop_Send, "movetype");
 	
-
-	if(StrEqual(classname, "witch", false)) {
-		TeleportEntity(entity, EMPTY_ANG, NULL_VECTOR, NULL_VECTOR);
-		SetFlag(client, HAT_POCKET);
-	}
 
 	if(!HasFlag(client, HAT_POCKET)) {
 		// TeleportEntity(entity, EMPTY_ANG, EMPTY_ANG, NULL_VECTOR);
@@ -1842,6 +1846,7 @@ void GlowWall(int id, float lifetime = 5.0) {
 	GetEntPropVector(ref, Prop_Send, "m_vecMaxs", maxs);
 	Effect_DrawBeamBoxRotatableToAll(pos, mins, maxs, angles, g_iLaserIndex, 0, 0, 30, lifetime, 0.4, 0.4, 0, 1.0, WALL_COLOR, 0);
 }
+
 void DeleteWall(int id) {
 	GlowWall(id);
 	int ref = GetWallEntity(id);
@@ -1884,7 +1889,7 @@ stock void LookAtPoint(int entity, const float destination[3]){
 	if(angles[0] >= 270){
 		angles[0] -= 270;
 		angles[0] = (90-angles[0]);
-	}else{
+	} else {
 		if(angles[0] <= 90){
 			angles[0] *= -1;
 		}
@@ -1895,4 +1900,27 @@ stock void LookAtPoint(int entity, const float destination[3]){
 
 stock float SnapTo(const float value, const float degree) {
 	return float(RoundFloat(value / degree)) * degree;
+}
+
+// Gets a position from where the cursor is upto distance away (basically <= distance, going against walls)
+stock bool GetCursorLimited2(int client, float distance, float endPos[3], TraceEntityFilter filter, bool doCollide = true) { 
+	if (client > 0 && client <= MaxClients && IsClientInGame(client)) {
+		float clientEye[3], clientAngle[3], direction[3];
+		GetClientEyePosition(client, clientEye);
+		GetClientEyeAngles(client, clientAngle);
+
+		GetAngleVectors(clientAngle, direction, NULL_VECTOR, NULL_VECTOR);
+		ScaleVector(direction, distance);
+		AddVectors(clientEye, direction, endPos);
+
+		if(doCollide) {
+			TR_TraceRayFilter(clientEye, endPos, MASK_OPAQUE, RayType_EndPoint, filter, client);
+			if (TR_DidHit(INVALID_HANDLE)) {
+				TR_GetEndPosition(endPos);
+			}
+		}
+
+		return true;
+	}
+	return false;
 }

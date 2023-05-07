@@ -150,7 +150,7 @@ Restore from saved inventory
 static StringMap weaponMaxClipSizes;
 static StringMap pInv;
 
-static char HUD_SCRIPT_DATA[] = "g_ModeScript._eph <- {Fields = {players = {slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG}}};HUDSetLayout(g_ModeScript._eph);HUDPlace(g_ModeScript.HUD_RIGHT_BOT, 0.72,0.78,0.3,0.3);g_ModeScript";
+static char HUD_SCRIPT_DATA[] = "g_ModeScript._eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG } } }; HUDSetLayout(g_ModeScript._eph); HUDPlace(g_ModeScript.HUD_RIGHT_BOT, 0.72,0.78,0.3,0.3); g_ModeScript";
 
 static char HUD_SCRIPT_CLEAR[] = "g_ModeScript._eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( g_ModeScript._eph );g_ModeScript";
 
@@ -1271,7 +1271,6 @@ public Action Timer_UpdateHud(Handle h) {
 					Format(prefix, 13, "AFK %N", client);
 				else
 					Format(prefix, 8, "%N", i);
-				
 			} else {
 				Format(prefix, 8, "%N", i);
 			}

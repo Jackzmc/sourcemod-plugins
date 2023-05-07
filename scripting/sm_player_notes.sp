@@ -80,7 +80,7 @@ public void OnPluginStart() {
 void ShowRepMenu(int client, int targetUserid) { 
 	Menu menu = new Menu(RepFinalHandler);
 	menu.SetTitle("Choose a rating");
-	char id[8];
+	char id[16];
 	Format(id, sizeof(id), "%d|1", targetUserid);
 	menu.AddItem(id, "+Rep");
 	Format(id, sizeof(id), "%d|1", targetUserid);
@@ -91,7 +91,7 @@ void ShowRepMenu(int client, int targetUserid) {
 public int RepPlayerHandler(Menu menu, MenuAction action, int param1, int param2) {
 	/* If an option was selected, tell the client about the item. */
 	if (action == MenuAction_Select) {
-		static char info[4];
+		static char info[8];
 		menu.GetItem(param2, info, sizeof(info));
 		int targetUserid = StringToInt(info);
 		int target = GetClientOfUserId(targetUserid);
@@ -111,7 +111,7 @@ public int RepPlayerHandler(Menu menu, MenuAction action, int param1, int param2
 public int RepFinalHandler(Menu menu, MenuAction action, int param1, int param2) {
 	/* If an option was selected, tell the client about the item. */
 	if (action == MenuAction_Select) {
-		char info[8];
+		char info[16];
 		menu.GetItem(param2, info, sizeof(info));
 		char str[2][8];
 		ExplodeString(info, "|", str, 2, 8, false);
@@ -443,7 +443,7 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 			CPrintChatToAdmins("  > {olive}%d Auto Actions Applied", actions);
 		}
 		if(repP > 0 || repN > 0) {
-			CPrintChatToAdmins("  > {olive}%d +rep\t{yellow}-rep", repP, repN);
+			CPrintChatToAdmins("  > {olive}%d +rep\t{yellow}%d-rep", repP, repN);
 		}
 	}
 }
@@ -615,6 +615,6 @@ any Native_AddNoteIdentity(Handle plugin, int numParams) {
 void AddNoteIdentity(const char noteCreator[32], const char noteTarget[32], const char[] message) {
 	// messaege length + steamids (32 + 32 + null term)
 	// char[] query = new char[strlen(message) + 65];
-	DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", noteCreator, noteTarget, message);
+	DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", noteTarget, noteCreator, message);
 	DB.Query(DB_AddNote, query);
 }

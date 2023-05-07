@@ -202,7 +202,7 @@ bool ComputeGroups(Group groups[MAX_GROUPS], GroupResult result, float activateF
 						inGroup[j] = true;
 						members.Push(GetClientUserId(j));
 					} else {
-						PrintDebug("not adding member to group %d: %N (dist = %.4f) (fldiff = %.1f) (l:%N)", groupIndex + 1, j, dist, flowDiff, i);
+						// PrintDebug("not adding member to group %d: %N (dist = %.4f) (fldiff = %.1f) (l:%N)", groupIndex + 1, j, dist, flowDiff, i);
 					}
 				}
 			}
@@ -292,6 +292,39 @@ bool ComputeGroups(Group groups[MAX_GROUPS], GroupResult result, float activateF
 
 	result.groupCount = groupIndex;
 	return groupIndex > 0;
+}
+
+public Action L4D2_CGasCan_EventKilled(int gascan, int &inflictor, int &attacker) {
+	if(hEnabled.IntValue > 0 && attacker > 0 && attacker <= MaxClients) {
+		float activatorFlow = L4D2Direct_GetFlowDistance(attacker);
+		Group groups[MAX_GROUPS];
+		GroupResult result;
+		ComputeGroups(groups, result, activatorFlow);
+
+		AdminId admin = GetUserAdmin(attacker);
+		if(admin != INVALID_ADMIN_ID && admin.HasFlag(Admin_Custom1)) {
+			lastButtonPressTime = GetGameTime();
+			return Plugin_Continue;
+		} else if(result.groupCount > 0 && result.ungroupedCount > 0) {
+			lastButtonPressTime = GetGameTime();
+			return Plugin_Continue;
+		}
+
+		if(panicStarted) {
+			panicStarted = false;
+			return Plugin_Continue;
+		}
+
+
+		PrintToConsoleAll("[CC] Gascan Light by %N", attacker);
+		if(hEnabled.IntValue == 2 || !IsActivationAllowed(activatorFlow, 1500.0)) {
+			ClientCommand(attacker, "play ui/menu_invalid.wav");
+			PrintToChat(attacker, "Please wait for players to catch up.");
+			return Plugin_Handled;
+		}
+		lastButtonPressTime = GetGameTime();
+	}
+	return Plugin_Continue;
 }
 
 

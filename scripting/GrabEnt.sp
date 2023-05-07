@@ -363,7 +363,8 @@ public Action Timer_UpdateGrab(Handle timer, DataPack pack) {
 
 	// *** Runs whether in rotation mode or not
 	float entNewPos[3];
-	GetEntNewPosition(client, entNewPos);
+	int buttons = GetClientButtons(client);
+	GetEntNewPosition(client, entNewPos, buttons & IN_SPEED == 0);
 	entNewPos[0] += g_fGrabOffset[client][0];
 	entNewPos[1] += g_fGrabOffset[client][1];
 	entNewPos[2] += g_fGrabOffset[client][2];
@@ -426,14 +427,14 @@ int GetLookingEntity(int client, TraceEntityFilter filter) {
 	static float pos[3], ang[3];
 	GetClientEyePosition(client, pos);
 	GetClientEyeAngles(client, ang);
-	TR_TraceRayFilter(pos, ang, MASK_OPAQUE, RayType_Infinite, filter, client);
+	TR_TraceRayFilter(pos, ang, MASK_ALL, RayType_Infinite, filter, client);
 	if(TR_DidHit()) {
 		return TR_GetEntityIndex();
 	}
 	return -1;
 }
 
-stock bool GetEntNewPosition(int client, float endPos[3])
+stock bool GetEntNewPosition(int client, float endPos[3], bool doCollision = true)
 { 
 	if (client > 0 && client <= MaxClients && IsClientInGame(client)) {
 		float clientEye[3], clientAngle[3], direction[3];
@@ -444,9 +445,11 @@ stock bool GetEntNewPosition(int client, float endPos[3])
 		ScaleVector(direction, g_fGrabDistance[client]);
 		AddVectors(clientEye, direction, endPos);
 
-		TR_TraceRayFilter(clientEye, endPos, MASK_OPAQUE, RayType_EndPoint, TraceRayFilterEnt, client);
-		if (TR_DidHit(INVALID_HANDLE)) {
-			TR_GetEndPosition(endPos);
+		if(doCollision) {
+			TR_TraceRayFilter(clientEye, endPos, MASK_OPAQUE, RayType_EndPoint, TraceRayFilterEnt, client);
+			if (TR_DidHit(INVALID_HANDLE)) {
+				TR_GetEndPosition(endPos);
+			}
 		}
 		return true;
 	}
