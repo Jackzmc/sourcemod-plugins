@@ -130,12 +130,12 @@ void LoadPhrases() {
 		PrintToServer("[FTT] Could not load phrase list from data/ftt_phrases.cfg");
 		return;
 	}
-	static char word[32];
+	char word[32];
 	char phrase[MAX_PHRASE_LENGTH];
 	// Go through all the words:
 	kv.GotoFirstSubKey();
 	int i = 0;
-	static char buffer[4];
+	char buffer[4];
 	do {
 		kv.GetSectionName(word, sizeof(word));
 		StringToLower(word);

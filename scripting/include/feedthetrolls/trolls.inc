@@ -467,7 +467,3 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 	}  
 	return true;
 }
-
-bool Filter_IgnorePlayer(int entity, int contentsMask, any data) {
-	return entity != data;
-}

@@ -5,8 +5,8 @@
 
 #define MAIN_TIMER_INTERVAL_S 5.0
 #define PLUGIN_VERSION "1.0"
-#define ANTI_RUSH_DEFAULT_FREQUENCY 30.0
-#define ANTI_RUSH_FREQ_INC 0.5
+#define ANTI_RUSH_DEFAULT_FREQUENCY 20.0
+#define ANTI_RUSH_FREQ_INC 0.75
 
 #include <sourcemod>
 #include <sdktools>
@@ -76,6 +76,8 @@ public void OnPluginStart() {
 	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.65", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
 	hBadThrowHitSelf    = CreateConVar("sm_ftt_badthrow_fail_chance", "1", "The % chance that on a throw, they will instead hit themselves. 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
 	hBotReverseFFDefend = CreateConVar("sm_ftt_bot_defend", "0", "Should bots defend themselves?\n0 = OFF\n1 = Will retaliate against non-admins\n2 = Anyone", FCVAR_NONE, true, 0.0, true, 2.0);
+	hAntirushBaseFreq   = CreateConVar("sm_ftt_antirush_freq_base", "24", "The base frequency of anti-rush", FCVAR_NONE, true, 0.0);
+	hAntirushIncFreq    = CreateConVar("sm_ftt_antirush_freq_inc", "1", "The incremental frequency of anti-rush", FCVAR_NONE, true, 0.0);
 	hBotDefendChance = CreateConVar("sm_ftt_bot_defend_chance", "0.75", "% Chance bots will defend themselves.", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	hSbFriendlyFire = FindConVar("sb_friendlyfire");

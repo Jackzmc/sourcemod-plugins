@@ -27,6 +27,8 @@ ConVar hBadThrowHitSelf;
 ConVar hBotReverseFFDefend;
 ConVar hSbFriendlyFire;
 ConVar hBotDefendChance;
+ConVar hAntirushBaseFreq;
+ConVar hAntirushIncFreq
 
 ConVar hSbFixEnabled;
 bool wasSbFixEnabled;

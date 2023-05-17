@@ -984,10 +984,10 @@ public bool TraceEntityFilterPlayer(int entity, int mask, any data) {
 
 // TODO: Increase the frequency of spawns the longer they are in antirush. Possibly increase int and decrease over time
 public Action OnAntiRush(int client, int &type, float distance) {
-	if(client && client > 0 && client <= MaxClients && type == 3 && IsPlayerAlive(client) && !IsPlayerIncapped(client)) {
-		if(GetGameTime() - fLastAntiRushEvent[client] > ANTI_RUSH_DEFAULT_FREQUENCY - fAntiRushFrequencyCounter[client]) {
-			if(fAntiRushFrequencyCounter[client] < ANTI_RUSH_DEFAULT_FREQUENCY) {
-				fAntiRushFrequencyCounter[client] += ANTI_RUSH_FREQ_INC;
+	if(client && client > 0 && client <= MaxClients && type == 3 && !IsFakeClient(client) && IsPlayerAlive(client) && !IsPlayerIncapped(client)) {
+		if(GetGameTime() - fLastAntiRushEvent[client] > hAntirushBaseFreq.FloatValue - fAntiRushFrequencyCounter[client]) {
+			if(fAntiRushFrequencyCounter[client] < hAntirushBaseFreq.FloatValue) {
+				fAntiRushFrequencyCounter[client] += hAntirushIncFreq.FloatValue;
 			}
 			SpecialType special = view_as<SpecialType>(GetRandomInt(1,6));
 			fLastAntiRushEvent[client] = GetGameTime();

@@ -469,7 +469,7 @@ public int Native_ApplyTroll(Handle plugin, int numParams) {
 
     int index = GetTrollID(name);
     if(index > 0) {
-        Trolls[index].Activate(victim, activator, modifier, flags, GetNativeCell(7));
+        Trolls[index].Activate(victim, activator, modifier, flags, GetNativeCell(6));
     } else {
         ThrowNativeError(SP_ERROR_NATIVE, "Could not find troll with name \"%s\"", name);
     }
