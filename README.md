@@ -31,8 +31,10 @@ Useful things:
   * [l4d2_TKStopper](#l4d2_tkstopper) - All the teamkiller and shitty aim player punishments. Auto increasing reverse ff and teamkill detection
   * [l4d2_crescendo_control](#l4d2_crescendo_control) - Prevents players from running far ahead and starting events & logs button presses
   * [l4d2_vocalize_control](#l4d2_vocalize_control) - Allows you to locally mute someone from vocalizing
-  * [l4d2_hideandseek](#l4d2_hideandseek) - An enhancement to the base hide and seek mutation
   * [l4d2_guesswho](#l4d2_guesswho) - Garrys mod's guess who in l4d2, inspired by hide and seek
+  * [l4d2_hideandseek](#l4d2_hideandseek) - An enhancement to the base hide and seek mutation
+  * [l4d2_hats](#l4d2_hats) - Entity Hats & Entity editing
+  * [l4d2_prophunt](#l4d2_prophunt) - Garry's mod inspired prop hunt, inspired by hide and seek
   * [sm_namespamblock](#sm_namespamblock) - Basic plugin that bans players if they change their name in rapid succession 
   * [l4d2-stats-plugin](https://github.com/jackzmc/l4d2-stats-plugin) - Custom stats recorder, see https://stats.jackz.me
 
@@ -40,8 +42,8 @@ Useful things:
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
 * [l4d_survivor_identity_fix](#l4d_survivor_identity_fix) - Use with [L4D2Tools](#l4d2tools) to change models, some fixes
 * [BetterWitchAvoidance](#betterwitchavoidance)
-* l4d_anti_rush - Modified plugin to add a forward, so other plugins (like feedthetrolls) can do something
-* [l4d2_sb_fix](#l4d2_sb_fix) - Updated to 1.11 & latest sourcepawn syntax & removed the FCVAR_NOTIFY from all cvars (why would you put that?)
+* l4d_anti_rush - Modified plugin to add a forward, so other plugins (like feedthetrolls) can do something and use highest flow value achieved for players (fixes issue when admins go back and players who haven't moved suddenly get punished)
+* [l4d2_sb_fix](#l4d2_sb_fix) - Updated to 1.11 & latest sourcepawn syntax & removed the FCVAR_NOTIFY from all cvars (why is that added?)
 * GrabEnt - Improved version that prevents moving certain entities (such as invisual walls, ragdolls, etc) and improved some code
 
 ## Dependencies
@@ -403,6 +405,28 @@ Gamemode: https://steamcommunity.com/sharedfiles/filedetails/?id=2823719841
 
 Requires l4dtoolz and left4dhooks, and optioanlly skip intro cutscene 
 
+### l4d2_prophunt
+Requires:
+* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+* [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
+
+Based off gmod prop hunt, find the real players amongst a group of props.
+All logic is written in this plugin, thus is required. 
+Vscript required for hud & mutation
+
+* Gamemode: https://steamcommunity.com/sharedfiles/filedetails/?id=2850550331
+
+* Demo Map: https://steamcommunity.com/sharedfiles/filedetails/?id=2855027013 (makes most prop_static -> prop_dynamic)
+
+Requires l4dtoolz and left4dhooks, and optioanlly skip intro cutscene
+
+### l4d2_hats
+
+Lets you hat any entity (has blacklist support), including players. Yeet, place, restore, and more with the hats. 
+
+**Be warned, this can cause server crashes.** It's a lot stable now, but some features are disabled by default (reverse hats + visible hats) as they caused too many crashes. Most crashes are caused by hats and ladders, but default settings prevent it.
+
+It also includes an entity editor and invisible wall creator. View the file to see commands and cvars
 
 ### sm_namespamblock
 
