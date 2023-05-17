@@ -408,9 +408,8 @@ public Action Cmd_Release(client, args) {
 	SetEntityRenderColor(g_pGrabbedEnt[client], g_eOriginalColor[client][0], g_eOriginalColor[client][1], g_eOriginalColor[client][2], g_eOriginalColor[client][3]);
 	
 	// Kill the grab timer and reset control values
-	if (g_eGrabTimer[client] != null) {
-		KillTimer(g_eGrabTimer[client]);
-		g_eGrabTimer[client] = null;
+	if (IsValidHandle(g_eGrabTimer[client])) {
+		delete g_eGrabTimer[client];
 	}
 	
 	g_pGrabbedEnt[client] = -1;
