@@ -13,9 +13,10 @@
 #define L4D_MAXHUMANS_LOBBY_VERSUS 8
 #define L4D_MAXHUMANS_LOBBY_OTHER 4
 
-new Handle:cvarGameMode = INVALID_HANDLE;
+ConVar cvarGameMode;
+ConVar cvarUnreserve;
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "L4D1/2 Remove Lobby Reservation",
 	author = "Downtown1",
@@ -24,7 +25,6 @@ public Plugin:myinfo =
 	url = "http://forums.alliedmods.net/showthread.php?t=87759"
 }
 
-new Handle:cvarUnreserve = INVALID_HANDLE;
 
 public OnPluginStart()
 {
@@ -35,51 +35,51 @@ public OnPluginStart()
 	cvarUnreserve = CreateConVar("l4d_unreserve_full", "1", "Automatically unreserve server after a full lobby joins", FCVAR_SPONLY|FCVAR_NOTIFY);
 	CreateConVar("l4d_unreserve_version", UNRESERVE_VERSION, "Version of the Lobby Unreserve plugin.", FCVAR_SPONLY|FCVAR_NOTIFY);
 
+	HookEvent("game_init", Event_GameStart);
+
+
 	cvarGameMode = FindConVar("mp_gamemode");
 }
 
-bool:IsScavengeMode()
-{
-	decl String:sGameMode[32];
-	GetConVarString(cvarGameMode, sGameMode, sizeof(sGameMode));
-	if (StrContains(sGameMode, "scavenge") > -1)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}	
+void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
+	CreateTimer(20.0, Timer_CheckPlayers);
 }
 
-bool:IsVersusMode()
-{
-	decl String:sGameMode[32];
-	GetConVarString(cvarGameMode, sGameMode, sizeof(sGameMode));
-	if (StrContains(sGameMode, "versus") > -1)
-	{
-		return true;
+Action Timer_CheckPlayers(Handle h) {
+	if(AreAllPlayersConnecting()) {
+		PrintToServer("4 Players connecting, unreserving");
+		L4D_LobbyUnreserve();
 	}
-	else
-	{
-		return false;
-	}	
+	return Plugin_Continue;
 }
 
-IsServerLobbyFull()
+bool AreAllPlayersConnecting() {
+	int count = 0;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && !IsFakeClient(i)) {
+			if(!IsClientInGame(i)) return false;
+			count++;
+		}
+	}
+	return count >= 4;
+}
+
+bool IsServerLobbyFull()
 {
-	new humans = GetHumanCount();
+	int humans = GetHumanCount();
 	
 	DebugPrintToAll("IsServerLobbyFull : humans = %d", humans);
 	
-	if(IsVersusMode() || IsScavengeMode())
+	char sGameMode[32];
+	cvarGameMode.GetString(sGameMode, sizeof(sGameMode));
+	if(StrEqual(sGameMode, "versus") || StrEqual(sGameMode, "scavenge"))
 	{
 		return humans >= L4D_MAXHUMANS_LOBBY_VERSUS;
 	}
 	return humans >= L4D_MAXHUMANS_LOBBY_OTHER;
 }
 
-public OnClientPutInServer(client)
+public OnClientPutInServer(int client)
 {
 	DebugPrintToAll("Client put in server %N", client);
 	
@@ -90,7 +90,7 @@ public OnClientPutInServer(client)
 	}
 }
 
-public Action:Command_Unreserve(client, args)
+Action Command_Unreserve(int client, int args)
 {
 	/*if(!L4D_LobbyIsReserved())
 	{
@@ -105,16 +105,16 @@ public Action:Command_Unreserve(client, args)
 
 
 //client is in-game and not a bot
-stock bool:IsClientInGameHuman(client)
+stock bool IsClientInGameHuman(int client)
 {
 	return IsClientInGame(client) && !IsFakeClient(client);
 }
 
-stock GetHumanCount()
+stock int GetHumanCount()
 {
-	new humans = 0;
+	int humans = 0;
 	
-	new i;
+	int i;
 	for(i = 1; i < L4D_MAXCLIENTS_PLUS1; i++)
 	{
 		if(IsClientInGameHuman(i))
@@ -126,10 +126,10 @@ stock GetHumanCount()
 	return humans;
 }
 
-DebugPrintToAll(const String:format[], any:...)
+void DebugPrintToAll(const char[] format, any...)
 {
 	#if UNRESERVE_DEBUG	|| UNRESERVE_DEBUG_LOG
-	decl String:buffer[192];
+	char buffer[192];
 	
 	VFormat(buffer, sizeof(buffer), format, 2);
 	
