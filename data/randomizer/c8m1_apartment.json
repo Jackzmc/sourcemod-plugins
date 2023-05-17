@@ -1,0 +1,123 @@
+{
+    "alleyskip": {
+        "chance": 0.30,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_urban/fire_escape_wide_lower.mdl",
+                        "origin": [2203.81, 2381.96, 212.84],
+                        "angles": [0.00, 1.07, 0.00],
+                        "size": [181.27, 2.22, 132.22]
+                    },
+                    {
+                        "model": "models/props_vehicles/ambulance.mdl",
+                        "origin": [2317.06, 2282.30, 16.03],
+                        "angles": [0.00, 270.39, 0.00],
+                        "size": [90.09, 115.60, 109.48]
+                    },
+                    {
+                        "model": "models/props/cs_militia/boxes_garage_lower.mdl",
+                        "origin": [2265.46, 2308.65, 124.13],
+                        "angles": [0.00, 92.14, 0.00],
+                        "size": [37.36, 35.15, 65.06]
+                    },
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [2013.47, 2254.53, 15.83],
+                        "angles": [0.00, 178.81, 0.00],
+                        "size": [21.75, 48.25, 144.25]
+                    },
+                    {
+                        "model": "models/props_fortifications/barricade001_64_reference.mdl",
+                        "origin": [2001.55, 2345.92, 15.51],
+                        "angles": [0.00, 177.42, 0.00],
+                        "size": [24.25, 24.25, 144.25]
+                    }
+                ]
+            }
+        ]
+    },
+    "mainblock": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_street/police_barricade2.mdl",
+                        "origin": [2744.79, 3975.41, 16.03],
+                        "angles": [0.00, 105.00, 0.00],
+                        "size": [28.70, 71.14, 119.31]
+                    },
+                    {
+                        "model": "models/props_street/police_barricade_496in.mdl",
+                        "origin": [2428.55, 3960.12, 8.03],
+                        "angles": [0.00, 89.61, 0.00],
+                        "size": [28.77, 245.37, 119.31]
+                    },
+                    {
+                        "model": "models/props_street/police_barricade2.mdl",
+                        "origin": [2120.48, 3963.20, 16.03],
+                        "angles": [0.00, 87.27, 0.00],
+                        "size": [28.70, 71.14, 119.31]
+                    }
+                ]
+            }
+        ]
+    },
+    "subwayblock": {
+        "chance": 0.2,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/hmmwv.mdl",
+                        "origin": [2755.60, 4139.53, 12.72],
+                        "angles": [0.00, -180.00, 0.00],
+                        "size": [57.97, 105.86, 124.61]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/pickup_truck_78.mdl",
+                        "origin": [2755.60, 4139.53, 12.72],
+                        "angles": [0.00, -180.00, 0.00],
+                        "size": [57.97, 105.86, 124.61]
+                    }
+                ]
+            }
+        ]
+    },
+    "doorblock": {
+        "chance": 0.2,
+        "variants": [
+            {
+                "weight": 2,
+                "entities": [
+                    {
+                        "model": "models/props_junk/dumpster.mdl",
+                        "origin": [1519.27, 2626.97, 55.79],
+                        "angles": [0.00, -86.23, 90.00],
+                        "size": [26.37, 40.17, 54.13]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_junk/dumpster.mdl",
+                        "origin": [1498.78, 2630.72, 16.03],
+                        "angles": [0.00, 3.76, 0.00],
+                        "size": [26.37, 40.17, 54.13]
+                    }
+                ]
+            }
+        ]
+    }
+}
+

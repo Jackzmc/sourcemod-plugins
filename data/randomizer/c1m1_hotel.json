@@ -1,0 +1,26 @@
+{
+    "group1": {
+        "chance": 0.1,
+        "exclusions": ["group2"],
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    
+                    {
+                        "origin": [1421.24, 5780.23, 2881.16],
+                        "angles": [0.00, 0.00, 0.00],
+                        "size": [5.00, 5.00, 5.00],
+                        "model": "models/props/cs_assault/forklift.mdl"
+                    },
+                    {
+                        "origin": [1139.59, 5685.23, 2883.25],
+                        "angles": [0.00, 0.00, 0.00],
+                        "size": [5.00, 5.00, 5.00],
+                        "model": "models/props_unique/airportdeparturescreen01.mdl"
+                    }
+                ]
+            }
+        ]
+    }
+}
