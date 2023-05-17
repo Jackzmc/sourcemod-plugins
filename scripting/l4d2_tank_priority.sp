@@ -44,8 +44,8 @@ public void OnPluginStart() {
 	HookEvent("tank_killed", Event_TankKilled);
 }
 
-
 public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
+	if(finaleStarted) return Plugin_Continue;
 	int class = GetEntProp(attacker, Prop_Send, "m_zombieClass");
 	if(class != TANK_CLASS_ID) return Plugin_Continue;
 
