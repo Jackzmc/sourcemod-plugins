@@ -150,8 +150,8 @@ Restore from saved inventory
 static StringMap weaponMaxClipSizes;
 static StringMap pInv;
 
-static char HUD_SCRIPT_DATA[] = "g_ModeScript._eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG } } }; HUDSetLayout(g_ModeScript._eph); HUDPlace(g_ModeScript.HUD_RIGHT_BOT, 0.72,0.78,0.3,0.3); g_ModeScript";
-
+static char HUD_SCRIPT_DATA[] = "eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"fucking work ahhhhhhhhhhhhhhhhhhhhhhh\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG } } }\nHUDSetLayout(eph)\nHUDPlace(g_ModeScript.HUD_RIGHT_BOT,0.12,0.18,0.4,0.4)\ng_ModeScript;";
+ 
 static char HUD_SCRIPT_CLEAR[] = "g_ModeScript._eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( g_ModeScript._eph );g_ModeScript";
 
 static char HUD_SCRIPT_DEBUG[] = "g_ModeScript._ephdebug <- {Fields = {players = {slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"DEBUG!!! %s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG}}};HUDSetLayout(g_ModeScript._ephdebug);HUDPlace(g_ModeScript.HUD_RIGHT_BOT, 0.72,0.78,0.3,0.3);g_ModeScript";
@@ -618,9 +618,7 @@ public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroa
 					PopulateItems();	
 					CreateTimer(1.0, Timer_GiveKits);
 				}
-				if(firstSaferoomDoorEntity > 0 && IsValidEntity(firstSaferoomDoorEntity)) {
-					UnlockDoor(firstSaferoomDoorEntity, 2);
-				}
+				UnlockDoor(2);
 			}
 		} else {
 			// New client has connected, not on first map.
@@ -658,11 +656,10 @@ public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast
 				}
 				if(playerstoWaitFor > 0) {
 					float percentIn = float(playersLoadedIn) / float(playerstoWaitFor);
-					if(firstSaferoomDoorEntity > 0 && percentIn > hMinPlayersSaferoomDoor.FloatValue) {
-						UnlockDoor(firstSaferoomDoorEntity, 2);
-					}
-				}else if(firstSaferoomDoorEntity > 0) {
-					UnlockDoor(firstSaferoomDoorEntity, 2);
+					if(percentIn > hMinPlayersSaferoomDoor.FloatValue)
+						UnlockDoor(2);
+				}else{
+					UnlockDoor(2);
 				}
 			}
 		}
@@ -977,11 +974,11 @@ public void OnMapStart() {
 		while ((entity = FindEntityByClassname(entity, "prop_door_rotating_checkpoint")) != -1 && entity > MaxClients) {
 			bool isLocked = GetEntProp(entity, Prop_Send, "m_bLocked") == 1;
 			if(isLocked) {
-				firstSaferoomDoorEntity = entity;
-				AcceptEntityInput(firstSaferoomDoorEntity, "Close");
-				AcceptEntityInput(firstSaferoomDoorEntity, "Lock");
-				AcceptEntityInput(firstSaferoomDoorEntity, "ForceClosed");
-				SDKHook(firstSaferoomDoorEntity, SDKHook_Use, Hook_Use);
+				firstSaferoomDoorEntity = EntIndexToEntRef(entity);
+				AcceptEntityInput(entity, "Close");
+				AcceptEntityInput(entity, "Lock");
+				AcceptEntityInput(entity, "ForceClosed");
+				SDKHook(entity, SDKHook_Use, Hook_Use);
 				break;
 			}
 		}
@@ -1222,24 +1219,25 @@ public Action Timer_ResetAmmoPack(Handle h, int entity) {
 }
 
 public Action Timer_OpenSaferoomDoor(Handle h) {
-	if(firstSaferoomDoorEntity > 0)
-		UnlockDoor(firstSaferoomDoorEntity, 1);
+	UnlockDoor(1);
 	return Plugin_Continue;
 }
 
 
-void UnlockDoor(int entity, int flag) {
-	PrintDebug(DEBUG_GENERIC, "Door unlocked, flag %d", flag);
-	if(IsValidEntity(entity)) {
+void UnlockDoor(int flag) {
+	int entity = EntRefToEntIndex(firstSaferoomDoorEntity);
+	if(entity > 0) {
+		PrintDebug(DEBUG_GENERIC, "Door unlocked, flag %d", flag);
 		SetEntProp(entity, Prop_Send, "m_bLocked", 0);
 		SDKUnhook(entity, SDKHook_Use, Hook_Use);
 		if(hSaferoomDoorAutoOpen.IntValue & flag) {
 			AcceptEntityInput(entity, "Open");
 		}
-		firstSaferoomDoorEntity = -1;
+		firstSaferoomDoorEntity = INVALID_ENT_REFERENCE;
+		if(!areItemsPopulated)
+			PopulateItems();
 	}
-	if(!areItemsPopulated)
-		PopulateItems();
+
 }
 
 public Action Timer_UpdateHud(Handle h) {
@@ -1337,7 +1335,7 @@ public void PopulateItems() {
 	PrintDebug(DEBUG_SPAWNLOGIC, "Populating cabinets with extra items");
 	int spawner, count;
 	for(int i = 0; i < sizeof(cabinets); i++) {
-		if(cabinets[i].id == 0) break;
+		if(cabinets[i].id == 0 || !IsValidEntity(cabinets[i].id)) break;
 		GetEntityClassname(cabinets[i].id, classname, sizeof(classname));
 		if(!StrEqual(classname, "prop_health_cabinet")) {
 			PrintToServer("Cabinet %d (ent %d) is not a valid entity, is %s. Skipping", i, cabinets[i].id, classname);
