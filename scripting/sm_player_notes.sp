@@ -496,7 +496,10 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 			strcopy(newKey, sizeof(newKey), key);
 			ReplaceString(newKey, sizeof(newKey), "_", " ", true);
 			int flags = StringToInt(value);
-			ApplyTroll(target, newKey, TrollMod_Invalid, flags, 0, action[4] == 's');
+			
+			
+			// ApplyTroll(int victim, const char[] name, TrollModifier modifier = TrollMod_Invalid, int flags, int activator, bool silent = false);
+			ApplyTroll(target, newKey, TrollMod_Invalid, flags, 0, true);
 		#else
 			PrintToServer("[PlayerNotes] Warn: Action \"%s\" for %N has missing plugin: Feed The Trolls", action, target);
 			return false;
