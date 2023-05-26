@@ -150,7 +150,7 @@ Restore from saved inventory
 static StringMap weaponMaxClipSizes;
 static StringMap pInv;
 
-static char HUD_SCRIPT_DATA[] = "eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"fucking work ahhhhhhhhhhhhhhhhhhhhhhh\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG } } }\nHUDSetLayout(eph)\nHUDPlace(g_ModeScript.HUD_RIGHT_BOT,0.12,0.18,0.4,0.4)\ng_ModeScript;";
+static char HUD_SCRIPT_DATA[] = "eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG } } }\nHUDSetLayout(eph)\nHUDPlace(g_ModeScript.HUD_RIGHT_BOT,0.78,0.77,0.3,0.3)\ng_ModeScript;";
  
 static char HUD_SCRIPT_CLEAR[] = "g_ModeScript._eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT|g_ModeScript.HUD_FLAG_TEAM_SURVIVORS|g_ModeScript.HUD_FLAG_NOBG } } };HUDSetLayout( g_ModeScript._eph );g_ModeScript";
 
@@ -834,18 +834,18 @@ public Action Timer_SetupNewClient(Handle h, int userid) {
 		tier2Weapons.GetString(GetRandomInt(0, tier2Weapons.Length - 1), weaponName, sizeof(weaponName));
 		// Format(weaponName, sizeof(weaponName), "weapon_%s", weaponName);
 		PrintToServer("[EPI/debug] Giving new client (%N) tier 2: %s", client, weaponName);
-		GiveWeapon(client, weaponName, 3.0, 0);
+		GiveWeapon(client, weaponName, 0.3, 0);
 	} else if(tier1Weapons.Length > 0) {
 		// Format(weaponName, sizeof(weaponName), "weapon_%s", TIER1_WEAPONS[GetRandomInt(0, TIER1_WEAPON_COUNT - 1)]);
 		tier1Weapons.GetString(GetRandomInt(0, tier1Weapons.Length - 1), weaponName, sizeof(weaponName));
 		PrintToServer("[EPI/debug] Giving new client (%N) tier 1: %s", client, weaponName);
-		GiveWeapon(client, weaponName, 3.0, 0);
+		GiveWeapon(client, weaponName, 0.6, 0);
 	}
 	PrintToServer("%N: Giving random secondary / %d", secondaryWeapons.Length, client);
 	PrintToConsoleAll("%N: Giving random secondary / %d", secondaryWeapons.Length, client);
 	if(secondaryWeapons.Length > 0) {
 		secondaryWeapons.GetString(GetRandomInt(0, secondaryWeapons.Length - 1), weaponName, sizeof(weaponName));
-		GiveWeapon(client, weaponName, 6.5, 1);
+		GiveWeapon(client, weaponName, 0.6, 1);
 	}
 
 	if(lowestClient > 0) {
@@ -883,7 +883,10 @@ public Action Timer_GiveWeapon(Handle h, DataPack pack) {
 	if(client > 0) {
 		char wpnName[32];
 		pack.ReadString(wpnName, sizeof(wpnName));
-		CheatCommand(client, "give", wpnName, "");
+		
+		int realSurvivor = L4D_GetBotOfIdlePlayer(client);
+		if(realSurvivor <= 0) realSurvivor = client;
+		CheatCommand(realSurvivor, "give", wpnName, "");
 	}
 	return Plugin_Handled;
 }
@@ -1285,7 +1288,14 @@ public Action Timer_UpdateHud(Handle h) {
 			Format(players, sizeof(players), "%s%s %s\\n", players, prefix, data);
 		}
 	}
-	if(hEPIHudState.IntValue != 3) {
+	if(players[0] == '\0') {
+		PrintToServer("[EPI] No players online", hEPIHudState.IntValue, abmExtraCount);
+		L4D2_RunScript(HUD_SCRIPT_CLEAR);
+		updateHudTimer = null;
+		return Plugin_Stop;
+	}
+	if(hEPIHudState.IntValue < 3) {
+		// PrintToConsoleAll(HUD_SCRIPT_DATA, players);
 		RunVScriptLong(HUD_SCRIPT_DATA, players);
 	} else {
 		PrintHintTextToAll("DEBUG HUD TIMER");
