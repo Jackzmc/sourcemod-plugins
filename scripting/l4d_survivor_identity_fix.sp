@@ -120,15 +120,15 @@ public void OnPluginStart()
 //  Needed because when Event_PlayerToBot fires, it's hunter model instead
 // ------------------------------------------------------------------------
 public MRESReturn SetModel_Pre(int client, Handle hParams)
-{ } // We need this pre hook even though it's empty, or else the post hook will crash the game.
+{ return MRES_Ignored; } // We need this pre hook even though it's empty, or else the post hook will crash the game.
 
 public MRESReturn SetModel(int client, Handle hParams)
 {
-	if (!IsValidClient(client)) return;
+	if (!IsValidClient(client)) return MRES_Ignored;
 	if (!IsSurvivor(client)) 
 	{
 		g_Models[client][0] = '\0';
-		return;
+		return MRES_Ignored;
 	}
 	
 	char model[128];
@@ -137,12 +137,13 @@ public MRESReturn SetModel(int client, Handle hParams)
 	{
 		strcopy(g_Models[client], 128, model);
 	}
+	return MRES_Ignored;
 }
 
 // --------------------------------------
 // Bot replaced by player
 // --------------------------------------
-public Action Event_BotToPlayer(Handle event, const char[] name, bool dontBroadcast)
+public void Event_BotToPlayer(Handle event, const char[] name, bool dontBroadcast)
 {
 	int player = GetClientOfUserId(GetEventInt(event, "player"));
 	int bot    = GetClientOfUserId(GetEventInt(event, "bot"));
@@ -159,7 +160,7 @@ public Action Event_BotToPlayer(Handle event, const char[] name, bool dontBroadc
 // --------------------------------------
 // Player -> Bot
 // --------------------------------------
-public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
+public void Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
 {
 	int player = GetClientOfUserId(GetEventInt(event, "player"));
 	int bot    = GetClientOfUserId(GetEventInt(event, "bot")); 
@@ -294,13 +295,14 @@ public void OnMapStart() {
 }
 
 //Either use preferred model OR find the least-used.
-public Action Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
+public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	if(hCookiesEnabled.IntValue > 0)
 		RequestFrame(Frame_CheckClient, event.GetInt("userid"));
 }
-public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0) {
+		IsTemporarilyL4D2[client] = false;
 		g_Models[client][0] = '\0';
 		if(!IsFakeClient(client) && survivors > 0)
 			survivors--;
@@ -310,10 +312,11 @@ public void Frame_CheckClient(int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0 && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
 		int survivorThreshold = hCookiesEnabled.IntValue == 1 ? 4 : 0;
-		if(++survivors > survivorThreshold) {
+		survivors++;
+		if(survivors > survivorThreshold) {
 			//A model is set: Fetched from cookie
 			if(g_iPendingCookieModel[client]) {
-				CreateTimer(0.2, Timer_SetClientModel, client);
+				CreateTimer(0.2, Timer_SetClientModel, userid);
 			}/* else {
 				CreateTimer(0.2, Timer_SetAllCookieModels);
 			}*/ //FIXME: Possibly causing people to become rochelle weirdly  
@@ -324,10 +327,14 @@ public void Frame_CheckClient(int userid) {
 		}
 	}
 }
-public Action Timer_SetClientModel(Handle timer, int client) {
-	SetEntityModel(client, survivor_models[g_iPendingCookieModel[client] - 1]);
-	SetEntProp(client, Prop_Send, "m_survivorCharacter", g_iPendingCookieModel[client] - 1);
-	g_iPendingCookieModel[client] = 0;
+public Action Timer_SetClientModel(Handle timer, int userid) {
+	int client = GetClientOfUserId(userid);
+	if(client > 0) {
+		SetEntityModel(client, survivor_models[g_iPendingCookieModel[client] - 1]);
+		SetEntProp(client, Prop_Send, "m_survivorCharacter", g_iPendingCookieModel[client] - 1);
+		g_iPendingCookieModel[client] = 0;
+	}
+	return Plugin_Handled;
 }
 public Action Timer_SetAllCookieModels(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
@@ -338,6 +345,7 @@ public Action Timer_SetAllCookieModels(Handle h) {
 		}
 		g_iPendingCookieModel[i] = 0;
 	}
+	return Plugin_Handled;
 }
 
 public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
@@ -368,7 +376,7 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 
 
 //On finale start: Set back to their L4D1 character.
-public Action Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
+public void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
 	if(StrEqual(currentMap, "c6m3_port")) {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
@@ -393,12 +401,17 @@ void SwapL4D1Survivor(int client, bool showMessage) {
 		if(showMessage && GetUserAdmin(client) != INVALID_ADMIN_ID) {
 			PrintToChat(client, "Your survivor is temporarily swapped. Please do not change back, it should auto-revert after the elevator is done. This is to prevent a game bug with L4D1 Survivors on this map.");
 		}
+		LogMessage("SwapL4D1Survivor: Swapping %N (type=%d)", client, playerType);
 	}
 }
 void RevertSwappedSurvivor(int client) {
 	if(IsTemporarilyL4D2[client]) {
 		int playerType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
-		SetEntProp(client, Prop_Send, "m_survivorCharacter", playerType + 4);
+		if(playerType < 3) {
+			SetEntProp(client, Prop_Send, "m_survivorCharacter", playerType + 4);
+			IsTemporarilyL4D2[client] = false;
+			LogMessage("RevertSwappedSurvivor: Reverting %N (type=%d)", client, playerType);
+		}
 	}
 }
 
@@ -435,18 +448,22 @@ public Action Cmd_SetSurvivor(int client, int args) {
 }
 
 int Menu_ChooseSurvivor(Menu menu, MenuAction action, int activator, int item) {
-	char info[2];
-	menu.GetItem(item, info, sizeof(info));
-	if(info[0] == 'c') {
-		SetClientCookie(activator, hModelPrefCookie, "");
-		ReplyToCommand(activator, "Your survivor preference has been reset");
-	}else{
-		/*strcopy(g_Models[client], 64, survivor_models[type]);
-		if(isL4D1Survivors) type = GetSurvivorId(str, true);
-		SetEntProp(client, Prop_Send, "m_survivorCharacter", type);*/
-		SetClientCookie(activator, hModelPrefCookie, info);
-		ReplyToCommand(activator, "Your survivor preference set to %s", survivor_names[StringToInt(info) - 1]);
-	}
+	if (action == MenuAction_Select) {
+		char info[2];
+		menu.GetItem(item, info, sizeof(info));
+		if(info[0] == 'c') {
+			SetClientCookie(activator, hModelPrefCookie, "");
+			ReplyToCommand(activator, "Your survivor preference has been reset");
+		}else{
+			/*strcopy(g_Models[client], 64, survivor_models[type]);
+			if(isL4D1Survivors) type = GetSurvivorId(str, true);
+			SetEntProp(client, Prop_Send, "m_survivorCharacter", type);*/
+			SetClientCookie(activator, hModelPrefCookie, info);
+			ReplyToCommand(activator, "Your survivor preference set to %s", survivor_names[StringToInt(info) - 1]);
+		}
+	} else if (action == MenuAction_End)	
+		delete menu;
+	return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
