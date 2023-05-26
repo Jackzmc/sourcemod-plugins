@@ -266,6 +266,27 @@ stock int CreateParticle(const char[] sParticle, const float vPos[3], const floa
 	return 0;
 }
 
+stock void CreateDecal(const char[] texture, const float vPos[3]) {
+	int index = PrecacheDecal("decals/checkpointarrow01_black.vmt");
+	TE_Start("World Decal");
+	TE_WriteVector("m_vecOrigin", vPos);
+	TE_WriteNum("m_nIndex", index);
+	TE_SendToAll();
+
+	TE_Start("BSP Decal");
+	TE_WriteVector("m_vecOrigin", vPos);
+	TE_WriteNum("m_nIndex", index);
+	TE_SendToAll();
+	// int entity = CreateEntityByName("infodecal");
+	// if( entity != -1 ) {
+	// 	DispatchKeyValue(entity, "texture", "decals/checkpointarrow01_black.vmt");
+	// 	DispatchKeyValue(entity, "targetname", ENT_ENV_NAME);
+	// 	TeleportEntity(entity, vPos, NULL_VECTOR, NULL_VECTOR);
+	// 	DispatchSpawn(entity);
+	// 	ActivateEntity(entity);
+	// }
+}
+
 // From l4d_anomaly
 stock void PrecacheParticle(const char[] sEffectName)
 {

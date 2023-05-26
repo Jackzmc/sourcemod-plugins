@@ -32,6 +32,12 @@ stock void GetHorizontalPositionFromClient(int client, float units, float finalP
 	pos[1] += units * Sine(theta); 
 	finalPosition = pos;
 }
+stock void GetOffsetPosition(float pos[3], const float ang[3], float forwardBack, float leftRight, float upDown) {
+	float theta = DegToRad(ang[1]);
+	pos[0] = forwardBack * Cosine(theta) + pos[0];
+	pos[1] = forwardBack * Sine(theta) + pos[1];
+	pos[2] = pos[2] + upDown;
+}
  // Gets velocity of an entity (ent) toward new origin with speed (fSpeed) - thanks Ryan
  stock bool GetVelocityToOrigin(int entity, const float destination[3], const float fSpeed, float outVelocity[3]) {
 	float srcOrigin[3];
@@ -757,6 +763,10 @@ bool Filter_IgnorePlayer(int entity, int mask, int data) {
 	return entity > 0 && entity != data;
 }
 
+bool Filter_World(int entity, int mask, int data) {
+	return entity == 0;
+}
+
 // Gets a position from where the cursor is upto distance away (basically <= distance, going against walls)
 stock bool GetCursorLimited(int client, float distance, float endPos[3], TraceEntityFilter filter)
 { 
@@ -785,4 +795,91 @@ stock void SetWeaponDelay(int client, float delay) {
 		SetEntPropFloat(pWeapon, Prop_Send, "m_flNextPrimaryAttack", GetGameTime() + delay); 
 		SetEntPropFloat(pWeapon, Prop_Send, "m_flNextSecondaryAttack", GetGameTime() + delay); 
 	}
+}
+
+
+// Sends client a menu selecting a player, see COMMAND_FILTER_* for flags, idPrefix is appended to menu item's id
+stock void QueryPlayer(int client, MenuHandler handler, int flags = COMMAND_FILTER_NO_IMMUNITY, const char[] title = "Select a player", const char[] idPrefix = "", int time = 0) {
+	Menu menu = new Menu(handler);
+	menu.SetTitle(title, client);
+	char id[32], display[32];
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && (IsClientInGame(i) || flags & COMMAND_FILTER_CONNECTED)) {
+			if(flags & COMMAND_FILTER_NO_BOTS && IsFakeClient(i)) continue;
+			if(flags & COMMAND_FILTER_ALIVE && !IsPlayerAlive(i)) continue;
+			if(flags & COMMAND_FILTER_DEAD && IsPlayerAlive(i)) continue;
+			if(~flags & COMMAND_FILTER_NO_IMMUNITY && !CanUserTarget(client, i)) continue;
+
+			Format(id, sizeof(id), "%s%d", idPrefix, GetClientUserId(i));
+			if(IsFakeClient(i)) {
+				int realPlayer = GetRealClient(i);
+				if(realPlayer > 0) {
+					if(IsPlayerAlive(i)) {
+						Format(display, sizeof(display), "%N (Idle)", realPlayer);
+					} else {
+						Format(display, sizeof(display), "%N (Idle)(Dead)", realPlayer);
+					}
+				} else if(IsPlayerAlive(i)) {
+					Format(display, sizeof(display), "%N", i);
+				} else {
+					Format(display, sizeof(display), "%N (dead)", i);
+				}
+			} else if(IsPlayerAlive(i)) {
+				Format(display, sizeof(display), "%N", i);
+			} else {
+				Format(display, sizeof(display), "%N (dead)", i);
+			}
+
+			menu.AddItem(id, display);
+		}
+	}
+
+	menu.Display(client, time);
+}
+stock bool IsNearGround(int ref, float distFromGround = 15.0) {
+	static float sPos[3], ePos[3];
+	GetEntPropVector(ref, Prop_Send, "m_vecOrigin", sPos);
+	ePos[0] = sPos[0];
+	ePos[1] = sPos[1];
+	ePos[2] = sPos[2] -= 15.0;
+	TR_TraceRayFilter(sPos, ePos, MASK_SOLID, RayType_EndPoint, Filter_IgnorePlayer, ref);
+	if(TR_DidHit()) {
+		return true;
+	}
+	return false;
+}
+
+stock bool IsAreaClear(const float pos[3], const float ang[3], const float minBound[3], const float maxBound[3]) { 
+
+	TR_TraceHullFilter(pos, pos, minBound, maxBound, MASK_SOLID, Filter_World);
+	if(TR_DidHit()) {
+		return false;
+	}
+	return true;
+}
+
+stock Action Timer_KillEntity(Handle h, int entity) {
+	RemoveEntity(entity);
+	return Plugin_Handled;
+}
+
+stock int GetSinglePlayer(int client, const char[] input, int flags = 0) {
+	flags |= COMMAND_FILTER_NO_MULTI;
+	char buf[2];
+	int target_list[1], target_count;
+	bool tn_is_ml;
+	if ((target_count = ProcessTargetString(
+		input,
+		client,
+		target_list,
+		1,
+		flags,
+		buf,
+		2,
+		tn_is_ml)) <= 0
+	) {
+		ReplyToTargetError(client, target_count);
+		return -1;
+	}
+	return target_list[0];
 }

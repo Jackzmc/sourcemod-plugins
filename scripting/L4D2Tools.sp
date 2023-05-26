@@ -46,7 +46,7 @@ enum L4DModelId {
 }
 
 static ArrayList LasersUsed;
-static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres, hForceSurvivorSet, hPlayerLimit, hSVMaxPlayers;
+static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres, hForceSurvivorSet, hPlayerLimit, hSVMaxPlayers, hHideMotd;
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1];
 ReserveMode reserveMode;
 static bool isHighPingIdle[MAXPLAYERS+1], isL4D1Survivors;
@@ -95,6 +95,7 @@ public void OnPluginStart() {
 	hFFNotice    	= CreateConVar("sm_ff_notice", "0.0", "Notify players if a FF occurs. 0 -> Disabled, 1 -> In chat, 2 -> In Hint text", FCVAR_NONE, true, 0.0, true, 2.0);
 	hPingDropThres 	= CreateConVar("sm_autoidle_ping_max", "0.0", "The highest ping a player can have until they will automatically go idle.\n0=OFF, Min is 30", FCVAR_NONE, true, 0.0, true, 1000.0);
 	hForceSurvivorSet = FindConVar("l4d_force_survivorset");
+	hHideMotd       = CreateConVar("sm_hidemotd", "1", "Hide the MOTD when the server is running", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	hSVMaxPlayers   = FindConVar("sv_maxplayers");
 	if(hSVMaxPlayers != null) { 
@@ -636,6 +637,7 @@ public Action Cmd_SetSurvivor(int client, int args) {
 
 // Hide MOTD
 public Action VGUIMenu(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init) {
+	if(!hHideMotd.BoolValue) return Plugin_Continue;
 	static char buffer[5];
 	BfReadString(bf, buffer, sizeof(buffer));
 	return strcmp(buffer, "info") == 0 ? Plugin_Handled : Plugin_Continue;

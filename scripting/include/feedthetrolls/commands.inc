@@ -123,7 +123,7 @@ public Action Command_InstaSpecialFace(int client, int args) {
 			}
 		}
 		if(successes > 0)
-			CShowActivityEx(client, "[FTT] ", "spawned {green}Insta-%s™{default} on {green}%s", arg2, target_name);
+			CShowActivityEx(client, "[FTT] ", "spawned {olive}Insta-%s™{default} on {olive}%s", arg2, target_name);
 	}
 	return Plugin_Handled;
 }
