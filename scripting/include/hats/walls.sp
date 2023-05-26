@@ -60,6 +60,7 @@ enum struct WallBuilderData {
 		if(this.entity != INVALID_ENT_REFERENCE) {
 			if(!IsValidEntity(this.entity)) {
 				PrintToChat(client, "\x04[Hats]\x01 Entity has vanished, editing cancelled.");
+				this.Reset();
 				return false;
 			}
 		}
@@ -411,7 +412,7 @@ public Action Command_ManageWalls(int client, int args) {
 			PrintToChat(client, "\x04[Hats]\x01 Editing wall \x05%d\x01. End with \x05/wall done\x01 or \x04/wall cancel\x01", id);
 			PrintToChat(client, "\x04[Hats]\x01 Mode: \x05Scale\x01");
 		}
-	} else if(StrEqual(arg1, "edite") || arg1[0] == 'c') {
+	} else if(StrEqual(arg1, "edite") || (arg1[0] == 'c' && arg1[1] == 'u')) {
 		int index = GetLookingEntity(client, Filter_ValidHats); //GetClientAimTarget(client, false);
 		if(index > 0) {
 			WallBuilder[client].Import(index, false, MOVE_ORIGIN);
@@ -432,7 +433,7 @@ public Action Command_ManageWalls(int client, int args) {
 				PrintToChat(client, "\x04[Hats]\x01 Finish editing your wall first: \x05/wall done\x01 or \x04/wall cancel\x01");
 			} else { 
 				int entity = WallBuilder[client].Copy();
-				PrintToChat(client, "\x04[Hats]\x01 Editing copy \x05%d\x01 of entity \x05%d\x01. End with \x05/wall done\x01 or \x04/wall cancel\x01", entity, oldEntity);
+				PrintToChat(client, "\x04[Hats]\x01 Editing copy \x05%d\x01 of entity \x05%d\x01. End with \x05/edit done\x01 or \x04/edit cancel\x01", entity, oldEntity);
 			}
 		} else {
 			int id = GetWallId(client, arg2);

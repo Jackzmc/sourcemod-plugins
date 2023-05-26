@@ -188,6 +188,12 @@ public Action Command_DoAHat(int client, int args) {
 		}
 
 		if(arg[0] == 'y') { // Hat yeeting:
+			char classname[16];
+			GetEntityClassname(entity, classname, sizeof(classname));
+			if(StrEqual(classname, "prop_dynamic")) {
+				ReplyToCommand(client, "You cannot yeet this prop (it has no physics)");
+				return Plugin_Handled;
+			}
 			GetClientEyeAngles(client, hatData[client].orgAng);
 			GetClientAbsOrigin(client, hatData[client].orgPos);
 			hatData[client].orgPos[2] += 45.0;
@@ -318,6 +324,14 @@ public Action Command_DoAHat(int client, int args) {
 		} else if(entity == EntRefToEntIndex(WallBuilder[client].entity)) {
 			// Prevent making an entity you editing a hat
 			return Plugin_Handled;
+		} else if(cvar_sm_hats_max_distance.FloatValue > 0.0 && entity >= MaxClients) {
+			float posP[3], posE[3];
+			GetClientEyePosition(client, posP);
+			GetEntPropVector(entity, Prop_Data, "m_vecOrigin", posE);
+			if(GetVectorDistance(posP, posE) > cvar_sm_hats_max_distance.FloatValue) {
+				PrintCenterText(client, "[Hats] Entity too far away");
+				return Plugin_Handled;
+			}
 		}
 
 		// Make hat reversed if 'r' passed in
@@ -373,7 +387,7 @@ public Action Command_DoAHat(int client, int args) {
 			if(!IsFakeClient(entity) && cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_PlayerHatConsent) && ~flags & view_as<int>(HAT_REVERSED)) {
 				int lastRequestDiff = GetTime() - lastHatRequestTime[client];
 				if(lastRequestDiff < PLAYER_HAT_REQUEST_COOLDOWN) {
-					PrintToChat(client, "[Hats] Player hat under %d seconds cooldown", lastRequestDiff);
+					PrintToChat(client, "[Hats] Player hat under %d seconds cooldown", GetTime() - lastRequestDiff);
 					return Plugin_Handled;
 				}
 
@@ -533,6 +547,7 @@ bool CanTarget(int victim) {
 }
 
 bool IsHatAllowed(int client) {
+	if(L4D_IsMissionFinalMap()) return true;
 	char name[32];
 	GetEntityClassname(hatData[client].entity, name, sizeof(name));
 	// Don't allow non-weapons in saferoom
@@ -553,6 +568,7 @@ bool IsHatAllowed(int client) {
 
 bool CanHatBePlaced(int client, const float pos[3]) {
 	if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_NoSaferoomHats)) {
+		if(IsHatAllowed(client)) return true;
 		Address nav = L4D_GetNearestNavArea(pos, 200.0);
 		if(nav != Address_Null) {
 			int spawnFlags = L4D_GetNavArea_SpawnAttributes(nav) ;

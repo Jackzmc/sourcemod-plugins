@@ -30,9 +30,9 @@ Cookie noHatVictimCookie;
 
 ConVar cvar_sm_hats_enabled;
 ConVar cvar_sm_hats_flags;
-ConVar cvar_sm_hat_rainbow_speed;
+ConVar cvar_sm_hats_rainbow_speed;
 ConVar cvar_sm_hats_blacklist_enabled;
-
+ConVar cvar_sm_hats_max_distance;
 
 
 #include <hats/walls.sp>
@@ -73,8 +73,9 @@ public void OnPluginStart() {
 	cvar_sm_hats_blacklist_enabled = CreateConVar("sm_hats_blacklist_enabled", "1", "Is the prop blacklist enabled", FCVAR_NONE, true, 0.0, true, 1.0);
 	cvar_sm_hats_enabled = CreateConVar("sm_hats_enabled", "1.0", "Enable hats.\n0=OFF, 1=Admins Only, 2=Any", FCVAR_NONE, true, 0.0, true, 2.0);
 	cvar_sm_hats_enabled.AddChangeHook(Event_HatsEnableChanged);
-	cvar_sm_hats_flags = CreateConVar("sm_hats_features", "155", "Toggle certain features. Add bits together\n1 = Player Hats\n2 = Respect Admin Immunity\n4 = Create a fake hat for hat wearer to view instead, and for yeeting\n8 = No saferoom hats\n16 = Player hatting requires victim consent\n32 = Infected Hats\n64 = Reverse hats", FCVAR_CHEAT, true, 0.0);
-	cvar_sm_hat_rainbow_speed = CreateConVar("sm_hats_rainbow_speed", "1", "Speed of rainbow", FCVAR_NONE, true, 0.0);
+	cvar_sm_hats_flags = CreateConVar("sm_hats_features", "153", "Toggle certain features. Add bits together\n1 = Player Hats\n2 = Respect Admin Immunity\n4 = Create a fake hat for hat wearer to view instead, and for yeeting\n8 = No saferoom hats\n16 = Player hatting requires victim consent\n32 = Infected Hats\n64 = Reverse hats\n128 = Delete Thrown Hats", FCVAR_CHEAT, true, 0.0);
+	cvar_sm_hats_rainbow_speed = CreateConVar("sm_hats_rainbow_speed", "1", "Speed of rainbow", FCVAR_NONE, true, 0.0);
+	cvar_sm_hats_max_distance = CreateConVar("sm_hats_distance", "220", "The max distance away you can hat something. 0 = disable", FCVAR_NONE, true, 0.0);
 
 	noHatVictimCookie = new Cookie("hats_no_target", "Disables other players from making you their hat", CookieAccess_Public);
 	noHatVictimCookie.SetPrefabMenu(CookieMenu_OnOff_Int, "Disable player hats for self", OnLocalPlayerHatCookieSelect);
@@ -86,6 +87,7 @@ public void OnPluginStart() {
 		if(StrContains(targetName, "l4d2_hats_") == 0) {
 			createdWalls.Push(EntIndexToEntRef(entity));
 		}
+
 	}
 
 	for(int i = 1; i <= MaxClients; i++) {
@@ -270,7 +272,8 @@ Action Timer_PropSleep(Handle h, DataPack pack) {
 	int ref = pack.ReadCell();
 	int client = GetClientOfUserId(pack.ReadCell());
 	if(client > 0 && IsValidEntity(ref)) {
-		CheckKill(ref);
+		CheckKill(ref, client);
+		PrintToServer("Hats: Yeet delete timeout");
 		if(hatData[client].yeetGroundTimer != null) {
 			delete hatData[client].yeetGroundTimer;
 		}
@@ -285,7 +288,8 @@ Action Timer_GroundKill(Handle h, DataPack pack) {
 		float vel[3];
 		GetEntPropVector(ref, Prop_Data, "m_vecVelocity", vel);
 		if(FloatAbs(vel[2]) < 0.2 || IsNearGround(ref)) {
-			CheckKill(ref);
+			PrintToServer("Hats: Yeet ground check %b %b", FloatAbs(vel[2]) < 0.2, IsNearGround(ref));
+			CheckKill(ref, client);
 			hatData[client].yeetGroundTimer = null;
 			return Plugin_Stop;
 		}
@@ -296,7 +300,7 @@ Action Timer_GroundKill(Handle h, DataPack pack) {
 
 
 
-void CheckKill(int ref) {
+void CheckKill(int ref, int client) {
 	// Check if we should delete thrown hat objects, such as physic props
 	if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_DeleteThrownHats)) {
 		// Don't delete if someone has hatted it (including ourself):
@@ -469,7 +473,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		int visibleEntity = EntRefToEntIndex(hatData[client].visibleEntity);
 		///#HAT PROCESS
 		if(entity > 0) {
-			// try to tp hat to its own pos
+			// try to tp hat to itys own pos
 			if(!onLadder[client] && GetEntityMoveType(client) == MOVETYPE_LADDER) {
 				onLadder[client] = true;
 				ClearParent(entity);
@@ -489,9 +493,9 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			if(HasFlag(client, HAT_RAINBOW)) {
 				// Decrement and flip, possibly when rainbowticks
 				if(hatData[client].rainbowReverse) {
-					hatData[client].rainbowColor[0] -= cvar_sm_hat_rainbow_speed.FloatValue;
+					hatData[client].rainbowColor[0] -= cvar_sm_hats_rainbow_speed.FloatValue;
 				} else {
-					hatData[client].rainbowColor[0] += cvar_sm_hat_rainbow_speed.FloatValue;
+					hatData[client].rainbowColor[0] += cvar_sm_hats_rainbow_speed.FloatValue;
 				}
 				
 				if(hatData[client].rainbowColor[0] > 360.0) {
@@ -505,7 +509,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				static int rgb[3];
 				HSVToRGBInt(hatData[client].rainbowColor, rgb);
 				SetEntityRenderColor(entity, rgb[0], rgb[1], rgb[2]);
-				hatData[client].rainbowTicks = -cvar_sm_hat_rainbow_speed.IntValue;
+				hatData[client].rainbowTicks = -cvar_sm_hats_rainbow_speed.IntValue;
 				EquipHat(client, entity);
 			}
 
@@ -566,7 +570,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				bool isRotate;
 				int flags = GetEntityFlags(client);
 				if(buttons & IN_USE) {
-					PrintCenterText(client, "%d %d", mouse[0], mouse[1]);
+					PrintCenterText(client, "%.1f %.1f %.1f", WallBuilder[client].angles[0], WallBuilder[client].angles[1], WallBuilder[client].angles[2]);
 					isRotate = true;
 					SetEntityFlags(client, flags |= FL_FROZEN);
 					if(buttons & IN_ATTACK) WallBuilder[client].CycleAxis(client, tick);
@@ -688,6 +692,7 @@ public Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float
 public void OnClientDisconnect(int client) {
 	tempGod[client] = false;
 	WallBuilder[client].Reset();
+	ClearHat(client, true);
 }
 
 public void OnEntityDestroyed(int entity) {
