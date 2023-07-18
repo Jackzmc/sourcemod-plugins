@@ -16,25 +16,25 @@ Useful things:
   * [l4d2-manual-director](#l4d2-manual-director) - Spawn specials on demand via director or at your cursor
   * [l4d2-info-cmd](#l4d2-info-cmd) - Prints a full state of all survivors, useful for external information
   * [AutoWarpBot](#autowarpbot) - Abandoned
-  * [L4D2FFKickProtection](#l4d2ffkickprotection) - Prevents friendly firing from players being voted off and admins from being kicked
-  * [l4d2_avoid_minigun](#l4d2_avoid_minigun) - Makes bots avoid being infront of any in use miniguns. Useful for spawned miniguns
+  * [L4D2FFKickProtection](#l4d2ffkickprotection) - Prevents players being voted off from friendly firing and prevents admins from being kicked
+  * [l4d2_avoid_minigun](#l4d2_avoid_minigun) - Makes bots avoid being infront of any in-use miniguns. Useful for spawned miniguns
   * [l4d2_ai_minigun](#l4d2_ai_minigun) - Based off [Silver's Survivor Bot Holdout plugin](https://forums.alliedmods.net/showthread.php?p=1741099), allows you to spawn survivor bots but with no limit.
   * [L4D2Tools](#l4d2tools) - A collection of utilities, mostly just used with [l4d_survivor_identity_fix](#l4d_survivor_identity_fix) and the /model command
   * [l4d2_swarm](#l4d2_swarm) - Uses vscript RushVictim to make all zombies target a player, like a more subtle vomitplayer
   * [l4d2_feedthetrolls](#l4d2_feedthetrolls) - Full collection of tools to troll your friends or troll the trolls
-  * [l4d2_autobotcrown](#l4d2_autobotcrown) - Bots will auto crown 
-  * [l4d2_extraplayeritems](#l4d2_extraplayeritems) - Includes tons of utilities for 5+ games, such as 5+ player hud, extra kit spawning, and more
+  * [l4d2_autobotcrown](#l4d2_autobotcrown) - Bots will auto crown
+  * [l4d2_extraplayeritems](#l4d2_extraplayeritems) - Includes tons of utilities for 5+ games, such as 5+ player hud, extra kit / item spawning, and more
   * [l4d2_population_control](#l4d2_population_control) - Allows you to custom the type of zombies that spawn (% of clowns, mud men, etc..)
   * [globalbans](#globalbans) - Bans synced via mysql, way lighter than the sourcebans cesspool.
-  * [l4d2_rollback](#l4d2_rollback) - Abandoned but makes periodic backup of all player's items
-  * [l4d2_autorestart](#l4d2_autorestart) - Restarts server if it's been on for a certain uptime or when empty with just bots
-  * [l4d2_TKStopper](#l4d2_tkstopper) - All the teamkiller and shitty aim player punishments. Auto increasing reverse ff and teamkill detection
-  * [l4d2_crescendo_control](#l4d2_crescendo_control) - Prevents players from running far ahead and starting events & logs button presses
+  * [l4d2_rollback](#l4d2_rollback) - Abandoned and broken, but makes periodic backup of all player's items
+  * [l4d2_autorestart](#l4d2_autorestart) - Restarts server if it's been on for a certain uptime or when empty with just bots.
+  * [l4d2_TKStopper](#l4d2_tkstopper) - All the teamkiller and shitty-aim player punishments. Auto increasing reverse ff and teamkill detection
+  * [l4d2_crescendo_control](#l4d2_crescendo_control) - Prevents players from running far ahead and starting events, and logs button presses
   * [l4d2_vocalize_control](#l4d2_vocalize_control) - Allows you to locally mute someone from vocalizing
-  * [l4d2_guesswho](#l4d2_guesswho) - Garrys mod's guess who in l4d2, inspired by hide and seek
+  * [l4d2_guesswho](#l4d2_guesswho) - Garry's Mod's Guess Who in l4d2, inspired by hide and seek
   * [l4d2_hideandseek](#l4d2_hideandseek) - An enhancement to the base hide and seek mutation
   * [l4d2_hats](#l4d2_hats) - Entity Hats & Entity editing
-  * [l4d2_prophunt](#l4d2_prophunt) - Garry's mod inspired prop hunt, inspired by hide and seek
+  * [l4d2_prophunt](#l4d2_prophunt) - Garry's Mod inspired prop hunt, inspired by hide and seek
   * [sm_namespamblock](#sm_namespamblock) - Basic plugin that bans players if they change their name in rapid succession 
   * [l4d2-stats-plugin](https://github.com/jackzmc/l4d2-stats-plugin) - Custom stats recorder, see https://stats.jackz.me
 
@@ -42,7 +42,7 @@ Useful things:
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
 * [l4d_survivor_identity_fix](#l4d_survivor_identity_fix) - Use with [L4D2Tools](#l4d2tools) to change models, some fixes
 * [BetterWitchAvoidance](#betterwitchavoidance)
-* l4d_anti_rush - Modified plugin to add a forward, so other plugins (like feedthetrolls) can do something and use highest flow value achieved for players (fixes issue when admins go back and players who haven't moved suddenly get punished)
+* l4d_anti_rush - Modified plugin to add a forward, so other plugins (like feedthetrolls) can do something. In addition, use highest flow value achieved for players (fixes issue when admins go back and players who haven't moved suddenly get punished)
 * [l4d2_sb_fix](#l4d2_sb_fix) - Updated to 1.11 & latest sourcepawn syntax & removed the FCVAR_NOTIFY from all cvars (why is that added?)
 * GrabEnt - Improved version that prevents moving certain entities (such as invisual walls, ragdolls, etc) and improved some code
 
@@ -55,7 +55,7 @@ Check the plugin info for an exact list.
 
 ### Development Dependencies
 Most L4D2 plugins use my own include: jutils.inc, it's provided in this repo.
-Some do require newer includes by modified plugins (such as my improved survivor identity fix)
+Some do require newer includes for my modified plugins (such as my improved survivor identity fix)
 
 ## Descriptions
 
@@ -68,7 +68,7 @@ On knife kill, gives the player 100 HP (configurable)
    
 
 ### l4d2-manual-director
-Probably going to be posted publicly sometime. allows you to spawn specials on cursor, or via director, forcefully, bypassing limits
+~~Probably going to be posted publicly sometime.~~ Allows you to spawn specials on cursor, or via director, forcefully, bypassing limits
 * **Convars:**
    * `manual_director_version|mandirector_version` - ... gets version
    * `mandirector_notify_spawn <1/0>` - Should spawning specials notify on use?
@@ -102,7 +102,7 @@ Technically 'l4d2 game info', haven't changed name. Just prints general informat
     
 
 ### AutoWarpBot
-Simple l4d2 plugin that will auto teleport everyone to checkpoint once all real players have reached the saferoom.
+Simple l4d2 plugin that will auto teleport bots to checkpoint once all real players have reached the saferoom.
 Doesn't really work well. Abandoned.
 
    
@@ -119,7 +119,8 @@ Inspired by the 200IQBots_FlyYouFools. Bots avoid witch if its over 40% anger wh
 
 ### L4D2FFKickProtection
 Simple plugin that prevents a player that is being vote-kicked from doing any ff damage to teammates.
-It also prevents vote kicking of admins, instead will kick the player and notify admins.
+It also prevents vote kicking of admins, instead will notify admins.
+It also makes any vote kicks created by an admin to instantly be accepted by all players
 
 * **Convars:**
   * `sm_votekick_force_threshold <#>` - The threshold of damage where the offending player is just immediately kicked. 0 -> Any attempted damage, -1 -> No auto kick.
@@ -165,10 +166,10 @@ A collection of small tools:
   * Notification of when someone picks up laser sights (only the first user, includes bots), 
   * Record time it takes for a finale or gauntlet run to be completed.
   * Record the amount of friendly fire damage done
-  * Set the survivor models of any survivor with updating [l4d_survivor_identity_fix](#l4d_survivor_identity_fix)
-  * Automatically gives melee weapons that an idle bot dropped once no longer idle
+  * Set the survivor models of any survivor with updated [l4d_survivor_identity_fix](#l4d_survivor_identity_fix)
+  * Automatically returns melee weapons that an idle bot dropped once no longer idle
   * Automatically make players go idle when ping spikes
-  * Slowly kill any zombies attacking survivor bot's blind spots (Fixes bots stuck taking damage and brain dead)
+  * Slowly kill any zombies attacking survivor bot's blind spots (Fixes brain dead bots stuck taking damage and not killing them)
 
 * **Convars:**
    * `sm_laser_use_notice <0/1>` - Enable notification of when a laser box was used first
@@ -202,7 +203,7 @@ This really only affects wandering zombies, mobs and panic events, but it may wo
 Requires:
 * [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
 * (Optional) [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
-* (Optional) [L4D2 Behavior](https://forums.alliedmods.net/showthread.php?p=2752139) - To be replaced with [Actions](https://forums.alliedmods.net/showthread.php?t=336374)
+* (Optional) [Actions](https://forums.alliedmods.net/showthread.php?t=336374)
 * (Optional) [Modified L4D Antirush](#l4d_anti_rush)
 
 This plugin allows you to enact certain troll modes on any player, some are subtle some are less so. Either way, it works great to deal with a rusher, an asshole or even your friends.
@@ -218,23 +219,25 @@ https://admin.jackz.me/docs/ftt
   * `sm_ftt_magnet_chance <0.0 - 1.0>` - % of the time that the magnet will work on a player."
   * `sm_ftt_shove_fail_chance <0.0 - 1.0>` - The % chance that a shove fails
 * **Commands:**
-  * `sm_fta [player]` - Opens a menu to select a troll to apply, with modifiers and flags
+  * `sm_fta [player]` - The main command, opens a menu to select a troll to apply, with modifiers and flags
   * `sm_ftr [player]` - Removes all active trolls from a player
   * `sm_ftc [player]` - Opens a menu to select a combo of trolls
   * `sm_ftl` - Lists all players that have a mode applied.
   * `sm_ftm` - Lists all troll options & their descriptions
   * `sm_mark` - Toggles marking a player to be banned when they fully disconnect
-  * `sm_insta [player] [special]` - (No arguments opens menu) - Spawns a special via director that will only target the victim
-  * `sm_inface [player] [special]` - Identical to above, but special will be spawned as close as possible to survivor. Boomers auto explode.
-  * `sm_bots_attack <player> [target health]` - Slightly broken, but makes all bots shoot at player until they hit X health or a timeout is reached.
+  * `sm_insta [player] [special]` - (No arguments opens menu) - Spawns a special via the director that will only target the victim
+  * `sm_inface [player] [special]` - Identical to above, but special will be spawned as close as possible to survivor. Boomers auto explode, jockeys on their head, etc.
+  * `sm_bots_attack <player> [target health]` - Slightly broken, but makes all bots shoot at player until they hit X health or a timeout is reached. Turn on `sb_friendlyfire` for it to be effective.
   * `sm_stagger <player>` - Makes a player stagger, shortcut to the Stagger troll
   * `sm_witch_attack <player>` - Makes all witches agro on the player
-  * `sm_scharge <player> [timeout seconds]` - Will wait till there's no obstructions and players in the way and then spawns a charger to charge them.
-  * `sm_healbots <player> [# bots or 0 default]` - Makes n amount of bots chase a player down to heal them. Won't stop until they are healed or die.
+  * `sm_scharge <player> [timeout seconds]` - Will wait till there's no obstructions and players in the way, then spawns a charger behind them to charge them.
+  * `sm_healbots <player> [# bots or 0 default]` - Makes n amount of bots chase a player down to heal them. Won't stop until they are healed, they die, or you run command again.
 
 
 ### l4d2_autobotcrown
-Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Supports multiple bots and witches, but only one bot can crown one witch at a time. Plugin is obviously disabled in realism, and is really on suitable for coop or versus. Even works with idle players.
+Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Supports multiple bots and witches, but only one bot can crown one witch at a time. Plugin is disabled in realism, and is really on suitable for coop or versus. Even works with idle players.
+
+Bots do sometimes miss, but sometimes still manage to kill witch. They also don't care if there is danger in the way (fire, acid, angry witch).
 
 * **Convars:**
   * `l4d2_autocrown_allowed_difficulty <default: 7>` - The difficulties the plugin is active on. 1=Easy, 2=Normal 4=Advanced 8=Expert. Add numbers together.
@@ -253,7 +256,8 @@ Features:
 * Automatically giving extra kits for each extra player in saferooms
 * Increasing item count for items randomly depending on player count
 * Fix same-models survivors having to fight over ammo pack usage
-* Automatically lock the exit saferoom door until a threshold of players or time has passed
+* Automatically lock the first saferoom door for every chapter, until a threshold of players or time has passed
+* Includes a HUD that shows all the survivors and their items, and optionally their ping
 
 * **Convars:**
   * `l4d2_extraitem_chance` - The base chance (multiplied by player count) of an extra item being spawned. Default: 0.056
@@ -276,7 +280,7 @@ Requires:
 
 A fork of [Survivor Identity Fix plugin](https://forums.alliedmods.net/showthread.php?t=280539) that adds support for other plugins to update the model cache. This is used by [L4D2Tools](#L4D2Tools) to update the identity when someone changes their model with `sm_model`. It also will clear the memory of model when a player disconnects entirely or on a new map.
 
-In addition, has a fix for the passing finale, and will automatically move L4D characters to L4D2 until finale starts preventing game messing up their characters.
+In addition, has a fix for the passing finale, and will automatically temporarily change L4D characters to L4D2 until finale starts preventing game messing up their characters.
 
 
 ### l4d2_population_control
@@ -328,7 +332,7 @@ Currently auto triggers:
 
 ### l4d2_autorestart
 Plugin that automatically restarts server when the server is NOT hibernating, with bots around and no players.
-This fixes an issue with (shitty) custom maps that force sb_all_bot_game to 1 and disable hibernation
+This fixes an issue with custom maps that force sb_all_bot_game to 1 and disable hibernation.
 
 ### l4d2_TKStopper
 Requires:
@@ -345,7 +349,7 @@ Any survivor that attacks another survivor
 See https://admin.jackz.me/docs/plugins#tkstopper for some more implementation information
 
 
-During any of the above three conditions, if they deal (or attempt to deal) over 75 HP in 15 seconds they will be instantly banned for a set period of time (60 minutes). If they are for sure a team killer, it can be extended to a permanent ban.
+During any of the above three conditions, if they deal (or attempt to deal) over 75 HP in 15 seconds (configurable) they will be instantly banned for a set period of time (60 minutes). If they are for sure a team killer, it can be extended to a permanent ban.
 
 * **Cvars:**
   * `l4d2_tk_forgiveness_time <#>` - The minimum amount of seconds to pass (in seconds) where a player's previous accumulated FF is forgive. Default is 15s
@@ -361,7 +365,7 @@ Requires:
 
 This plugin prevents the activation of buttons ahead of the team. It will prevent players from starting crescendos (and some small other activities as a side effect) until a certain threshold of the team has reached the area.
 
-_This plugin is currently in **development.**_ Current implementation may be lacking.
+_This plugin is not perfect, sometimes it may trigger early, or not trigger at all depending on the map. Sometimes you need to as admins, move forward to allow non-admins to activate events._
 
 
 * **Cvars:**
@@ -373,7 +377,7 @@ _This plugin is currently in **development.**_ Current implementation may be lac
 A very small plugin that simply allows a player to mute another player's vocalizations only for them.
 
 * **Commands:**
-  * `sm_vgag <player(s)>` - Vocalize gag or ungags selected player(s)
+  * `sm_vgag <player(s)>` - Vocalize gag or ungags selected player(s) for the command activator only
 
 ### l4d2_sb_fix
 A fork of https://forums.alliedmods.net/showthread.php?p=2757330
@@ -388,6 +392,7 @@ Requires:
 
 A sourcemod extenstion of the vscript gamemode (https://steamcommunity.com/sharedfiles/filedetails/?id=2467133506)
 - Player blockers, portals, and props to change and control the maps
+- Optional climbable infected ladders, and heart beat when seeker nearby
 - Some quality of life (winner messages, change seeker mid game, change map time)
 - and a lot more
 
@@ -403,7 +408,7 @@ Vscript required for hud & mutation
 
 Gamemode: https://steamcommunity.com/sharedfiles/filedetails/?id=2823719841
 
-Requires l4dtoolz and left4dhooks, and optioanlly skip intro cutscene 
+Requires l4dtoolz and left4dhooks, and optionally skip intro cutscene 
 
 ### l4d2_prophunt
 Requires:
@@ -418,7 +423,7 @@ Vscript required for hud & mutation
 
 * Demo Map: https://steamcommunity.com/sharedfiles/filedetails/?id=2855027013 (makes most prop_static -> prop_dynamic)
 
-Requires l4dtoolz and left4dhooks, and optioanlly skip intro cutscene
+Requires l4dtoolz and left4dhooks, and optionally skip intro cutscene
 
 ### l4d2_hats
 
