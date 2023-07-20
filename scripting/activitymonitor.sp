@@ -158,8 +158,9 @@ public Action Timer_PushLogs(Handle h) {
 	static char query[1024];
 	static Log log;
 	int length = logs.Length;
-	Transaction transaction = new Transaction();
+
 	if(length > 0) {
+		Transaction transaction = new Transaction();
 		for(int i = 0; i < length; i++) {
 			logs.GetArray(i, log, sizeof(log));
 			g_db.Format(query, sizeof(query), "INSERT INTO `activity_log` (`timestamp`, `server`, `type`, `client`, `target`, `message`) VALUES (%d, NULLIF('%s', ''), '%s', NULLIF('%s', ''), NULLIF('%s', ''), NULLIF('%s', ''))",
@@ -173,11 +174,11 @@ public Action Timer_PushLogs(Handle h) {
 			transaction.AddQuery(query);
 		}
 		logs.Resize(logs.Length - length);
+		g_db.Execute(transaction, _, SQL_TransactionFailed, length, DBPrio_Low);
 	}
-	g_db.Execute(transaction, _, SQL_TransactionFailed, length, DBPrio_Low);
 	return Plugin_Continue;
 }
-public void SQL_TransactionFailed(Database db, any data, int numQueries, const char[] error, int failIndex, any[] queryData) {
+void SQL_TransactionFailed(Database db, any data, int numQueries, const char[] error, int failIndex, any[] queryData) {
 	LogError("Push transaction failed: %s at query %d/%d", error, failIndex, numQueries);
 }
 
