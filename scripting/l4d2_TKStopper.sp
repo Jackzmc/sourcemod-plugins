@@ -347,6 +347,8 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 			float pos[3];
 			GetNearestPlayerPosition(victim, pos);
 			PrintToConsoleAdmins("%N within join time (%d min), attempted to fall");
+			TeleportEntity(victim, pos, NULL_VECTOR, NULL_VECTOR);
+			damage = 0.0;
 			if(pData[victim].jumpAttempts > hSuicideLimit.IntValue) {
 				if(hSuicideAction.IntValue == 1) {
 					LogMessage("[NOTICE] Kicking %N for suicide attempts", victim, hBanTime.IntValue);
@@ -362,50 +364,52 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 					pData[victim].isTroll = true;
 				}
 			}
+			return Plugin_Stop;
 		}
-		if(attacker == victim) return Plugin_Continue;
 
-		// Forgive player based on threshold, resetting accumlated damage
+		// Forgive player teamkill based on threshold, resetting accumlated damage
 		if(time - pData[attacker].lastFFTime > hForgivenessTime.IntValue) {
 			pData[attacker].TKDamageBuffer = 0.0;
 		}
+		
 		pData[attacker].TKDamageBuffer += damage;
 		pData[attacker].totalDamageFF += damage;
 		pData[attacker].totalFFCount++;
 		pData[attacker].ffCount++;
 
 		// Auto reverse ff logic
-		// If not immune to RFF, damage is direct, _or admin shit_
-		if(~pData[attacker].immunityFlags & Immune_RFF && isDamageDirect) {
+		if(isDamageDirect) {
+			// Decrease the RFF scale based on how long since their last FF and an amount 
 			float minutesSinceiLastFFTime = (time - pData[attacker].lastFFTime) / 60.0;
 			pData[attacker].autoRFFScaleFactor -= minutesSinceiLastFFTime * hFFAutoScaleForgivenessAmount.FloatValue;
+			if(pData[attacker].autoRFFScaleFactor < 0.0) {
+				pData[attacker].autoRFFScaleFactor = 0.0;
+			}
+
 			// Decrement any accumlated ff 'counts'
 			int ffCountMinutes = RoundFloat(minutesSinceiLastFFTime / 10.0);
 			pData[attacker].ffCount -= (ffCountMinutes * 2);
 			if(pData[attacker].ffCount < 0) {
 				pData[attacker].ffCount = 0;
 			}
-			// Decrement any forgiven ratio (computed on demand)
-			if(pData[attacker].autoRFFScaleFactor < 0.0) {
-				pData[attacker].autoRFFScaleFactor = 0.0;
-			}
-			// Then calculate a new reverse ff ratio
+
+			// Calculate a new reverse ff ratio based on scale threshold + damage dealt + # of recent friendly fires events
 			pData[attacker].autoRFFScaleFactor += hFFAutoScaleAmount.FloatValue * damage * (pData[attacker].ffCount*0.25);
 			if(pData[attacker].isTroll) {
 				pData[attacker].autoRFFScaleFactor *= 2;
-			}
-			
-			// Cap max damage only for non-trolls
-			if(!pData[attacker].isTroll && hFFAutoScaleMaxRatio.FloatValue > 0.0 && pData[attacker].autoRFFScaleFactor > hFFAutoScaleMaxRatio.FloatValue) {
+			} else if(hFFAutoScaleMaxRatio.FloatValue > 0.0 && pData[attacker].autoRFFScaleFactor > hFFAutoScaleMaxRatio.FloatValue) {
+				// Cap it to the max - if they aren't marked as troll
 				pData[attacker].autoRFFScaleFactor = hFFAutoScaleMaxRatio.FloatValue;
 			}
+			
 		}
+
 		int prevFFTime = pData[attacker].lastFFTime;
 		pData[attacker].lastFFTime = time;
 		
 		// Check for excessive friendly fire damage in short timespan
 		// If not immune to TK, if over TK threshold, not when escaping, and direct damage
-		if(~pData[attacker].immunityFlags & Immune_TK 
+		if(~pData[attacker].immunityFlags & Immune_TK
 			&& pData[attacker].TKDamageBuffer > hThreshold.IntValue 
 			&& !isFinaleEnding 
 			&& isDamageDirect
@@ -441,9 +445,9 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		}
 		
 		// Modify damages based on criteria		
-		if(pData[victim].jumpAttempts > 0 
-			|| L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) 
-			|| time - pData[attacker].joinTime <= hJoinTime.IntValue * 60
+		if(pData[victim].jumpAttempts > 0 // If they've attempted suicide, we just incase, disable their ff damage
+			|| L4D_IsInFirstCheckpoint(victim) || L4D_IsInLastCheckpoint(victim) // No FF damage in saferooms
+			|| time - pData[attacker].joinTime <= hJoinTime.IntValue * 60 // No FF damage within first X minutes
 		) {
 			/* 
 			If the amount of seconds since they joined is <= the minimum join time cvar (min) threshold
@@ -456,14 +460,14 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 		}else if(isFinaleEnding) {
 			// Keep admins immune if escape vehicle out, or if victim is a bot
 			if(isAdmin || IsFakeClient(victim)) return Plugin_Continue;
+			// We ignore FF for fire/molotovs, can be accidental / non-issue 
 			if(isDamageDirect)
 				SDKHooks_TakeDamage(attacker, attacker, attacker, damage * 2.0);
 			damage = 0.0;
 			return Plugin_Changed;
-		}else if(isDamageDirect && pData[attacker].autoRFFScaleFactor > 0.3) { // Ignore fire and propane damage, mistakes can happen
+		}else if(isDamageDirect && pData[attacker].autoRFFScaleFactor > 0.18) { // 0.18 buffer to ignore fire and propane damage, mistakes can happen
 			// Apply their reverse ff damage, and have victim take a decreasing amount
 			if(pData[attacker].isTroll) return Plugin_Stop;
-			else if(pData[attacker].immunityFlags & Immune_RFF) return Plugin_Continue;
 
 			SDKHooks_TakeDamage(attacker, attacker, attacker, pData[attacker].autoRFFScaleFactor * damage);
 			if(pData[attacker].autoRFFScaleFactor > 1.0)
