@@ -1,7 +1,8 @@
 # sourcemod-plugins
-This is a collection of all the sourcemod plugins I've created, most are just used for my own servers and some for very specific needs.
+This is a collection of sourcemod plugins, most are used on my servers. The majority of the plugins are created by me, but some are modifications of other plugins. 
+Some of the plugins / changes are very specific, but may be useful to someone.
 
-Not always the latest versions, if you have any interest with plugins I can make sure to upload the latest.
+Not always the latest versions. If you have any interest with a plugin, I can make sure to upload the latest.
 
 Useful things:
 1. Netprop viewer https://jackz.me/netprops/l4d2
@@ -37,6 +38,7 @@ Useful things:
   * [l4d2_prophunt](#l4d2_prophunt) - Garry's Mod inspired prop hunt, inspired by hide and seek
   * [sm_namespamblock](#sm_namespamblock) - Basic plugin that bans players if they change their name in rapid succession 
   * [l4d2-stats-plugin](https://github.com/jackzmc/l4d2-stats-plugin) - Custom stats recorder, see https://stats.jackz.me
+  * [l4d2-ai-tweaks](#l4d2_ai_tweaks) - Very minor tweaks to survivor bots' behavior
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
@@ -441,3 +443,11 @@ Requires recompile to change.
 * **Commands:**
   * `status2` - Shitty name, but shows all non-admin players, sorted by last joined ascending (up top). Shows steamid and the first name they joined the server as
   * `sm_status2` - Same command, but allows /status2 in chat
+
+### l4d2_ai_tweaks
+
+Simply, prevents an idle bot (that is a bot for an idle player) from healing another player unless:
+1. The target is black and white
+2. The player has been idle for over **ALLOW_HEALING_MIN_IDLE_TIME** (a \#define) seconds (default is 3 minutes)
+    
+Requires recompile to change.
