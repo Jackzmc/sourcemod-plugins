@@ -65,6 +65,7 @@ public void OnPluginStart() {
 	HookEvent("bot_player_replace", Event_PlayerToIdle);
 
 	RegConsoleCmd("sm_hat", Command_DoAHat, "Hats");
+	RegAdminCmd("sm_hatf", Command_DoAHat, ADMFLAG_ROOT, "Hats");
 	RegAdminCmd("sm_mkwall", Command_MakeWall, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_walls", Command_ManageWalls, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_wall", Command_ManageWalls, ADMFLAG_CHEATS);
@@ -75,7 +76,7 @@ public void OnPluginStart() {
 	cvar_sm_hats_enabled.AddChangeHook(Event_HatsEnableChanged);
 	cvar_sm_hats_flags = CreateConVar("sm_hats_features", "153", "Toggle certain features. Add bits together\n1 = Player Hats\n2 = Respect Admin Immunity\n4 = Create a fake hat for hat wearer to view instead, and for yeeting\n8 = No saferoom hats\n16 = Player hatting requires victim consent\n32 = Infected Hats\n64 = Reverse hats\n128 = Delete Thrown Hats", FCVAR_CHEAT, true, 0.0);
 	cvar_sm_hats_rainbow_speed = CreateConVar("sm_hats_rainbow_speed", "1", "Speed of rainbow", FCVAR_NONE, true, 0.0);
-	cvar_sm_hats_max_distance = CreateConVar("sm_hats_distance", "220", "The max distance away you can hat something. 0 = disable", FCVAR_NONE, true, 0.0);
+	cvar_sm_hats_max_distance = CreateConVar("sm_hats_distance", "240", "The max distance away you can hat something. 0 = disable", FCVAR_NONE, true, 0.0);
 
 	noHatVictimCookie = new Cookie("hats_no_target", "Disables other players from making you their hat", CookieAccess_Public);
 	noHatVictimCookie.SetPrefabMenu(CookieMenu_OnOff_Int, "Disable player hats for self", OnLocalPlayerHatCookieSelect);
@@ -92,6 +93,7 @@ public void OnPluginStart() {
 
 	for(int i = 1; i <= MaxClients; i++) {
 		WallBuilder[i].Reset(true);
+		hatData[i].yeetGroundTimer = null;
 	}
 }
 
@@ -128,7 +130,7 @@ public void OnEnterSaferoom(Event event, const char[] name, bool dontBroadcast) 
 		inSaferoom[client] = true;
 		if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_NoSaferoomHats)) {
 			if(HasHat(client)) {
-				if(!IsHatAllowed(client)) {
+				if(!IsHatAllowedInSaferoom(client)) {
 					PrintToChat(client, "[Hats] Hat is not allowed in the saferoom and has been returned");
 					ClearHat(client, true);
 				} else {
@@ -692,6 +694,7 @@ public Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float
 public void OnClientDisconnect(int client) {
 	tempGod[client] = false;
 	WallBuilder[client].Reset();
+	hatData[client].yeetGroundTimer = null;
 	ClearHat(client, true);
 }
 
@@ -722,6 +725,10 @@ public void OnMapStart() {
 public void OnMapEnd() {
 	delete NavAreas;
 	for(int i = 1; i <= createdWalls.Length; i++) {
+		if(hatData[i].yeetGroundTimer != null) { 
+			delete hatData[i].yeetGroundTimer;
+		}
+		hatData[i].yeetGroundTimer = null;
 		DeleteWall(i);
 	}
 	createdWalls.Clear();
@@ -779,11 +786,19 @@ bool Filter_ValidHats(int entity, int mask, int data) {
 		return CanTarget(client); // Don't target if player targetting off
 	}
 	if(cvar_sm_hats_blacklist_enabled.BoolValue) {
-		static char classname[32];
-		GetEntityClassname(entity, classname, sizeof(classname));
+		static char buffer[32];
+		GetEntityClassname(entity, buffer, sizeof(buffer));
 		for(int i = 0; i < MAX_FORBIDDEN_CLASSNAMES; i++) {
-			if(StrEqual(FORBIDDEN_CLASSNAMES[i], classname)) {
+			if(StrEqual(FORBIDDEN_CLASSNAMES[i], buffer)) {
 				return false;
+			}
+		}
+		if(StrContains(buffer, "prop_") != -1) {
+			GetEntPropString(entity, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
+			for(int i = 0; i < MAX_FORBIDDEN_MODELS; i++) {
+				if(StrEqual(FORBIDDEN_MODELS[i], buffer)) {
+					return false;
+				}
 			}
 		}
 	}
