@@ -40,7 +40,7 @@ static ArrayList lastPlayers;
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	CreateNative("AddNoteIdentity", Native_AddNoteIdentity);
+	CreateNative("AddPlayerNoteIdentity", Native_AddNoteIdentity);
 	return APLRes_Success;
 }
 
@@ -83,7 +83,7 @@ void ShowRepMenu(int client, int targetUserid) {
 	char id[16];
 	Format(id, sizeof(id), "%d|1", targetUserid);
 	menu.AddItem(id, "+Rep");
-	Format(id, sizeof(id), "%d|1", targetUserid);
+	Format(id, sizeof(id), "%d|-1", targetUserid);
 	menu.AddItem(id, "-Rep");
 	menu.Display(client, 0);
 }
@@ -428,12 +428,10 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 			TrimString(reason);
 			if(ParseActions(data, reason)) {
 				actions++;
-			} else if((reason[0] == '+' || reason[0] == '-') && reason[1] == 'r' && reason[2] == 'e' && reason[3] == 'p') {
-				if(reason[0] == '+') {
-					repP++;
-				} else {
-					repN--;
-				}
+			} else if(StrEqual(reason, "+rep")) {
+				repP++;
+			} else if(StrEqual(reason, "-rep")) {
+				repN++;
 			} else {
 				CPrintChatToAdmins("  {olive}%s: {default}%s", noteCreator, reason);
 			}
@@ -466,6 +464,8 @@ bool ParseActions(int userid, const char[] input) {
 		strcopy(key, sizeof(key), piece[keyIndex + 1]);
 		piece[keyIndex] = '\0';
 	} else {
+		// Ignore empty actions
+		if(piece[1] == '\0') return false;
 		key[0] = '\0';
 		value[0] = '\0';
 	}

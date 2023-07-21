@@ -46,14 +46,14 @@ public int Insta_SpecialHandler(Menu menu, MenuAction action, int client, int pa
 		if(inFace) {
 			if(SpawnSpecialForTarget(special, target, view_as<int>(Special_OnTarget))) {
 				LogAction(client, target, "\"%L\" spawned Insta-%s™ on \"%L\"", client, SPECIAL_NAMES[specialInt-1], target);
-				ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ on %N", SPECIAL_NAMES[specialInt-1], target);
+				CShowActivityEx(client, "[FTT] ", "spawned {olive}Insta-%s™{default} on {olive}%N", SPECIAL_NAMES[specialInt-1], target);
 			} else {
 				ReplyToCommand(client, "Could not spawn special.");
 			}
 		} else {
 			if(SpawnSpecialForTarget(special, target)) {
+				CShowActivityEx(client, "[FTT] ", "spawned {green}Insta-%s™{default} near {green}%N", SPECIAL_NAMES[specialInt-1], target);
 				LogAction(client, target, "\"%L\" spawned Insta-%s™ near \"%L\"", client, SPECIAL_NAMES[specialInt-1], target);
-				ShowActivityEx(client, "[FTT] ", "spawned Insta-%s™ near %N", SPECIAL_NAMES[specialInt-1], target);
 			} else {
 				ReplyToCommand(client, "Could not spawn special.");
 			}

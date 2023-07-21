@@ -120,12 +120,18 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
     }
     return Plugin_Continue;
 }
+
 public Action OnBanClient(int client, int time, int flags, const char[] reason, const char[] kick_message, const char[] command, any source) {
-    if(GetUserAdmin(client) != INVALID_ADMIN_ID) return Plugin_Stop; 
+    if(GetUserAdmin(client) != INVALID_ADMIN_ID) {
+        LogMessage("Ignoring OnBanClient with admin id as target");
+        return Plugin_Stop;
+    } 
 
 
     char executor[32], identity[32], ip[32];
     GetClientAuthId(client, AuthId_Steam2, identity, sizeof(identity));
+
+    LogMessage("OnBanClient client=%d flags=%d source=%d, command=%s", client, flags, source, command);
 
     DataPack pack;
     if(source > 0 && source <= MaxClients && IsClientConnected(source) && GetClientAuthId(source, AuthId_Steam2, executor, sizeof(executor))) {
@@ -168,6 +174,8 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
 
     PrintToServer("Adding %N to OnBanClient queue. Key: %d", client, key);
 
+    // TODO: REMOVE : FOR DEBUG
+    return Plugin_Handled;
     return Plugin_Continue;
 }
 

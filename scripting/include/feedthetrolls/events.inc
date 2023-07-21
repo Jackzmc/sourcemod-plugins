@@ -776,8 +776,10 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 		if(IsTrollActive(victim, "Damage Boost")) {
 			damage * 2;
 			return Plugin_Changed;
-		} else if(Trolls[reverseFF].IsActive(attacker) && damagetype != DMG_BURN && attacker != victim && GetClientTeam(attacker) == GetClientTeam(victim)) {
-			
+		} else if(Trolls[reverseFF].IsActive(attacker) && attacker != victim && GetClientTeam(attacker) == GetClientTeam(victim)
+			&& (damagetype == DMG_BURN && Trolls[reverseFF].activeFlagClients[attacker] & 32)
+			&& (damagetype == DMG_BLAST && Trolls[reverseFF].activeFlagClients[attacker] & 64)
+		) {
 			float returnDmg = damage; //default is 1:1
 			if(Trolls[reverseFF].activeFlagClients[attacker] & 2) {
 				returnDmg *= 2.0;

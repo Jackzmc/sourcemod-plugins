@@ -119,6 +119,7 @@ public Action Event_ButtonPress(const char[] output, int entity, int client, flo
 		Group groups[MAX_GROUPS];
 		GroupResult result;
 		ComputeGroups(groups, result, activatorFlow);
+		PrintToConsoleAll("[CC] Button Press by %N", client);
 
 		AdminId admin = GetUserAdmin(client);
 		if(admin != INVALID_ADMIN_ID && admin.HasFlag(Admin_Custom1)) {
@@ -139,7 +140,6 @@ public Action Event_ButtonPress(const char[] output, int entity, int client, flo
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
 
 
-		PrintToConsoleAll("[CC] Button Press by %N", client);
 		if(hEnabled.IntValue == 2 || !IsActivationAllowed(activatorFlow, 1500.0)) {
 			ClientCommand(client, "play ui/menu_invalid.wav");
 			PrintToChat(client, "Please wait for players to catch up.");
@@ -299,6 +299,7 @@ public Action L4D2_CGasCan_EventKilled(int gascan, int &inflictor, int &attacker
 		float activatorFlow = L4D2Direct_GetFlowDistance(attacker);
 		Group groups[MAX_GROUPS];
 		GroupResult result;
+		PrintToConsoleAll("[CC] Gascan Shot by %N", attacker);
 		ComputeGroups(groups, result, activatorFlow);
 
 		AdminId admin = GetUserAdmin(attacker);
@@ -383,6 +384,6 @@ stock void PrintDebug(const char[] format, any ... ) {
 	VFormat(buffer, sizeof(buffer), format, 2);
 	// PrintToServer("[CrescendoControl:Debug] %s", buffer);
 	PrintToConsoleAll("[CrescendoControl:Debug] %s", buffer);
-	LogMessage("%s", buffer);
+	LogToFile("crescendo_control.log", "%s", buffer);
 	#endif
 }

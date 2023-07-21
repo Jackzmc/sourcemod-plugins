@@ -32,6 +32,7 @@
 
 #define EXTRA_TANK_MIN_SEC 2.0
 #define EXTRA_TANK_MAX_SEC 20.0
+#define DATE_FORMAT "%F at %I:%M %p"
 
 
 
@@ -77,13 +78,16 @@ public Plugin myinfo =
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
-static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty;
+static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags;
 static int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
 static int currentChapter;
 static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound, areItemsPopulated;
 static ArrayList ammoPacks;
 static Handle updateHudTimer;
+static bool showHudPingMode;
+static int hudModeTicks;
 static char gamemode[32];
+
 
 bool isCoop;
 
@@ -107,15 +111,70 @@ enum State {
 char StateNames[3][] = {
 	"Empty",
 	"PendingEmpty",
-	"Actve"
+	"Active"
 };
 #endif
+
+#define HUD_NAME_LENGTH 8
+
+stock float SnapTo(const float value, const float degree) {
+	return float(RoundFloat(value / degree)) * degree;
+}
+stock int StrLenMB(const char[] str){
+    int len = strlen(str);
+    int count;
+    for(int i; i < len; i++) {
+        count += ((str[i] & 0xc0) != 0x80) ? 1 : 0;
+    }
+    return count;
+}  
 
 enum struct PlayerData {
 	bool itemGiven; //Is player being given an item (such that the next pickup event is ignored)
 	bool isUnderAttack; //Is the player under attack (by any special)
 	State state;
 	bool hasJoined;
+	
+	char nameCache[64];
+	int scrollIndex;
+	int scrollMax;
+
+	void Setup(int client) {
+		char name[32];
+		GetClientName(client, name, sizeof(name));
+		this.scrollMax = strlen(name);
+		for(int i = 0; i < this.scrollMax; i++) {
+			// if(IsCharMB(name[i])) {
+			// 	this.scrollMax--;
+			// 	name[i] = '\0';
+			// }
+		}
+		
+		Format(this.nameCache, 64, "%s %s", name, name);
+		this.ResetScroll();
+	}
+
+	void ResetScroll() {
+		this.scrollIndex = 0;
+		// TOOD: figure out keeping unicode symbols and not scrolling when 7 characters view
+		// this.scrollMax = strlen(name);
+		// this.scrollMax = RoundFloat(SnapTo(float(this.scrollMax), float(HUD_NAME_LENGTH)));
+		if(this.scrollMax >= 32) {
+			this.scrollMax = 31;
+		}
+	}
+
+	void AdvanceScroll() {
+		if(cvEPIHudFlags.IntValue & 1) {
+			if(this.scrollMax > HUD_NAME_LENGTH) {
+				this.scrollIndex += 1;
+				// TODO: if name is < 8
+				if(this.scrollIndex >= this.scrollMax) {
+					this.scrollIndex = 0;
+				}
+			}
+		}
+	}
 }
 
 enum struct PlayerInventory {
@@ -131,6 +190,8 @@ enum struct PlayerInventory {
 
 	char model[64];
 	int survivorType;
+
+	float location[3];
 }
 
 PlayerData playerData[MAXPLAYERS+1];
@@ -149,6 +210,7 @@ Restore from saved inventory
 
 static StringMap weaponMaxClipSizes;
 static StringMap pInv;
+
 
 static char HUD_SCRIPT_DATA[] = "eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG } } }\nHUDSetLayout(eph)\nHUDPlace(g_ModeScript.HUD_RIGHT_BOT,0.78,0.77,0.3,0.3)\ng_ModeScript;";
  
@@ -195,6 +257,7 @@ public void OnPluginStart() {
 	HookEvent("tank_spawn", 		Event_TankSpawn);
 
 	//Special Event Tracking
+	HookEvent("player_info", Event_PlayerInfo);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 
 	HookEvent("charger_carry_start", Event_ChargerCarry);
@@ -223,8 +286,11 @@ public void OnPluginStart() {
 	hSplitTankChance 		 = CreateConVar("l4d2_extraitems_splittank_chance", "0.75", "The % chance of a split tank occurring in non-finales", FCVAR_NONE, true, 0.0, true, 1.0);
 	cvDropDisconnectTime     = CreateConVar("l4d2_extraitems_disconnect_time", "120.0", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
 	cvFFDecreaseRate         = CreateConVar("l4d2_extraitems_ff_decrease_rate", "0.3", "The friendly fire factor is subtracted from the formula (playerCount-4) * this rate. Effectively reduces ff penalty when more players. 0.0 to subtract none", FCVAR_NONE, true, 0.0);
+	cvEPIHudFlags = CreateConVar("l4d2_extraitems_hud_flags", "3", "Add together.\n1 = Scrolling hud, 2 = Show ping", FCVAR_NONE, true, 0.0);
+	// TODO: hook flags, reset name index / ping mode
+	cvEPIHudFlags.AddChangeHook(Cvar_HudFlagChange);
 
-	hEPIHudState.AddChangeHook(Cvar_HudStateChange);
+	cvEPIHudFlags.AddChangeHook(Cvar_HudStateChange);
 	
 	if(hUpdateMinPlayers.BoolValue) {
 		hMinPlayers = FindConVar("abm_minplayers");
@@ -233,9 +299,12 @@ public void OnPluginStart() {
 
 	if(isLateLoaded) {
 		for(int i = 1; i <= MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-				UpdatePlayerInventory(i);
-				SDKHook(i, SDKHook_WeaponEquip, Event_Pickup);
+			if(IsClientConnected(i) && IsClientInGame(i)) {
+				if(GetClientTeam(i) == 2) {
+					SaveInventory(i);
+					SDKHook(i, SDKHook_WeaponEquip, Event_Pickup);
+				}
+				playerData[i].Setup(i);
 			}
 		}
 		
@@ -272,24 +341,38 @@ public void OnPluginStart() {
 		RegAdminCmd("sm_epi_lock", Command_ToggleDoorLocks, ADMFLAG_CHEATS, "Toggle all toggle\'s lock state");
 		RegAdminCmd("sm_epi_kits", Command_GetKitAmount, ADMFLAG_CHEATS);
 		RegAdminCmd("sm_epi_items", Command_RunExtraItems, ADMFLAG_CHEATS);
-		RegConsoleCmd("sm_epi_status", Command_DebugStatus);
+		RegConsoleCmd("sm_epi_stats", Command_DebugStats);
 	#endif
+	RegAdminCmd("sm_epi_restore", Command_RestoreInventory, ADMFLAG_KICK);
+	RegAdminCmd("sm_epi_save", Command_SaveInventory, ADMFLAG_KICK);
 
-	CreateTimer(10.0, Timer_ForceUpdateInventories, _, TIMER_REPEAT);
+	CreateTimer(30.0, Timer_ForceUpdateInventories, _, TIMER_REPEAT);
 }
 
 public Action Timer_ForceUpdateInventories(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-			UpdatePlayerInventory(i);
+			// SaveInventory(i);
 		}
 	}
 	return Plugin_Continue;
 }
 
 public void OnClientPutInServer(int client) {
-	if(!IsFakeClient(client) && GetClientTeam(client) == 2 && !StrEqual(gamemode, "hideandseek")) {
-		CreateTimer(0.2, Timer_CheckInventory, client);
+	if(!IsFakeClient(client)) {
+		playerData[client].Setup(client);
+
+		if(GetClientTeam(client) == 2) {
+			if(!StrEqual(gamemode, "hideandseek")) {
+				// CreateTimer(0.2, Timer_CheckInventory, client);
+			}
+		}
+	}
+}
+
+public void OnClientDisconnect(int client) {
+	if(!IsFakeClient(client)) {
+		SaveInventory(client);
 	}
 }
 
@@ -337,19 +420,31 @@ public Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcas
 // CVAR HOOKS 
 ///////////////////////////////////////////////////////////////////////////////
 public void Cvar_HudStateChange(ConVar convar, const char[] oldValue, const char[] newValue) {
-	if(convar.IntValue == 0 && updateHudTimer != null) {
+	if(convar.IntValue == 0) {
+		if(updateHudTimer != null) {
 		PrintToServer("[EPI] Stopping timer externally: Cvar changed to 0");
 		delete updateHudTimer;
-	}else {
+		}
+	} else {
 		int count = GetRealSurvivorsCount();
 		int threshold = 0;
+		// Default to 0 for state == 2 (force)
 		if(hEPIHudState.IntValue == 1) {
+			// On L4D1 map start if 5 players, on L4D2 start with 6
+			// On L4D1 more chance of duplicate models, so can't see health
 			threshold = L4D2_GetSurvivorSetMap() == 2 ? 4 : 5;
 		}
-		if(convar.IntValue > 0 && count > threshold && updateHudTimer == null) {
+		if(count > threshold && updateHudTimer == null) {
 			PrintToServer("[EPI] Creating new hud timer");
 			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
 		}
+	}
+}
+void Cvar_HudFlagChange(ConVar convar, const char[] oldValue, const char[] newValue) {
+	hudModeTicks = 0;
+	showHudPingMode = false;
+	for(int i = 0; i <= MaxClients; i++) {
+		playerData[i].ResetScroll();
 	}
 }
 
@@ -389,6 +484,50 @@ public void Event_DifficultyChange(ConVar cvar, const char[] oldValue, const cha
 /////////////////////////////////////
 /// COMMANDS
 ////////////////////////////////////
+Action Command_SaveInventory(int client, int args) {
+	if(args == 0) {
+		ReplyToCommand(client, "Syntax: /epi_save <player>");
+		return Plugin_Handled;
+	}
+	char arg[32];
+	GetCmdArg(1, arg, sizeof(arg));
+	int player = GetSinglePlayer(client, arg, COMMAND_FILTER_NO_BOTS);
+	if(player == -1) {
+		ReplyToCommand(client, "No player found");
+		return Plugin_Handled;
+	}
+	SaveInventory(player);
+	ReplyToCommand(client, "Saved inventory for %N", player);
+}
+Action Command_RestoreInventory(int client, int args) {
+	if(args == 0) {
+		ReplyToCommand(client, "Syntax: /epi_restore <player> <full/pos/model/items>");
+		return Plugin_Handled;
+	}
+	char arg[32];
+	GetCmdArg(1, arg, sizeof(arg));
+	int player = GetSinglePlayer(client, arg, COMMAND_FILTER_NO_BOTS);
+	if(player == -1) {
+		ReplyToCommand(client, "No player found");
+		return Plugin_Handled;
+	}
+	GetCmdArg(2, arg, sizeof(arg));
+	PlayerInventory inv;
+	if(!GetLatestInventory(client, inv)) {
+		ReplyToCommand(client, "No stored inventory for player");
+		return Plugin_Handled;
+	}
+
+	if(StrEqual(arg, "full")) { 
+		RestoreInventory(client, inv);
+	} else if(StrEqual(arg, "pos")) {
+		TeleportEntity(player, inv.location, NULL_VECTOR, NULL_VECTOR);
+	} else {
+		ReplyToCommand(client, "Syntax: /epi_restore <player> <full/pos/model/items>");
+		return Plugin_Handled;
+	}
+	return Plugin_Handled;
+}
 public Action Command_SetSurvivorCount(int client, int args) {
 	int oldCount = abmExtraCount;
 	if(args > 0) {
@@ -452,12 +591,47 @@ public Action Command_RunExtraItems(int client, int args) {
 	PopulateItems();
 	return Plugin_Handled;
 }
-public Action Command_DebugStatus(int client, int args) {
-	ReplyToCommand(client, "Player Statuses:");
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && !IsFakeClient(i)) {
-			ReplyToCommand(i, "\t%d. %N: %s", i, i, StateNames[view_as<int>(playerData[i].state)]);
+public Action Command_DebugStats(int client, int args) {
+	if(args == 0) {
+		ReplyToCommand(client, "Player Statuses:");
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && !IsFakeClient(i)) {
+				ReplyToCommand(client, "\t\x04%d. %N:\x05 %s", i, i, StateNames[view_as<int>(playerData[i].state)]);
+			}
 		}
+	} else {
+		char arg[32];
+		GetCmdArg(1, arg, sizeof(arg));
+		PlayerInventory inv;
+		int player = GetSinglePlayer(client, arg, COMMAND_FILTER_NO_BOTS);
+		if(player == 0) {
+			if(!GetInventory(arg, inv)) {
+				ReplyToCommand(client, "No player found");
+				return Plugin_Handled;
+			}
+		}
+
+		if(!GetLatestInventory(player, inv)) {
+			ReplyToCommand(client, "No saved inventory for %N", player);
+			return Plugin_Handled;
+		}
+		if(inv.isAlive)
+			ReplyToCommand(client, "\x04State: \x05%s (Alive)", StateNames[view_as<int>(playerData[player].state)]);
+		else
+			ReplyToCommand(client, "\x04State: \x05%s (Dead)", StateNames[view_as<int>(playerData[player].state)]);
+		FormatTime(arg, sizeof(arg), DATE_FORMAT, inv.timestamp);
+		ReplyToCommand(client, "\x04Timestamp: \x05%s (%d seconds)", arg, GetTime() - inv.timestamp);
+		ReplyToCommand(client, "\x04Location: \x05%.1f %.1f %.1f", inv.location[0], inv.location[1], inv.location[2]);
+		ReplyToCommand(client, "\x04Model: \x05%s (%d)", inv.model, inv.survivorType);
+		ReplyToCommand(client, "\x04Health: \x05%d perm. / %d temp.", inv.primaryHealth, inv.tempHealth);
+		ReplyToCommand(client, "\x04Items: \x05(Lasers:%b)", inv.lasers);
+		for(int i = 0; i < 6; i++) {
+			if(inv.itemID[i] != WEPID_NONE) {
+				GetLongWeaponName(inv.itemID[i], arg, sizeof(arg));
+				ReplyToCommand(client, "\x04%d. \x05%s", i, arg);
+			}
+		}
+		ReplyToCommand(client, "%s", inv.meleeID);
 	}
 	return Plugin_Handled;
 }
@@ -651,7 +825,8 @@ public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast
 	if(GetClientTeam(client) == 2) {
 		if(!IsFakeClient(client)) {
 			if(!L4D_IsFirstMapInScenario()) {
-				if(++playersLoadedIn == 1) {
+				playersLoadedIn++;
+				if(playersLoadedIn == 1) {
 					CreateTimer(hSaferoomDoorWaitSeconds.FloatValue, Timer_OpenSaferoomDoor, _, TIMER_FLAG_NO_MAPCHANGE);
 				}
 				if(playerstoWaitFor > 0) {
@@ -679,27 +854,34 @@ public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast
 
 }
 
-public Action Timer_CheckInventory(Handle h, int client) {
-	if(IsClientConnected(client) && IsClientInGame(client) && GetClientTeam(client) == 2 && DoesInventoryDiffer(client)) {
-		PrintToConsoleAll("[EPI] Detected mismatch inventory for %N, restoring", client);
-		RestoreInventory(client);
-	}
-	return Plugin_Handled;
-}
+// public Action Timer_CheckInventory(Handle h, int client) {
+// 	if(IsClientConnected(client) && IsClientInGame(client) && GetClientTeam(client) == 2 && DoesInventoryDiffer(client)) {
+// 		PrintToConsoleAll("[EPI] Detected mismatch inventory for %N, restoring", client);
+// 		RestoreInventory(client);
+// 	}
+// 	return Plugin_Handled;
+// }
 
 public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
 	if(client > 0 && IsClientConnected(client) && IsClientInGame(client) && !IsFakeClient(client) && GetClientTeam(client) == 2) { //TODO: re-add && !event.GetBool("isbot") 
 		playerData[client].hasJoined = false;
-		SaveInventory(client);
 		PrintToServer("debug: Player %N (index %d, uid %d) now pending empty", client, client, userid);
 		playerData[client].state = State_PendingEmpty;
+		playerData[client].nameCache[0] = '\0';
 		/*DataPack pack;
 		CreateDataTimer(cvDropDisconnectTime.FloatValue, Timer_DropSurvivor, pack);
 		pack.WriteCell(userid);
 		pack.WriteCell(client);*/
 		CreateTimer(cvDropDisconnectTime.FloatValue, Timer_DropSurvivor, client);
+	}
+}
+
+public void Event_PlayerInfo(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client && !IsFakeClient(client)) {
+		playerData[client].Setup(client);
 	}
 }
 
@@ -982,6 +1164,8 @@ public void OnMapStart() {
 				AcceptEntityInput(entity, "Lock");
 				AcceptEntityInput(entity, "ForceClosed");
 				SDKHook(entity, SDKHook_Use, Hook_Use);
+				// Failsafe:
+				CreateTimer(20.0, Timer_OpenSaferoomDoor, _, TIMER_FLAG_NO_MAPCHANGE);
 				break;
 			}
 		}
@@ -1231,6 +1415,7 @@ void UnlockDoor(int flag) {
 	int entity = EntRefToEntIndex(firstSaferoomDoorEntity);
 	if(entity > 0) {
 		PrintDebug(DEBUG_GENERIC, "Door unlocked, flag %d", flag);
+			AcceptEntityInput(entity, "Unlock");
 		SetEntProp(entity, Prop_Send, "m_bLocked", 0);
 		SDKUnhook(entity, SDKHook_Use, Hook_Use);
 		if(hSaferoomDoorAutoOpen.IntValue & flag) {
@@ -1244,46 +1429,65 @@ void UnlockDoor(int flag) {
 }
 
 public Action Timer_UpdateHud(Handle h) {
-	if(hEPIHudState.IntValue == 1 && !isCoop) { // TODO: Optimize
+	if(hEPIHudState.IntValue == 1 && !isCoop) {
 		PrintToServer("[EPI] Gamemode no longer coop, stopping (hudState=%d, abmExtraCount=%d)", hEPIHudState.IntValue, abmExtraCount);
 		L4D2_RunScript(HUD_SCRIPT_CLEAR);
 		updateHudTimer = null;
 		return Plugin_Stop;
 	} 
-	// int threshold = hEPIHudState.IntValue == 1 ? 4 : 0;
-	if(hEPIHudState.IntValue == 0) { //|| abmExtraCount <= threshold broke
-		PrintToServer("[EPI] Less than threshold, stopping hud timer (hudState=%d, abmExtraCount=%d)", hEPIHudState.IntValue, abmExtraCount);
+	// TODO: Turn it off when state == 1
+	int threshold = hEPIHudState.IntValue == 1 ? 4 : 0;
+	if(hEPIHudState.IntValue == 1 && abmExtraCount < threshold) { //||  broke  && abmExtraCount < threshold
+		PrintToServer("[EPI] Less than threshold (%d), stopping hud timer (hudState=%d, abmExtraCount=%d)", threshold, hEPIHudState.IntValue, abmExtraCount);
 		L4D2_RunScript(HUD_SCRIPT_CLEAR);
 		updateHudTimer = null;
 		return Plugin_Stop;
 	}
 
+	if(cvEPIHudFlags.IntValue & 2) {
+		hudModeTicks++;
+		if(hudModeTicks > (showHudPingMode ? 8 : 20)) { 
+			hudModeTicks = 0;
+			showHudPingMode = !showHudPingMode;
+		}
+	}
+
 	static char players[512], data[32], prefix[16];
 	players[0] = '\0';
-
+	// TODO: name scrolling
+	// TODO: name cache (hook name change event), strip out invalid
 	for(int i = 1; i <= MaxClients; i++) { 
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			data[0] = '\0';
 			prefix[0] = '\0';
 			int health = GetClientRealHealth(i);
+			int client = i;
 			if(IsFakeClient(i) && HasEntProp(i, Prop_Send, "m_humanSpectatorUserID")) {
-				int client = GetClientOfUserId(GetEntProp(i, Prop_Send, "m_humanSpectatorUserID"));
+				client = GetClientOfUserId(GetEntProp(i, Prop_Send, "m_humanSpectatorUserID"));
 				if(client > 0)
-					Format(prefix, 13, "AFK %N", client);
+					Format(prefix, 5 + HUD_NAME_LENGTH, "AFK %s", playerData[client].nameCache[playerData[client].scrollIndex]);
 				else
-					Format(prefix, 8, "%N", i);
+					Format(prefix, HUD_NAME_LENGTH, "%N", i);
 			} else {
-				Format(prefix, 8, "%N", i);
+				Format(prefix, HUD_NAME_LENGTH, "%s", playerData[client].nameCache[playerData[client].scrollIndex]);
 			}
 
-			if(!IsPlayerAlive(i)) 
-				Format(data, sizeof(data), "xx");
-			else if(GetEntProp(i, Prop_Send, "m_bIsOnThirdStrike") == 1) 
-				Format(data, sizeof(data), "+%d b&w %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
-			else if(GetEntProp(i, Prop_Send, "m_isIncapacitated") == 1)
-				Format(data, sizeof(data), "+%d --", health);
-			else
-				Format(data, sizeof(data), "+%d %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
+			playerData[client].AdvanceScroll();
+			
+			if(showHudPingMode) {
+				if(client == 0) continue;
+				int ping = L4D_GetPlayerResourceData(client, L4DResource_Ping);
+				Format(data, sizeof(data), "%d ms", ping);
+			} else {
+				if(!IsPlayerAlive(i)) 
+					Format(data, sizeof(data), "xx");
+				else if(GetEntProp(i, Prop_Send, "m_bIsOnThirdStrike") == 1) 
+					Format(data, sizeof(data), "+%d b&w %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
+				else if(GetEntProp(i, Prop_Send, "m_isIncapacitated") == 1)
+					Format(data, sizeof(data), "+%d --", health);
+				else
+					Format(data, sizeof(data), "+%d %s%s%s", health, items[i].throwable, items[i].usable, items[i].consumable);
+			}
 			
 			Format(players, sizeof(players), "%s%s %s\\n", players, prefix, data);
 		}
@@ -1401,15 +1605,18 @@ void DropDroppedInventories() {
 		snapshot.GetKey(i, buffer, sizeof(buffer));
 		pInv.GetArray(buffer, inv, sizeof(inv));
 		if(time - inv.timestamp > PLAYER_DROP_TIMEOUT_SECONDS) {
+			PrintDebug(DEBUG_GENERIC, "[EPI] Dropping inventory for %s", buffer);
 			pInv.Remove(buffer);
 		}
 	}
 }
 void SaveInventory(int client) {
-
+	PrintDebug(DEBUG_GENERIC, "Saving inventory for %N", client);
 	PlayerInventory inventory;
 	inventory.timestamp = GetTime();
 	inventory.isAlive = IsPlayerAlive(client);
+	playerData[client].state = State_Active;
+	GetClientAbsOrigin(client, inventory.location);
 
 	inventory.primaryHealth = GetClientHealth(client);
 	GetClientModel(client, inventory.model, 64);
@@ -1428,18 +1635,13 @@ void SaveInventory(int client) {
 	pInv.SetArray(buffer, inventory, sizeof(inventory));
 }
 
-void RestoreInventory(int client) {
-	static char buffer[32];
-	GetClientAuthId(client, AuthId_Steam3, buffer, sizeof(buffer));
-	PlayerInventory inventory;
-	pInv.GetArray(buffer, inventory, sizeof(inventory));
-
+void RestoreInventory(int client, PlayerInventory inventory) {
 	PrintToConsoleAll("[debug:RINV] health=%d primaryID=%d secondID=%d throw=%d kit=%d pill=%d surv=%d", inventory.primaryHealth, inventory.itemID[0], inventory.itemID[1], inventory.itemID[2], inventory.itemID[3], inventory.itemID[4], inventory.itemID[5], inventory.survivorType);
 
-	return;
 	SetEntityModel(client, inventory.model);
 	SetEntProp(client, Prop_Send, "m_survivorCharacter", inventory.survivorType);
 
+	char buffer[32];
 	if(inventory.isAlive) {
 		SetEntProp(client, Prop_Send, "m_iHealth", inventory.primaryHealth);
 
@@ -1458,9 +1660,16 @@ void RestoreInventory(int client) {
 			SetEntProp(weapon, Prop_Send, "m_upgradeBitVec", 4);
 		}
 	}
+}
 
+bool GetLatestInventory(int client, PlayerInventory inventory) {
+	static char buffer[32];
 	GetClientAuthId(client, AuthId_Steam3, buffer, sizeof(buffer));
-	pInv.Remove(buffer);
+	return pInv.GetArray(buffer, inventory, sizeof(inventory));
+}
+
+bool GetInventory(const char[] steamid, PlayerInventory inventory) {
+	return pInv.GetArray(steamid, inventory, sizeof(inventory));
 }
 
 bool DoesInventoryDiffer(int client) {

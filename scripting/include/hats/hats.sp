@@ -59,6 +59,11 @@ char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"prop_ragdoll"
 };
 
+#define MAX_FORBIDDEN_MODELS 1
+char FORBIDDEN_MODELS[MAX_FORBIDDEN_MODELS][] = {
+	"models/props_vehicles/c130.mdl"
+};
+
 #define MAX_REVERSE_CLASSNAMES 2
 static char REVERSE_CLASSNAMES[MAX_REVERSE_CLASSNAMES][] = {
 	"infected",
@@ -66,6 +71,9 @@ static char REVERSE_CLASSNAMES[MAX_REVERSE_CLASSNAMES][] = {
 };
 
 public Action Command_DoAHat(int client, int args) {
+	static char cmdName[8];
+	GetCmdArg(0, cmdName, sizeof(cmdName));
+
 	int hatter = GetHatter(client);
 	if(hatter > 0) {
 		ClearHat(hatter, HasFlag(hatter, HAT_REVERSED));
@@ -74,16 +82,16 @@ public Action Command_DoAHat(int client, int args) {
 	}
 
 	AdminId adminId = GetUserAdmin(client);
+	bool isForced = adminId != INVALID_ADMIN_ID && StrEqual(cmdName, "sm_hatf");
 	if(cvar_sm_hats_enabled.IntValue == 1) {
 		if(adminId == INVALID_ADMIN_ID) {
 			PrintToChat(client, "[Hats] Hats are for admins only");
 			return Plugin_Handled;
+		} else if(!adminId.HasFlag(Admin_Cheats)) {
+			PrintToChat(client, "[Hats] You do not have permission");
+			return Plugin_Handled;
 		}
-	} else if(!adminId.HasFlag(Admin_Cheats)) {
-		PrintToChat(client, "[Hats] You do not have permission");
-		return Plugin_Handled;
-	}
-	if(cvar_sm_hats_enabled.IntValue == 0) {
+	} else if(cvar_sm_hats_enabled.IntValue == 0) {
 		ReplyToCommand(client, "[Hats] Hats are disabled");
 		return Plugin_Handled;
 	} else if(GetClientTeam(client) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
@@ -239,6 +247,7 @@ public Action Command_DoAHat(int client, int args) {
 				TeleportEntity(entity, hatData[client].orgPos, hatData[client].orgAng, vel);
 				// Sleep the physics after enoug time for it to most likely have landed
 				if(hatData[client].yeetGroundTimer != null) {
+					// TODO: FIX null issue
 					delete hatData[client].yeetGroundTimer;
 				}
 				DataPack pack1;
@@ -335,8 +344,8 @@ public Action Command_DoAHat(int client, int args) {
 		}
 
 		// Make hat reversed if 'r' passed in
+		char arg[4];
 		if(args > 0) {
-			char arg[4];
 			GetCmdArg(1, arg, sizeof(arg));
 			if(arg[0] == 'r') {
 				flags |= view_as<int>(HAT_REVERSED);
@@ -384,10 +393,14 @@ public Action Command_DoAHat(int client, int args) {
 					return Plugin_Handled;
 				}
 			}
-			if(!IsFakeClient(entity) && cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_PlayerHatConsent) && ~flags & view_as<int>(HAT_REVERSED)) {
+			if(!isForced &&
+				!IsFakeClient(entity) && 
+				cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_PlayerHatConsent) && 
+				~flags & view_as<int>(HAT_REVERSED)
+			) {
 				int lastRequestDiff = GetTime() - lastHatRequestTime[client];
 				if(lastRequestDiff < PLAYER_HAT_REQUEST_COOLDOWN) {
-					PrintToChat(client, "[Hats] Player hat under %d seconds cooldown", GetTime() - lastRequestDiff);
+					PrintToChat(client, "[Hats] Player hat under %d seconds cooldown", PLAYER_HAT_REQUEST_COOLDOWN - lastRequestDiff);
 					return Plugin_Handled;
 				}
 
@@ -533,7 +546,7 @@ int GetHat(int client) {
 
 int GetHatter(int client) {
 	for(int i = 1; i <= MaxClients; i++) {
-		if(EntRefToEntIndex(hatData[client].entity) == client) {
+		if(EntRefToEntIndex(hatData[i].entity) == client) {
 			return i;
 		}
 	}
@@ -546,29 +559,43 @@ bool CanTarget(int victim) {
 	return StringToInt(buf) == 0;
 }
 
-bool IsHatAllowed(int client) {
+bool IsHatAllowedInSaferoom(int client) {
 	if(L4D_IsMissionFinalMap()) return true;
 	char name[32];
 	GetEntityClassname(hatData[client].entity, name, sizeof(name));
 	// Don't allow non-weapons in saferoom
-	if(StrEqual(name, "prop_physics")) {
+	if(StrEqual(name, "prop_physics") || StrEqual(name, "prop_dynamic")) {
 		GetEntPropString(hatData[client].entity, Prop_Data, "m_ModelName", name, sizeof(name));
-		if(StrContains(name, "gnome") != -1) {
+		if(StrContains(name, "gnome") != -1 || StrContains(name, "propanecanist") != -1) {
 			return true;
 		}
-		PrintToConsole(client, "Dropping hat: prop_physics (%s)", name);
+		float mins[3], maxs[3];
+		GetEntPropVector(hatData[client].entity, Prop_Data, "m_vecMins", mins);
+		GetEntPropVector(hatData[client].entity, Prop_Data, "m_vecMaxs", maxs);
+		PrintToConsoleAll("Dropping hat for %N: prop_something (%s) (min %.0f,%.0f,%.0f) (max %.0f,%.0f,%.0f)", client, name, mins[0], mins[1], mins[2], maxs[0], maxs[1], maxs[2]);
 		return false;
-	}
-	else if(StrEqual(name, "player") || StrContains(name, "weapon_") > -1 || StrContains(name, "upgrade_") > -1) {
+	} else if(StrEqual(name, "player") || StrContains(name, "weapon_") > -1 || StrContains(name, "upgrade_") > -1) {
 		return true;
 	}
 	PrintToConsole(client, "Dropping hat: %s", name);
 	return false;
 }
 
+bool IsHatAllowed(int client) {
+	char name[32];
+	GetEntityClassname(hatData[client].entity, name, sizeof(name));
+	if(StrEqual(name, "prop_physics") || StrEqual(name, "prop_dynamic")) {
+		GetEntPropString(hatData[client].entity, Prop_Data, "m_ModelName", name, sizeof(name));
+		if(StrContains(name, "models/props_vehicles/c130.mdl") != -1) {
+			return false;
+		}
+	}
+	return true;
+}
+
 bool CanHatBePlaced(int client, const float pos[3]) {
 	if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_NoSaferoomHats)) {
-		if(IsHatAllowed(client)) return true;
+		if(IsHatAllowedInSaferoom(client)) return true;
 		Address nav = L4D_GetNearestNavArea(pos, 200.0);
 		if(nav != Address_Null) {
 			int spawnFlags = L4D_GetNavArea_SpawnAttributes(nav) ;

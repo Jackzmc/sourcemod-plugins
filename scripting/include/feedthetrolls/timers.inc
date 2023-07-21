@@ -27,6 +27,19 @@ public Action Timer_Main(Handle timer) {
 
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
+			if(Trolls[t_randomizeAnglesIndex].IsActive(i)) {
+				float chance = 0.10;
+				if(Trolls[t_randomizeAnglesIndex].activeFlagClients[i] & 2) chance = 0.35;
+				else if(Trolls[t_randomizeAnglesIndex].activeFlagClients[i] & 4) chance = 0.58;
+				else if(Trolls[t_randomizeAnglesIndex].activeFlagClients[i] & 8) chance = 0.90;
+				else if(Trolls[t_randomizeAnglesIndex].activeFlagClients[i] & 16) chance = 1.00;
+				if(GetURandomFloat() < chance) {
+					float ang[3];
+					ang[0] = GetRandomFloat(-180.0, 180.0);
+					ang[1] = GetRandomFloat(-180.0, 180.0);
+					TeleportEntity(i, NULL_VECTOR, ang, NULL_VECTOR);
+				}
+			}
 			if(Trolls[slowDrainIndex].IsActive(i)) {
 				if(loopTick % 4 == 0) {
 					int hp = GetClientHealth(i);
@@ -34,7 +47,8 @@ public Action Timer_Main(Handle timer) {
 						SetEntProp(i, Prop_Send, "m_iHealth", hp - 1); 
 					}
 				}
-			}else if(Trolls[tempHealthQuickDrainIndex].IsActive(i)) {
+			}
+			if(Trolls[tempHealthQuickDrainIndex].IsActive(i)) {
 				if(loopTick % 2 == 0) {
 					float bufferTime = GetEntPropFloat(i, Prop_Send, "m_healthBufferTime");
 					float tempHealth = L4D_GetTempHealth(i);
@@ -42,13 +56,16 @@ public Action Timer_Main(Handle timer) {
 						SetEntPropFloat(i, Prop_Send, "m_healthBufferTime", bufferTime - 7.0); 
 					}
 				}
-			}else if(Trolls[swarmIndex].IsActive(i)) {
+			}
+			if(Trolls[swarmIndex].IsActive(i)) {
 				L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", GetClientUserId(i), 15000);
-			} else if(Trolls[slipperyShoesIndex].IsActive(i) && Trolls[slipperyShoesIndex].activeFlagClients[i] & 1) {
+			} 
+			if(Trolls[slipperyShoesIndex].IsActive(i) && Trolls[slipperyShoesIndex].activeFlagClients[i] & 1) {
 				if(GetRandomFloat() <= 0.4) {
 					L4D_StaggerPlayer(i, i, NULL_VECTOR);
 				}
-			} else if(Trolls[instantCommonIndex].IsActive(i)) {
+			}  
+			if(Trolls[instantCommonIndex].IsActive(i)) {
 				int common = EntRefToEntIndex(instantCommonRef[i]);
 				if(common <= 0 || !IsValidEntity(common)) {
 					static float pos[3];
@@ -58,7 +75,8 @@ public Action Timer_Main(Handle timer) {
 				}
 				SetEntPropEnt(common, Prop_Send, "m_clientLookatTarget", i);
 				SetEntProp(common, Prop_Send, "m_nSequence", 96);
-			} else if(loopTick % 60 && Trolls[randomizeAmmoIndex].IsActive(i)) {
+			} 
+			if(loopTick % 60 && Trolls[randomizeAmmoIndex].IsActive(i)) {
 				int primaryWpn = GetPlayerWeaponSlot(i, 0);
 				if(primaryWpn > 0) {
 					int maxCap = GetEntProp(primaryWpn, Prop_Send, "m_iClip1");

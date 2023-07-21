@@ -3,6 +3,7 @@
 int slipperyShoesIndex = 0;
 int stickyGooIndex = 0;
 int invertedTrollIndex;
+int t_randomizeAnglesIndex;
 // int fireSpitMagnetTrollIndex;
 
 void SetupTrolls() {
@@ -75,7 +76,10 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("Biles", true);
 	Trolls[index].AddFlag("Molotovs", true);
 	Trolls[index].AddFlag("Pipebombs", true);
-	SetupTroll("Molotov Bath", "Throws a molotov on their feet", TrollMod_Instant);
+	index = SetupTroll("Molotov Bath", "Throws a molotov on their feet", TrollMod_Instant);
+	Trolls[index].AddFlagPrompt(false);
+	Trolls[index].AddFlag("Normal", true);
+	Trolls[index].AddFlag("Set the town ablaze", false);
 
 	// CATEGORY: Items
 	SetCategory("Items");
@@ -149,6 +153,11 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("0.5x Ratio", false); //4
 	Trolls[index].AddFlag("0.0x Ratio (None)", false); //8
 	Trolls[index].AddFlag("3x Ratio", false); //16
+	Trolls[index].AddCustomFlagPrompt("Modes", true);
+	Trolls[index].AddFlag("Reverse Fire Damage", false); //32
+	Trolls[index].AddFlag("Reverse Explosions", false); //64
+
+
 	index = SetupTroll("Dep Bots", "Makes bots heal a player. At any cost", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(false);
 	Trolls[index].AddFlag("Do not spawn extra", true); // 1 
@@ -187,6 +196,15 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("On pills/adrenaline use", false);
 	Trolls[index].AddFlag("On zombie bite", false);
 	slipperyShoesIndex = index;
+	index = SetupTroll("Randomize Angles", "Randomly change their angles", TrollMod_Constant);
+	Trolls[index].AddCustomFlagPrompt("Frequency:", false);
+	Trolls[index].AddFlag("Once in a while", true); //1
+	Trolls[index].AddFlag("Periodically", false); //2
+	Trolls[index].AddFlag("A lot", false); //4
+	Trolls[index].AddFlag("Painful", false); //8
+	Trolls[index].AddFlag("Seizure", false); //16
+	t_randomizeAnglesIndex = index;
+
 
 	/// CATEGORY: MISC
 	SetCategory("Misc");
@@ -364,6 +382,8 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		ang[0] = 90.0;
 		L4D_TankRockPrj(0, dropPos, ang);
 	} else if(StrEqual(troll.name, "Molotov Bath")) {
+		int count = 1;
+		if(flags & 2) count = 8;
 		float pos[3], dropPos[3];
 		GetClientEyePosition(victim, pos);
 		dropPos = pos;
@@ -379,7 +399,9 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		}
 		float vel[3];
 		vel[2] = -90.0;
-		L4D_MolotovPrj(victim, dropPos, vel);
+		for(int i = 0; i < count; i++) {
+			L4D_MolotovPrj(victim, dropPos, vel);
+		}
 	} else if(StrEqual(troll.name, "Dep Bots")) {
 		if(!toActive) {
 			StopHealingBots();

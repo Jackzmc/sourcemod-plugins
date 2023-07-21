@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 49
+    #define MAX_TROLLS 50
 #endif
 
 enum trollModifier {
@@ -123,7 +123,9 @@ enum struct Troll {
     }
 
     int AddFlag(const char[] name, bool defaultOn) {
-        if(this.flagNames == null) this.flagNames = new ArrayList(MAX_TROLL_FLAG_LENGTH);
+        if(this.flagNames == null) {
+            this.flagNames = new ArrayList(MAX_TROLL_FLAG_LENGTH);
+        }
 
         // Check if flag already added
         int flagIndex = this.GetFlagIndex(name);
@@ -131,7 +133,12 @@ enum struct Troll {
         
         // Grab the prompt
         static TrollFlagPrompt prompt;
+        // TODO: CHECK IF MISSING PROMPT
+        if(g_trollAddPromptIndex >= this.flagPrompts.Length) {
+            ThrowError("No prompt added for troll \"%s\", for flag \"%s\"", this.id, name);
+        }
         this.flagPrompts.GetArray(g_trollAddPromptIndex, prompt);
+
 
         prompt.flags |= (1 << flagIndex);
 

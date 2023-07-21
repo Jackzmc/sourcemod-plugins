@@ -396,7 +396,7 @@ stock bool IsPrimaryWeapon(const char[] wpnName) {
 		|| StrContains(wpnName, "shotgun") > -1;
 }
 stock int GetClientWeaponEntIndex(int client, int slot) {
-	if(slot >= 0 && slot <= 4) {
+	if(slot >= 0 && slot <= 5) {
 		int wpnRef = GetPlayerWeaponSlot(client, slot);
 		if(wpnRef != -1) {
 			int wpn = EntRefToEntIndex(wpnRef);
@@ -409,7 +409,7 @@ stock int GetClientWeaponEntIndex(int client, int slot) {
 			return -1;
 		}
 	}else{
-		ThrowError("Slot must be a number between 0 and 4");
+		ThrowError("Slot must be a number between 0 and 5");
 		return -1;
 	}
 }
@@ -425,6 +425,19 @@ stock bool GetClientWeaponName(int client, int slot, char[] name, int nameSize) 
 		return false;
 	}
 }
+stock bool GetClientWeaponNameSmart(int client, int slot, char[] name, int nameSize) {
+	int wpn = GetClientWeaponEntIndex(client, slot);
+	if(wpn > 0) {
+		GetEntityClassname(wpn, name, nameSize);
+		if(slot == 1 && StrEqual(name, "weapon_melee")) {
+			GetEntPropString(wpn, Prop_Data, "m_strMapSetScriptName", name, nameSize);
+		}
+		return true;
+	}else{
+		return false;
+	}
+}
+
 stock bool DoesClientHaveWeapon(int client, int slot, const char[] name) {
 	char wpn[32];
 	if(GetClientWeaponName(client, slot, wpn, sizeof(wpn))) {
@@ -645,7 +658,7 @@ stock int GetRealClient(int client) {
 
 stock int FindIdleBot(int client) {
 	for(int i = 1; i <= MaxClients; i++ ) {
-		if(IsClientConnected(i) && HasEntProp(i, Prop_Send, "m_humanSpectatorUserID")) {
+		if(IsClientConnected(i) && IsClientInGame(i) && HasEntProp(i, Prop_Send, "m_humanSpectatorUserID")) {
 			int realPlayer = GetClientOfUserId(GetEntProp(i, Prop_Send, "m_humanSpectatorUserID"));
 			if(realPlayer == client) {
 				return i;
