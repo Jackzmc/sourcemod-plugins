@@ -21,7 +21,7 @@ public Plugin myinfo = {
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
-ConVar noHibernate;
+ConVar cvar_hibernateWhenEmpty;
 
 public void OnPluginStart() {
 	startupTime = GetTime();
@@ -31,7 +31,7 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
-	noHibernate = FindConVar("sv_hibernate_when_empty");
+	cvar_hibernateWhenEmpty = FindConVar("sv_hibernate_when_empty");
 
 	RegAdminCmd("sm_request_restart", Command_RequestRestart, ADMFLAG_GENERIC);
 
@@ -60,7 +60,7 @@ public Action Timer_Check(Handle h) {
 	} else if(GetTime() - startupTime > MAX_TIME_ONLINE_SECONDS) {
 		LogAction(0, -1, "Server has passed max online time threshold, will restart if remains empty");
 		pendingRestart = true;
-		noHibernate.BoolValue = true;
+		cvar_hibernateWhenEmpty.BoolValue = false;
 		if(IsServerEmpty()) {
 			if(++triesEmpty > 4) {
 				LogAction(0, -1, "Server has passed max online time threshold and is empty after %d tries, restarting now", triesEmpty);
@@ -78,7 +78,7 @@ public Action Timer_Check(Handle h) {
 public void OnConfigsExecuted() {
 	// Reset no hibernate setting when level changes:
 	if(pendingRestart) {
-		noHibernate.BoolValue = true;
+		cvar_hibernateWhenEmpty.BoolValue = false;
 	}
 }
 

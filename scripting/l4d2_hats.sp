@@ -61,8 +61,8 @@ public void OnPluginStart() {
 	LoadTranslations("common.phrases");
 	HookEvent("player_entered_checkpoint", OnEnterSaferoom);
 	HookEvent("player_left_checkpoint", OnLeaveSaferoom);
-	HookEvent("player_bot_replace", Event_PlayerOutOfIdle );
-	HookEvent("bot_player_replace", Event_PlayerToIdle);
+	HookEvent("player_bot_replace",  Event_PlayerToIdle);
+	HookEvent("bot_player_replace", Event_PlayerOutOfIdle);
 
 	RegConsoleCmd("sm_hat", Command_DoAHat, "Hats");
 	RegAdminCmd("sm_hatf", Command_DoAHat, ADMFLAG_ROOT, "Hats");
@@ -470,28 +470,45 @@ void ChooseRandomPosition(float pos[3], int ignoreClient = 0) {
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	float tick = GetGameTime();
+	//////////////////////////////
+	// OnPlayerRunCmd :: HATS
+	/////////////////////////////
 	if(IsHatsEnabled(client)) {
 		int entity = GetHat(client);
 		int visibleEntity = EntRefToEntIndex(hatData[client].visibleEntity);
-		///#HAT PROCESS
 		if(entity > 0) {
-			// try to tp hat to itys own pos
+			// Crash prevention: Prevent hat from touching ladder as that can cause server crashes
 			if(!onLadder[client] && GetEntityMoveType(client) == MOVETYPE_LADDER) {
 				onLadder[client] = true;
 				ClearParent(entity);
-				// Hide hat temporarily in void:
+
+				// If hat is not a player, we teleport them to the void (0, 0, 0)
+				// Otherwise, we just simply dismount the player while hatter is on ladder
 				if(entity >= MaxClients)
-					
 					TeleportEntity(entity, EMPTY_ANG, NULL_VECTOR, NULL_VECTOR);
 				if(visibleEntity > 0) {
 					hatData[client].visibleEntity = INVALID_ENT_REFERENCE;
 					RemoveEntity(visibleEntity);
 				}
-			} else if(onLadder[client] && GetEntityMoveType(client) != MOVETYPE_LADDER) {
+			} 
+			// Player is no longer on ladder, restore hat:
+			else if(onLadder[client] && GetEntityMoveType(client) != MOVETYPE_LADDER) {
 				onLadder[client] = false;
 				EquipHat(client, entity);
 			}
 
+			// Do the same crash protection for the hat itself, just to be safe:
+			if(entity <= MaxClients) {
+				if(!onLadder[entity] && GetEntityMoveType(entity) == MOVETYPE_LADDER) {
+					onLadder[entity] = true;
+					ClearParent(entity);
+				} else if(onLadder[entity] && GetEntityMoveType(entity) != MOVETYPE_LADDER) {
+					onLadder[entity] = false;
+					EquipHat(client, entity);
+				}
+			}
+
+			// Rainbow hat processing
 			if(HasFlag(client, HAT_RAINBOW)) {
 				// Decrement and flip, possibly when rainbowticks
 				if(hatData[client].rainbowReverse) {
@@ -515,24 +532,18 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				EquipHat(client, entity);
 			}
 
-			if(entity <= MaxClients) {
-				if(!onLadder[entity] && GetEntityMoveType(entity) == MOVETYPE_LADDER) {
-					onLadder[entity] = true;
-					ClearParent(entity);
-				} else if(onLadder[entity] && GetEntityMoveType(entity) != MOVETYPE_LADDER) {
-					onLadder[entity] = false;
-					EquipHat(client, entity);
-				}
-			}
+			// If bot is commandable and reversed (player reverse-hat common/survivor), change position:
 			if(HasFlag(client, HAT_COMMANDABLE | HAT_REVERSED) && tickcount % 200 == 0) {
 				float pos[3];
 				ChooseRandomPosition(pos, client);
 				L4D2_CommandABot(entity, client, BOT_CMD_MOVE, pos);
 			}
 		} 
+		// Detect E + R to offset hat or place down
 		if(buttons & IN_USE && buttons & IN_RELOAD) {
 			if(entity > 0) {
 				if(buttons & IN_ZOOM) {
+					// Offset controls:
 					if(buttons & IN_JUMP) hatData[client].offset[2] += 1.0;
 					if(buttons & IN_DUCK) hatData[client].offset[2] -= 1.0;
 					if(buttons & IN_FORWARD) hatData[client].offset[0] += 1.0;
@@ -542,7 +553,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 					TeleportEntity(entity, hatData[client].offset, angles, vel);
 					return Plugin_Handled;
 				} else if(tick - cmdThrottle[client] > 0.25) {
-					if(buttons & IN_ATTACK) {
+					if(buttons & IN_ATTACK) { // doesn't work reliably for some reason
 						ClientCommand(client, "sm_hat y");
 					} else if(buttons & IN_DUCK) {
 						ClientCommand(client, "sm_hat p");
@@ -558,7 +569,9 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		}
 	}
 
-	///#WALL BUILDER PROCESS
+	//////////////////////////////
+	// OnPlayerRunCmd :: ENTITY EDITOR
+	/////////////////////////////
 	if(WallBuilder[client].IsActive() && WallBuilder[client].CheckEntity(client)) { 
 		if(buttons & IN_USE && buttons & IN_RELOAD) {
 			ClientCommand(client, "sm_wall done");
@@ -578,6 +591,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 					if(buttons & IN_ATTACK) WallBuilder[client].CycleAxis(client, tick);
 					else if(buttons & IN_ATTACK2) WallBuilder[client].CycleSnapAngle(client, tick);
 					
+					// Rotation control:
 					if(tick - cmdThrottle[client] > 0.20) {
 						if(WallBuilder[client].axis == 0) {
 							if(mouse[1] > 10) WallBuilder[client].angles[0] += WallBuilder[client].snapAngle;
