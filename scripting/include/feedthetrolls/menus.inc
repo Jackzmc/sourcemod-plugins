@@ -44,7 +44,7 @@ public int Insta_SpecialHandler(Menu menu, MenuAction action, int client, int pa
 		}
 		SpecialType special = view_as<SpecialType>(specialInt);
 		if(inFace) {
-			if(SpawnSpecialForTarget(special, target, view_as<int>(Special_OnTarget))) {
+			if(SpawnSpecialForTarget(special, target, view_as<int>(Special_OnTarget | Special_SpawnDirectOnFailure))) {
 				LogAction(client, target, "\"%L\" spawned Insta-%s™ on \"%L\"", client, SPECIAL_NAMES[specialInt-1], target);
 				CShowActivityEx(client, "[FTT] ", "spawned {olive}Insta-%s™{default} on {olive}%N", SPECIAL_NAMES[specialInt-1], target);
 			} else {
@@ -396,10 +396,9 @@ void ShowTrollMenu(int client, bool isComboList) {
 	menu.SetTitle("Choose a player to troll");
 	static char userid[8], display[64];
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+		if(IsClientConnected(i) && IsClientInGame(i) && (hAllowEnemyTeam.BoolValue || GetClientTeam(i) == GetClientTeam(client))) {
 			IntToString(GetClientUserId(i), userid, sizeof(userid));
 			int realPlayer = L4D_GetBotOfIdlePlayer(i);
-			PrintToServer("%d/%d", i, realPlayer);
 			// Incase player is idle, grab their bot instead of them
 			if(realPlayer > 0 && IsClientConnected(realPlayer)) {
 				if(IsPlayerAlive(i))

@@ -198,6 +198,7 @@ enum struct SceneData {
 	ArrayList variants;
 
 	void Cleanup() {
+		g_MapData.activeScenes.Clear();
 		SceneVariantData choice;
 		for(int i = 0; i < this.variants.Length; i++) {
 			this.variants.GetArray(i, choice);

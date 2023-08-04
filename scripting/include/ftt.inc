@@ -17,6 +17,7 @@ Handle g_hWitchAttack;
 int g_iWitchAttackVictim;
 Handle hThrowTimer;
 
+ConVar hAllowEnemyTeam;
 ConVar hThrowItemInterval;
 ConVar hAutoPunish;
 ConVar hMagnetChance;

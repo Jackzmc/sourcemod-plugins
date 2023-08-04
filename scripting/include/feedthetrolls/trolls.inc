@@ -4,6 +4,7 @@ int slipperyShoesIndex = 0;
 int stickyGooIndex = 0;
 int invertedTrollIndex;
 int t_randomizeAnglesIndex;
+int t_randomizeVelocityIndex;
 // int fireSpitMagnetTrollIndex;
 
 void SetupTrolls() {
@@ -45,7 +46,7 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("30% Movement Speed", false);
 	Trolls[index].AddFlag("0% Movement Speed", false);
 	stickyGooIndex = index;
-	index = SetupTroll("Vocalize Specials", "Spawn commons on special vocals", TrollMod_Constant);
+	index = SetupTroll("Vocalize Specials", "Spawn commons on special vocals", TrollMod_Constant)
 	Trolls[index].AddFlagPrompt(false);
 	Trolls[index].AddFlag("Mute Vocalization", true);
 	Trolls[index].AddFlag("Do not mute", false);
@@ -84,6 +85,7 @@ void SetupTrolls() {
 	// CATEGORY: Items
 	SetCategory("Items");
 	SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
+
 	index = SetupTroll("Spicy Gas", "Gascans player picks up just ignite. Magic.", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(false);
 	Trolls[index].AddFlag("Always (100%)", false);
@@ -204,6 +206,15 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("Painful", false); //8
 	Trolls[index].AddFlag("Seizure", false); //16
 	t_randomizeAnglesIndex = index;
+	index = SetupTroll("Randomize Velocity", "Randomly change their velocity", TrollMod_Constant);
+	Trolls[index].SetTimer(0.1, Timer_RandomVelocity);
+	Trolls[index].AddCustomFlagPrompt("Frequency:", false);
+	Trolls[index].AddFlag("Loose", true); //1
+	Trolls[index].AddFlag("Slippery", false); //2
+	Trolls[index].AddFlag("Earthquake", false); //4
+	Trolls[index].AddFlag("Severe Earthquake", false); //8
+	Trolls[index].AddFlag("Bouncy Castle", false); //16
+	t_randomizeVelocityIndex = index;
 
 
 	/// CATEGORY: MISC
@@ -230,6 +241,7 @@ void SetupTrolls() {
 	// Initialize the default flag values to -1
 	for(int i = 0; i <= MAX_TROLLS; i++) {
 		for(int j = 1; j <= MAXPLAYERS; j++) {
+			Trolls[i].timerHandles[j] = null;
 			Trolls[i].activeFlagClients[j] = -1;
 		}
 	}

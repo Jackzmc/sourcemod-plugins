@@ -371,9 +371,7 @@ public void OnClientPutInServer(int client) {
 }
 
 public void OnClientDisconnect(int client) {
-	if(!IsFakeClient(client)) {
 		SaveInventory(client);
-	}
 }
 
 public void OnPluginEnd() {
@@ -1614,7 +1612,7 @@ void SaveInventory(int client) {
 	PrintDebug(DEBUG_GENERIC, "Saving inventory for %N", client);
 	PlayerInventory inventory;
 	inventory.timestamp = GetTime();
-	inventory.isAlive = IsPlayerAlive(client);
+	inventory.isAlive = IsClientInGame(client) && IsPlayerAlive(client);
 	playerData[client].state = State_Active;
 	GetClientAbsOrigin(client, inventory.location);
 

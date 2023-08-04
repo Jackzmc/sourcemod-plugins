@@ -11,6 +11,25 @@ public Action Timer_ThrowTimer(Handle timer) {
 }
 int instantCommonRef[MAXPLAYERS+1];
 
+Action Timer_RandomVelocity(Handle h, int client) {
+	if(!IsClientConnected(client)) {
+		Trolls[t_randomizeVelocityIndex].timerHandles[client] = null;
+		return Plugin_Stop;
+	}
+	float bounds = 50.0;
+	if(Trolls[t_randomizeAnglesIndex].activeFlagClients[client] & 2) bounds = 100.0;
+	else if(Trolls[t_randomizeAnglesIndex].activeFlagClients[client] & 4) bounds = 200.0;
+	else if(Trolls[t_randomizeAnglesIndex].activeFlagClients[client] & 8) bounds = 500.0;
+	else if(Trolls[t_randomizeAnglesIndex].activeFlagClients[client] & 16) bounds = 1000.0;
+	float vel[3];
+	GetEntPropVector(client, Prop_Data, "m_vecVelocity", vel);
+	vel[0] += GetRandomFloat(-bounds, bounds);
+	vel[1] += GetRandomFloat(-bounds, bounds);
+	vel[2] += GetRandomFloat(-100.0, 150.0);
+	SetAbsVelocity(client, vel);
+	return Plugin_Continue;
+}
+
 public Action Timer_Main(Handle timer) {
 	static int loopTick;
 
@@ -39,6 +58,19 @@ public Action Timer_Main(Handle timer) {
 					ang[1] = GetRandomFloat(-180.0, 180.0);
 					TeleportEntity(i, NULL_VECTOR, ang, NULL_VECTOR);
 				}
+			}
+			if(Trolls[t_randomizeVelocityIndex].IsActive(i)) {
+				float bounds = 50.0;
+				if(Trolls[t_randomizeVelocityIndex].activeFlagClients[i] & 2) bounds = 100.0;
+				else if(Trolls[t_randomizeVelocityIndex].activeFlagClients[i] & 4) bounds = 200.0;
+				else if(Trolls[t_randomizeVelocityIndex].activeFlagClients[i] & 8) bounds = 500.0;
+				else if(Trolls[t_randomizeVelocityIndex].activeFlagClients[i] & 16) bounds = 1000.0;
+				float vel[3];
+				GetEntPropVector(i, Prop_Data, "m_vecVelocity", vel);
+				vel[0] += GetRandomFloat(-bounds, bounds);
+				vel[1] += GetRandomFloat(-bounds, bounds);
+				vel[2] += GetRandomFloat(-100.0, 150.0);
+				SetAbsVelocity(i, vel);
 			}
 			if(Trolls[slowDrainIndex].IsActive(i)) {
 				if(loopTick % 4 == 0) {

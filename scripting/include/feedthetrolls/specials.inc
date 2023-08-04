@@ -45,6 +45,7 @@ stock bool SpawnSpecialForTarget(SpecialType specialType, int target, int spawnF
 			float minDistance = GetIdealMinDistance(specialType);
 			GetHorizontalPositionFromOrigin(pos, ang, minDistance, testPos);
 			if(!FindSuitablePosition(pos, testPos, minDistance, 100)) {
+				PrintToServer("[FTT] Could not find suitable position, falling back");
 				if(spawnFlags & view_as<int>(Special_SpawnDirectOnFailure))
 					GetClientAbsOrigin(target, pos);
 				else

@@ -3,7 +3,7 @@
 
 //#define DEBUG
 
-#define MAIN_TIMER_INTERVAL_S 5.0
+#define MAIN_TIMER_INTERVAL_S 4.0
 #define PLUGIN_VERSION "1.0"
 #define ANTI_RUSH_DEFAULT_FREQUENCY 20.0
 #define ANTI_RUSH_FREQ_INC 0.75
@@ -19,7 +19,6 @@
 #include <ftt>
 #include <multicolors>
 #tryinclude <l4d_anti_rush>
-
 
 public Plugin myinfo = 
 {
@@ -67,6 +66,7 @@ public void OnPluginStart() {
 	g_hWitchAttack = EndPrepSDKCall();
 	delete data;
 	
+	hAllowEnemyTeam    = CreateConVar("sm_ftt_select_enemy", "0", "Allow applying trolls to enemy teams", FCVAR_NONE, true, 0.0, true, 1.0);
 	hThrowItemInterval = CreateConVar("sm_ftt_throw_interval", "30", "The interval in seconds to throw items. 0 to disable", FCVAR_NONE, true, 0.0);
 	hThrowItemInterval.AddChangeHook(Change_ThrowInterval);
 	hAutoPunish 		= CreateConVar("sm_ftt_autopunish_action", "0", "Setup automatic punishment of players. Add bits together\n0=Disabled, 1=Tank magnet, 2=Special magnet, 4=Swarm, 8=InstantVomit", FCVAR_NONE, true, 0.0);
@@ -208,15 +208,15 @@ bool IsPlayerFarDistance(int client, float distance) {
 }
 
 BehaviorAction CreateWitchAttackAction(int target = 0) {
-    BehaviorAction action = ActionsManager.Allocate(18556);    
-    SDKCall(g_hWitchAttack, action, target);
-    return action;
+	BehaviorAction action = ActionsManager.Allocate(18556);    
+	SDKCall(g_hWitchAttack, action, target);
+	return action;
 }  
 
 Action OnWitchActionUpdate(BehaviorAction action, int actor, float interval, ActionResult result) {
-    /* Change to witch attack */
-    result.type = CHANGE_TO;
-    result.action = CreateWitchAttackAction(g_iWitchAttackVictim);
-    result.SetReason("FTT");
-    return Plugin_Handled;
+	/* Change to witch attack */
+	result.type = CHANGE_TO;
+	result.action = CreateWitchAttackAction(g_iWitchAttackVictim);
+	result.SetReason("FTT");
+	return Plugin_Handled;
 } 

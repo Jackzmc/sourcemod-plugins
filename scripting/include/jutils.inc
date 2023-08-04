@@ -896,3 +896,42 @@ stock int GetSinglePlayer(int client, const char[] input, int flags = 0) {
 	}
 	return target_list[0];
 }
+
+static int _glowColor[3] = { 255, 255, 255 };
+
+stock void GlowPoint(const float pos[3], float lifetime = 5.0) {
+	PrecacheModel("models/props_fortifications/orange_cone001_reference.mdl");
+	int entity = CreateEntityByName("prop_dynamic");
+	DispatchKeyValue(entity, "disableshadows", "1");
+	DispatchKeyValue(entity, "model", "models/props_fortifications/orange_cone001_reference.mdl");
+	TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
+	DispatchSpawn(entity);
+	L4D2_SetEntityGlow(entity, L4D2Glow_Constant, 10000, 0, _glowColor, false);
+	CreateTimer(lifetime, Timer_KillEntity, entity);
+}
+
+stock void GlowEntity(int entity, float lifetime = 10.0) {
+	L4D2_SetEntityGlow(entity, L4D2Glow_Constant, 10000, 0, _glowColor, false);
+	CreateTimer(lifetime, Timer_ClearGlow, EntIndexToEntRef(entity));
+}
+
+Action Timer_ClearGlow(Handle h, int ref) {
+	L4D2_RemoveEntityGlow(ref);
+	return Plugin_Handled;
+}
+
+stock bool CompareVector(const float a[3], const float b[3], float delta) {
+	return a[0] < b[0] + delta && a[0] > b[0] - delta &&
+		a[1] < b[1] + delta && a[1] > b[1] - delta &&
+		a[2] < b[2] + delta && a[2] > b[2] - delta
+}
+
+stock void CalculateWorldPosition(int entity, float pos[3]) {
+	float mins[3], maxs[3];
+	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
+	GetEntPropVector(entity, Prop_Send, "m_vecMins", mins);
+	GetEntPropVector(entity, Prop_Send, "m_vecMaxs", maxs);
+	pos[0] = pos[0] + (mins[0] + maxs[0]) * 0.5;
+	pos[1] = pos[1] + (mins[1] + maxs[1]) * 0.5;
+	pos[2] = pos[2] + (mins[2] + maxs[2]) * 0.5;
+}

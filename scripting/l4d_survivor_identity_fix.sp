@@ -386,10 +386,12 @@ public void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast
 	}
 }
 public void Frame_SwapSurvivor(int client) {
-	SwapL4D1Survivor(client, true);
+	if(IsClientConnected(client) && IsClientInGame(client))
+		SwapL4D1Survivor(client, true);
 }
 public void Frame_RevertSwappedSurvivor(int client) {
-	RevertSwappedSurvivor(client);
+	if(IsClientConnected(client) && IsClientInGame(client))
+		RevertSwappedSurvivor(client);
 }
 
 void SwapL4D1Survivor(int client, bool showMessage) {

@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 50
+    #define MAX_TROLLS 51
 #endif
 
 enum trollModifier {
@@ -81,6 +81,18 @@ enum struct Troll {
     char flagPrompt[MAX_TROLL_FLAG_LENGTH];
     ArrayList flagNames;
     ArrayList flagPrompts;
+
+    Timer timerFunction;
+    Handle timerHandles[MAXPLAYERS+1];
+    float timerInterval;
+
+    void SetTimer(float interval, Timer timer) {
+        this.timerInterval = interval;
+        this.timerFunction = timer;
+        for(int i = 0; i <= MAXPLAYERS; i++) {
+            this.timerHandles[i] = null;
+        }
+    }
 
     bool HasMod(trollModifier mod) {
         return ((this.mods >> (view_as<int>(mod)) - 1) & 1) == 1;
@@ -208,15 +220,32 @@ enum struct Troll {
 
 
     void Toggle(int client, int flags) {
-        ToggleTroll(client, this.name, flags);
+        if(this.IsActive(client)) {
+            this.Disable(client);
+        } else {
+            this.Enable(client, flags);
+        }
     }
 
     void Enable(int client, int flags) {
-        EnableTroll(client, this.name, flags);
+        this.activeFlagClients[client] = flags;
+        // If a timer is assigned, start it:
+        if(this.timerHandles[client] != null) {
+            delete this.timerHandles[client];
+            PrintToServer("FTT Debug: Old timer for %N, killing", client);
+        }
+        if(this.timerInterval > 0.0) {
+            this.timerHandles[client] = CreateTimer(this.timerInterval, this.timerFunction, GetClientUserId(client), TIMER_REPEAT);
+        }
     }
 
     void Disable(int client) {
-        DisableTroll(client, this.name);
+        this.activeFlagClients[client] = -1;
+        // Stop any running timer:
+        if(this.timerHandles[client] != null) {
+            PrintToServer("FTT Debug: Disabling timer for %N", client);
+            delete this.timerHandles[client];
+        }
     }
 
     bool IsActive(int client) {
@@ -244,7 +273,7 @@ void ResetClient(int victim, bool wipe = true) {
     if(victim == 0 || !IsClientConnected(victim)) return;
     if(wipe) {
         for(int i = 0; i <= MAX_TROLLS; i++) {
-            Trolls[i].activeFlagClients[victim] = -1;
+            Trolls[i].Disable(victim);
         }
     }
     noRushingUsSpeed[victim] = 1.0;
@@ -311,18 +340,12 @@ void GetTrollByKeyIndex(int index, Troll troll) {
     troll = Trolls[index];
 }
 
-void ToggleTroll(int client, const char[] name, int flags = 0) {
-    static Troll troll;
-    GetTroll(name, troll);
-    if(troll.IsActive(client))
-        troll.activeFlagClients[client] = -1;
-    else
-        troll.activeFlagClients[client] = flags;
-}
-
 void SetTrollFlags(int client, const char[] name, int flags = -1) {
     int index = GetTrollID(name);
-    Trolls[index].activeFlagClients[client] = flags;
+    if(flags == -1)
+        Trolls[index].Disable(client);
+    else
+        Trolls[index].Enable(client, flags);
 }
 
 void ApplyTroll(int victim, const char[] name, int activator, trollModifier modifier, int flags = 0, bool silent = false) {
@@ -332,6 +355,10 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
         ReplyToCommand(activator, "Unknown troll \"%s\"", name);
         PrintToServer("[FTT] %N attempted to apply unknown troll: %s", activator, name);
         return;
+    }
+
+    if(flags > -1 && Trolls[trollIndex].timerInterval > 0.0) {
+        CreateTimer(Trolls[trollIndex].timerInterval, Trolls[trollIndex].timerFunction, victim, TIMER_REPEAT);
     }
 
     if(!silent && SilentMenuSelected[activator]) silent = true;
