@@ -113,10 +113,22 @@ public void Event_HealStop(Event event, const char[] name, bool dontBroadcast) {
 public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	playerJoinTime[client] = GetTime();
+	RecalculatePlayerCount();
+}
+
+void RecalculatePlayerCount() {
+	int players = 0;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
+			players++;
+		}
+	}
+	numberOfPlayers = players;
 }
 
 public void OnMapStart() {
 	GetCurrentMap(currentMap, sizeof(currentMap));
+	numberOfPlayers = 0;
 }
 
 // Player counts
@@ -136,6 +148,10 @@ public void OnClientDisconnect(int client) {
 	nameCache[client][0] = '\0';
 	if(!IsFakeClient(client)) {
 		numberOfPlayers--;
+		// Incase somehow we lost track
+		if(numberOfPlayers < 0) {
+			numberOfPlayers = 0;
+		}
 		if(numberOfPlayers == 0 && updateTimer != null) {
 			delete updateTimer;
 		}
