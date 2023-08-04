@@ -143,7 +143,7 @@ public void OnClientPutInServer(int client) {
 	}
 }
 
-public void OnClientDisconnect(int client) {
+public void OnClientDisconnect_Post(int client) {
 	steamidCache[client][0] = '\0';
 	nameCache[client][0] = '\0';
 	if(!IsFakeClient(client)) {
