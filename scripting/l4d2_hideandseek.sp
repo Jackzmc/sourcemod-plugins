@@ -75,6 +75,8 @@ int g_BeamSprite;
 int g_HaloSprite;
 
 bool hasBeenSeeker[MAXPLAYERS+1];
+float lastPos[MAXPLAYERS+1][3];
+float distanceTraveled[MAXPLAYERS+1];
 bool ignoreSeekerBalance;
 
 ConVar cvar_peekCam;
@@ -148,8 +150,10 @@ public Action Timer_KeepWaiting(Handle h) {
 }
 
 public void OnClientDisconnect(int client) {
-	if(!IsFakeClient(client))
+	if(!IsFakeClient(client)) {
+		distanceTraveled[client] = 0.0;
 		currentPlayers--;
+	}
 }
 
 public void OnMapStart() {
@@ -285,9 +289,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 const float DEATH_CAM_MIN_DIST = 150.0;
 public Action Timer_StopPeekCam(Handle h) { 
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i)) {
-			PeekCam.Disable(i);
-		}
+		PeekCam.Disable(i);
 	}
 	PeekCam.Disable();
 	RequestFrame(Frame_StopPeekCam);
@@ -337,7 +339,7 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 			}
 		}
 
-		
+		PrintToConsoleAll("attacker: %N | victim: %N | alive: %d", client, attacker, alive);
 		if(client == currentSeeker && alive == 1) {
 			// If seeker died
 			CPrintToChatAll("{green}Hiders win!");
@@ -401,7 +403,7 @@ public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast)
 					PrintToServer("[H&S] ERROR: GetSlasher() returned invalid seeker");
 					currentSeeker = client;
 				} else if(currentSeeker != client) {
-					PrintToChatAll("[H&S] Seeker does not equal axe-receiver. Possible seeker: %N", client);
+					PrintToConsoleAll("[H&S] Seeker does not equal axe-receiver. Possible seeker: %N", client);
 				}
 				PeekCam.Target = currentSeeker;
 				if(!ignoreSeekerBalance && cvar_seekerBalance.BoolValue) {
@@ -453,9 +455,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
 			if(isPendingPlay[i]) {
-				L4D_RespawnPlayer(i);
-				isPendingPlay[i] = false;
-				ChangeClientTeam(i, 2);
+				JoinGame(i);
 			}
 			if(mapConfig.hasSpawnpoint)
 				TeleportEntity(i, mapConfig.spawnpoint, NULL_VECTOR, NULL_VECTOR);
@@ -482,30 +482,33 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	for(int i = 1; i <= MaxClients; i++) {
 		isNearbyPlaying[i] = false;
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 1) {
+			distanceTraveled[i] = 0.0;
 			PeekCam.Disable(i);
 			if(isPendingPlay[i]) {
-				ChangeClientTeam(i, 2);
-				L4D_RespawnPlayer(i);
-				if(mapConfig.hasSpawnpoint) {
-					TeleportEntity(i, mapConfig.spawnpoint, NULL_VECTOR, NULL_VECTOR);
-				}
-				isPendingPlay[i] = false;
+				JoinGame(i);
 			}
 		}
 	}
 	PeekCam.Destroy();
 }
 
-
 public Action Timer_CheckPlayers(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(!IsClientConnected(i) || !IsClientInGame(i)) continue;
-		if(GetClientTeam(i) == 2 && IsPlayerAlive(i) && i != currentSeeker)
-			QueryClientConVar(i, "cam_collision", QueryClientConVarCallback);
-		SetEntProp(i, Prop_Send, "m_audio.soundscapeIndex", -1);
 
+		if(GetClientTeam(i) == 2 && IsPlayerAlive(i) && i != currentSeeker) {
+			float pos[3];
+			GetClientAbsOrigin(i, pos);
+			distanceTraveled[i] = FloatAbs(Get2DVectorDistance(pos, lastPos[i])); 
+			
+			lastPos[i] = pos;
+			QueryClientConVar(i, "cam_collision", QueryClientConVarCallback);
+		}
+		SetEntProp(i, Prop_Send, "m_audio.soundscapeIndex", -1);
+		
 	}
-	ServerCommand("soundscape_flush");
+	// Rare Crashes:
+	// ServerCommand("soundscape_flush");
 	return Plugin_Continue;
 }
 

@@ -160,6 +160,16 @@ bool SetState(GameState state) {
 	return L4D2_ExecVScriptCode(buffer);
 }
 
+void JoinGame(int target) {
+	float tpLoc[3];
+	GetSpawnPosition(tpLoc);
+	ChangeClientTeam(target, 2);
+	L4D_RespawnPlayer(target);
+	TeleportEntity(target, tpLoc, NULL_VECTOR, NULL_VECTOR);
+	isPendingPlay[target] = false;
+
+}
+
 bool IsGameSoloOrPlayersLoading() {
 	int connecting, ingame;
 	for(int i = 1;  i <= MaxClients; i++) {
@@ -230,4 +240,9 @@ stock void GetViewVector(float fVecAngle[3], float fOutPut[3])
 	fOutPut[0] = Cosine(fVecAngle[1] / (180 / FLOAT_PI));
 	fOutPut[1] = Sine(fVecAngle[1] / (180 / FLOAT_PI));
 	fOutPut[2] = -Sine(fVecAngle[0] / (180 / FLOAT_PI));
+}
+
+stock float Get2DVectorDistance(const float a[3], const float b[3]) {
+	// sqrt((x-y)^2)
+	return SquareRoot(Pow(a[0] - b[0], 2.0) + Pow(a[1] - b[1], 2.0));
 }

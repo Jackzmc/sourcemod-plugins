@@ -371,6 +371,7 @@ public void OnClientPutInServer(int client) {
 }
 
 public void OnClientDisconnect(int client) {
+	if(!IsFakeClient(client) && IsClientInGame(client))
 		SaveInventory(client);
 }
 
