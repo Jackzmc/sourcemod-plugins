@@ -254,9 +254,9 @@ public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] err
 
                     if(hKickType.IntValue > 0) {
                         if(public_message[0] != '\0')
-                            KickClient(client, "You have been banned:\n%s\n\nAppeal at jackz.me/apl/%d", public_message, id);
+                            KickClient(client, "Banned:\n%s\nAppeal at jackz.me/apl/%d", public_message, id);
                         else
-                            KickClient(client, "You have been banned from this server.\n\nAppeal at jackz.me/apl/%d", id);
+                            KickClient(client, "You have been banned from this server.\nAppeal at jackz.me/apl/%d", id);
                         static char query[128];
                         g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);
                         g_db.Query(DB_GenericCallback, query);

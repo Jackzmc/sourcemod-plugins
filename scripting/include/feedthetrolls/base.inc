@@ -357,8 +357,13 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
         return;
     }
 
-    if(flags > -1 && Trolls[trollIndex].timerInterval > 0.0) {
-        CreateTimer(Trolls[trollIndex].timerInterval, Trolls[trollIndex].timerFunction, victim, TIMER_REPEAT);
+    // Clear troll specific timer:
+    if(Trolls[trollIndex].timerInterval > 0.0) {
+        if(flags > -1)
+            Trolls[trollIndex].timerHandles[victim] = CreateTimer(Trolls[trollIndex].timerInterval, Trolls[trollIndex].timerFunction, victim, TIMER_REPEAT);
+        else if(Trolls[trollIndex].timerHandles[victim] != null) {
+            delete Trolls[trollIndex].timerHandles[victim];
+        }
     }
 
     if(!silent && SilentMenuSelected[activator]) silent = true;

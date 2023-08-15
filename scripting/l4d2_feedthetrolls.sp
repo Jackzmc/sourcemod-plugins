@@ -66,8 +66,8 @@ public void OnPluginStart() {
 	g_hWitchAttack = EndPrepSDKCall();
 	delete data;
 	
-	hAllowEnemyTeam    = CreateConVar("sm_ftt_select_enemy", "0", "Allow applying trolls to enemy teams", FCVAR_NONE, true, 0.0, true, 1.0);
-	hThrowItemInterval = CreateConVar("sm_ftt_throw_interval", "30", "The interval in seconds to throw items. 0 to disable", FCVAR_NONE, true, 0.0);
+	hAllowEnemyTeam     = CreateConVar("sm_ftt_select_enemy", "0", "Allow applying trolls to enemy teams", FCVAR_NONE, true, 0.0, true, 1.0);
+	hThrowItemInterval  = CreateConVar("sm_ftt_throw_interval", "30", "The interval in seconds to throw items. 0 to disable", FCVAR_NONE, true, 0.0);
 	hThrowItemInterval.AddChangeHook(Change_ThrowInterval);
 	hAutoPunish 		= CreateConVar("sm_ftt_autopunish_action", "0", "Setup automatic punishment of players. Add bits together\n0=Disabled, 1=Tank magnet, 2=Special magnet, 4=Swarm, 8=InstantVomit", FCVAR_NONE, true, 0.0);
 	hAutoPunishExpire 	= CreateConVar("sm_ftt_autopunish_expire", "0", "How many minutes of gametime until autopunish is turned off? 0 for never.", FCVAR_NONE, true, 0.0);
@@ -78,7 +78,7 @@ public void OnPluginStart() {
 	hBotReverseFFDefend = CreateConVar("sm_ftt_bot_defend", "0", "Should bots defend themselves?\n0 = OFF\n1 = Will retaliate against non-admins\n2 = Anyone", FCVAR_NONE, true, 0.0, true, 2.0);
 	hAntirushBaseFreq   = CreateConVar("sm_ftt_antirush_freq_base", "24", "The base frequency of anti-rush", FCVAR_NONE, true, 0.0);
 	hAntirushIncFreq    = CreateConVar("sm_ftt_antirush_freq_inc", "1", "The incremental frequency of anti-rush", FCVAR_NONE, true, 0.0);
-	hBotDefendChance = CreateConVar("sm_ftt_bot_defend_chance", "0.75", "% Chance bots will defend themselves.", FCVAR_NONE, true, 0.0, true, 1.0);
+	hBotDefendChance    = CreateConVar("sm_ftt_bot_defend_chance", "0.75", "% Chance bots will defend themselves.", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	hSbFriendlyFire = FindConVar("sb_friendlyfire");
 
@@ -86,7 +86,7 @@ public void OnPluginStart() {
 	hBotReverseFFDefend.AddChangeHook(Change_BotDefend);
 
 	RegAdminCmd("sm_ftl",  Command_ListTheTrolls, ADMFLAG_GENERIC, "Lists all the trolls currently ingame.");
-	RegAdminCmd("sm_ftm",  Command_ListModes,     ADMFLAG_GENERIC, "Lists all the troll modes and their description");
+	RegAdminCmd("sm_ftm",  Command_ListModes, 	ADMFLAG_GENERIC, "Lists all the troll modes and their description");
 	RegAdminCmd("sm_ftr",  Command_ResetUser, 	  ADMFLAG_GENERIC, "Resets user of any troll effects.");
 	RegAdminCmd("sm_fta",  Command_ApplyUser,     ADMFLAG_KICK, "Apply a troll mod to a player, or shows menu if no parameters.");
 	RegAdminCmd("sm_ftas", Command_ApplyUserSilent,  ADMFLAG_ROOT, "Apply a troll mod to a player, or shows menu if no parameters.");

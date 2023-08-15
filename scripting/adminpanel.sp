@@ -31,6 +31,7 @@ ConVar cvar_gamemode; char gamemode[32];
 char currentMap[64];
 int numberOfPlayers = 0;
 int lastSuccessTime;
+int campaignStartTime;
 int lastErrorCode;
 int uptime;
 bool fastUpdateMode = false;
@@ -59,6 +60,7 @@ public void OnPluginStart()
 	cvar_gamemode.AddChangeHook(OnCvarChanged);
 	cvar_gamemode.GetString(gamemode, sizeof(gamemode));
 
+	HookEvent("game_init", Event_GameStart);
 	HookEvent("heal_success", Event_HealStop);
 	HookEvent("heal_interrupted", Event_HealStop);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
@@ -101,16 +103,21 @@ void TryStartTimer(bool fast = true) {
 	}
 }
 
-public void Event_HealStart(Event event, const char[] name, bool dontBroadcast) {
+
+void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
+	campaignStartTime = GetTime();
+}
+
+void Event_HealStart(Event event, const char[] name, bool dontBroadcast) {
 	int healing = GetClientOfUserId(event.GetInt("subject"));
 	g_icBeingHealed[healing] = true;
 }
-public void Event_HealStop(Event event, const char[] name, bool dontBroadcast) {
+void Event_HealStop(Event event, const char[] name, bool dontBroadcast) {
 	int healing = GetClientOfUserId(event.GetInt("subject"));
 	g_icBeingHealed[healing] = false;
 }
 
-public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	playerJoinTime[client] = GetTime();
 	RecalculatePlayerCount();
@@ -143,7 +150,7 @@ public void OnClientPutInServer(int client) {
 	}
 }
 
-public void OnClientDisconnect_Post(int client) {
+public void OnClientDisconnect(int client) {
 	steamidCache[client][0] = '\0';
 	nameCache[client][0] = '\0';
 	if(!IsFakeClient(client)) {
@@ -248,6 +255,7 @@ JSONObject GetObject() {
 	delete players;
 	obj.SetFloat("refreshInterval", UPDATE_INTERVAL);
 	obj.SetInt("lastUpdateTime", GetTime());
+	obj.SetInt("campaignStartTime", campaignStartTime);
 	return obj;
 }
 
@@ -351,6 +359,7 @@ JSONObject GetPlayer(int client) {
 	int team = GetClientTeam(client);
 	JSONObject player = new JSONObject();
 	player.SetString("steamid", steamidCache[client]);
+	player.SetInt("userId", GetClientUserId(client));
 	player.SetString("name", nameCache[client]);
 	player.SetInt("team", team);
 	player.SetBool("isAlive", IsPlayerAlive(client));
