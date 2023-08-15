@@ -5,7 +5,7 @@
 
 #define PLUGIN_VERSION "1.0"
 #define MAX_PLAYER_HISTORY 25
-#define MAX_NOTES_TO_SHOW 10
+#define MAX_NOTES_TO_SHOW 5
 #define DATABASE_CONFIG_NAME "stats"
 
 #include <sourcemod>
@@ -374,7 +374,7 @@ public void Event_FirstSpawn(Event event, const char[] name, bool dontBroadcast)
 	if(client > 0 && client <= MaxClients && !IsFakeClient(client)) {
 		static char auth[32];
 		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
-		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias, markedBy FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s'", auth);
+		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias, markedBy FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s' ORDER BY id ASC", auth);
 		DB.Query(DB_FindNotes, query, GetClientUserId(client));
 	}
 }
@@ -417,7 +417,9 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 		CPrintChatToAdmins("{yellow}> Notes for %N", client);
 		int actions = 0;
 		int repP = 0, repN = 0;
+		int count = 0;
 		while(results.FetchRow()) {
+			count++;
 			DBResult result;
 			results.FetchString(0, reason, sizeof(reason));
 			results.FetchString(1, noteCreator, sizeof(noteCreator), result);
@@ -432,9 +434,12 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 				repP++;
 			} else if(StrEqual(reason, "-rep")) {
 				repN++;
-			} else {
+			} else if(count < MAX_NOTES_TO_SHOW) {
 				CPrintChatToAdmins("  {olive}%s: {default}%s", noteCreator, reason);
 			}
+		}
+		if(count >= MAX_NOTES_TO_SHOW) {
+			CPrintChatToAdmins("  ... and {olive}%d {default}more", MAX_NOTES_COUNT - count);
 		}
 
 		if(actions > 0) {

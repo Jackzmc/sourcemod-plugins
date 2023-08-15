@@ -559,6 +559,19 @@ stock void PrintChatToAdmins(const char[] format, any ...) {
 	}
 	PrintToServer("%s", buffer);
 }
+stock void CPrintChatToAdmin(const char[] format, any ...) {
+	char buffer[254];
+	VFormat(buffer, sizeof(buffer), format, 2);
+	for(int i = 1; i < MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			AdminId admin = GetUserAdmin(i);
+			if(admin != INVALID_ADMIN_ID) {
+				CPrintToChat(i, "%s", buffer);
+			}
+		}
+	}
+	PCrintToServer("%s", buffer);
+}
 stock bool IsValidAdmin(int client, const char[] flags) {
 	int ibFlags = ReadFlagString(flags);
 	if ((GetUserFlagBits(client) & ibFlags) == ibFlags) {
@@ -567,21 +580,7 @@ stock bool IsValidAdmin(int client, const char[] flags) {
 		return true;
 	}
 	return false;
-}  
-
-stock void NotifyAllAdmins(const char[] format, any ...) {
-	char buffer[254];
-	VFormat(buffer, sizeof(buffer), format, 2);
-	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i)) {
-			AdminId admin = GetUserAdmin(i);
-			if(admin != INVALID_ADMIN_ID && admin.ImmunityLevel > 0) {
-				PrintToChat(i, "%s", buffer);
-			}
-		}
-	}
-	PrintToServer("%s", buffer);
-}
+} 
 
 stock float GetNearestEntityDistance(int originEntity, char[] classname) {
 	float compareVec[3], entityVecOrigin[3];
