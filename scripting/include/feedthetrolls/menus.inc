@@ -394,11 +394,17 @@ void ShowTrollCombosMenu(int client, int victimUserID) {
 void ShowTrollMenu(int client, bool isComboList) {
 	Menu menu = isComboList ? new Menu(ChoosePlayerHandlerForCombos) : new Menu(ChoosePlayerHandler);
 	menu.SetTitle("Choose a player to troll");
+	// If player idle, say they are survivor
+	int clientTeam = GetClientTeam(client);
+	if(clientTeam < 2) {
+		if(L4D_IsPlayerIdle(client)) clientTeam = 2;
+	}
+
 	static char userid[8], display[64];
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && (hAllowEnemyTeam.BoolValue || GetClientTeam(i) == GetClientTeam(client))) {
+		if(IsClientConnected(i) && IsClientInGame(i) && (hAllowEnemyTeam.BoolValue || GetClientTeam(i) == clientTeam)) {
 			IntToString(GetClientUserId(i), userid, sizeof(userid));
-			int realPlayer = L4D_GetBotOfIdlePlayer(i);
+			int realPlayer = L4D_GetIdlePlayerOfBot(i);
 			// Incase player is idle, grab their bot instead of them
 			if(realPlayer > 0 && IsClientConnected(realPlayer)) {
 				if(IsPlayerAlive(i))

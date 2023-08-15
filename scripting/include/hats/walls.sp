@@ -327,7 +327,8 @@ public Action Command_ManageWalls(int client, int args) {
 			if(id == -1) return Plugin_Handled;
 			int entity = GetWallEntity(id);
 			GetEntPropVector(entity, Prop_Send, "m_vecOrigin", origin);
-			GetEntPropVector(entity, Prop_Send, "m_vecAngles", angles);
+			if(HasEntProp(entity, Prop_Send, "m_vecAngles"))
+				GetEntPropVector(entity, Prop_Send, "m_vecAngles", angles);
 			GetEntPropVector(entity, Prop_Send, "m_vecMaxs", size);
 			Export(client, arg2, entity, origin, angles, size);
 		}

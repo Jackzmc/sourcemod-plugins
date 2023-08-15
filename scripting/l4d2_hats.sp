@@ -161,17 +161,6 @@ Action Timer_PlaceHat(Handle h, int userid) {
 	}
 	return Plugin_Handled;
 }
-void GlowPoint(const float pos[3], float lifetime = 5.0) {
-	#if defined DEBUG_GLOW
-	PrecacheModel("models/props_fortifications/orange_cone001_reference.mdl");
-	int entity = CreateEntityByName("prop_dynamic");
-	DispatchKeyValue(entity, "disableshadows", "1");
-	DispatchKeyValue(entity, "model", "models/props_fortifications/orange_cone001_reference.mdl");
-	TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
-	DispatchSpawn(entity);
-	CreateTimer(lifetime, Timer_Kill, entity);
-	#endif
-}
 
 Action Timer_Kill(Handle h, int entity) {
 	if(IsValidEntity(entity))

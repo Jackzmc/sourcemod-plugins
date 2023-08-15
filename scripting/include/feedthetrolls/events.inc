@@ -1039,7 +1039,7 @@ public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast
 public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
 	//Player replaced their idle bot
 	int client = GetClientOfUserId(event.GetInt("player"));
-	if(client) {
+	if(client > 0) {
 		bool debug_hadTroll = false;
 		for(int i = 1; i <= MAX_TROLLS; i++) {
 			if(Trolls[i].IsActive(client) && Trolls[i].HasMod(TrollMod_Constant)) { //Add activeFlagClients >= 0 check possibly?

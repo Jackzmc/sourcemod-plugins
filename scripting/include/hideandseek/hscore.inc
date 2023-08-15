@@ -66,7 +66,8 @@ bool LoadConfigForMap(const char[] map) {
 					validSets.PushString(buffer);
 				}
 				if(StrEqual(buffer, "default") || StrEqual(g_currentSet, buffer, false)) {
-					
+					kv.GetSectionName(buffer, sizeof(buffer));
+					PrintToServer("Loaded %s", buffer);
 					config.entities.PushArray(entCfg);
 				} else {
 					kv.GetSectionName(buffer, sizeof(buffer));
