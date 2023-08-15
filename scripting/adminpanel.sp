@@ -2,9 +2,12 @@
 
 #define DEBUG
 
-#define PLUGIN_VERSION "0.00"
-#define UPDATE_INTERVAL 6.0
-#define UPDATE_INTERVAL_SLOW 15.0
+// Update intervals (only sends when > 0 players)
+// The update interval when there are active viewers
+#define UPDATE_INTERVAL 5.0
+// The update interval when there are no viewers on.
+// We still need to poll to know how many viewers are watching
+#define UPDATE_INTERVAL_SLOW 20.0
 
 #include <sourcemod>
 #include <sdktools>
@@ -18,9 +21,9 @@ public Plugin myinfo =
 {
 	name = "Admin Panel",
 	author = "Jackz",
-	description = "",
-	version = PLUGIN_VERSION,
-	url = ""
+	description = "Plugin to integrate with admin panel",
+	version = "1.0.0",
+	url = "https://github.com/jackzmc/l4d2-admin-dash"
 };
 
 ConVar cvar_debug;
@@ -80,10 +83,10 @@ public void OnPluginStart()
 #define DATE_FORMAT "%F at %I:%M %p"
 Action Command_PanelStatus(int client, int args) {
 	ReplyToCommand(client, "Active: %b", updateTimer != null);
-	ReplyToCommand(client, "Last Error Code: %d", lastErrorCode);
 	ReplyToCommand(client, "#Players: %d", numberOfPlayers);
 	ReplyToCommand(client, "Update Interval: %0f s", fastUpdateMode ? UPDATE_INTERVAL : UPDATE_INTERVAL_SLOW);
 	char buffer[32];
+	ReplyToCommand(client, "Last Error Code: %d", lastErrorCode);
 	if(lastSuccessTime > 0)
 		FormatTime(buffer, sizeof(buffer), DATE_FORMAT, lastSuccessTime);
 	else
@@ -97,7 +100,7 @@ void TryStartTimer(bool fast = true) {
 		fastUpdateMode = fast;
 		float interval = fast ? UPDATE_INTERVAL : UPDATE_INTERVAL_SLOW;
 		updateTimer = CreateTimer(interval, Timer_PostStatus, _, TIMER_REPEAT);
-		PrintToServer("[AdminPanel] Timer created, updating every %.1f seconds", interval);
+		PrintToServer("[AdminPanel] Updating every %.1f seconds", interval);
 	}
 }
 
@@ -198,7 +201,7 @@ void Callback_PostStatus(HTTPResponse response, any value, const char[] error) {
 			PrintToServer("[AdminPanel] Response: OK/204");
 		// We have subscribers, kill timer and recreate it in fast mode (if not already):
 		if(!fastUpdateMode) {
-			PrintToServer("[AdminPanel] We have subscribers, increasing interval");
+			PrintToServer("[AdminPanel] Switching to fast update interval for active viewers.");
 			if(updateTimer != null)
 				delete updateTimer;
 			TryStartTimer(true);
@@ -208,7 +211,7 @@ void Callback_PostStatus(HTTPResponse response, any value, const char[] error) {
 		lastErrorCode = 0;
 		// We have no subscribers, kill timer and recreate it in slow mode (if not already):
 		if(fastUpdateMode) {
-			PrintToServer("[AdminPanel] No subscribers, decreasing interval");
+			PrintToServer("[AdminPanel] Switching to slow update interval, no viewers");
 			if(updateTimer != null)
 				delete updateTimer;
 			TryStartTimer(false);
@@ -357,6 +360,7 @@ JSONObject GetPlayer(int client) {
 	player.SetInt("joinTime", playerJoinTime[client]);
 	player.SetInt("permHealth", GetEntProp(client, Prop_Send, "m_iHealth"));
 	if(team == 2) {
+		// Include idle players (player here is their idle bot)
 		if(IsFakeClient(client)) {
 			int idlePlayer = L4D_GetIdlePlayerOfBot(client);
 			if(idlePlayer > 0) {
