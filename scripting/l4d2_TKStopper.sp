@@ -10,6 +10,7 @@
 #include <sdkhooks>
 #include <jutils>
 #include <left4dhooks>
+#include <multicolors>
 
 enum {
 	Immune_None,
@@ -18,15 +19,6 @@ enum {
 }
 
 bool lateLoaded, isFinaleEnding;
-// bool isPlayerTroll[MAXPLAYERS+1], isUnderAttack[MAXPLAYERS+1];
-// ImmunityFlag immunityFlags[MAXPLAYERS+1];
-// int iJoinTime[MAXPLAYERS+1];
-// int iIdleStartTime[MAXPLAYERS+1];
-// int iLastFFTime[MAXPLAYERS+1];
-// int iJumpAttempts[MAXPLAYERS+1];
-
-// float playerTotalDamageFF[MAXPLAYERS+1];
-// float autoFFScaleFactor[MAXPLAYERS+1];
 
 enum struct PlayerData {
 	int joinTime;
@@ -107,6 +99,7 @@ public void OnPluginStart() {
 	AutoExecConfig(true, "l4d2_tkstopper");
 
 	HookEvent("finale_vehicle_ready", Event_FinaleVehicleReady);
+	HookEvent("finale_start", Event_FinaleStart);
 	HookEvent("player_team", Event_PlayerDisconnect);
 
 	HookEvent("charger_carry_start", Event_ChargerCarry);
@@ -140,7 +133,7 @@ public void OnPluginStart() {
 	}
 	LoadTranslations("common.phrases");
 }
-public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
+void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
 	cvar.GetString(gamemode, sizeof(gamemode));
 	if(StrEqual(gamemode, "coop")) {
 		isEnabled = true;
@@ -151,55 +144,17 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 ///////////////////////////////////////////////////////////////////////////////
 // Special Infected Events 
 ///////////////////////////////////////////////////////////////////////////////
-public Action Event_ChargerCarry(Event event, const char[] name, bool dontBroadcast) {
-	int userid = event.GetInt("victim");
-	int victim = GetClientOfUserId(userid);
-	if(victim) {
-		if(StrEqual(name, "charger_carry_start")) {
-			pData[victim].underAttack = true;
-		} else {
-			CreateTimer(1.0, Timer_StopSpecialAttackImmunity, userid);
-		}
-	}
-	return Plugin_Continue; 
+Action Event_ChargerCarry(Event event, const char[] name, bool dontBroadcast) {
+	return SetUnderAttack("charger_carry_start");
 }
-
-public Action Event_HunterPounce(Event event, const char[] name, bool dontBroadcast) {
-	int userid = event.GetInt("victim");
-	int victim = GetClientOfUserId(userid);
-	if(victim) {
-		if(StrEqual(name, "lunge_pounce")) {
-			pData[victim].underAttack = true;
-		} else {
-			CreateTimer(1.0, Timer_StopSpecialAttackImmunity, userid);
-		}
-	}
-	return Plugin_Continue; 
+Action Event_HunterPounce(Event event, const char[] name, bool dontBroadcast) {
+	return SetUnderAttack(event, "lunge_pounce");
 }
-
-public Action Event_SmokerChoke(Event event, const char[] name, bool dontBroadcast) {
-	int userid = event.GetInt("victim");
-	int victim = GetClientOfUserId(userid);
-	if(victim) {
-		if(StrEqual(name, "choke_start")) {
-			pData[victim].underAttack = true;
-		} else {
-			CreateTimer(1.0, Timer_StopSpecialAttackImmunity, userid);
-		}
-	}
-	return Plugin_Continue; 
+Action Event_SmokerChoke(Event event, const char[] name, bool dontBroadcast) {
+	return SetUnderAttack("choke_start");
 }
-public Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcast) {
-	int userid = event.GetInt("victim");
-	int victim = GetClientOfUserId(userid);
-	if(victim) {
-		if(StrEqual(name, "jockey_ride")) {
-			pData[victim].underAttack = true;
-		} else {
-			CreateTimer(1.0, Timer_StopSpecialAttackImmunity, userid);
-		}
-	}
-	return Plugin_Continue; 
+Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcast) {
+	return SetUnderAttack("jockey_ride");
 }
 
 Action Timer_StopSpecialAttackImmunity(Handle h, int userid) {
@@ -208,6 +163,19 @@ Action Timer_StopSpecialAttackImmunity(Handle h, int userid) {
 		pData[client].underAttack = false;
 	}
 	return Plugin_Continue;
+}
+
+Action SetUnderAttack(Event event, const char[] checkString) {
+	int userid = event.GetInt("victim");
+	int victim = GetClientOfUserId(userid);
+	if(victim) {
+		if(StrEqual(name, checkString)) {
+			pData[victim].underAttack = true;
+		} else {
+			CreateTimer(1.0, Timer_StopSpecialAttackImmunity, userid);
+		}
+	}
+	return Plugin_Continue; 
 }
 ///////////////////////////////////////////////////////////////////////////////
 // IDLE 
@@ -233,16 +201,14 @@ public Action Event_PlayerToBot(Event event, char[] name, bool dontBroadcast) {
 ///////////////////////////////////////////////////////////////////////////////
 // Misc events
 ///////////////////////////////////////////////////////////////////////////////
-public void Event_FinaleVehicleReady(Event event, const char[] name, bool dontBroadcast) {
+void Event_FinaleVehicleReady(Event event, const char[] name, bool dontBroadcast) {
 	isFinaleEnding = true;
-	for(int i = 1; i <= MaxClients; i++) {
-		if(pData[i].isTroll && IsClientConnected(i) && IsClientInGame(i)) {
-			PrintChatToAdmins("Note: %N is still marked as troll and will be banned after this game. Use \"/ignore <player> tk\" to ignore them.", i);
-		}
-	}
+	WarnStillMarked();
 	PrintToServer("[TKStopper] Escape vehicle active, 2x rff in effect");
 }
-
+void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
+	WarnStillMarked();
+}
 public void OnMapEnd() {
 	isFinaleEnding = false;
 }
@@ -272,13 +238,17 @@ public void OnClientDisconnect(int client) {
 }
 
 // Only clear things when they fully left on their own accord:
-public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	if(!event.GetBool("disconnect") || !isEnabled) return;
 
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && event.GetInt("team") <= 2) {
 		if (pData[client].isTroll && !IsFakeClient(client)) {
 			BanClient(client, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF (Auto)", "Excessive Friendly Fire", "TKStopper");
+			if(hBanTime.IntValue > 0)
+				CPrintChatToAdmins("{olive}%N{default} has been banned for %d minutes (marked as troll). If this was a mistake, you can discard their ban from the admin panel at {yellow}https://admin.jackz.me", client, hBanTime.IntValue);
+			else
+				CPrintChatToAdmins("{olive}%N{default} has been permanently banned (marked as troll). If this was a mistake, you can discard their ban from the admin panel at {yellow}https://admin.jackz.me", client);
 			pData[client].isTroll = false;
 		}
 
@@ -286,7 +256,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 			float minutesSinceiLastFFTime = GetLastFFMinutes(client);
 			float activeRate = GetActiveRate(client);
 			PrintToConsoleAll("[TKStopper] FF Summary for %N:", client);
-			PrintToConsoleAll("\t\t%.2f TK-FF buffer (%.2f total ff, %d freq.) | %.3f (buf %f) rFF rate | lastff %.1f min ago | %d suicide jumps", 
+			PrintToConsoleAll("\t%.2f TK-FF buffer (%.2f total ff, %d freq.) | %.3f (buf %f) rFF rate | lastff %.1f min ago | %d suicide jumps", 
 				pData[client].TKDamageBuffer, 
 				pData[client].totalDamageFF, 
 				pData[client].totalFFCount,
@@ -306,7 +276,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 	}
 }
 
-public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
+Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
 	if(isEnabled && damage > 0.0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
 		if(GetClientTeam(victim) != GetClientTeam(attacker) || attacker == victim) 
 			return Plugin_Continue;
@@ -352,15 +322,15 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 			if(pData[victim].jumpAttempts > hSuicideLimit.IntValue) {
 				if(hSuicideAction.IntValue == 1) {
 					LogMessage("[NOTICE] Kicking %N for suicide attempts", victim, hBanTime.IntValue);
-					NotifyAllAdmins("[Notice]  Kicking %N for suicide attempts", victim, hBanTime.IntValue);
+					PrintToChatAdmins("[Notice]  Kicking %N for suicide attempts", victim, hBanTime.IntValue);
 					KickClient(victim, "Troll");
 				} else if(hSuicideAction.IntValue == 2) {
 					LogMessage("[NOTICE] Banning %N for suicide attempts for %d minutes.", victim, hBanTime.IntValue);
-					NotifyAllAdmins("[Notice] Banning %N for suicide attempts for %d minutes.", victim, hBanTime.IntValue);
+					PrintToChatAdmins("[Notice] Banning %N for suicide attempts for %d minutes.", victim, hBanTime.IntValue);
 					BanClient(victim, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Suicide fall attempts", "Troll", "TKStopper");
 				} else if(hSuicideAction.IntValue == 3) {
 					LogMessage("[NOTICE] %N will be banned for suicide attempts for %d minutes. ", victim, hBanTime.IntValue);
-					NotifyAllAdmins("[Notice] %N will be banned for suicide attempts for %d minutes. Use \"/ignore <player> tk\" to make them immune.", victim, hBanTime.IntValue);
+					PrintToChatAdmins("[Notice] %N will be banned for suicide attempts for %d minutes. Use \"/ignore <player> tk\" to make them immune.", victim, hBanTime.IntValue);
 					pData[victim].isTroll = true;
 				}
 			}
@@ -427,15 +397,15 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 			if(!pData[attacker].pendingAction) {
 				if(hTKAction.IntValue == 1) {
 					LogMessage("[TKStopper] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
-					NotifyAllAdmins("[Notice] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
+					PrintToChatAdmins("[Notice] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
 					KickClient(attacker, "Excessive FF");
 				} else if(hTKAction.IntValue == 2) {
 					LogMessage("[TKStopper] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
-					NotifyAllAdmins("[Notice] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
+					PrintToChatAdmins("[Notice] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
 					BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF (Auto)", "Excessive Friendly Fire (Automatic)", "TKStopper");
 				} else if(hTKAction.IntValue == 3) {
 					LogMessage("[TKStopper] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. ", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
-					NotifyAllAdmins("[Notice] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. Use \"/ignore <player> tk\" to make them immune.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
+					CPrintToChatAdmins("[Notice] %N will be banned for %d minutes for attempted teamkilling (%.2f HP) when they disconnect. Use {olive}/ignore <player> tk{default} to make them immune.", attacker, hBanTime.IntValue, pData[attacker].TKDamageBuffer);
 					pData[attacker].isTroll = true;
 				}
 				pData[attacker].pendingAction = true;
@@ -482,7 +452,7 @@ public Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, flo
 
 /// COMMANDS
 
-public Action Command_TKInfo(int client, int args) {
+Action Command_TKInfo(int client, int args) {
 	int time = GetTime();
 	if(!isEnabled) {
 		ReplyToCommand(client, "Warn: Plugin is disabled in current gamemode (%s)", gamemode);
@@ -509,28 +479,28 @@ public Action Command_TKInfo(int client, int args) {
 			return Plugin_Handled;
 		}
 		int target = target_list[0];
-		ReplyToCommand(client, "FF Review for '%N':", target);
+		CReplyToCommand(client, "FF Review for {yellow}%N", target);
 		if(pData[target].isTroll) {
-			ReplyToCommand(client, "- will be banned on disconnect for TK -", target);
+			CReplyToCommand(client, "{olive}- will be banned on disconnect for TK -", target);
 		}
 		if(pData[target].immunityFlags == Immune_TK) {
-			ReplyToCommand(client, "Immunity: Teamkiller Detection", target);
+			CReplyToCommand(client, "Immunity: {yellow}Teamkiller Detection", target);
 		} else if(pData[target].immunityFlags == Immune_RFF) {
-			ReplyToCommand(client, "Immunity: Auto reverse-ff", target);
+			CReplyToCommand(client, "Immunity: {yellow}Auto reverse-ff", target);
 		} else if(view_as<int>(pData[target].immunityFlags) > 0) {
-			ReplyToCommand(client, "Immunity: Teamkiller Detection, Auto reverse-ff", target);
+			CReplyToCommand(client, "Immunity: {yellow}Teamkiller Detection, Auto reverse-ff", target);
 		} else {
-			ReplyToCommand(client, "Immunity: (none, use /ignore <player> [immunity] to toggle)", target);
+			CReplyToCommand(client, "Immunity: (none, use {green}/ignore <player> [immunity]{default} to toggle)", target);
 		}
 		float minutesSinceiLastFFTime = GetLastFFMinutes(target);
 		float activeRate = GetActiveRate(target);
-		ReplyToCommand(client, "FF Frequency: %d (active %d, %d forgotten)", pData[target].totalFFCount, pData[target].ffCount, (pData[target].totalFFCount - pData[target].ffCount));
-		ReplyToCommand(client, "Total FF Damage: %.1f HP (%.1f min ago last ff)", pData[target].totalDamageFF, minutesSinceiLastFFTime);
+		CReplyToCommand(client, "FF Frequency: {yellow}%d {default}(recent: %d, %d forgiven)", pData[target].totalFFCount, pData[target].ffCount, (pData[target].totalFFCount - pData[target].ffCount));
+		CReplyToCommand(client, "Total FF Damage: {yellow}%.1f HP{default} (last fff %.1f min ago)", pData[target].totalDamageFF, minutesSinceiLastFFTime);
 		if(~pData[target].immunityFlags & Immune_TK)
-			ReplyToCommand(client, "Recent FF (TKDetectBuff): %.1f", pData[target].TKDamageBuffer);
+			CReplyToCommand(client, "Recent FF (TKDetectBuffer): {yellow}%.1f", pData[target].TKDamageBuffer);
 		if(~pData[target].immunityFlags & Immune_RFF)
-			ReplyToCommand(client, "Auto Reverse-FF: %.1fx return rate", activeRate);
-		ReplyToCommand(client, "Attempted suicide jumps: %d", pData[target].jumpAttempts);
+			CReplyToCommand(client, "Auto Reverse-FF: {yellow}%.1fx return rate", activeRate);
+		CReplyToCommand(client, "Attempted suicide jumps: {yellow}%d", pData[target].jumpAttempts);
 	} else {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
@@ -557,25 +527,25 @@ public Action Command_TKInfo(int client, int args) {
 }
 
 
-public Action Command_IgnorePlayer(int client, int args) {
+Action Command_IgnorePlayer(int client, int args) {
 	char arg1[32], arg2[16];
 	GetCmdArg(1, arg1, sizeof(arg1));
 	GetCmdArg(2, arg2, sizeof(arg2));
 
 	if(args < 2) {
-		ReplyToCommand(client, "Usage: sm_ignore <player> <tk/teamkill/rff/reverseff>");
+		CReplyToCommand(client, "Usage: {yellow}sm_ignore <player> <tk|teamkill / rff|reverseff>");
 		return Plugin_Handled;
 	}
 
 	int flags = 0;
 	if(StrEqual(arg2, "tk") || StrEqual(arg2, "teamkill")) {
 		flags = Immune_TK;
-	} else if(StrEqual(arg2, "all") || StrEqual(arg2, "a")) {
+	} else if(arg2[0] == 'a') {
 		flags = Immune_TK | Immune_RFF;
 	} else if(StrEqual(arg2, "reverseff") || StrEqual(arg2, "rff")) {
 		flags = Immune_RFF;
 	} else {
-		ReplyToCommand(client, "Usage: sm_ignore <player> <tk/teamkill/rff/reverseff>");
+		CReplyToCommand(client, "Usage: {yellow}sm_ignore <player> <tk|teamkill / rff|reverseff>");
 		return Plugin_Handled;
 	}
 
@@ -607,10 +577,10 @@ public Action Command_IgnorePlayer(int client, int args) {
 		if (flags & Immune_TK) {
 			if (pData[target].immunityFlags & Immune_TK) {
 				LogAction(client, target, "\"%L\" re-enabled teamkiller detection for \"%L\"",  client, target);
-				ShowActivity2(client, "[FTT] ", "%N has re-enabled teamkiller detection for %N", client, target);
+				CShowActivity2(client, "[FTT] ", "{yellow}%N has re-enabled teamkiller detection for {olive}%N", client, target);
 			} else {
 				LogAction(client, target, "\"%L\" ignored teamkiller detection for \"%L\"",  client, target);
-				ShowActivity2(client, "[FTT] ", "%N has ignored teamkiller detection for %N", client, target);
+				CShowActivity2(client, "[FTT] ", "{yellow}%N has ignored teamkiller detection for {olive}%N", client, target);
 			}
 			pData[target].immunityFlags ^= Immune_TK;
 		} 
@@ -620,7 +590,7 @@ public Action Command_IgnorePlayer(int client, int args) {
 				LogAction(client, target, "\"%L\" re-enabled auto reverse friendly-fire for \"%L\"",  client, target);
 			} else {
 				LogAction(client, target, "\"%L\" disabled auto reverse friendly-fire for \"%L\"",  client, target);
-				ShowActivity2(client, "[FTT] ", "%N has disabled auto reverse friendly-fire for %N", client, target);
+				CShowActivity2(client, "[FTT] ", "{yellow}%N has disabled auto reverse friendly-fire for {olive}%N", client, target);
 				pData[target].autoRFFScaleFactor = 0.0;
 			}
 			pData[target].immunityFlags ^= Immune_RFF;
@@ -654,9 +624,9 @@ void GetImmunityFlagName(int flag, char[] buffer, int bufferLength) {
 	if(flag == Immune_RFF) {
 		strcopy(buffer, bufferLength, "Reverse Friendly-Fire");
 	} else if(flag == Immune_TK) {
-		strcopy(buffer, bufferLength, "Reverse Friendly-Fire");
+		strcopy(buffer, bufferLength, "Teamkiller Detection");
 	} else {
-		strcopy(buffer, bufferLength, "-unknown flag-");
+		strcopy(buffer, bufferLength, "-error: unknown flag-");
 	}
 }
 
@@ -672,6 +642,13 @@ void _CheckNative(int target, int flag) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Target is out of range (1 to MaxClients)");
 	} else if(flag <= 0) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Flag is invalid");
+	}
+}
+void WarnStillMarked() {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(pData[i].isTroll && IsClientConnected(i) && IsClientInGame(i)) {
+			CPrintChatToAdmins("Note: {yellow}%N is still marked as troll and will be banned after this game. Use {olive}/ignore <player> tk{default} to ignore them.", i);
+		}
 	}
 }
 /// STOCKS
