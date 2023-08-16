@@ -223,7 +223,7 @@ bool ComputeGroups(GroupResult result, float activateFlow) {
 			if(g_groups[groupIndex].members.Length > 1) {
 				g_groups[groupIndex].pos = prevPos;
 				groupIndex++;
-				PrintDebug("created group #%d with %d members", groupIndex, members.Length);
+				PrintDebug("created group #%d with %d members", groupIndex, g_groups[groupIndex].members.Length);
 				if(groupIndex == MAX_GROUPS) {
 					PrintDebug("maximum amount of groups reached (%d)", MAX_GROUPS);
 				}
@@ -298,13 +298,13 @@ bool ComputeGroups(GroupResult result, float activateFlow) {
 		}
 	}
 	if(result.ungroupedCount > 0) {
-		PrintDebug("==UNGROUPED SUMMARY==")
+		PrintDebug("==UNGROUPED SUMMARY==");
 		for(int i = 1; i <= MaxClients; i++) {
 			if(!inGroup[i] && IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) { 
 				PrintDebug("User: %N (uid#%d)", i, GetClientUserId(i));
 			}
 		}
-		PrintDebug("==END UNGROUPED SUMMARY==")
+		PrintDebug("==END UNGROUPED SUMMARY==");
 	}
 	PrintDebug("===END GROUP SUMMARY===");
 	// delete groupMembers;
