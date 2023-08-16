@@ -64,6 +64,16 @@ public void OnPluginStart()
 
 Action Command_DebugGroups(int client, int args) {
 	PrintDebug("Running manual compute of groups");
+	if(client == 0) {
+		PrintDebug("Ran from server console, using first player on server");
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i)) {
+				client = i;
+				PrintDebug("User: %N", i);
+				break;
+			}
+		}
+	}
 	float activatorFlow = L4D2Direct_GetFlowDistance(client);
 	Group groups[MAX_GROUPS];
 	GroupResult result;
@@ -184,7 +194,7 @@ bool ComputeGroups(Group groups[MAX_GROUPS], GroupResult result, float activateF
 		if(!inGroup[i] && IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
 			float prevFlow = L4D2Direct_GetFlowDistance(i);
 			GetClientAbsOrigin(i, prevPos);
-			ArrayList members = new ArrayList();
+			groups[groupIndex].members.Clear();
 			
 			for(int j = 1; j <= MaxClients; j++) {
 				if(j != i && IsClientConnected(j) && IsClientInGame(j) && IsPlayerAlive(j) && GetClientTeam(j) == 2) {
@@ -194,28 +204,27 @@ bool ComputeGroups(Group groups[MAX_GROUPS], GroupResult result, float activateF
 					float dist = FloatAbs(GetVectorDistance(prevPos, pos));
 					float flowDiff = FloatAbs(prevFlow - flow);
 					if(dist <= hGroupTeamDist.FloatValue) {
-						if(members.Length == 0) {
-							members.Push(GetClientUserId(i));
-							PrintDebug("add leader to group %d: %N", groupIndex + 1, i);
+						// Add user as leader to group:
+						if(groups[groupIndex].members.Length == 0) {
+							groups[groupIndex].members.Push(GetClientUserId(i));
+							inGroup[i] = true;
+							// PrintDebug("add leader to group %d: %N", groupIndex + 1, i);
 						}
-						PrintDebug("add member to group %d: %N (dist = %.4f) (fldiff = %.1f)", groupIndex + 1, j, dist, flowDiff);
+						// PrintDebug("add member to group %d: %N (dist = %.4f) (fldiff = %.1f)", groupIndex + 1, j, dist, flowDiff);
 						inGroup[j] = true;
-						members.Push(GetClientUserId(j));
+						groups[groupIndex].members.Push(GetClientUserId(j));
 					} else {
 						// PrintDebug("not adding member to group %d: %N (dist = %.4f) (fldiff = %.1f) (l:%N)", groupIndex + 1, j, dist, flowDiff, i);
 					}
 				}
 			}
-			if(members.Length > 1) {
+			if(groups[groupIndex].members.Length > 1) {
 				groups[groupIndex].pos = prevPos;
-				groups[groupIndex].members = members;
 				groupIndex++;
 				PrintDebug("created group #%d with %d members", groupIndex, members.Length);
 				if(groupIndex == MAX_GROUPS) {
 					PrintDebug("maximum amount of groups reached (%d)", MAX_GROUPS);
 				}
-			} else {
-				delete members;
 			}
 		}
 	}
