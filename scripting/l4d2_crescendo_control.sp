@@ -30,6 +30,8 @@ static bool panicStarted;
 static float lastButtonPressTime;
 static float flowRate[MAXPLAYERS+1];
 
+static Group g_groups[MAX_GROUPS];
+
 public Plugin myinfo = 
 {
 	name =  "L4D2 Crescendo Control", 
@@ -59,15 +61,26 @@ public void OnPluginStart()
 	AddNormalSoundHook(SoundHook);
 
 	RegAdminCmd("sm_dgroup", Command_DebugGroups, ADMFLAG_GENERIC);
-	//dhook setup
+	for(int i = 0; i < MAX_GROUPS; i++) {
+		g_groups[i].members = new ArrayList();
+	}
 }
 
 Action Command_DebugGroups(int client, int args) {
 	PrintDebug("Running manual compute of groups");
+	if(client == 0) {
+		PrintDebug("Ran from server console, using first player on server");
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientConnected(i) && IsClientInGame(i)) {
+				client = i;
+				PrintDebug("User: %N", i);
+				break;
+			}
+		}
+	}
 	float activatorFlow = L4D2Direct_GetFlowDistance(client);
-	Group groups[MAX_GROUPS];
 	GroupResult result;
-	ComputeGroups(groups, result, activatorFlow);
+	ComputeGroups(result, activatorFlow);
 	return Plugin_Handled;
 }
 
@@ -116,9 +129,8 @@ public float GetFlowAtPosition(const float pos[3]) {
 public Action Event_ButtonPress(const char[] output, int entity, int client, float delay) {
 	if(hEnabled.IntValue > 0 && client > 0 && client <= MaxClients) {
 		float activatorFlow = L4D2Direct_GetFlowDistance(client);
-		Group groups[MAX_GROUPS];
 		GroupResult result;
-		ComputeGroups(groups, result, activatorFlow);
+		ComputeGroups(result, activatorFlow);
 		PrintToConsoleAll("[CC] Button Press by %N", client);
 
 		AdminId admin = GetUserAdmin(client);
@@ -165,7 +177,7 @@ public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PL
 public void Frame_ResetButton(int entity) {
 	AcceptEntityInput(entity, "Unlock");
 }
-bool ComputeGroups(Group groups[MAX_GROUPS], GroupResult result, float activateFlow) {
+bool ComputeGroups(GroupResult result, float activateFlow) {
 	float prevPos[3], pos[3];
 	// int prevMember = -1;
 	// ArrayList groupMembers = new ArrayList();
@@ -184,7 +196,7 @@ bool ComputeGroups(Group groups[MAX_GROUPS], GroupResult result, float activateF
 		if(!inGroup[i] && IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
 			float prevFlow = L4D2Direct_GetFlowDistance(i);
 			GetClientAbsOrigin(i, prevPos);
-			ArrayList members = new ArrayList();
+			g_groups[groupIndex].members.Clear();
 			
 			for(int j = 1; j <= MaxClients; j++) {
 				if(j != i && IsClientConnected(j) && IsClientInGame(j) && IsPlayerAlive(j) && GetClientTeam(j) == 2) {
@@ -194,28 +206,27 @@ bool ComputeGroups(Group groups[MAX_GROUPS], GroupResult result, float activateF
 					float dist = FloatAbs(GetVectorDistance(prevPos, pos));
 					float flowDiff = FloatAbs(prevFlow - flow);
 					if(dist <= hGroupTeamDist.FloatValue) {
-						if(members.Length == 0) {
-							members.Push(GetClientUserId(i));
-							PrintDebug("add leader to group %d: %N", groupIndex + 1, i);
+						// Add user as leader to group:
+						if(g_groups[groupIndex].members.Length == 0) {
+							g_groups[groupIndex].members.Push(GetClientUserId(i));
+							inGroup[i] = true;
+							// PrintDebug("add leader to group %d: %N", groupIndex + 1, i);
 						}
-						PrintDebug("add member to group %d: %N (dist = %.4f) (fldiff = %.1f)", groupIndex + 1, j, dist, flowDiff);
+						// PrintDebug("add member to group %d: %N (dist = %.4f) (fldiff = %.1f)", groupIndex + 1, j, dist, flowDiff);
 						inGroup[j] = true;
-						members.Push(GetClientUserId(j));
+						g_groups[groupIndex].members.Push(GetClientUserId(j));
 					} else {
 						// PrintDebug("not adding member to group %d: %N (dist = %.4f) (fldiff = %.1f) (l:%N)", groupIndex + 1, j, dist, flowDiff, i);
 					}
 				}
 			}
-			if(members.Length > 1) {
-				groups[groupIndex].pos = prevPos;
-				groups[groupIndex].members = members;
+			if(g_groups[groupIndex].members.Length > 1) {
+				g_groups[groupIndex].pos = prevPos;
 				groupIndex++;
-				PrintDebug("created group #%d with %d members", groupIndex, members.Length);
+				PrintDebug("created group #%d with %d members", groupIndex, g_groups[groupIndex].members.Length);
 				if(groupIndex == MAX_GROUPS) {
 					PrintDebug("maximum amount of groups reached (%d)", MAX_GROUPS);
 				}
-			} else {
-				delete members;
 			}
 		}
 	}
@@ -274,18 +285,26 @@ bool ComputeGroups(Group groups[MAX_GROUPS], GroupResult result, float activateF
 
 	PrintDebug("===GROUP SUMMARY===");
 	for(int i = 0; i < MAX_GROUPS; i++) {
-		if(groups[i].members != null) {
+		if(g_groups[i].members.Length > 0) {
 			PrintDebug("---Group %d---", i + 1);
-			PrintDebug("Origin: %.1f %.1f %.1f", groups[i].pos[0], groups[i].pos[1], groups[i].pos[2]);
-			float groupFlow = GetFlowAtPosition(groups[i].pos);
+			PrintDebug("Origin: %.1f %.1f %.1f", g_groups[i].pos[0], g_groups[i].pos[1], g_groups[i].pos[2]);
+			float groupFlow = GetFlowAtPosition(g_groups[i].pos);
 			PrintDebug("Flow Diff: %.2f (g:%.1f) (a:%.1f) (gdt:%.f)", FloatAbs(activateFlow - groupFlow), activateFlow, groupFlow, hGroupTeamDist.FloatValue);
-			PrintDebug("Leader: %N (uid#%d)", GetClientOfUserId(groups[i].members.Get(0)), groups[i].members.Get(0));
-			for(int j = 1; j < groups[i].members.Length; j++) {
-				int userid = groups[i].members.Get(j);
+			PrintDebug("Leader: %N (uid#%d)", GetClientOfUserId(g_groups[i].members.Get(0)), g_groups[i].members.Get(0));
+			for(int j = 1; j < g_groups[i].members.Length; j++) {
+				int userid = g_groups[i].members.Get(j);
 				PrintDebug("Member: %N (uid#%d)", GetClientOfUserId(userid), userid);
 			}
-			delete groups[i].members;
 		}
+	}
+	if(result.ungroupedCount > 0) {
+		PrintDebug("==UNGROUPED SUMMARY==");
+		for(int i = 1; i <= MaxClients; i++) {
+			if(!inGroup[i] && IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) { 
+				PrintDebug("User: %N (uid#%d)", i, GetClientUserId(i));
+			}
+		}
+		PrintDebug("==END UNGROUPED SUMMARY==");
 	}
 	PrintDebug("===END GROUP SUMMARY===");
 	// delete groupMembers;
@@ -297,10 +316,9 @@ bool ComputeGroups(Group groups[MAX_GROUPS], GroupResult result, float activateF
 public Action L4D2_CGasCan_EventKilled(int gascan, int &inflictor, int &attacker) {
 	if(hEnabled.IntValue > 0 && attacker > 0 && attacker <= MaxClients) {
 		float activatorFlow = L4D2Direct_GetFlowDistance(attacker);
-		Group groups[MAX_GROUPS];
 		GroupResult result;
 		PrintToConsoleAll("[CC] Gascan Shot by %N", attacker);
-		ComputeGroups(groups, result, activatorFlow);
+		ComputeGroups(result, activatorFlow);
 
 		AdminId admin = GetUserAdmin(attacker);
 		if(admin != INVALID_ADMIN_ID && admin.HasFlag(Admin_Custom1)) {
