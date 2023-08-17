@@ -192,11 +192,13 @@ bool ComputeGroups(GroupResult result, float activateFlow) {
 
 	bool inGroup[MAXPLAYERS+1];
 
+	ArrayList members = new ArrayList();
 	for(int i = 1; i <= MaxClients; i++) {
 		if(!inGroup[i] && IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
 			float prevFlow = L4D2Direct_GetFlowDistance(i);
 			GetClientAbsOrigin(i, prevPos);
-			g_groups[groupIndex].members.Clear();
+
+			members.Clear();
 			
 			for(int j = 1; j <= MaxClients; j++) {
 				if(j != i && IsClientConnected(j) && IsClientInGame(j) && IsPlayerAlive(j) && GetClientTeam(j) == 2) {
@@ -207,29 +209,36 @@ bool ComputeGroups(GroupResult result, float activateFlow) {
 					float flowDiff = FloatAbs(prevFlow - flow);
 					if(dist <= hGroupTeamDist.FloatValue) {
 						// Add user as leader to group:
-						if(g_groups[groupIndex].members.Length == 0) {
-							g_groups[groupIndex].members.Push(GetClientUserId(i));
+						if(members.Length == 0) {
+							members.Push(GetClientUserId(i));
 							inGroup[i] = true;
 							// PrintDebug("add leader to group %d: %N", groupIndex + 1, i);
 						}
 						// PrintDebug("add member to group %d: %N (dist = %.4f) (fldiff = %.1f)", groupIndex + 1, j, dist, flowDiff);
 						inGroup[j] = true;
-						g_groups[groupIndex].members.Push(GetClientUserId(j));
+						members.Push(GetClientUserId(j));
 					} else {
 						// PrintDebug("not adding member to group %d: %N (dist = %.4f) (fldiff = %.1f) (l:%N)", groupIndex + 1, j, dist, flowDiff, i);
 					}
 				}
 			}
 			if(g_groups[groupIndex].members.Length > 1) {
+				// Drop the old members:
+				if(g_groups[groupIndex].members != null) {
+					delete g_groups[groupIndex].members;
+				}
 				g_groups[groupIndex].pos = prevPos;
+				g_groups[groupIndex].members = members;
+				// PrintDebug("created group #%d with %d members", groupIndex + 1, g_groups[groupIndex].members.Length);
 				groupIndex++;
-				PrintDebug("created group #%d with %d members", groupIndex, g_groups[groupIndex].members.Length);
 				if(groupIndex == MAX_GROUPS) {
 					PrintDebug("maximum amount of groups reached (%d)", MAX_GROUPS);
+					break;
 				}
 			}
 		}
 	}
+	delete members;
 
 	int totalGrouped = 0;
 	for(int i = 1; i <= MaxClients; i++) {
@@ -247,49 +256,13 @@ bool ComputeGroups(GroupResult result, float activateFlow) {
 
 	PrintDebug("total groups created: %d", groupIndex);
 
-	// for(int i = 1; i <= MaxClients; i++) {
-	// 	if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
-	// 		GetClientAbsOrigin(i, pos);
-	// 		// Skip the first member, as they will start the group
-	// 		if(prevMember == -1) {
-	// 			prevMember = i;
-	// 			continue;
-	// 		}
-
-	// 		// Check if player is in a radius of the group source
-	// 		float dist = GetVectorDistance(group.pos, pos);
-	// 		if(dist < TEAM_GROUP_DIST) {
-	// 			// TODO: not just join last group
-	// 			if(group.members.Length == 0) {
-	// 				PrintToServer("[cc] add leader to group %d: %N", groupIndex + 1, prevMember);
-	// 				// groupMembers.Push(GetClientUserId(prevMember));
-	// 				group.members.Push(GetClientUserId(prevMember));
-	// 			}
-	// 			// groupMembers.Push(GetClientUserId(i));
-	// 			group.members.Push(GetClientUserId(i));
-	// 			PrintToServer("[cc] add member to group %d: %N (dist = %.2f)", groupIndex + 1, i, dist);
-	// 		} else {
-	// 			// Player is not, create a new group.
-	// 			if(group.members.Length > 0) {
-	// 				groups.PushArray(group);
-	// 			}
-	// 			groupIndex++;
-	// 			group.pos = pos;
-	// 			group.members = new ArrayList();
-	// 			PrintToServer("[cc] Creating group %d", groupIndex + 1);
-	// 		}
-	// 		prevPos = pos;
-	// 		prevMember = i;
-	// 	}
-	// }
-
 	PrintDebug("===GROUP SUMMARY===");
 	for(int i = 0; i < MAX_GROUPS; i++) {
 		if(g_groups[i].members.Length > 0) {
 			PrintDebug("---Group %d---", i + 1);
 			PrintDebug("Origin: %.1f %.1f %.1f", g_groups[i].pos[0], g_groups[i].pos[1], g_groups[i].pos[2]);
 			float groupFlow = GetFlowAtPosition(g_groups[i].pos);
-			PrintDebug("Flow Diff: %.2f (g:%.1f) (a:%.1f) (gdt:%.f)", FloatAbs(activateFlow - groupFlow), activateFlow, groupFlow, hGroupTeamDist.FloatValue);
+			PrintDebug("Flow Diff: %.2f (g:%.1f) (a:%.1f) (gtdist:%.f)", FloatAbs(activateFlow - groupFlow), activateFlow, groupFlow, hGroupTeamDist.FloatValue);
 			PrintDebug("Leader: %N (uid#%d)", GetClientOfUserId(g_groups[i].members.Get(0)), g_groups[i].members.Get(0));
 			for(int j = 1; j < g_groups[i].members.Length; j++) {
 				int userid = g_groups[i].members.Get(j);
@@ -298,13 +271,13 @@ bool ComputeGroups(GroupResult result, float activateFlow) {
 		}
 	}
 	if(result.ungroupedCount > 0) {
-		PrintDebug("==UNGROUPED SUMMARY==");
+		PrintDebug("--UNGROUPED SUMMARY--");
 		for(int i = 1; i <= MaxClients; i++) {
 			if(!inGroup[i] && IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) { 
 				PrintDebug("User: %N (uid#%d)", i, GetClientUserId(i));
 			}
 		}
-		PrintDebug("==END UNGROUPED SUMMARY==");
+		PrintDebug("--END UNGROUPED SUMMARY--");
 	}
 	PrintDebug("===END GROUP SUMMARY===");
 	// delete groupMembers;
