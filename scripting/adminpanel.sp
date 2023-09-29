@@ -13,6 +13,7 @@
 #include <sdktools>
 #include <ripext>
 #include <left4dhooks>
+#include <multicolors>
 #include <jutils>
 
 #pragma newdecls required
@@ -227,14 +228,17 @@ void Callback_PostStatus(HTTPResponse response, any value, const char[] error) {
 		lastErrorCode = view_as<int>(response.Status);
 		lastSuccessTime = 0;
 		// TODO: backoff
-		char buffer[64];
-		JSONObject json = view_as<JSONObject>(response.Data);
-		if(json.GetString("error", buffer, sizeof(buffer))) {
-			PrintToServer("[AdminPanel] Got %d response from server: \"%s\"", view_as<int>(response.Status), buffer);
-			json.GetString("message", buffer, sizeof(buffer));
-			PrintToServer("[AdminPanel] Error message: \"%s\"", buffer);
-		} else {
-			PrintToServer("[AdminPanel] Got %d response from server: <unknown json>\n%s", view_as<int>(response.Status), error);
+		PrintToServer("[AdminPanel] Getting response: %d", response.Status);
+		if(cvar_debug.BoolValue) {
+			char buffer[64];
+			JSONObject json = view_as<JSONObject>(response.Data);
+			if(false && json.GetString("error", buffer, sizeof(buffer))) {
+				PrintToServer("[AdminPanel] Got %d response from server: \"%s\"", view_as<int>(response.Status), buffer);
+				json.GetString("message", buffer, sizeof(buffer));
+				PrintToServer("[AdminPanel] Error message: \"%s\"", buffer);
+			} else {
+				PrintToServer("[AdminPanel] Got %d response from server: <unknown json>\n%s", view_as<int>(response.Status), error);
+			}
 		}
 		if(response.Status == HTTPStatus_Unauthorized || response.Status == HTTPStatus_Forbidden) {
 			PrintToServer("[AdminPanel] API Key seems to be invalid, killing timer.");
@@ -275,10 +279,13 @@ void AddFinaleInfo(JSONObject parentObj) {
 JSONArray GetPlayers() {
 	JSONArray players = new JSONArray();
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) >= 2) {
-			JSONObject player = GetPlayer(i);
-			players.Push(player);
-			delete player;
+		if(IsClientConnected(i) && IsClientInGame(i)) {
+			int team = GetClientTeam(i);
+			if( team == 2 || team == 3) {
+				JSONObject player = GetPlayer(i);
+				players.Push(player);
+				delete player;
+			}
 		}
 	}
 	return players;
