@@ -26,13 +26,6 @@ enum trollFlag {
     Flag_8 = 1 << 7,
 }
 
-enum valueType {
-    Value_None,
-    Value_Float,
-    Value_String,
-    Value_Integer
-}
-
 StringMap trollKV;
 char trollIds[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
 char DEFAULT_FLAG_PROMPT_MULTIPLE[] = "Enable options (Multiple)";
@@ -372,7 +365,6 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
 
     // Clear troll specific timer:
     if(Trolls[trollIndex].timerInterval > 0.0) {
-        PrintToServer("epi: there is timer for \"%s\", flags=%d", name, flags);
         if(!isActive) {
             if(Trolls[trollIndex].timerRequiredFlags == 0 || Trolls[trollIndex].timerRequiredFlags & flags) {
                 Trolls[trollIndex].timerHandles[victim] = CreateTimer(Trolls[trollIndex].timerInterval, Trolls[trollIndex].timerFunction, victim, TIMER_REPEAT);
