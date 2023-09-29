@@ -51,6 +51,10 @@ static char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"prop_ragdoll"
 };
 
+#define MAX_FORBIDDEN_MODELS 1
+char FORBIDDEN_MODELS[MAX_FORBIDDEN_MODELS][] = {
+	"models/props_vehicles/c130.mdl",
+};
 
 #define MAX_HIGHLIGHTED_CLASSNAMES 3
 static char HIGHLIGHTED_CLASSNAMES[MAX_HIGHLIGHTED_CLASSNAMES][] = {
@@ -559,12 +563,28 @@ public bool TraceRayFilterActivator(int entity, int mask, any:activator)
 bool Filter_IgnoreForbidden(int entity, int mask, int data) {
 	if(entity == data || entity == 0) return false;
 	if(entity <= MaxClients) return true;
-	static char classname[32];
-	GetEntityClassname(entity, classname, sizeof(classname));
+	return CheckBlacklist(entity);
+}
+
+bool CheckBlacklist(int entity) {
+	static char buffer[64];
+	GetEntityClassname(entity, buffer, sizeof(buffer));
 	for(int i = 0; i < MAX_FORBIDDEN_CLASSNAMES; i++) {
-		if(StrEqual(FORBIDDEN_CLASSNAMES[i], classname)) {
+		if(StrEqual(FORBIDDEN_CLASSNAMES[i], buffer)) {
 			return false;
 		}
+	}
+	if(StrContains(buffer, "prop_") > -1) {
+		GetEntPropString(entity, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
+		for(int i = 0; i < MAX_FORBIDDEN_MODELS; i++) {
+			if(StrEqual(FORBIDDEN_MODELS[i], buffer)) {
+				return false;
+			}
+		}
+	}
+	GetEntPropString(entity, Prop_Data, "m_iName", buffer, sizeof(buffer));
+	if(StrEqual(buffer, "l4d2_randomizer")) {
+		return false;
 	}
 	return true;
 }
