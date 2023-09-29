@@ -31,7 +31,8 @@ char g_Models[MAXPLAYERS+1][128];
 static int g_iPendingCookieModel[MAXPLAYERS+1];
 
 Handle hConf = null;
-static Handle hDHookSetModel = null, hModelPrefCookie;
+static Handle hDHookSetModel = null;
+Cookie modelPrefCookie;
 static ConVar hCookiesEnabled;
 static bool isLateLoad, cookieModelsSet, isL4D1Survivors;
 static int survivors;
@@ -84,7 +85,7 @@ public void OnPluginStart()
 	GetGamedata();
 	
 	CreateConVar("l4d_survivor_identity_fix_version", PLUGIN_VERSION, "Survivor Change Fix Version", FCVAR_SPONLY|FCVAR_NOTIFY|FCVAR_DONTRECORD);
-	hCookiesEnabled = CreateConVar("l4d_survivor_identity_fix_cookies", "1.0", "0 -> Disable cookie preference, 1 -> Enable for 5+, 2 -> Enable for any amount");
+	hCookiesEnabled = CreateConVar("l4d_survivor_identity_fix_cookies", "2.0", "0 -> Disable cookie preference, 1 -> Enable for 5+, 2 -> Enable for any amount");
 
 	HookEvent("player_bot_replace", Event_PlayerToBot, EventHookMode_Post);
 	HookEvent("bot_player_replace", Event_BotToPlayer, EventHookMode_Post);
@@ -111,7 +112,7 @@ public void OnPluginStart()
 		chooseMenu.AddItem(info, survivor_names[i]);
 	}
 
-	hModelPrefCookie = RegClientCookie("survivor_model", "Survivor model preference", CookieAccess_Public);
+	modelPrefCookie = RegClientCookie("survivor_model", "Survivor model preference", CookieAccess_Public);
 	RegConsoleCmd("sm_survivor", Cmd_SetSurvivor, "Sets your preferred survivor");
 }
 
@@ -260,20 +261,23 @@ public void Event_NewGame(Event event, const char[] name, bool dontBroadcast) {
 }
 //Checks if a user has a model preference cookie (set by native). If so, populate g_Models w/ it
 public void OnClientCookiesCached(int client) {
-	if(IsFakeClient(client) && hCookiesEnabled.IntValue == 0) return;
+	return;
+	if(IsFakeClient(client) || hCookiesEnabled.IntValue == 0) return;
 
 	char modelPref[2];
-	GetClientCookie(client, hModelPrefCookie, modelPref, sizeof(modelPref));
+	modelPrefCookie.Get(client, modelPref, sizeof(modelPref));
 	if(strlen(modelPref) > 0) {
 		//'type' starts at 1, 5 being other l4d1 survivors for l4d2
 		int type;
 		if(StringToIntEx(modelPref, type) > 0) {
 			PrintToServer("%N has cookie for %s", client, survivor_models[type - 1][17]);
 			if(isL4D1Survivors && type > 4) {
-				strcopy(g_Models[client], 64, survivor_models[type - 5]);
-				g_iPendingCookieModel[client] = type - 4;
+				strcopy(g_Models[client], 32, survivor_models[type - 5]);
+				g_iPendingCookieModel[client] = type - 5;
+			} else {
+				strcopy(g_Models[client], 32, survivor_models[type - 1]);
+				g_iPendingCookieModel[client] = type - 1;
 			}
-			
 		}
 	}
 }
@@ -316,6 +320,7 @@ public void Frame_CheckClient(int userid) {
 		if(survivors > survivorThreshold) {
 			//A model is set: Fetched from cookie
 			if(g_iPendingCookieModel[client]) {
+				return;
 				CreateTimer(0.2, Timer_SetClientModel, userid);
 			}/* else {
 				CreateTimer(0.2, Timer_SetAllCookieModels);
@@ -427,13 +432,13 @@ public Action Cmd_SetSurvivor(int client, int args) {
 		char arg1[16];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		if(arg1[0] == 'c') {
-			SetClientCookie(client, hModelPrefCookie, "");
+			modelPrefCookie.Set(client, "");
 			ReplyToCommand(client, "Your survivor preference has been reset");
 			return Plugin_Handled;
 		}
 		int number;
 		if(StringToIntEx(arg1, number) > 0 && number >= 0 && number < 8) {
-			SetClientCookie(client, hModelPrefCookie, arg1);
+			modelPrefCookie.Set(client, arg1);
 			ReplyToCommand(client, "Your survivor preference set to %s", survivor_names[number]);
 			return Plugin_Handled;
 		}else{
@@ -454,13 +459,13 @@ int Menu_ChooseSurvivor(Menu menu, MenuAction action, int activator, int item) {
 		char info[2];
 		menu.GetItem(item, info, sizeof(info));
 		if(info[0] == 'c') {
-			SetClientCookie(activator, hModelPrefCookie, "");
+			modelPrefCookie.Set(activator, "");
 			ReplyToCommand(activator, "Your survivor preference has been reset");
 		}else{
 			/*strcopy(g_Models[client], 64, survivor_models[type]);
 			if(isL4D1Survivors) type = GetSurvivorId(str, true);
 			SetEntProp(client, Prop_Send, "m_survivorCharacter", type);*/
-			SetClientCookie(activator, hModelPrefCookie, info);
+			modelPrefCookie.Set(activator, info);
 			ReplyToCommand(activator, "Your survivor preference set to %s", survivor_names[StringToInt(info) - 1]);
 		}
 	} else if (action == MenuAction_End)	
@@ -507,7 +512,7 @@ public int Native_SetPlayerModel(Handle plugin, int numParams) {
 		char charTypeStr[2];
 		Format(charTypeStr, sizeof(charTypeStr), "%d", character + 1);
 		if(!IsFakeClient(client) && keep)
-			SetClientCookie(client, hModelPrefCookie, charTypeStr);
+			modelPrefCookie.Set(client, charTypeStr);
 
 		strcopy(g_Models[client], 64, survivor_models[character]);
 		return 0;

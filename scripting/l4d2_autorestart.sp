@@ -34,11 +34,25 @@ public void OnPluginStart() {
 	cvar_hibernateWhenEmpty = FindConVar("sv_hibernate_when_empty");
 
 	RegAdminCmd("sm_request_restart", Command_RequestRestart, ADMFLAG_GENERIC);
+	RegAdminCmd("sm_ar_status", Command_Status, ADMFLAG_GENERIC);
 
 	CreateTimer(600.0, Timer_Check, _, TIMER_REPEAT);
 }
 
-public Action Command_RequestRestart(int client, int args) {
+Action Command_Status(int client, int args) {
+	char buffer[100];
+	FormatTime(buffer, sizeof(buffer), "%F at %I:%M %p", startupTime);
+	ReplyToCommand(client, "Started: %s", buffer);
+	int diff = GetTime() - startupTime;
+	int exceedRestart = diff - MAX_TIME_ONLINE_SECONDS;
+	int exceedRestartMin = exceedRestart / 60;
+	int exceedRestartHour = exceedRestartMin / 60;
+	ReplyToCommand(client, "Overdue restart time: %d hr / %d min / %d s", exceedRestartHour, exceedRestartMin, exceedRestart);
+	ReplyToCommand(client, "triesBots = %d\ttriesEmpty = %d / %d", triesBots, triesEmpty);
+	return Plugin_Handled;
+}
+
+Action Command_RequestRestart(int client, int args) {
 	if(IsServerEmpty()) {
 		ReplyToCommand(client, "Restarting...");
 		LogAction(client, -1, "requested to restart server if empty.");
@@ -57,8 +71,8 @@ public Action Timer_Check(Handle h) {
 			ServerCommand("quit");
 		}
 		return Plugin_Continue;
-	} else if(GetTime() - startupTime > MAX_TIME_ONLINE_SECONDS) {
-		LogAction(0, -1, "Server has passed max online time threshold, will restart if remains empty");
+	} else if(pendingRestart || GetTime() - startupTime > MAX_TIME_ONLINE_SECONDS) {
+		LogAction(0, -1, "Server has passed max online time threshold, will restart if remains empty (chk%d)", triesEmpty);
 		pendingRestart = true;
 		cvar_hibernateWhenEmpty.BoolValue = false;
 		if(IsServerEmpty()) {

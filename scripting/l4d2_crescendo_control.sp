@@ -62,7 +62,7 @@ public void OnPluginStart()
 
 	RegAdminCmd("sm_dgroup", Command_DebugGroups, ADMFLAG_GENERIC);
 	for(int i = 0; i < MAX_GROUPS; i++) {
-		g_groups[i].members = new ArrayList();
+		g_groups[i].members = null;
 	}
 }
 
@@ -193,6 +193,12 @@ bool ComputeGroups(GroupResult result, float activateFlow) {
 	bool inGroup[MAXPLAYERS+1];
 
 	ArrayList members = new ArrayList();
+	for(int i = 0; i < MAX_GROUPS; i++) { 
+		if(g_groups[i].members != null) { 
+			delete g_groups[i].members;
+		}
+	}
+	
 	for(int i = 1; i <= MaxClients; i++) {
 		if(!inGroup[i] && IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2) {
 			float prevFlow = L4D2Direct_GetFlowDistance(i);
@@ -214,7 +220,7 @@ bool ComputeGroups(GroupResult result, float activateFlow) {
 							inGroup[i] = true;
 							// PrintDebug("add leader to group %d: %N", groupIndex + 1, i);
 						}
-						// PrintDebug("add member to group %d: %N (dist = %.4f) (fldiff = %.1f)", groupIndex + 1, j, dist, flowDiff);
+						PrintDebug("add member to group %d: %N (dist = %.4f) (fldiff = %.1f)", groupIndex + 1, j, dist, flowDiff);
 						inGroup[j] = true;
 						members.Push(GetClientUserId(j));
 					} else {
@@ -222,13 +228,14 @@ bool ComputeGroups(GroupResult result, float activateFlow) {
 					}
 				}
 			}
-			if(g_groups[groupIndex].members.Length > 1) {
+			if(members.Length > 1) {
 				// Drop the old members:
 				if(g_groups[groupIndex].members != null) {
 					delete g_groups[groupIndex].members;
 				}
 				g_groups[groupIndex].pos = prevPos;
 				g_groups[groupIndex].members = members;
+				members = new ArrayList();
 				// PrintDebug("created group #%d with %d members", groupIndex + 1, g_groups[groupIndex].members.Length);
 				groupIndex++;
 				if(groupIndex == MAX_GROUPS) {
@@ -258,7 +265,7 @@ bool ComputeGroups(GroupResult result, float activateFlow) {
 
 	PrintDebug("===GROUP SUMMARY===");
 	for(int i = 0; i < MAX_GROUPS; i++) {
-		if(g_groups[i].members.Length > 0) {
+		if(g_groups[i].members != null && g_groups[i].members.Length > 0) {
 			PrintDebug("---Group %d---", i + 1);
 			PrintDebug("Origin: %.1f %.1f %.1f", g_groups[i].pos[0], g_groups[i].pos[1], g_groups[i].pos[2]);
 			float groupFlow = GetFlowAtPosition(g_groups[i].pos);
