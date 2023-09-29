@@ -341,7 +341,7 @@ public Action Command_ListNotes(int client, int args) {
 		char auth[32];
 		GetClientAuthId(target_list[0], AuthId_Steam2, auth, sizeof(auth));
 
-		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s'", auth);
+		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s' ORDER BY id DESC", auth);
 		ReplyToCommand(client, "Fetching notes...");
 		DataPack pack = new DataPack();
 		pack.WriteCell(GetClientUserId(client));
@@ -374,7 +374,7 @@ public void Event_FirstSpawn(Event event, const char[] name, bool dontBroadcast)
 	if(client > 0 && client <= MaxClients && !IsFakeClient(client)) {
 		static char auth[32];
 		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
-		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias, markedBy FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s' ORDER BY id ASC", auth);
+		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias, markedBy FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s' ORDER BY id DESC", auth);
 		DB.Query(DB_FindNotes, query, GetClientUserId(client));
 	}
 }
@@ -438,8 +438,9 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 				CPrintChatToAdmins("  {olive}%s: {default}%s", noteCreator, reason);
 			}
 		}
-		if(count >= MAX_NOTES_TO_SHOW) {
-			CPrintChatToAdmins("  ... and {olive}%d {default}more", MAX_NOTES_COUNT - count);
+		int remainingNotes = count - MAX_NOTES_TO_SHOW;
+		if(remainingNotes >= MAX_NOTES_TO_SHOW) {
+			CPrintChatToAdmins("  ... and {olive}%d more", remainingNotes);
 		}
 
 		if(actions > 0) {
