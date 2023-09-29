@@ -5,11 +5,21 @@
 
 #define PLUGIN_VERSION "1.0"
 
+#define PRECACHE_SOUNDS_COUNT 5
+char PRECACHE_SOUNDS[PRECACHE_SOUNDS_COUNT][] = {
+	"custom/meow1.mp3",
+	"custom/xen_teleport.mp3",
+	"custom/mariokartmusic.mp3",
+	"custom/spookyscaryskeletons.mp3",
+	"custom/wearenumberone2.mp3"
+};
+
 #include <sourcemod>
 #include <sdkhooks>
 #include <left4dhooks>
 #include <jutils.inc>
 #include <sceneprocessor>
+#include <multicolors>
 #include "l4d_survivor_identity_fix.inc"
 
 char ReserveLevels[4][] = {
@@ -46,7 +56,7 @@ enum L4DModelId {
 }
 
 static ArrayList LasersUsed;
-static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hMPGamemode, hPingDropThres, hForceSurvivorSet, hPlayerLimit, hSVMaxPlayers, hHideMotd;
+static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hPingDropThres, hForceSurvivorSet, hPlayerLimit, hSVMaxPlayers, hHideMotd, hGamemode;
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1];
 ReserveMode reserveMode;
 static bool isHighPingIdle[MAXPLAYERS+1], isL4D1Survivors;
@@ -113,7 +123,7 @@ public void OnPluginStart() {
 	LasersUsed = new ArrayList(1, 0);
 	SteamIDs = new StringMap();
 
-	ConVar hGamemode = FindConVar("mp_gamemode"); 
+	hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.GetString(gamemode, sizeof(gamemode));
 	hGamemode.AddChangeHook(Event_GamemodeChange);
 	Event_GamemodeChange(hGamemode, gamemode, gamemode);
@@ -134,7 +144,7 @@ public void OnPluginStart() {
 	for(int client = 1; client < MaxClients; client++) {
 		if(IsClientConnected(client) && IsClientInGame(client) && GetClientTeam(client) == 2) {
 			if(IsFakeClient(client)) {
-				SDKHook(client, SDKHook_OnTakeDamage, Event_OnTakeDamage);
+				SDKHook(client, SDKHook_OnTakeDamage, Event_OnTakeDamageBot);
 				SDKHook(client, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 			} else {
 				SDKHook(client, SDKHook_WeaponEquip, Event_OnWeaponEquip);
@@ -159,11 +169,11 @@ public void OnPluginStart() {
 	CreateTimer(8.0, Timer_CheckPlayerPings, _, TIMER_REPEAT);
 }
 
-public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
+void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
 	cvar.GetString(gamemode, sizeof(gamemode));
 }
 
-public void Event_PlayerLimitChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
+void Event_PlayerLimitChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
 	if(cvar.IntValue > 0) {
 		hSVMaxPlayers.IntValue = cvar.IntValue;
 	}
@@ -209,15 +219,15 @@ public void OnClientAuthorized(int client, const char[] auth) {
 	}
 }
 
-public Action Command_SetServerPermissions(int client, int args) {
+Action Command_SetServerPermissions(int client, int args) {
 	if(args > 0) {
 		char arg1[32];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		if(StrEqual(arg1, "public", false)) {
 			reserveMode = Reserve_None;
-		}else if(StrContains(arg1, "noti", false) > -1 || StrContains(arg1, "watch", false) > -1) {
+		} else if(StrContains(arg1, "noti", false) > -1 || StrContains(arg1, "watch", false) > -1) {
 			reserveMode = Reserve_Watch;
-		}else if(StrContains(arg1, "admin", false) > -1) {
+		} else if(StrContains(arg1, "admin", false) > -1) {
 			reserveMode = Reserve_AdminOnly;
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
@@ -225,7 +235,7 @@ public Action Command_SetServerPermissions(int client, int args) {
 					SteamIDs.SetValue(arg1, i);
 				}
 			}
-		}else if(StrEqual(arg1, "private", false)) {
+		} else if(StrEqual(arg1, "private", false)) {
 			reserveMode = Reserve_Private;
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
@@ -233,7 +243,7 @@ public Action Command_SetServerPermissions(int client, int args) {
 					SteamIDs.SetValue(arg1, i);
 				}
 			}
-		}else {
+		} else {
 			ReplyToCommand(client, "Usage: sm_reserve [public/notify/admin/private] or no arguments to view current reservation.");
 			return Plugin_Handled;
 		}
@@ -245,7 +255,7 @@ public Action Command_SetServerPermissions(int client, int args) {
 }
 
 
-public Action Timer_CheckPlayerPings(Handle timer) {
+Action Timer_CheckPlayerPings(Handle timer) {
 	if(StrEqual(gamemode, "hideandseek")) return Plugin_Continue;
 	if(hPingDropThres.IntValue != 0) {
 		for (int i = 1; i <= MaxClients; i++ ) {
@@ -257,7 +267,7 @@ public Action Timer_CheckPlayerPings(Handle timer) {
 					iHighPingCount[i] = 0;
 				}else if(ping > hPingDropThres.IntValue) {
 					if(iHighPingCount[i]++ > 2) {
-						PrintToChat(i, "Due to your high ping (%d ms), you have been moved to AFK.", ping);
+						PrintToChat(i, "Due to your high ping (%d ms) you have been moved to AFK.", ping);
 						PrintToChat(i, "You will be automatically switched back once your ping restores");
 						SDKCall(hGoAwayFromKeyboard, i);
 						//PrintToChat(i, "Type /pingignore to disable this feature.");
@@ -273,10 +283,10 @@ public Action Timer_CheckPlayerPings(Handle timer) {
 	return Plugin_Continue;
 }
 
-public void CVC_FFNotice(ConVar convar, const char[] oldValue, const char[] newValue) {
+void CVC_FFNotice(ConVar convar, const char[] oldValue, const char[] newValue) {
 	if(convar.IntValue > 0) {
 		HookEvent("player_hurt", Event_PlayerHurt);
-	}else {
+	} else {
 		UnhookEvent("player_hurt", Event_PlayerHurt);
 	}
 }
@@ -284,14 +294,16 @@ public void CVC_FFNotice(ConVar convar, const char[] oldValue, const char[] newV
 public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	LasersUsed.Clear();
 }
-public Action Command_RespawnAll(int client, int args) {
+
+Action Command_RespawnAll(int client, int args) {
 	L4D_CreateRescuableSurvivors();
 	return Plugin_Handled;
 }
-public Action Command_SwapPlayer(int client, int args) {
+
+Action Command_SwapPlayer(int client, int args) {
 	if(args < 1) {
 		ReplyToCommand(client, "Usage: sm_swap <player> [another player (default: self)] [\"silent\"]");
-	}else{
+	} else {
 		char arg1[64], arg2[64], arg3[8];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		GetCmdArg(2, arg2, sizeof(arg2));
@@ -348,7 +360,7 @@ public Action Command_SwapPlayer(int client, int args) {
 	return Plugin_Handled;
 }
 
-public Action Command_SkipOutro(int client, int args) {
+Action Command_SkipOutro(int client, int args) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
 			ClientCommand(i, "skipouttro");
@@ -356,7 +368,7 @@ public Action Command_SkipOutro(int client, int args) {
 	}
 	return Plugin_Handled;
 }
-public Action Command_ListClientModels(int client, int args) {
+Action Command_ListClientModels(int client, int args) {
 	char model[64];
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
@@ -366,7 +378,7 @@ public Action Command_ListClientModels(int client, int args) {
 	}
 	return Plugin_Handled;
 }
-public Action Command_PlaySound(int client, int args) {
+Action Command_PlaySound(int client, int args) {
 	if(args < 2) {
 		ReplyToCommand(client, "Usage: sm_playsound <player> <soundpath>");
 	}else{
@@ -406,17 +418,17 @@ public Action Command_PlaySound(int client, int args) {
 				else
 					EmitSoundToClient(target, arg2, target);
 				strcopy(lastSound[target], 64, arg2);
-				ReplyToCommand(client, "Playing '%s' to %N %s", arg2, target, arg3);
 			}
 		}
-		ShowActivity2(client, target_name, "\"%L\" playing sound \"%s\" to \"%s\"", client, arg2, target_name);
+		CShowActivity2(client, "[SM] ", "playing sound {olive}%s{default} to {yellow}%s", arg2, target_name);
 	}
 	return Plugin_Handled;
 }
-public Action Command_StopSound(int client, int args) {
+
+Action Command_StopSound(int client, int args) {
 	if(args < 2) {
 		ReplyToCommand(client, "Usage: sm_stopsound <player> [soundpath or leave blank for previous]");
-	}else{
+	} else {
 		char arg1[32], arg2[64];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		GetCmdArg(2, arg2, sizeof(arg2));
@@ -451,7 +463,8 @@ public Action Command_StopSound(int client, int args) {
 	}
 	return Plugin_Handled;
 }
-public Action Command_SetClientModel(int client, int args) {
+
+Action Command_SetClientModel(int client, int args) {
 	if(args < 1) {
 		ReplyToCommand(client, "Usage: sm_model <model> [player] ['keep']");
 	} else {
@@ -596,10 +609,10 @@ public Action Timer_RequipWeapon(Handle hdl, DataPack pack) {
 	return Plugin_Handled;
 }
 
-public Action Cmd_SetSurvivor(int client, int args) {
+Action Cmd_SetSurvivor(int client, int args) {
 	if(args < 1) {
 		ReplyToCommand(client, "Usage: sm_surv <player> <survivor>");
-	}else{
+	} else {
 		char arg1[32], arg2[16];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		GetCmdArg(2, arg2, sizeof(arg2));
@@ -636,9 +649,13 @@ public Action Cmd_SetSurvivor(int client, int args) {
 }
 
 // Hide MOTD
-public Action VGUIMenu(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init) {
+Action VGUIMenu(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init) {
 	if(!hHideMotd.BoolValue) return Plugin_Continue;
-	static char buffer[5];
+	static char buffer[8];
+	// Show MOTD on versus games
+	hGamemode.GetString(buffer, sizeof(buffer));
+	if(StrEqual(buffer, "versus", false)) return Plugin_Continue;
+
 	BfReadString(bf, buffer, sizeof(buffer));
 	return strcmp(buffer, "info") == 0 ? Plugin_Handled : Plugin_Continue;
 }  
@@ -647,7 +664,7 @@ public void OnClientPutInServer(int client) {
 	if(!IsFakeClient(client))
 		SDKHook(client, SDKHook_WeaponEquip, Event_OnWeaponEquip);
 	else
-		SDKHook(client, SDKHook_OnTakeDamage, Event_OnTakeDamage);
+		SDKHook(client, SDKHook_OnTakeDamage, Event_OnTakeDamageBot);
 }
 
 public void OnClientDisconnect(int client) {
@@ -692,18 +709,17 @@ public Action Timer_AllowKitPickup(Handle h, int entity) {
 	return Plugin_Handled;
 }
 public void OnMapStart() {
-	AddFileToDownloadsTable("sound/custom/meow1.mp3");
-	PrecacheSound("custom/meow1.mp3");
-	AddFileToDownloadsTable("sound/custom/xen_teleport.mp3");
-	PrecacheSound("custom/xen_teleport.mp3");
-	AddFileToDownloadsTable("sound/custom/mariokartmusic.mp3");
-	PrecacheSound("custom/mariokartmusic.mp3");	
-	AddFileToDownloadsTable("sound/custom/spookyscaryskeletons.mp3");
-	PrecacheSound("custom/spookyscaryskeletons.mp3");
+	#if PRECACHE_SOUNDS_COUNT > 0
+	char buffer[128];
+	for(int i = 0; i < PRECACHE_SOUNDS_COUNT; i++) {
+		Format(buffer, sizeof(buffer), "sound/%s", PRECACHE_SOUNDS[i]);
+		AddFileToDownloadsTable(buffer);
+		PrecacheSound(PRECACHE_SOUNDS[i]);
+	}
+	#endif
 	
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
-	
 }
 public void OnConfigsExecuted() {
 	isL4D1Survivors = L4D2_GetSurvivorSetMap() == 1;
@@ -714,10 +730,10 @@ public void OnConfigsExecuted() {
 
 public void OnSceneStageChanged(int scene, SceneStages stage) {
 	if(stage == SceneStage_Started) {
-		static char sceneFile[64];
-		GetSceneFile(scene, sceneFile, sizeof(sceneFile));
 		int activator = GetSceneInitiator(scene);
 		if(activator == 0) {
+			static char sceneFile[64];
+			GetSceneFile(scene, sceneFile, sizeof(sceneFile));
 			if(StrContains(sceneFile, "scenes/mechanic/dlc1_c6m1_initialmeeting") > -1 || StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting07.vcd")) {
 				CancelScene(scene);
 			}else if(StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting13.vcd") && activator == 0) {
@@ -738,16 +754,22 @@ public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadca
 		if(client && botDropMeleeWeapon[bot] > 0) {
 			int meleeOwnerEnt = GetEntPropEnt(botDropMeleeWeapon[bot], Prop_Send, "m_hOwnerEntity");
 			if(meleeOwnerEnt == -1) { 
+				int currentWeapon = GetPlayerWeaponSlot(client, 1);
+				if(currentWeapon > 0) {
+					char buffer[32];
+					GetEntityClassname(currentWeapon, buffer, sizeof(buffer));
+					// Only delete their duplicate pistols, let melees get thrown out (into the world)
+					if(!StrEqual(buffer, "weapon_melee"))
+						RemoveEntity(currentWeapon);
+				}
 				EquipPlayerWeapon(client, botDropMeleeWeapon[bot]);
 				botDropMeleeWeapon[bot] = -1;
-			} else {
-				PrintToChat(client, "Could not give back your melee weapon, %N has it instead.", meleeOwnerEnt);
 			}
 		}
 		SDKUnhook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 	}
 }
-public Action Event_OnWeaponDrop(int client, int weapon) {
+Action Event_OnWeaponDrop(int client, int weapon) {
 	if(!IsValidEntity(weapon) || !IsFakeClient(client)) return Plugin_Continue;
 	if(GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
 		char wpn[32];
@@ -762,12 +784,12 @@ public Action Event_OnWeaponDrop(int client, int weapon) {
 	}
 	return Plugin_Continue;
 }
-public void Frame_HideEntity(int entity) {
+void Frame_HideEntity(int entity) {
 	if(IsValidEntity(entity))
 		TeleportEntity(entity, OUT_OF_BOUNDS, NULL_VECTOR, NULL_VECTOR);
 }
-//STUCK BOTS WITH ZOMBIES FIX
-public Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
+// Only called for bots, kills zombies behind bots, preventing them being stuck when their AI doesn't want to keep them alive
+Action Event_OnTakeDamageBot(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
 	if(attacker > MaxClients) {
 		static char name[16];
 		GetEdictClassname(attacker, name, sizeof(name));
@@ -786,7 +808,7 @@ public Action Event_OnTakeDamage(int victim, int& attacker, int& inflictor, floa
 	return Plugin_Continue;
 }
 //MINOR FIXES
-public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
+void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
 	if(client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
 		if(StrEqual(gamemode, "coop", false)) {
 			if(botDropMeleeWeapon[client] > 0) {
@@ -805,7 +827,7 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 	}
 }
 
-public Action Timer_TPBots(Handle timer, int user) {
+Action Timer_TPBots(Handle timer, int user) {
 	float pos[3];
 	GetClientAbsOrigin(user, pos);
 	for(int i = 1; i < MaxClients + 1; i++) {
@@ -837,34 +859,34 @@ public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 	}
 }
 //LASER SIGHT NOTICE
-public void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast) {
 	if(hLaserNotice.BoolValue) {
-		char entity_name[32];
-		int player_id = GetClientOfUserId(event.GetInt("userid"));
-		int target_id = event.GetInt("targetid");
+		int client = GetClientOfUserId(event.GetInt("userid"));
+		int targetEntity = event.GetInt("targetid");
 	
-		GetEntityClassname(target_id, entity_name, sizeof(entity_name));
+		char classname[32];
+		GetEntityClassname(targetEntity, classname, sizeof(classname));
 		
-		if(StrEqual(entity_name,"upgrade_laser_sight")) {
-			if(LasersUsed.FindValue(target_id) == -1) {
-				LasersUsed.Push(target_id);
-				PrintToChatAll("%N picked up laser sights", player_id);
+		if(StrEqual(classname, "upgrade_laser_sight")) {
+			if(LasersUsed.FindValue(targetEntity) == -1) {
+				LasersUsed.Push(targetEntity);
+				PrintToChatAll("%N picked up laser sights", client);
 			}
 		}	
 	}
 }
 //FINALE TIME INFO
-public void Event_GauntletStart(Event event, const char[] name, bool dontBroadcast) {
+void Event_GauntletStart(Event event, const char[] name, bool dontBroadcast) {
 	if(hFinaleTimer.IntValue > 0) {
 		iFinaleStartTime = GetTime();
 	}
 }
-public void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
+void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
 	if(hFinaleTimer.IntValue == 2) {
 		iFinaleStartTime = GetTime();
 	}
 }
-public void Event_FinaleEnd(Event event, const char[] name, bool dontBroadcast) {
+void Event_FinaleEnd(Event event, const char[] name, bool dontBroadcast) {
 	if(hFinaleTimer.IntValue != 0) {
 		if(iFinaleStartTime != 0) {
 			int difference = GetTime() - iFinaleStartTime;
@@ -877,7 +899,7 @@ public void Event_FinaleEnd(Event event, const char[] name, bool dontBroadcast) 
 	}
 }
 //Give kits to bots that replace kicked player
-public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && IsFakeClient(client) && HasEntProp(client, Prop_Send, "m_humanSpectatorUserID") && GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") < 0) {
 		int ent = GivePlayerItem(client, "weapon_first_aid_kit");
@@ -903,14 +925,4 @@ stock void FormatSeconds(int raw_sec, char[] str, int strSize) {
 		Format(str, strSize, "%d seconds", seconds);
 	}
 	
-}
-stock int GetAnyValidClient() {
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (IsClientInGame(i) && !IsFakeClient(i))
-		{
-			return i;
-		}
-	}
-	return -1;
 }
