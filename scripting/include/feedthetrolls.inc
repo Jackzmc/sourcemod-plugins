@@ -5,10 +5,10 @@
  
 
 enum TrollModifier {
-    TrollMod_Invalid = 0,
+  TrollMod_Invalid = 0,
 	TrollMod_Instant = 1 << 0,
 	TrollMod_Constant = 1 << 1,
-    TrollMod_PlayerOnly = 1 << 2, // Does the troll only work on players, not bots? If set, troll only applied on real user. If not, troll applied to both bot and idler
+  TrollMod_PlayerOnly = 1 << 2, // Does the troll only work on players, not bots? If set, troll only applied on real user. If not, troll applied to both bot and idler
 }
 
 native void ApplyTroll(int victim, const char[] name, TrollModifier modifier = TrollMod_Invalid, int flags, int activator, bool silent = false);

@@ -20,7 +20,6 @@ Handle hThrowTimer;
 ConVar hAllowEnemyTeam;
 ConVar hThrowItemInterval;
 ConVar hAutoPunish;
-ConVar hMagnetChance;
 ConVar hShoveFailChance;
 ConVar hAutoPunishExpire;
 ConVar hMagnetTargetMode;
@@ -84,12 +83,15 @@ bool spIsActive;
 enum SpecialSpawnFlags {
 	Special_Anywhere = 0,
 	Special_OnTarget = 1,
-	Special_SpawnDirectOnFailure = 2
+	Special_SpawnDirectOnFailure = 2,
+	Special_KillOnIncap = 4,
+	Special_AlwaysTarget = 8
 }
 
 enum SpecialInternalFlags {
 	SPI_KillOnSpawn = 1,
 	SPI_AlwaysTarget = 2,
+	SPI_KillOnTargetIncap = 4
 }
 
 int healTargetPlayer;

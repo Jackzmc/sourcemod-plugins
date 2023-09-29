@@ -30,7 +30,7 @@ methodmap GameConVarStorage < StringMap {
 
 }
 
-methodmap GameConVar __nullable__ < ConVar {
+methodmap GameConVar < ConVar {
 	public GameConVar(const char[] name) {
 		return view_as<GameConVar>(FindConVar(name));
 	}
