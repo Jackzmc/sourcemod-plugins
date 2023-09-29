@@ -3,7 +3,8 @@ enum hatFlags {
 	HAT_POCKET = 1,
 	HAT_REVERSED = 2,
 	HAT_COMMANDABLE = 4,
-	HAT_RAINBOW = 8
+	HAT_RAINBOW = 8,
+	HAT_PRESET = 16
 }
 enum struct HatData {
 	int entity; // The entity REFERENCE
@@ -24,6 +25,7 @@ enum struct HatData {
 	float rainbowColor[3];
 	int rainbowTicks;
 	bool rainbowReverse;
+	char attachPoint[32];
 }
 enum hatFeatures {
 	HatConfig_None = 0,
@@ -38,6 +40,8 @@ enum hatFeatures {
 }
 
 HatData hatData[MAXPLAYERS+1];
+char ActivePreset[MAXPLAYERS+1][32];
+StringMap g_HatPresets;
 int lastHatRequestTime[MAXPLAYERS+1];
 
 #define MAX_FORBIDDEN_CLASSNAMES 13
@@ -61,7 +65,7 @@ char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 
 #define MAX_FORBIDDEN_MODELS 1
 char FORBIDDEN_MODELS[MAX_FORBIDDEN_MODELS][] = {
-	"models/props_vehicles/c130.mdl"
+	"models/props_vehicles/c130.mdl",
 };
 
 #define MAX_REVERSE_CLASSNAMES 2
@@ -70,7 +74,7 @@ static char REVERSE_CLASSNAMES[MAX_REVERSE_CLASSNAMES][] = {
 	"func_movelinear"
 };
 
-public Action Command_DoAHat(int client, int args) {
+Action Command_DoAHat(int client, int args) {
 	static char cmdName[8];
 	GetCmdArg(0, cmdName, sizeof(cmdName));
 
@@ -107,8 +111,21 @@ public Action Command_DoAHat(int client, int args) {
 
 	int entity = GetHat(client);
 	if(entity > 0) {
+		if(HasFlag(client, HAT_PRESET)) {
+			PrintToChat(client, "[Hats] Your hat is a preset, use /hatp to remove it.");
+			return Plugin_Handled;
+		}
 		char arg[4];
 		GetCmdArg(1, arg, sizeof(arg));
+		if(arg[0] == 'e') {
+			ReplyToCommand(client, "\t\t\"origin\"\t\"%f %f %f\"", hatData[client].offset[0], hatData[client].offset[1], hatData[client].offset[2]);
+			ReplyToCommand(client, "\t\t\"angles\"\t\"%f %f %f\"", hatData[client].angles[0], hatData[client].angles[1], hatData[client].angles[2]);
+			return Plugin_Handled;
+		} else if(arg[0] == 'v') {
+			ReplyToCommand(client, "Flags: %d", hatData[client].flags);
+			// ReplyToCommand(client, "CurOffset: %f %f %f", );
+			return Plugin_Handled;
+		}
 		// int orgEntity = entity;
 		if(HasFlag(client, HAT_REVERSED)) {
 			entity = client;
@@ -421,15 +438,6 @@ public Action Command_DoAHat(int client, int args) {
 
 		char classname[64];
 		GetEntityClassname(entity, classname, sizeof(classname));
-		// Check is pretty redudant as the traceray itself shouldn't grab it, but just in case:
-		if(cvar_sm_hats_blacklist_enabled.BoolValue) {
-			for(int i = 0; i < MAX_FORBIDDEN_CLASSNAMES; i++) {
-				if(StrEqual(FORBIDDEN_CLASSNAMES[i], classname)) {
-					PrintToChat(client, "[Hats] Entity (%s) is a blacklisted entity. Naughty.", classname);
-					return Plugin_Handled;
-				}
-			}
-		}
 
 		// Check for any class that should always be reversed
 		if(~flags & view_as<int>(HAT_REVERSED)) {
@@ -445,6 +453,8 @@ public Action Command_DoAHat(int client, int args) {
 	}
 	return Plugin_Handled;
 }
+
+
 
 // Handles consent that a person to be hatted by another player
 public int HatConsentHandler(Menu menu, MenuAction action, int target, int param2) {
@@ -483,7 +493,7 @@ void ClearHats() {
 	}
 }
 void ClearHat(int i, bool restore = false) {
-
+	
 	int entity = EntRefToEntIndex(hatData[i].entity);
 	int visibleEntity = EntRefToEntIndex(hatData[i].visibleEntity);
 	int modifyEntity = HasFlag(i, HAT_REVERSED) ? i : entity;
@@ -561,6 +571,7 @@ bool CanTarget(int victim) {
 
 bool IsHatAllowedInSaferoom(int client) {
 	if(L4D_IsMissionFinalMap()) return true;
+	if(HasFlag(client, HAT_PRESET)) return true;
 	char name[32];
 	GetEntityClassname(hatData[client].entity, name, sizeof(name));
 	// Don't allow non-weapons in saferoom
@@ -617,7 +628,7 @@ bool HasFlag(int client, hatFlags flag) {
 	return hatData[client].flags & view_as<int>(flag) != 0;
 }
 
-void EquipHat(int client, int entity, const char[] classname = "", int flags = HAT_NONE) {
+void EquipHat(int client, int entity, const char[] classname = "", int flags = HAT_NONE, const char[] attachPoint = "eyes") {
 	if(HasHat(client))
 		ClearHat(client, true);
 
@@ -633,12 +644,12 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 	hatData[client].collisionGroup = GetEntProp(modifyEntity, Prop_Send, "m_CollisionGroup");
 	hatData[client].solidType = GetEntProp(modifyEntity, Prop_Send, "m_nSolidType");
 	hatData[client].moveType = GetEntProp(modifyEntity, Prop_Send, "movetype");
+	strcopy(hatData[client].attachPoint, 32, attachPoint);
 
 	if(client <= MaxClients) SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 	if(entity <= MaxClients) SDKHook(entity, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 	
 	if(modifyEntity <= MaxClients) {
-
 		AcceptEntityInput(modifyEntity, "DisableLedgeHang");
 	} else if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_FakeHat)) {
 		return;
@@ -671,6 +682,10 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 		hatData[client].flags = 0;
 		hatData[client].offset[0] = hatData[client].offset[1] = hatData[client].offset[2] = 0.0;
 		hatData[client].angles[0] = hatData[client].angles[1] = hatData[client].angles[2] = 0.0;
+
+		if(flags & view_as<int>(HAT_PRESET)) {
+			hatData[client].flags |= view_as<int>(HAT_PRESET);
+		}
 
 		if(modifyEntity <= MaxClients) {
 			if(HasFlag(client, HAT_REVERSED)) {
@@ -732,9 +747,9 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 				TeleportEntity(modifyEntity, hatData[client].offset, hatData[client].angles, NULL_VECTOR);
 				SetParentAttachment(modifyEntity, "head", true);
 			} else {
-				SetParentAttachment(modifyEntity, "eyes", true);
+				SetParentAttachment(modifyEntity, attachPoint, true);
 				TeleportEntity(modifyEntity, hatData[client].offset, hatData[client].angles, NULL_VECTOR);
-				SetParentAttachment(modifyEntity, "eyes", true);
+				SetParentAttachment(modifyEntity, attachPoint, true);
 			}
 			
 			if(HasFlag(client, HAT_COMMANDABLE)) {
@@ -743,17 +758,17 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 			}
 		} else {
 			SetParent(entity, client);
-			SetParentAttachment(modifyEntity, "eyes", true);
+			SetParentAttachment(modifyEntity, attachPoint, true);
 			TeleportEntity(modifyEntity, hatData[client].offset, hatData[client].angles, NULL_VECTOR);
-			SetParentAttachment(modifyEntity, "eyes", true);
+			SetParentAttachment(modifyEntity, attachPoint, true);
 		}
 
 		if(visibleEntity > 0) {
 			SetParent(visibleEntity, client);
-			SetParentAttachment(visibleEntity, "eyes", true);
+			SetParentAttachment(visibleEntity, attachPoint, true);
 			hatData[client].offset[2] += 10.0;
 			TeleportEntity(visibleEntity, hatData[client].offset, hatData[client].angles, NULL_VECTOR);
-			SetParentAttachment(visibleEntity, "eyes", true);
+			SetParentAttachment(visibleEntity, attachPoint, true);
 			#if defined DEBUG_HAT_SHOW_FAKE
 			L4D2_SetEntityGlow(visibleEntity, L4D2Glow_Constant, 0, 0, color2, false);
 			#endif

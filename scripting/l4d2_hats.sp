@@ -15,6 +15,7 @@ static float EMPTY_ANG[3] = { 0.0, 0.0, 0.0 };
 #include <jutils>
 #include <gamemodes/ents>
 #include <smlib/effects>
+#include <multicolors>
 
 
 bool tempGod[MAXPLAYERS+1];
@@ -24,9 +25,9 @@ int g_iLaserIndex;
 
 float cmdThrottle[MAXPLAYERS+1];
 static bool onLadder[MAXPLAYERS+1];
-float lastAng[MAXPLAYERS+1][3];
 
 Cookie noHatVictimCookie;
+Cookie hatPresetCookie;
 
 ConVar cvar_sm_hats_enabled;
 ConVar cvar_sm_hats_flags;
@@ -37,6 +38,7 @@ ConVar cvar_sm_hats_max_distance;
 
 #include <hats/walls.sp>
 #include <hats/hats.sp>
+#include <hats/hat_presets.sp>
 
 public Plugin myinfo = 
 {
@@ -63,6 +65,7 @@ public void OnPluginStart() {
 	HookEvent("player_left_checkpoint", OnLeaveSaferoom);
 	HookEvent("player_bot_replace",  Event_PlayerToIdle);
 	HookEvent("bot_player_replace", Event_PlayerOutOfIdle);
+	HookEvent("player_spawn", Event_PlayerSpawn);
 
 	RegConsoleCmd("sm_hat", Command_DoAHat, "Hats");
 	RegAdminCmd("sm_hatf", Command_DoAHat, ADMFLAG_ROOT, "Hats");
@@ -70,6 +73,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_walls", Command_ManageWalls, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_wall", Command_ManageWalls, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_edit", Command_ManageWalls, ADMFLAG_CHEATS);
+	RegConsoleCmd("sm_hatp", Command_DoAHatPreset);
 
 	cvar_sm_hats_blacklist_enabled = CreateConVar("sm_hats_blacklist_enabled", "1", "Is the prop blacklist enabled", FCVAR_NONE, true, 0.0, true, 1.0);
 	cvar_sm_hats_enabled = CreateConVar("sm_hats_enabled", "1.0", "Enable hats.\n0=OFF, 1=Admins Only, 2=Any", FCVAR_NONE, true, 0.0, true, 2.0);
@@ -80,6 +84,8 @@ public void OnPluginStart() {
 
 	noHatVictimCookie = new Cookie("hats_no_target", "Disables other players from making you their hat", CookieAccess_Public);
 	noHatVictimCookie.SetPrefabMenu(CookieMenu_OnOff_Int, "Disable player hats for self", OnLocalPlayerHatCookieSelect);
+
+	hatPresetCookie = new Cookie("hats_preset", "Sets the preset hat you spawn with", CookieAccess_Public);
 
 	int entity = -1;
 	char targetName[32];
@@ -95,13 +101,9 @@ public void OnPluginStart() {
 		WallBuilder[i].Reset(true);
 		hatData[i].yeetGroundTimer = null;
 	}
+
+	LoadPresets();
 }
-
-////////////////////////////////////////////////////////////////
-
-
-
-
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -129,7 +131,7 @@ public void OnEnterSaferoom(Event event, const char[] name, bool dontBroadcast) 
 	if(client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
 		inSaferoom[client] = true;
 		if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_NoSaferoomHats)) {
-			if(HasHat(client)) {
+			if(HasHat(client) && !HasFlag(client, HAT_PRESET)) {
 				if(!IsHatAllowedInSaferoom(client)) {
 					PrintToChat(client, "[Hats] Hat is not allowed in the saferoom and has been returned");
 					ClearHat(client, true);
@@ -245,14 +247,14 @@ void Frame_Remount(int i) {
 	int entity = GetHat(i);
 	if(entity == -1) return;
 	SetParent(entity, i);
-	SetParentAttachment(entity, "eyes", false);
-	SetParentAttachment(entity, "eyes", true);
+	SetParentAttachment(entity, hatData[i].attachPoint, false);
+	SetParentAttachment(entity, hatData[i].attachPoint, true);
 	
 	int visibleEntity = EntRefToEntIndex(hatData[i].visibleEntity);
 	if(visibleEntity > 0) {
 		SetParent(visibleEntity, i);
-		SetParentAttachment(visibleEntity, "eyes", false);
-		SetParentAttachment(visibleEntity, "eyes", true);
+		SetParentAttachment(visibleEntity, hatData[i].attachPoint, false);
+		SetParentAttachment(visibleEntity, hatData[i].attachPoint, true);
 	}
 }
 
@@ -263,7 +265,9 @@ Action Timer_PropSleep(Handle h, DataPack pack) {
 	int ref = pack.ReadCell();
 	int client = GetClientOfUserId(pack.ReadCell());
 	if(client > 0 && IsValidEntity(ref)) {
-		CheckKill(ref, client);
+		// CheckKill(ref, client);
+		float vel[3];
+		TeleportEntity(ref, NULL_VECTOR, NULL_VECTOR, vel);
 		PrintToServer("Hats: Yeet delete timeout");
 		if(hatData[client].yeetGroundTimer != null) {
 			delete hatData[client].yeetGroundTimer;
@@ -280,7 +284,11 @@ Action Timer_GroundKill(Handle h, DataPack pack) {
 		GetEntPropVector(ref, Prop_Data, "m_vecVelocity", vel);
 		if(FloatAbs(vel[2]) < 0.2 || IsNearGround(ref)) {
 			PrintToServer("Hats: Yeet ground check %b %b", FloatAbs(vel[2]) < 0.2, IsNearGround(ref));
-			CheckKill(ref, client);
+			vel[0] = 0.0;
+			vel[1] = 0.0;
+			vel[2] = 0.0;
+			TeleportEntity(ref, NULL_VECTOR, NULL_VECTOR, vel);
+			// CheckKill(ref, client);
 			hatData[client].yeetGroundTimer = null;
 			return Plugin_Stop;
 		}
@@ -552,7 +560,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				ClientCommand(client, "sm_hat");
 			}
 			cmdThrottle[client] = tick;
-			lastAng[client] = angles;
 			hatData[client].angles = angles;
 			return Plugin_Handled;
 		}
@@ -694,6 +701,17 @@ public Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float
 	return Plugin_Continue;
 }
 
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0 && !HasHat(client) && !IsFakeClient(client)) {
+		hatPresetCookie.Get(client, ActivePreset[client], 32);
+		if(ActivePreset[client][0] != '\0') {
+			RestoreActivePreset(client);
+			ReplyToCommand(client, "[Hats] Applied your hat preset! Clear it with /hatp");
+		}
+	}
+}
+
 public void OnClientDisconnect(int client) {
 	tempGod[client] = false;
 	WallBuilder[client].Reset();
@@ -722,8 +740,8 @@ public void OnMapStart() {
 		tempGod[i] = false;
 	}
 	NavAreas = GetSpawnLocations();
-
 }
+
 
 public void OnMapEnd() {
 	delete NavAreas;
@@ -788,21 +806,29 @@ bool Filter_ValidHats(int entity, int mask, int data) {
 		int client = GetRealClient(data);
 		return CanTarget(client); // Don't target if player targetting off
 	}
+	return CheckBlacklist(entity);
+}
+
+bool CheckBlacklist(int entity) {
 	if(cvar_sm_hats_blacklist_enabled.BoolValue) {
-		static char buffer[32];
+		static char buffer[64];
 		GetEntityClassname(entity, buffer, sizeof(buffer));
 		for(int i = 0; i < MAX_FORBIDDEN_CLASSNAMES; i++) {
 			if(StrEqual(FORBIDDEN_CLASSNAMES[i], buffer)) {
 				return false;
 			}
 		}
-		if(StrContains(buffer, "prop_") != -1) {
+		if(StrContains(buffer, "prop_") > -1) {
 			GetEntPropString(entity, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
 			for(int i = 0; i < MAX_FORBIDDEN_MODELS; i++) {
 				if(StrEqual(FORBIDDEN_MODELS[i], buffer)) {
 					return false;
 				}
 			}
+		}
+		GetEntPropString(entity, Prop_Data, "m_iName", buffer, sizeof(buffer));
+		if(StrEqual(buffer, "l4d2_randomizer")) {
+			return false;
 		}
 	}
 	return true;
