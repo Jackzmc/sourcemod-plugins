@@ -2,7 +2,7 @@
 #pragma newdecls required
 
 //#define DEBUG
-#define PUSH_TIMER 90.0
+#define PUSH_TIMER 60.0
 
 #define PLUGIN_VERSION "1.0"
 
