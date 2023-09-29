@@ -174,20 +174,20 @@ ArrayList GetPhrasesArray(const char[] key) {
 }
 
 
-stock int FindClosestClientAdminPriority(int source, bool ignoreBots, float pos[3]) {
-	int c = FindClosestAdmin(source, ignoreBots, pos);
+stock int FindClosestClientAdminPriority(int source, float pos[3]) {
+	int c = FindClosestAdmin(source, pos);
 	if(c == -1) return FindClosestClient(source, ignoreBots, pos);
 	else return c;
 }
 
-int FindClosestClient(int source, bool ignoreBots, float pos[3]) {
+stock int FindClosestClient(int source, bool ignoreBots, float pos[3]) {
 	int closest = -1;
 	float minDist = -1.0;
 	static float pos1[3];
 	static float pos2[3];
 	GetClientAbsOrigin(source, pos1);
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && (!ignoreBots || !IsFakeClient(i)) && i != source) {
+		if(i != source && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && (!ignoreBots || !IsFakeClient(i)) ) {
 			GetClientAbsOrigin(i, pos2);
 			float dist = GetVectorDistance(pos1, pos2);
 			if(minDist == -1.0 || dist <= minDist) {
@@ -200,19 +200,16 @@ int FindClosestClient(int source, bool ignoreBots, float pos[3]) {
 	return closest;
 }
 
-int FindClosestAdmin(int source, bool ignoreBots, float pos[3]) {
+stock int FindClosestAdmin(int source, float pos[3]) {
 	int closest = -1;
 	float minDist = -1.0;
 	static float pos1[3];
 	static float pos2[3];
 	GetClientAbsOrigin(source, pos);
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && 
-			(ignoreBots || !IsFakeClient(i)) 
-			&& GetUserAdmin(i) != INVALID_ADMIN_ID && i != source
-		) {
+		if(i != source && IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) && !IsFakeClient(i) && GetUserAdmin(i) != INVALID_ADMIN_ID) {
 			GetClientAbsOrigin(i, pos2);
-			float dist = GetVectorDistance(pos1, pos2);
+			float dist = GetVectorDistance(pos1, pos2, true);
 			if(minDist == -1.0 || dist <= minDist) {
 				closest = i;
 				minDist = dist;
@@ -223,9 +220,9 @@ int FindClosestAdmin(int source, bool ignoreBots, float pos[3]) {
 	return closest;
 }
 
-int SpawnItem(const char[] entityName, float pos[3], float ang[3] = NULL_VECTOR) {
+int SpawnItem(const char[] itemName, float pos[3], float ang[3] = NULL_VECTOR) {
 	static char classname[32];
-	Format(classname, sizeof(classname), "weapon_%s", entityName);
+	Format(classname, sizeof(classname), "weapon_%s", itemName);
 	int spawner = CreateEntityByName(classname);
 	if(spawner == -1) return -1;
 	DispatchKeyValue(spawner, "solid", "6");
@@ -262,16 +259,14 @@ void ThrowItemToPlayer(int victim, int target, int slot) {
 }
 
 
-stock void AddInFrontOf(float fVecOrigin[3], float fVecAngle[3], float fUnits, float fOutPut[3])
-{
+stock void AddInFrontOf(float fVecOrigin[3], float fVecAngle[3], float fUnits, float fOutPut[3]) {
 	float fVecView[3]; GetViewVector(fVecAngle, fVecView);
 	
 	fOutPut[0] = fVecView[0] * fUnits + fVecOrigin[0];
 	fOutPut[1] = fVecView[1] * fUnits + fVecOrigin[1];
 	fOutPut[2] = fVecView[2] * fUnits + fVecOrigin[2];
 }
-stock void GetViewVector(float fVecAngle[3], float fOutPut[3])
-{
+stock void GetViewVector(float fVecAngle[3], float fOutPut[3]) {
 	fOutPut[0] = Cosine(fVecAngle[1] / (180 / FLOAT_PI));
 	fOutPut[1] = Sine(fVecAngle[1] / (180 / FLOAT_PI));
 	fOutPut[2] = -Sine(fVecAngle[0] / (180 / FLOAT_PI));
@@ -297,60 +292,23 @@ stock void LookAtClient(int iClient, int iTarget) {
 
 
 stock int GetClientRealHealth(int client) {
-	//First filter -> Must be a valid client, successfully in-game and not an spectator (The dont have health).
-	if(!client
-	|| !IsValidEntity(client)
-	|| !IsClientInGame(client)
-	|| !IsPlayerAlive(client)
-	|| IsClientObserver(client))
-	{
+	if(!client || !IsValidEntity(client) || !IsClientInGame(client) || !IsPlayerAlive(client) || IsClientObserver(client)) {
 		return -1;
-	}
-	
-	//If the client is not on the survivors team, then just return the normal client health.
-	if(GetClientTeam(client) != 2)
-	{
+	} else if(GetClientTeam(client) != 2) {
 		return GetClientHealth(client);
 	}
-	
-	//First, we get the amount of temporal health the client has
 	float buffer = GetEntPropFloat(client, Prop_Send, "m_healthBuffer");
-	
-	//We declare the permanent and temporal health variables
-	float TempHealth;
-	int PermHealth = GetClientHealth(client);
-	
-	//In case the buffer is 0 or less, we set the temporal health as 0, because the client has not used any pills or adrenaline yet
-	if(buffer <= 0.0)
-	{
-		TempHealth = 0.0;
-	}
-	
-	//In case it is higher than 0, we proceed to calculate the temporl health
-	else
-	{
-		//This is the difference between the time we used the temporal item, and the current time
+	float tempHealth = 0.0;
+	if(buffer > 0.0) {
 		float difference = GetGameTime() - GetEntPropFloat(client, Prop_Send, "m_healthBufferTime");
-		
-		//We get the decay rate from this convar (Note: Adrenaline uses this value)
-		float decay = GetConVarFloat(FindConVar("pain_pills_decay_rate"));
-		
-		//This is a constant we create to determine the amount of health. This is the amount of time it has to pass
-		//before 1 Temporal HP is consumed.
-		float constant = 1.0/decay;
-		
-		//Then we do the calcs
-		TempHealth = buffer - (difference / constant);
+		float decay = FindConVar("pain_pills_decay_rate").FloatValue;
+		float constant = 1.0 / decay;
+		tempHealth = buffer - (difference / constant);
+		if(tempHealth < 0.0) {
+			tempHealth = 0.0;
+		}
 	}
-	
-	//If the temporal health resulted less than 0, then it is just 0.
-	if(TempHealth < 0.0)
-	{
-		TempHealth = 0.0;
-	}
-	
-	//Return the value
-	return RoundToFloor(PermHealth + TempHealth);
+	return RoundToFloor(GetClientHealth(client) + tempHealth);
 }  
 
 
@@ -497,10 +455,7 @@ void StopHealingBots(bool dontKill = false) {
 			KickClient(i);
 		}
 	}
-	if(!dontKill && IsValidHandle(stopHealingTimer)) {
-		delete stopHealingTimer;
-	}
-	stopHealingTimer = null;
+	delete stopHealingTimer;
 	if(hAbmAutoHard != null) hAbmAutoHard.IntValue = wasAbmAutoHard;
 	if(hSbFixEnabled != null) hSbFixEnabled.BoolValue = wasSbFixEnabled;
 }
@@ -579,4 +534,47 @@ stock void PrintToConsoleAdmins(const char[] format, any ...) {
 		}
 	}
 	PrintToServer("%s", buffer);
+}
+
+/**
+ * Shakes a client's screen with the specified amptitude,
+ * frequency & duration.
+ *
+ * @param client		Client Index.
+ * @param amplitude		Shake magnitude/amplitude.
+ * @param frequency		Shake noise frequency.
+ * @param duration		Shake lasts this long.
+ * @return				True on success, false otherwise.
+ */
+stock bool ShakePlayer(int client, float amplitude=50.0, float frequency=150.0, float duration=3.0) {
+	if (amplitude <= 0.0) {
+		return false;
+	}
+	Handle userMessage = StartMessageOne("Shake", client);
+	if (userMessage == INVALID_HANDLE) {
+		return false;
+	}
+
+	if (GetFeatureStatus(FeatureType_Native, "GetUserMessageType") == FeatureStatus_Available
+		&& GetUserMessageType() == UM_Protobuf) {
+		PbSetInt(userMessage,   "command",         0);
+		PbSetFloat(userMessage, "local_amplitude", amplitude);
+		PbSetFloat(userMessage, "frequency",       frequency);
+		PbSetFloat(userMessage, "duration",        duration);
+	} else {
+		BfWriteByte(userMessage,	0);	// Shake Command
+		BfWriteFloat(userMessage,	amplitude);	// shake magnitude/amplitude
+		BfWriteFloat(userMessage,	frequency);	// shake noise frequency
+		BfWriteFloat(userMessage,	duration);	// shake lasts this long
+	}
+	EndMessage();
+	return true;
+}
+
+void SetSlot(int client, int slot) {
+	if(slot == -1)
+		slot = GetRandomInt(0, 4);
+	static char slotStr[8];
+	Format(slotStr, sizeof(slotStr), "slot%d", slot);
+	ClientCommand(client, slotStr);
 }

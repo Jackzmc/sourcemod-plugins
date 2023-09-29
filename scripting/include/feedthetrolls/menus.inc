@@ -44,14 +44,14 @@ public int Insta_SpecialHandler(Menu menu, MenuAction action, int client, int pa
 		}
 		SpecialType special = view_as<SpecialType>(specialInt);
 		if(inFace) {
-			if(SpawnSpecialForTarget(special, target, view_as<int>(Special_OnTarget | Special_SpawnDirectOnFailure))) {
+			if(SpawnSpecialForTarget(special, target, view_as<int>(Special_OnTarget) | view_as<int>(Special_SpawnDirectOnFailure) | view_as<int>(Special_AlwaysTarget))) {
 				LogAction(client, target, "\"%L\" spawned Insta-%s™ on \"%L\"", client, SPECIAL_NAMES[specialInt-1], target);
 				CShowActivityEx(client, "[FTT] ", "spawned {olive}Insta-%s™{default} on {olive}%N", SPECIAL_NAMES[specialInt-1], target);
 			} else {
 				ReplyToCommand(client, "Could not spawn special.");
 			}
 		} else {
-			if(SpawnSpecialForTarget(special, target)) {
+			if(SpawnSpecialForTarget(special, target, view_as<int>(Special_AlwaysTarget))) {
 				CShowActivityEx(client, "[FTT] ", "spawned {green}Insta-%s™{default} near {green}%N", SPECIAL_NAMES[specialInt-1], target);
 				LogAction(client, target, "\"%L\" spawned Insta-%s™ near \"%L\"", client, SPECIAL_NAMES[specialInt-1], target);
 			} else {
@@ -223,7 +223,7 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 
 public int ChooseClumsySlotHandler(Menu menu, MenuAction action, int param1, int param2) {
 	if (action == MenuAction_Select) {
-		static char info[8];
+		char info[32];
 		menu.GetItem(param2, info, sizeof(info));
 		static char str[2][8];
 		ExplodeString(info, "|", str, 2, 8, false);
@@ -240,13 +240,14 @@ public int ChooseClumsySlotHandler(Menu menu, MenuAction action, int param1, int
 		} else if(slot == -2) {
 			ShowThrowItAllMenu(param1, userid);
 		} else {
+			if(!GetClientWeaponNameSmart(client, slot, info, sizeof(info))) {
+				strcopy(info, sizeof(info), "-unk-");
+			}
+			CShowActivityEx(param1, "[FTT] ", "activated troll {yellow}Throw It All{default} ({olive}%s|%d{default}) for \"%N\"", info, slot, client);
+			LogAction(param1, client, "\"%L\" activated troll \"Throw It All\" (%s) for \"%L\". ", param1, info, client);
 			ThrowItemToPlayer(client, param1, slot);
 		}
-		if(slot != -2) {
-			LogAction(param1, client, "\"%L\" activated troll \"Throw It all\" slot=%d for \"%L\"", param1, slot, client);
-			ShowActivityEx(param1, "[FTT] ", "activated troll \"Throw It All\" for %N. ", client);
-		}
-
+		
 		ShowThrowItAllMenu(param1, userid);
 	} else if (action == MenuAction_End)	
 		delete menu;
@@ -404,18 +405,7 @@ void ShowTrollMenu(int client, bool isComboList) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && (hAllowEnemyTeam.BoolValue || GetClientTeam(i) == clientTeam)) {
 			IntToString(GetClientUserId(i), userid, sizeof(userid));
-			int realPlayer = L4D_GetIdlePlayerOfBot(i);
-			// Incase player is idle, grab their bot instead of them
-			if(realPlayer > 0 && IsClientConnected(realPlayer)) {
-				if(IsPlayerAlive(i))
-					Format(display, sizeof(display), "%N (AFK)", realPlayer);
-				else
-					Format(display, sizeof(display), "%N (AFK/Dead)", realPlayer);
-			} else if(!IsPlayerAlive(i))
-				Format(display, sizeof(display), "%N (Dead)", i);
-			else {
-				GetClientName(i, display, sizeof(display));
-			}
+			GetMenuDisplayName(i, display, sizeof(display));
 			menu.AddItem(userid, display);
 		}
 	}
@@ -527,11 +517,10 @@ void ShowThrowItAllMenu(int client, int userid) {
 	
 	// Grab all the items the player has, add to menu
 	for(int slot = 0; slot <= 5; slot++) {
-		int item = GetPlayerWeaponSlot(victim, slot);
+		int item = GetClientWeaponNameSmart2(victim, slot, itmName, sizeof(itmName));
 		if(item > -1) {
-			GetEdictClassname(item, itmName, sizeof(itmName));
 			Format(info, sizeof(info), "%d|%d", userid, slot);
-			itmMenu.AddItem(info, itmName[7]);
+			itmMenu.AddItem(info, itmName);
 		}
 	}
 

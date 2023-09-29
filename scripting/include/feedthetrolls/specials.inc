@@ -26,7 +26,7 @@ ArrayList g_spSpawnQueue;
 // target client index
 stock bool SpawnSpecialForTarget(SpecialType specialType, int target, int spawnFlags = view_as<int>(Special_Anywhere)) {
 	static float pos[3];
-	int internalFlags = view_as<int>(SPI_AlwaysTarget);
+	
 	if(spawnFlags & view_as<int>(Special_OnTarget)) {
 		static float ang[3];
 		static float testPos[3];
@@ -35,9 +35,6 @@ stock bool SpawnSpecialForTarget(SpecialType specialType, int target, int spawnF
 		GetClientAbsOrigin(target, pos);
 		GetClientEyeAngles(target, ang);
 
-		if(specialType == Special_Boomer || specialType == Special_Spitter) 
-			internalFlags |= view_as<int>(SPI_KillOnSpawn);
-
 		if(specialType == Special_Jockey || specialType == Special_Boomer || specialType == Special_Spitter) { // Else spawn a little bit off, and above (above for jockeys)
 			pos[2] += 25.0;
 			pos[0] += 5.0;
@@ -45,31 +42,49 @@ stock bool SpawnSpecialForTarget(SpecialType specialType, int target, int spawnF
 			float minDistance = GetIdealMinDistance(specialType);
 			GetHorizontalPositionFromOrigin(pos, ang, minDistance, testPos);
 			if(!FindSuitablePosition(pos, testPos, minDistance, 100)) {
-				PrintToServer("[FTT] Could not find suitable position, falling back");
-				if(spawnFlags & view_as<int>(Special_SpawnDirectOnFailure))
-					GetClientAbsOrigin(target, pos);
-				else
-					L4D_GetRandomPZSpawnPosition(target, view_as<int>(specialType), 10, testPos);
+				PrintToServer("[FTT] Could not find suitable position, trying in front");
+				GetHorizontalPositionFromOrigin(pos, ang, -minDistance, testPos);
+				if(!FindSuitablePosition(pos, testPos, minDistance, 50)) {
+					PrintToServer("[FTT] Could not find suitable position, falling back");
+					if(spawnFlags & view_as<int>(Special_SpawnDirectOnFailure))
+						GetClientAbsOrigin(target, testPos);
+					else
+						L4D_GetRandomPZSpawnPosition(target, view_as<int>(specialType), 10, testPos);
+				}
 			}
 			pos = testPos;
 		} 
 		pos[2] += 1.0;
-		return SpawnSpecialAtPosition(specialType, pos, ang, target, internalFlags);
-	} else {
-		if(L4D_GetRandomPZSpawnPosition(target, view_as<int>(specialType), 10, pos)) {
-			return SpawnSpecialAtPosition(specialType, pos, NULL_VECTOR, target, internalFlags);
-		}
+		return SpawnSpecialAtPosition(specialType, pos, ang, target, spawnFlags);
 	}
-	return false;
+	// Spawn via director, or fail
+	if(!L4D_GetRandomPZSpawnPosition(target, view_as<int>(specialType), 10, pos)) {
+		if(spawnFlags & view_as<int>(Special_SpawnDirectOnFailure))
+			GetClientAbsOrigin(target, pos);
+		else
+			return false;
+	} 
+	return SpawnSpecialAtPosition(specialType, pos, NULL_VECTOR, target, spawnFlags);
 }
 
 // Target is optional
-stock bool SpawnSpecialAtPosition(SpecialType special, const float destination[3], const float angle[3], int target = 0, int flags = 0) {
+stock bool SpawnSpecialAtPosition(SpecialType specialType, const float destination[3], const float angle[3], int target = 0, int spawnFlags = 0) {
+	int internalFlags = 0;
+	if(spawnFlags & view_as<int>(Special_AlwaysTarget)) {
+		internalFlags |= view_as<int>(SPI_AlwaysTarget);
+	}
+	if(spawnFlags & view_as<int>(Special_KillOnIncap)) {
+		internalFlags |= view_as<int>(SPI_KillOnTargetIncap);
+	}
+	if(spawnFlags & view_as<int>(Special_OnTarget)) {
+		if(specialType == Special_Boomer || specialType == Special_Spitter) 
+			internalFlags |= view_as<int>(SPI_KillOnSpawn);
+	}
 	SpecialSpawnRequest request;
-	request.type = special;
+	request.type = specialType;
 	if(target)
 		request.targetUserId = GetClientUserId(target);
-	request.flags = flags;
+	request.flags = internalFlags;
 	request.position = destination;
 	request.angle = angle;
 	g_spSpawnQueue.PushArray(request);
@@ -100,27 +115,29 @@ bool ProcessSpecialQueue() {
 				CreateTimer(0.1, Timer_KickBot, bot);
 			}
 			CheatCommand(target, "z_spawn_old", SPECIAL_NAMES[view_as<int>(spActiveRequest.type) - 1], "auto");
+			return true;
 		} else if(spActiveRequest.type == Special_Witch) {
 			int witch = L4D2_SpawnWitch(spActiveRequest.position, spActiveRequest.angle);
 			DataPack pack;
 			CreateDataTimer(0.2, Timer_SetWitchTarget, pack);
 			pack.WriteCell(witch);
-			pack.WriteCell(GetClientUserId(target));
+			pack.WriteCell(spActiveRequest.targetUserId);
 			if(witch != -1)
 				SetWitchTarget(witch, target);
+			spIsActive = false;
 			return ProcessSpecialQueue();
 		} else if(spActiveRequest.type == Special_Tank) {
 			// BypassLimit();
 			int tank = L4D2_SpawnTank(spActiveRequest.position, spActiveRequest.angle);
 			if(tank > 0 && IsClientConnected(tank)) {
 				TeleportEntity(tank, spActiveRequest.position, spActiveRequest.angle, NULL_VECTOR);
-				PrintToConsoleAll("[ftt/debug] requested tank spawned %d -> %N", tank, target)
 				pdata[tank].attackerTargetUid = spActiveRequest.targetUserId;
 				pdata[tank].specialAttackFlags = view_as<int>(SPI_AlwaysTarget);
 			}
+			spIsActive = false;
 			return ProcessSpecialQueue();
 		}
-		return true;
+		return false;
 	}
 	spIsActive = false;
 	return false;
@@ -146,8 +163,8 @@ stock SpecialType GetSpecialType(const char[] input) {
 stock bool FindSuitablePosition(const float pos[3], float outputPos[3], float minDistance = 19000.0, int tries = 100) {
 	outputPos = pos;
 	for(int i = tries; i > 0; i--) {
-		// int nav = L4D_GetNearestNavArea(pos);
- 		outputPos[1] += GetRandomFloat(-30.0, 30.0);
+		// Shift position aroudn randomly
+ 		outputPos[1] += GetRandomFloat(-35.0, 35.0);
 		float dist = GetVectorDistance(outputPos, pos, true);
 		if(dist >= minDistance && L4D2Direct_GetTerrorNavArea(outputPos) != Address_Null) { //5m^2
 			return true;
@@ -191,7 +208,7 @@ stock bool GetGroundBehind(int client, float vPos[3], float vAng[3]) {
 }
 
 stock bool RayFilter_NonClient(int entity, int contentsMask) {
-	if (entity < 1 || entity > MaxClients) {
+	if (entity <= 0 || entity > MaxClients) {
 		if (IsValidEntity(entity)) {
 			static char eClass[128];
 			if (GetEntityClassname(entity, eClass, sizeof(eClass))) {

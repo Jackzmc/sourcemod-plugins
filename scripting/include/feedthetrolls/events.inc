@@ -35,9 +35,10 @@ public void OnClientPutInServer(int client) {
 }
 
 public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
-	int userid = event.GetInt("userid");
-	if(spIsActive)
+	if(spIsActive || g_iPendingSurvivorAdd) {
+		int userid = event.GetInt("userid");
 		CreateTimer(0.1, Timer_CheckSpecial, userid);
+	}
 } 
 
 
@@ -134,7 +135,7 @@ public void Event_DoorToggle(Event event, const char[] name, bool dontBroadcast)
 	}
 }
 
-public void Event_SecondaryHealthUsed(Event event, const char[] name, bool dontBroadcast) {
+void Event_SecondaryHealthUsed(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && Trolls[slipperyShoesIndex].IsActive(client) && Trolls[slipperyShoesIndex].activeFlagClients[client] & 8) { 
 		L4D_StaggerPlayer(client, client, NULL_VECTOR);
@@ -142,29 +143,32 @@ public void Event_SecondaryHealthUsed(Event event, const char[] name, bool dontB
 }
 
 static float SPIT_VEL[3] = { 0.0, 0.0, -1.0 };
-public Action Timer_CheckSpecial(Handle h, int specialID) {
+Action Timer_CheckSpecial(Handle h, int specialID) {
 	int special = GetClientOfUserId(specialID);
+	if(special == 0) return Plugin_Continue;
 	// Check if new player is the spawned special:
-	if(spIsActive && special > 0 && IsFakeClient(special)) {
+	if(g_iPendingSurvivorAdd && GetClientTeam(special) == 2 && GetEntProp(special, Prop_Send, "m_humanSpectatorUserID") == 0) {
+		g_iPendingSurvivorAdd = false;
+		isCustomSurvivor[special] = true;
+		PrintToServer("EPI Debug: Custom Survivor %N", special);
+	} else if(spIsActive && IsFakeClient(special)) {
 		//g_iPendingSurvivorAdd
-		if(GetClientTeam(special) == 2 && g_iPendingSurvivorAdd && GetEntProp(special, Prop_Send, "m_humanSpectatorUserID") == 0) {
-			g_iPendingSurvivorAdd = false;
-			isCustomSurvivor[special] = true;
-		} else if(GetClientTeam(special) == 3) {
+		if(GetClientTeam(special) == 3) {
 			SpecialType type = view_as<SpecialType>(GetEntProp(special, Prop_Send, "m_zombieClass"));
 			if(type == spActiveRequest.type) {
 				// Ignore any fake clients with 'Bot' in name
 				static char buf[32];
 				GetClientName(special, buf, sizeof(buf));
 				if(StrContains(buf, "bot", false) == -1) {
-					if(spActiveRequest.targetUserId) {
-						pdata[special].attackerTargetUid = spActiveRequest.targetUserId; 
-						pdata[special].specialAttackFlags = spActiveRequest.flags;
-					}
-
+					// Set the special's target and flags
+					pdata[special].attackerTargetUid = spActiveRequest.targetUserId;
+					pdata[special].specialAttackFlags = spActiveRequest.flags;
+					// Warp to the spawn location
 					TeleportEntity(special, spActiveRequest.position, spActiveRequest.angle, NULL_VECTOR);
+					// Kill on spawn if enabled
 					if(spActiveRequest.flags & view_as<int>(SPI_KillOnSpawn)) {
 						if(type == Special_Spitter) {
+							// Bug fix, spitter drops small puddle, so we spawn our own
 							float pos[3];
 							GetClientEyePosition(special, pos);
 							L4D2_SpitterPrj(special, pos, SPIT_VEL);
@@ -172,8 +176,8 @@ public Action Timer_CheckSpecial(Handle h, int specialID) {
 						RequestFrame(Frame_Boom, special);
 					}
 
+					// Special spawned, run the next in the queue:
 					g_iSpId++;
-
 					ProcessSpecialQueue();
 				}
 			}
@@ -194,15 +198,16 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
 	if(client > 0) {
-		pdata[client].specialAttackFlags = 0;
 		if(pdata[client].attackerTargetUid > 0) {
 			// If special died, clear & subtract one from counter
 			pdata[client].attackerTargetUid = 0;
+			pdata[client].specialAttackFlags = 0;
 		} else {
 			// If player died, stop the targetting
 			for(int i = 1; i <= MaxClients; i++) { 
 				if(pdata[i].attackerTargetUid == userid) {
 					pdata[i].attackerTargetUid = 0;
+					pdata[i].specialAttackFlags = 0;
 					break;
 				}
 			}
@@ -310,7 +315,6 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	if(spMagnetID == 0) spMagnetID = GetTrollID("Special Magnet");
 	if(tankMagnetID == 0) tankMagnetID = GetTrollID("Tank Magnet");
 
-	if(hMagnetChance.FloatValue < GetRandomFloat()) return Plugin_Continue;
 	L4D2Infected class = view_as<L4D2Infected>(GetEntProp(attacker, Prop_Send, "m_zombieClass"));
 	// Check for any existing victims
 	int existingTarget = GetClientOfUserId(pdata[attacker].attackerTargetUid);
@@ -337,6 +341,10 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 				return Plugin_Changed;
 			}
 		} else {
+			if(pdata[attacker].specialAttackFlags & view_as<int>(SPI_KillOnTargetIncap)) {
+				ForcePlayerSuicide(attacker);
+			}
+			PrintToServer("target (%N) not alive, resetting target for %d", existingTarget, attacker)
 			pdata[attacker].attackerTargetUid = 0;
 		}
 	}
@@ -772,6 +780,9 @@ public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float&
 		if(damage > 0.0 && victim != attacker && Trolls[slipperyShoesIndex].IsActive(victim) && Trolls[slipperyShoesIndex].activeFlagClients[victim] & 16) { 
 			L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
 		}
+		if(Trolls[t_slotRouletteIndex].IsActive(victim)) {
+			SetSlot(victim, -1);
+		}
 
 		if(IsTrollActive(victim, "Damage Boost")) {
 			damage * 2;
@@ -832,6 +843,9 @@ public Action OnVocalizeCommand(int client, const char[] vocalize, int initiator
 		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", noRushingUsSpeed[client]);
 		PrintToConsoleAdmins("[FTT] NoRushingUs: Dropping speed for %N (now %.1f%)", client, noRushingUsSpeed[client] * 100.0);
 	}
+	if(Trolls[t_slotRouletteIndex].IsActive(client)) {
+		SetSlot(client, -1);
+	}
 	if(Trolls[vocalGagID].IsActive(client)) {
 		return Plugin_Handled;
 	} 
@@ -851,17 +865,17 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 				static char sceneFile[32];
 				GetSceneFile(scene, sceneFile, sizeof(sceneFile));
 				if(StrContains(sceneFile, "warnboomer") > -1) {
-					SpawnSpecialForTarget(Special_Boomer, activator, view_as<int>(Special_OnTarget));
+					SpawnSpecialForTarget(Special_Boomer, activator, view_as<int>(Special_OnTarget) | view_as<int>(Special_AlwaysTarget));
 				} else if(StrContains(sceneFile, "warnhunter") > -1) {
-					SpawnSpecialForTarget(Special_Hunter, activator, view_as<int>(Special_OnTarget));
+					SpawnSpecialForTarget(Special_Hunter, activator, view_as<int>(Special_OnTarget) | view_as<int>(Special_AlwaysTarget));
 				} else if(StrContains(sceneFile, "warnsmoker") > -1) {
-					SpawnSpecialForTarget(Special_Smoker, activator, view_as<int>(Special_OnTarget));
+					SpawnSpecialForTarget(Special_Smoker, activator, view_as<int>(Special_OnTarget) | view_as<int>(Special_AlwaysTarget));
 				} else if(StrContains(sceneFile, "warnspitter") > -1) {
-					SpawnSpecialForTarget(Special_Spitter, activator, view_as<int>(Special_OnTarget));
+					SpawnSpecialForTarget(Special_Spitter, activator, view_as<int>(Special_OnTarget) | view_as<int>(Special_AlwaysTarget));
 				} else if(StrContains(sceneFile, "warnjockey") > -1) {
-					SpawnSpecialForTarget(Special_Jockey, activator, view_as<int>(Special_OnTarget));
+					SpawnSpecialForTarget(Special_Jockey, activator, view_as<int>(Special_OnTarget) | view_as<int>(Special_AlwaysTarget));
 				} else if(StrContains(sceneFile, "warncharger") > -1) {
-					SpawnSpecialForTarget(Special_Charger, activator, view_as<int>(Special_OnTarget));
+					SpawnSpecialForTarget(Special_Charger, activator, view_as<int>(Special_OnTarget) | view_as<int>(Special_AlwaysTarget));
 				}
 				
 				if(Trolls[vocalizeSpecials].activeFlagClients[activator] & 1) {
@@ -889,7 +903,7 @@ public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PL
 		
 		lastCrescendoUser = lastButtonUser;
 		if(IsPlayerFarDistance(lastButtonUser, AUTOPUNISH_FLOW_MIN_DISTANCE)) {
-			NotifyAllAdmins("Autopunishing player %N for activation of event far from team", lastButtonUser);
+			PrintChatToAdmins("Autopunishing player %N for activation of event far from team", lastButtonUser);
 			ShowActivityEx(0, "[FTT] ", "activated autopunish for crescendo activator %N (auto)", lastButtonUser);
 			LogAction(0, lastButtonUser, "\"%L\" automatic autopunish for crescendo activator \"%L\"", 0, lastButtonUser);
 			ActivateAutoPunish(lastButtonUser);
@@ -993,7 +1007,7 @@ public Action OnAntiRush(int client, int &type, float distance) {
 			}
 			SpecialType special = view_as<SpecialType>(GetRandomInt(1,6));
 			fLastAntiRushEvent[client] = GetGameTime();
-			SpawnSpecialForTarget(special, client, view_as<int>(Special_SpawnDirectOnFailure | Special_OnTarget));
+			SpawnSpecialForTarget(special, client, view_as<int>(Special_SpawnDirectOnFailure | Special_OnTarget | Special_AlwaysTarget));
 			PrintToConsoleAll("[FTT] Spawning anti-rush special on %N (dist=%f) (special=%s)", client, distance, SPECIAL_NAMES[view_as<int>(special)-1]);
 		}
 	}
@@ -1018,7 +1032,7 @@ public void L4D2_CInsectSwarm_CanHarm_Post(int acid, int spitter, int entity) {
 
 public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(Trolls[stickyGooIndex].IsActive(stickyGooIndex)) {
+	if(Trolls[stickyGooIndex].IsActive(client)) {
 		int flags = Trolls[stickyGooIndex].activeFlagClients[client];
 		float movement = 0.0;
 		if(flags & 1) movement = 0.9;
@@ -1057,5 +1071,20 @@ void Event_HealSuccess(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0 && userid == healTargetPlayer) {
 		StopHealingBots();
+	}
+}
+
+public void L4D_OnVomitedUpon_Post(int victim, int attacker, bool boomerExplosion) {
+	if(Trolls[t_slotRouletteIndex].IsActive(victim)) {
+		SetSlot(victim, -1);
+	}
+}
+void Event_Incapped(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("subject"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	if(client > 0 && attacker > 0 && attacker <= MaxClients && IsFakeClient(attacker) && GetClientTeam(attacker) == 3) {
+		if(pdata[attacker].specialAttackFlags & view_as<int>(SPI_KillOnTargetIncap)) {
+			ForcePlayerSuicide(attacker);
+		}
 	}
 }

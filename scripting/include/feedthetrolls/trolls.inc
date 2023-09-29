@@ -5,6 +5,9 @@ int stickyGooIndex = 0;
 int invertedTrollIndex;
 int t_randomizeAnglesIndex;
 int t_randomizeVelocityIndex;
+int t_vomitPlayerIndex;
+int t_shakeyCameraIndex;
+int t_slotRouletteIndex;
 // int fireSpitMagnetTrollIndex;
 
 void SetupTrolls() {
@@ -33,7 +36,7 @@ void SetupTrolls() {
 	/// CATEGORY: Infected
 	SetCategory("Infected");
 	SetupTroll("Swarm", "Swarms a player with zombies. Requires swarm plugin", TrollMod_Instant | TrollMod_Constant);
-	SetupTroll("Vomit Player", "Shortcut to sm_vomitplayer. vomits the player.", TrollMod_Instant);
+	t_vomitPlayerIndex = SetupTroll("Vomit Player", "Shortcut to sm_vomitplayer. vomits the player.", TrollMod_Instant | TrollMod_Constant);
 	SetupTroll("Inface Special", "Shortcut to sm_inface", TrollMod_Instant);
 	SetupTroll("Insta Special", "Shortcut to sm_insta", TrollMod_Instant);
 	SetupTroll("Goo", "Spawns a spitter puddle underneath them", TrollMod_Instant);
@@ -85,7 +88,6 @@ void SetupTrolls() {
 	// CATEGORY: Items
 	SetCategory("Items");
 	SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
-
 	index = SetupTroll("Spicy Gas", "Gascans player picks up just ignite. Magic.", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(false);
 	Trolls[index].AddFlag("Always (100%)", false);
@@ -112,6 +114,19 @@ void SetupTrolls() {
 	SetupTroll("Nerf Gun", "When they shoot it does no damage.", TrollMod_Constant);
 	SetupTroll("Randomize Clip Ammo", "Randomly changes their clip ammo downwards", TrollMod_Constant | TrollMod_Instant);
 	SetupTroll("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
+	index = SetupTroll("Slot Roulette", "Randomize their slots", TrollMod_Constant);
+	Trolls[index].AddCustomFlagPrompt("Activations:", true);
+	Trolls[index].AddFlag("On Vomitted", false); // 1
+	Trolls[index].AddFlag("On Damage", false); // 2
+	Trolls[index].AddFlag("On Vocalize", false); // 4
+	Trolls[index].AddFlag("Periodically", true); //8
+	Trolls[index].AddCustomFlagPrompt("Frequency:", false, 8);
+	Trolls[index].AddFlag("Subtle", false); // 16
+	Trolls[index].AddFlag("Confusing", false); // 32
+	Trolls[index].AddFlag("Annoying", false); // 64
+	Trolls[index].AddFlag("Unusable", false); // 128
+	Trolls[index].SetTimer(0.3, Timer_SlotRoulette, 8);
+	t_slotRouletteIndex = index;
 
 
 	/// CATEGORY: Chat
@@ -170,7 +185,7 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("3", false); // 16
 	Trolls[index].AddFlag("4", true); // 32
 	Trolls[index].AddFlag("5", false); // 64
-	Trolls[index].AddCustomFlagPrompt("Auto Timeout", false);
+	Trolls[index].AddCustomFlagPrompt("Auto Timeout", false, 0);
 	Trolls[index].AddFlag("Until Healed / Map Change", false); // 128
 	Trolls[index].AddFlag("15 seconds", true); // 255
 	Trolls[index].AddFlag("30 seconds", false); // 512
@@ -228,13 +243,24 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("Incap On Touch", false);
 	Trolls[index].AddFlag("Slay On Touch", false);
 	Trolls[index].AddFlag("0.8x Speed", false);
+	// TODO: setup instant
+	index = SetupTroll("Shakey Camera", "Horrible", TrollMod_Constant);
+	Trolls[index].AddFlagPrompt(false);
 	// add flag: vomit on touch
+	Trolls[index].AddFlag("Annoying but playable", false);
+	Trolls[index].AddFlag("Bad", true);
+	Trolls[index].AddFlag("Sickness", false);
+	Trolls[index].AddFlag("Violent", false);
+	Trolls[index].AddFlag("Violent XX", false);
+	t_shakeyCameraIndex = index;
 	index = SetupTroll("Meta: Inverse", "Uhm you are not supposed to see this...", TrollMod_Instant);
 	Trolls[index].hidden = true;
 	Trolls[index].AddFlagPrompt(false);
 	Trolls[index].AddFlag("100%", true);
 	Trolls[index].AddFlag("50%", false);
 	Trolls[index].AddFlag("10%", false);
+	index = SetupTroll("Meta: Random", "Picks a random troll", TrollMod_Instant);
+
 
 	
 
@@ -297,7 +323,7 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		static char wpn[32];
 		GetClientWeaponName(victim, 4, wpn, sizeof(wpn));
 		if(StrEqual(wpn, "weapon_adrenaline") || StrEqual(wpn, "weapon_pain_pills")) {
-			ClientCommand(victim, "slot5");
+			SetSlot(victim, 5);
 			pdata[victim].flags |= view_as<int>(Flag_PendingItemGive);
 		}else{
 			ReplyToCommand(activator, "User does not have pills or adrenaline");
@@ -419,7 +445,7 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 			StopHealingBots();
 			return true;
 		} else if(healTargetPlayer != 0) {
-			if(IsValidHandle(stopHealingTimer)) {
+			if(stopHealingTimer != null) {
 				TriggerTimer(stopHealingTimer);
 			}
 			return true;
@@ -493,6 +519,24 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		CreateTimer(1.0, Timer_CheckForChargerOpportunity, GetClientUserId(victim), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}  else if(StrEqual(troll.name, "No Rushing Us")) {
 		SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
+	} else if(StrEqual(troll.name, "Meta: Random")) {
+		int rndTroll = GetRandomInt(0, MAX_TROLLS);
+		int rndFlags = 0;
+		int maxFlags = Trolls[rndTroll].GetFlagCount();
+		int numFlags = GetRandomInt(0, maxFlags);
+		while(numFlags > 0) {
+			// Apply a random flag
+			rndFlags |= GetRandomInt(0, maxFlags)
+			maxFlags--;
+		}
+		trollModifier rndMod = Trolls[rndTroll].GetDefaultMod();
+		if(Trolls[rndTroll].HasMod(TrollMod_Constant) && GetURandomFloat() > 0.5) {
+			rndMod = TrollMod_Constant;
+		}
+		if(Trolls[rndTroll].HasMod(TrollMod_Instant) && GetURandomFloat() > 0.5) {
+			rndMod |= TrollMod_Instant;
+		}
+		Trolls[rndTroll].Activate(victim, activator, rndMod, rndFlags);
 	} else if(~modifier & TrollMod_Constant) {
 		PrintToServer("[FTT] Warn: Possibly invalid troll, no apply action defined for \"%s\"", troll.name);
 		#if defined DEBUG

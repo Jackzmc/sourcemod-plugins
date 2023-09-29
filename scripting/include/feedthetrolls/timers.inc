@@ -1,5 +1,5 @@
 
-public Action Timer_ThrowTimer(Handle timer) {
+Action Timer_ThrowTimer(Handle timer) {
 	int count = 0;
 	for(int i = 1; i < MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && IsTrollActive(i, "Throw It All")) {
@@ -17,20 +17,20 @@ Action Timer_RandomVelocity(Handle h, int client) {
 		return Plugin_Stop;
 	}
 	float bounds = 50.0;
-	if(Trolls[t_randomizeAnglesIndex].activeFlagClients[client] & 2) bounds = 100.0;
-	else if(Trolls[t_randomizeAnglesIndex].activeFlagClients[client] & 4) bounds = 200.0;
-	else if(Trolls[t_randomizeAnglesIndex].activeFlagClients[client] & 8) bounds = 500.0;
-	else if(Trolls[t_randomizeAnglesIndex].activeFlagClients[client] & 16) bounds = 1000.0;
+	if(Trolls[t_randomizeVelocityIndex].activeFlagClients[client] & 2) bounds = 100.0;
+	else if(Trolls[t_randomizeVelocityIndex].activeFlagClients[client] & 4) bounds = 200.0;
+	else if(Trolls[t_randomizeVelocityIndex].activeFlagClients[client] & 8) bounds = 500.0;
+	else if(Trolls[t_randomizeVelocityIndex].activeFlagClients[client] & 16) bounds = 1000.0;
 	float vel[3];
 	GetEntPropVector(client, Prop_Data, "m_vecVelocity", vel);
 	vel[0] += GetRandomFloat(-bounds, bounds);
 	vel[1] += GetRandomFloat(-bounds, bounds);
-	vel[2] += GetRandomFloat(-100.0, 150.0);
+	vel[2] += GetRandomFloat(-20.0, 100.0);
 	SetAbsVelocity(client, vel);
 	return Plugin_Continue;
 }
 
-public Action Timer_Main(Handle timer) {
+Action Timer_Main(Handle timer) {
 	static int loopTick;
 
 	static int slowDrainIndex;
@@ -81,7 +81,7 @@ public Action Timer_Main(Handle timer) {
 				}
 			}
 			if(Trolls[tempHealthQuickDrainIndex].IsActive(i)) {
-				if(loopTick % 2 == 0) {
+				if(loopTick % 3 == 0) {
 					float bufferTime = GetEntPropFloat(i, Prop_Send, "m_healthBufferTime");
 					float tempHealth = L4D_GetTempHealth(i);
 					if(tempHealth > 0.0) {
@@ -115,6 +115,46 @@ public Action Timer_Main(Handle timer) {
 					SetEntProp(primaryWpn, Prop_Send, "m_iClip1", GetRandomInt(0, maxCap));
 				}
 			}
+			if(Trolls[t_vomitPlayerIndex].IsActive(i)) {
+				if(loopTick % 4 == 0) {
+					L4D_CTerrorPlayer_OnVomitedUpon(i, i);
+				}
+			}
+			if(Trolls[t_shakeyCameraIndex].IsActive(i)) {
+				float amplitude = 1.0;
+				float freq = 1.0;
+				if(Trolls[t_shakeyCameraIndex].activeFlagClients[i] & 1) { 
+					amplitude = 1.0;
+					freq = 1.0;
+				} else if(Trolls[t_shakeyCameraIndex].activeFlagClients[i] & 2) { 
+					amplitude = 5.0;
+					freq = 5.0;
+				} else if(Trolls[t_shakeyCameraIndex].activeFlagClients[i] & 4) { 
+					amplitude = 20.0;
+					freq = 20.0;
+				} else if(Trolls[t_shakeyCameraIndex].activeFlagClients[i] & 8) { 
+					amplitude = 50.0;
+					freq = 50.0;
+				} else if(Trolls[t_shakeyCameraIndex].activeFlagClients[i] & 16) { 
+					amplitude = 100.0;
+					freq = 200.0;
+				}
+				ShakePlayer(i, amplitude, freq, MAIN_TIMER_INTERVAL_S + 1.0);
+			}
+			if(Trolls[t_slotRouletteIndex].IsActive(i) && Trolls[t_slotRouletteIndex].activeFlagClients[i] & 8) {
+				float chance = 1.0;
+				if(Trolls[t_slotRouletteIndex].activeFlagClients[i] & 16) { 
+					chance = 0.2;
+				} else if(Trolls[t_slotRouletteIndex].activeFlagClients[i] & 32) { 
+					chance = 0.4;
+				} else if(Trolls[t_slotRouletteIndex].activeFlagClients[i] & 64) { 
+					chance = 0.6;
+				}
+
+				if(GetURandomFloat() < chance) {
+					SetSlot(i, -1);
+				}
+			}
 		}
 	}
 	if(++loopTick >= 60) {
@@ -122,8 +162,28 @@ public Action Timer_Main(Handle timer) {
 	}
 	return Plugin_Continue;
 }
+Action Timer_SlotRoulette(Handle h, int client) {
+	if(!IsClientConnected(client)) {
+		Trolls[t_slotRouletteIndex].timerHandles[client] = null;
+		return Plugin_Stop;
+	}
+	if(Trolls[t_slotRouletteIndex].activeFlagClients[client] & 8) {
+		float chance = 1.0;
+		if(Trolls[t_slotRouletteIndex].activeFlagClients[client] & 16) { 
+			chance = 0.1;
+		} else if(Trolls[t_slotRouletteIndex].activeFlagClients[client] & 32) { 
+			chance = 0.3;
+		} else if(Trolls[t_slotRouletteIndex].activeFlagClients[client] & 64) { 
+			chance = 0.5;
+		}
 
-public Action Timer_GivePistol(Handle timer, int user) {
+		if(GetURandomFloat() < chance) {
+			SetSlot(client, -1);
+		}
+	}
+	return Plugin_Continue;
+}
+Action Timer_GivePistol(Handle timer, int user) {
 	int client = GetClientOfUserId(user);
 	if(client > 0) {
 		int flags = GetCommandFlags("give");
@@ -134,7 +194,7 @@ public Action Timer_GivePistol(Handle timer, int user) {
 	return Plugin_Handled;
 }
 
-public Action Timer_ThrowWeapon(Handle timer, Handle pack) {
+Action Timer_ThrowWeapon(Handle timer, Handle pack) {
 	ResetPack(pack);
 	float dest[3];
 	dest[0] = ReadPackFloat(pack);
@@ -161,7 +221,7 @@ public Action Timer_ThrowWeapon(Handle timer, Handle pack) {
 	return Plugin_Handled;
 }
 
-public Action Timer_ResetAutoPunish(Handle timer, int user) {
+Action Timer_ResetAutoPunish(Handle timer, int user) {
 	int client = GetClientOfUserId(user);
 	if(client) {
 		if(hAutoPunish.IntValue & 2 == 2) 
@@ -172,7 +232,7 @@ public Action Timer_ResetAutoPunish(Handle timer, int user) {
 	return Plugin_Handled;
 }
 
-public Action Timer_NextWitchSet(Handle timer, DataPack pack) {
+Action Timer_NextWitchSet(Handle timer, DataPack pack) {
 	pack.Reset();
 	int client = GetClientOfUserId(pack.ReadCell());
 	int witch = pack.ReadCell();
@@ -180,20 +240,20 @@ public Action Timer_NextWitchSet(Handle timer, DataPack pack) {
 	return Plugin_Handled;
 }
 
-public Action Timer_KickBot(Handle timer, int client) {
-	if(IsClientInGame(client) && (!IsClientInKickQueue(client))) {
-		if(IsFakeClient(client)) KickClient(client);
+Action Timer_KickBot(Handle timer, int client) {
+	if(IsClientInGame(client) && !IsClientInKickQueue(client) && IsFakeClient(client)) {
+		KickClient(client);
 	}
 	return Plugin_Handled;
 }
 
-public Action Timer_Delete(Handle h, int id) {
+Action Timer_Delete(Handle h, int id) {
 	if(IsValidEntity(id))
 		AcceptEntityInput(id, "Kill");
 	return Plugin_Handled;
 }
 
-public Action Timer_ShootReverse(Handle h, DataPack pack) {
+Action Timer_ShootReverse(Handle h, DataPack pack) {
 	pack.Reset();
 	int attacker = pack.ReadCell();
 	int target = pack.ReadCell();
@@ -221,8 +281,9 @@ public Action Timer_ShootReverse(Handle h, DataPack pack) {
 		return Plugin_Stop;
 	}
 }
-
-public Action Timer_CheckSpecialSpawned(Handle h, int id) {
+// We check if the special never spawned (g_iSpId never advances, and run the next in queue)
+// Prevents the queue from stalling
+Action Timer_CheckSpecialSpawned(Handle h, int id) {
 	if(g_iSpId == id) {
 		PrintToServer("[FTT] Special did not spawn in time, continuing.");
 		g_iSpId++;
@@ -231,7 +292,7 @@ public Action Timer_CheckSpecialSpawned(Handle h, int id) {
 	return Plugin_Handled;
 }
 
-public Action Timer_CheckIsInSpit(Handle h, int userid) {
+Action Timer_CheckIsInSpit(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client && GetGameTime() - pdata[userid].lastInSpitTime > 3.0) {
 		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", 1.0);
@@ -244,7 +305,7 @@ public Action Timer_CheckIsInSpit(Handle h, int userid) {
 float CHARGER_CHECK_MIN[3] = { -15.0, -15.0, 2.0};
 float CHARGER_CHECK_MAX[3] = { 15.0, 15.0, 20.0 };
 
-public Action Timer_CheckForChargerOpportunity(Handle h, int userid) {
+Action Timer_CheckForChargerOpportunity(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client) {
 		int activator = GetClientOfUserId(pdata[client].smartChargeActivator);
@@ -262,7 +323,7 @@ public Action Timer_CheckForChargerOpportunity(Handle h, int userid) {
 			GetHorizontalPositionFromOrigin(pos, ang, 500.0, endPos);
 			TR_TraceHullFilter(endPos, pos, CHARGER_CHECK_MIN, CHARGER_CHECK_MAX, MASK_SOLID, Filter_CheckChargerValid, client);
 			if(!TR_DidHit()) {
-				SpawnSpecialAtPosition(Special_Charger, spawnPos, ang, client);
+				SpawnSpecialAtPosition(Special_Charger, spawnPos, ang, client, view_as<int>(Special_AlwaysTarget));
 				if(activator) PrintToChat(activator, "Auto charge %N successfully after %d tries", client, pdata[client].smartChargeAttempts);
 				pdata[client].smartChargeAttempts = 0;
 				pdata[client].smartChargeActivator = 0;
@@ -311,14 +372,14 @@ Action Timer_SpawnHealBots(Handle h, int max) {
 	if(count < max) {
 		if(!AddSurvivor()) {
 			count = 0;
-			CreateTimer(0.3, Timer_SpawnHealBotsPost);
+			CreateTimer(0.5, Timer_SpawnHealBotsPost);
 			return Plugin_Stop;
 		}
 		count++;
 		return Plugin_Continue;
 	}
 	count = 0;
-	CreateTimer(0.3, Timer_SpawnHealBotsPost);
+	CreateTimer(0.5, Timer_SpawnHealBotsPost);
 	return Plugin_Stop;
 }
 
@@ -330,12 +391,11 @@ Action Timer_SpawnHealBotsPost(Handle h) {
 			int kit = GetPlayerWeaponSlot(i, 3);
 			if(kit > 0) {
 				GetEntityClassname(kit, classname, sizeof(classname));
-				if(!StrEqual(classname, "weapon_first_aid_kit")) {
-					GiveClientWeapon(i, "weapon_first_aid_kit");
+				if(StrEqual(classname, "weapon_first_aid_kit")) {
+					continue;
 				}
-			} else {
-				GiveClientWeapon(i, "weapon_first_aid_kit");
 			}
+			GiveClientWeapon(i, "weapon_first_aid_kit");
 			pdata[i].flags &= view_as<int>(Flag_IsTargettingHealer);
 		}
 	}
@@ -411,7 +471,7 @@ Action Timer_WaitForApex(Handle h, int entref) {
 Action Timer_ResetGravity(Handle h, int entref) {
 	if(IsValidEntity(entref)) {
 		int entity = EntRefToEntIndex(entref);
-		SetEntityGravity(entity, 800.0);
+		SetEntityGravity(entity, 800.0); // could pull from sv_gravity but no ones gonna notice
 	}
 	return Plugin_Handled;
 }

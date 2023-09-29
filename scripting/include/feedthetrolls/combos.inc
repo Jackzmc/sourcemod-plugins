@@ -86,5 +86,10 @@ void SetupsTrollCombos() {
     combo.AddTroll("Dull Melee", .flags=2);
     combo.AddTroll("Temp Health Quick Drain");
 
+    SetupCombo(combo, "Blindness");
+    combo.AddTroll("Vomit Player", 0, TrollMod_Constant);
+    combo.AddTroll("Shakey Camera", .flags=16);
+    combo.AddTroll("Randomize Angles", .flags=16);
+
     PrintToServer("[FTT] Loaded %d troll combos", combos.Length);
 }

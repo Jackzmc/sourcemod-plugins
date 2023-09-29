@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 51
+    #define MAX_TROLLS 54
 #endif
 
 enum trollModifier {
@@ -24,6 +24,13 @@ enum trollFlag {
     Flag_6 = 1 << 5,
     Flag_7 = 1 << 6,
     Flag_8 = 1 << 7,
+}
+
+enum valueType {
+    Value_None,
+    Value_Float,
+    Value_String,
+    Value_Integer
 }
 
 StringMap trollKV;
@@ -57,6 +64,9 @@ enum struct TrollFlagPrompt {
     }
 }
 
+
+// Very hacky but map a power (say 16, 32) to the index in a list
+// Used to get the name of a flag (flag #16 for example) in ArrayList<string> of flag names
 int GetIndexFromPower(int powerOfTwo) {
     for(int i = 0; i < 16; i++) {
         if(1 << i == powerOfTwo) {
@@ -67,28 +77,30 @@ int GetIndexFromPower(int powerOfTwo) {
 }
 
 enum struct Troll {
-    int id;
-    int categoryID;
+    int id; // The id or the index into the global Trolls[] array
+    int categoryID; // The category this troll belongs in
 
     char name[MAX_TROLL_NAME_LENGTH];
     char description[128];
     bool hidden;
 
-    int mods;
+    int mods; // Combination of valid modifiers. Only two are ever supported
 
     // Flags
     int activeFlagClients[MAXPLAYERS+1];
-    char flagPrompt[MAX_TROLL_FLAG_LENGTH];
     ArrayList flagNames;
     ArrayList flagPrompts;
 
+    // Custom timer
     Timer timerFunction;
     Handle timerHandles[MAXPLAYERS+1];
     float timerInterval;
+    int timerRequiredFlags;
 
-    void SetTimer(float interval, Timer timer) {
+    void SetTimer(float interval, Timer timer, int requiredFlags = 0) {
         this.timerInterval = interval;
         this.timerFunction = timer;
+        this.timerRequiredFlags = requiredFlags;
         for(int i = 0; i <= MAXPLAYERS; i++) {
             this.timerHandles[i] = null;
         }
@@ -198,14 +210,13 @@ enum struct Troll {
         return false;
     }
 
+    int GetFlagCount() {
+        return this.flagNames != null ? this.flagNames.Length : 0;
+    }
+
     int GetClientFlags(int client) {
         return this.activeFlagClients[client];
     }
-
-    void SetFlagPrompt(const char[] prompt) {
-        strcopy(this.flagPrompt, MAX_TROLL_FLAG_LENGTH, prompt);
-    }
-
     void GetFlagPrompt(int index, TrollFlagPrompt prompt) {
         this.flagPrompts.GetArray(index, prompt);
     }
@@ -357,14 +368,20 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
         return;
     }
 
+    bool isActive = Trolls[trollIndex].activeFlagClients[victim] > -1;
+
     // Clear troll specific timer:
     if(Trolls[trollIndex].timerInterval > 0.0) {
-        if(flags > -1)
-            Trolls[trollIndex].timerHandles[victim] = CreateTimer(Trolls[trollIndex].timerInterval, Trolls[trollIndex].timerFunction, victim, TIMER_REPEAT);
-        else if(Trolls[trollIndex].timerHandles[victim] != null) {
+        PrintToServer("epi: there is timer for \"%s\", flags=%d", name, flags);
+        if(!isActive) {
+            if(Trolls[trollIndex].timerRequiredFlags == 0 || Trolls[trollIndex].timerRequiredFlags & flags) {
+                Trolls[trollIndex].timerHandles[victim] = CreateTimer(Trolls[trollIndex].timerInterval, Trolls[trollIndex].timerFunction, victim, TIMER_REPEAT);
+            }
+        } else if(Trolls[trollIndex].timerHandles[victim] != null) {
             delete Trolls[trollIndex].timerHandles[victim];
         }
     }
+
 
     if(!silent && SilentMenuSelected[activator]) silent = true;
 
@@ -393,7 +410,6 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
         }
     }
 
-    bool isActive = Trolls[trollIndex].activeFlagClients[victim] > -1;
 
     // Toggle on flags for client, if it's not a single run.
     if(modifier & TrollMod_Constant) {

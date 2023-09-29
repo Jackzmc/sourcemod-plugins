@@ -71,7 +71,6 @@ public void OnPluginStart() {
 	hThrowItemInterval.AddChangeHook(Change_ThrowInterval);
 	hAutoPunish 		= CreateConVar("sm_ftt_autopunish_action", "0", "Setup automatic punishment of players. Add bits together\n0=Disabled, 1=Tank magnet, 2=Special magnet, 4=Swarm, 8=InstantVomit", FCVAR_NONE, true, 0.0);
 	hAutoPunishExpire 	= CreateConVar("sm_ftt_autopunish_expire", "0", "How many minutes of gametime until autopunish is turned off? 0 for never.", FCVAR_NONE, true, 0.0);
-	hMagnetChance 	 	= CreateConVar("sm_ftt_magnet_chance", "1.0", "% of the time that the magnet will work on a player.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hMagnetTargetMode   = CreateConVar("sm_ftt_magnet_targetting", "6", "How does the specials target players. Add bits together\n0=Incapped are ignored, 1=Specials targets incapped, 2=Tank targets incapped 4=Witch targets incapped");
 	hShoveFailChance 	= CreateConVar("sm_ftt_shove_fail_chance", "0.65", "The % chance that a shove fails", FCVAR_NONE, true, 0.0, true, 1.0);
 	hBadThrowHitSelf    = CreateConVar("sm_ftt_badthrow_fail_chance", "1", "The % chance that on a throw, they will instead hit themselves. 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -103,6 +102,8 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_bots_attack", Command_BotsAttack, ADMFLAG_BAN, "Instructs all bots to attack a player until they have X health.");
 	RegAdminCmd("sm_scharge", Command_SmartCharge, ADMFLAG_BAN, "Auto Smart charge");
 	RegAdminCmd("sm_healbots", Command_HealTarget, ADMFLAG_BAN, "Make bots heal a player");
+	RegAdminCmd("sm_rff", Command_SetReverseFF, ADMFLAG_KICK, "Set reverse FF on player");
+	RegAdminCmd("sm_magnet", Command_SetMagnetShortcut, ADMFLAG_KICK, "");
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
@@ -116,6 +117,7 @@ public void OnPluginStart() {
 	HookEvent("entered_spit", Event_EnteredSpit);
 	HookEvent("bot_player_replace", Event_BotPlayerSwap);
 	HookEvent("heal_success", Event_HealSuccess);
+	HookEvent("player_incapacitated", Event_Incapped);
 	
 	AddNormalSoundHook(SoundHook);
 
@@ -147,7 +149,6 @@ public void Change_BotDefend(ConVar convar, const char[] oldValue, const char[] 
 ///////////////////////////////////////////////////////////////////////////////
 // METHODS - Old methods, some are also in feedthetrolls/misc.inc
 ///////////////////////////////////////////////////////////////////////////////
-
 
 void ThrowAllItems(int victim) {
 	float vicPos[3], destPos[3];

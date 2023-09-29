@@ -1,4 +1,4 @@
-public Action Command_InstaSpecial(int client, int args) {
+Action Command_InstaSpecial(int client, int args) {
 	if(args < 1) {
 		Menu menu = new Menu(Insta_PlayerHandler);
 		menu.SetTitle("InstaSpecial: Choose a player");
@@ -46,7 +46,7 @@ public Action Command_InstaSpecial(int client, int args) {
 		for (int i = 0; i < target_count; i++) {
 			int target = target_list[i];
 			if(GetClientTeam(target) == 2) {
-				if(SpawnSpecialForTarget(specialType, target)) {
+				if(SpawnSpecialForTarget(specialType, target, view_as<int>(Special_AlwaysTarget))) {
 					LogAction(client, target, "\"%L\" spawned Insta-%s™ nearby \"%L\"", client, arg2, target);
 					successes++;
 				} else {
@@ -64,7 +64,7 @@ public Action Command_InstaSpecial(int client, int args) {
 	return Plugin_Handled;
 }
 
-public Action Command_InstaSpecialFace(int client, int args) {
+Action Command_InstaSpecialFace(int client, int args) {
 	if(args < 1) {
 		Menu menu = new Menu(Insta_PlayerHandler);
 		menu.SetTitle("Inface: Choose a player");
@@ -112,7 +112,7 @@ public Action Command_InstaSpecialFace(int client, int args) {
 		for (int i = 0; i < target_count; i++) {
 			int target = target_list[i];
 			if(GetClientTeam(target) == 2) {
-				if(SpawnSpecialForTarget(specialType, target, view_as<int>(Special_OnTarget))) {
+				if(SpawnSpecialForTarget(specialType, target, view_as<int>(Special_OnTarget) | view_as<int>(Special_AlwaysTarget))) {
 					LogAction(client, target, "\"%L\" spawned Insta-%s™ at player \"%L\"", client, arg2, target);
 					successes++;
 				} else {
@@ -129,7 +129,7 @@ public Action Command_InstaSpecialFace(int client, int args) {
 }
 
 
-public Action Command_WitchAttack(int client, int args) {
+Action Command_WitchAttack(int client, int args) {
 	if(args < 1) {
 		ReplyToCommand(client, "Usage: sm_witch_attack <user> [# of witches or 0 for all]");
 	}else{
@@ -245,7 +245,7 @@ public Action Command_ApplyUser(int client, int args) {
 			target_name,
 			sizeof(target_name),
 			tn_is_ml)) <= 0
-		&& target_list[0] > 0) {
+		&& target_list[0] == 0) {
 			/* This function replies to the admin with a failure message */
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
@@ -624,7 +624,7 @@ public Action Command_SmartCharge(int client, int args) {
 	return Plugin_Handled;
 }
 
-public Action Command_HealTarget(int client, int args) {
+Action Command_HealTarget(int client, int args) {
 	if(args > 0) {
 		char arg1[32], arg2[4];
 		GetCmdArg(1, arg1, sizeof(arg1));
@@ -687,5 +687,62 @@ public Action Command_HealTarget(int client, int args) {
 	} else {
 		ReplyToCommand(client, "Usage: /healbots <player> [# of bots or 0 for all]");
 	}
+	return Plugin_Handled;
+}
+Action Command_SetReverseFF(int client, int args) {
+	if(args < 2) {
+		ReplyToCommand(client, "Usage: sm_rff <target> <amount> [fire/explosion]*");
+		return Plugin_Handled;
+	}
+	char arg[32];
+	GetCmdArg(1, arg, sizeof(arg));
+	int target = GetSinglePlayer(client, arg, COMMAND_FILTER_NO_BOTS);
+	if(target <= 0) {
+		return Plugin_Handled;
+	}
+	GetCmdArg(1, arg, sizeof(arg));
+	GetCmdArg(2, arg, sizeof(arg));
+	int flag = -1;
+	if(StrEqual(arg, "0") || StrEqual(arg, "0.0")) {
+		flag = 8;
+	} else if(StrEqual(arg, "2")) {
+		flag = 2;
+	} else if(StrEqual(arg, "0.5") || StrEqual(arg, ".5")) {
+		flag = 4;
+	} else if(StrEqual(arg, "3")) {
+		flag = 8;
+	} else if(StrEqual(arg, "1")) {
+		flag = 1;
+	} else {
+		ReplyToCommand(client, "Unsupported amount. Possible values: 0, 2, 0.5, 3, 1");
+		return Plugin_Handled;
+	}
+	// args are 1-indexed so <=
+	for(int i = 3; i <= args; i++) {
+		GetCmdArg(i, arg, sizeof(arg));
+		if(arg[0] == 'f') {
+			flag |= 32;
+		} else if(arg[0] == 'e') {
+			flag |= 64;
+		} else {
+			ReplyToCommand(client, "Unknown arg: %s", arg);
+		}
+
+	}
+	ApplyTroll(target, "Reverse FF", client, TrollMod_Constant, flag);
+	return Plugin_Handled;
+}
+Action Command_SetMagnetShortcut(int client, int args) {
+	if(args < 1) {
+		ReplyToCommand(client, "Usage: sm_magnet <target>");
+		return Plugin_Handled;
+	}
+	char arg[32];
+	GetCmdArg(1, arg, sizeof(arg));
+	int target = GetSinglePlayer(client, arg, COMMAND_FILTER_NO_BOTS);
+	if(target <= 0) {
+		return Plugin_Handled;
+	}
+	ShowTrollsForCategory(client, GetClientUserId(target), 0);
 	return Plugin_Handled;
 }
