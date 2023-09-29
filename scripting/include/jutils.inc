@@ -426,17 +426,31 @@ stock bool GetClientWeaponName(int client, int slot, char[] name, int nameSize) 
 	}
 }
 stock bool GetClientWeaponNameSmart(int client, int slot, char[] name, int nameSize) {
-	int wpn = GetClientWeaponEntIndex(client, slot);
+	int wpn = GetPlayerWeaponSlot(client, slot);
 	if(wpn > 0) {
 		GetEntityClassname(wpn, name, nameSize);
 		if(slot == 1 && StrEqual(name, "weapon_melee")) {
 			GetEntPropString(wpn, Prop_Data, "m_strMapSetScriptName", name, nameSize);
 		}
 		return true;
-	}else{
-		return false;
 	}
+	return false;
 }
+
+stock int GetClientWeaponNameSmart2(int client, int slot, char[] name, int nameSize) {
+	int wpn = GetPlayerWeaponSlot(client, slot);
+	if(wpn > 0) {
+		GetEntityClassname(wpn, name, nameSize);
+		if(slot == 1 && StrEqual(name, "weapon_melee")) {
+			GetEntPropString(wpn, Prop_Data, "m_strMapSetScriptName", name, nameSize);
+		} else {
+			Format(name, nameSize, "%s", name[7]);
+		}
+		return wpn;
+	}
+	return -1;
+}
+
 
 stock bool DoesClientHaveWeapon(int client, int slot, const char[] name) {
 	char wpn[32];
@@ -559,7 +573,8 @@ stock void PrintChatToAdmins(const char[] format, any ...) {
 	}
 	PrintToServer("%s", buffer);
 }
-stock void CPrintChatToAdmin(const char[] format, any ...) {
+#if defined _multicolors_included
+stock void CPrintChatToAdmins(const char[] format, any ...) {
 	char buffer[254];
 	VFormat(buffer, sizeof(buffer), format, 2);
 	for(int i = 1; i < MaxClients; i++) {
@@ -570,8 +585,9 @@ stock void CPrintChatToAdmin(const char[] format, any ...) {
 			}
 		}
 	}
-	PCrintToServer("%s", buffer);
+	CPrintToServer("%s", buffer);
 }
+#endif
 stock bool IsValidAdmin(int client, const char[] flags) {
 	int ibFlags = ReadFlagString(flags);
 	if ((GetUserFlagBits(client) & ibFlags) == ibFlags) {
@@ -933,4 +949,19 @@ stock void CalculateWorldPosition(int entity, float pos[3]) {
 	pos[0] = pos[0] + (mins[0] + maxs[0]) * 0.5;
 	pos[1] = pos[1] + (mins[1] + maxs[1]) * 0.5;
 	pos[2] = pos[2] + (mins[2] + maxs[2]) * 0.5;
+}
+/// Displays either: Username, Username (AFK), Username (Dead), Userame (AFK/Dead)
+stock void GetMenuDisplayName(int client, char[] display, int maxlen) {
+	int realPlayer = L4D_GetIdlePlayerOfBot(client);
+	// Incase player is idle, grab their bot instead of them
+	if(realPlayer > 0 && IsClientConnected(realPlayer)) {
+		if(IsPlayerAlive(client))
+			Format(display, maxlen, "%N (AFK)", realPlayer);
+		else
+			Format(display, maxlen, "%N (AFK/Dead)", realPlayer);
+	} else if(!IsPlayerAlive(client))
+		Format(display, maxlen, "%N (Dead)", client);
+	else {
+		GetClientName(client, display, maxlen);
+	}
 }
