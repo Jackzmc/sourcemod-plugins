@@ -145,16 +145,16 @@ void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newVa
 // Special Infected Events 
 ///////////////////////////////////////////////////////////////////////////////
 Action Event_ChargerCarry(Event event, const char[] name, bool dontBroadcast) {
-	return SetUnderAttack("charger_carry_start");
+	return SetUnderAttack(event, name, "charger_carry_start");
 }
 Action Event_HunterPounce(Event event, const char[] name, bool dontBroadcast) {
-	return SetUnderAttack(event, "lunge_pounce");
+	return SetUnderAttack(event, name, "lunge_pounce");
 }
 Action Event_SmokerChoke(Event event, const char[] name, bool dontBroadcast) {
-	return SetUnderAttack("choke_start");
+	return SetUnderAttack(event, name, "choke_start");
 }
 Action Event_JockeyRide(Event event, const char[] name, bool dontBroadcast) {
-	return SetUnderAttack("jockey_ride");
+	return SetUnderAttack(event, name, "jockey_ride");
 }
 
 Action Timer_StopSpecialAttackImmunity(Handle h, int userid) {
@@ -165,7 +165,7 @@ Action Timer_StopSpecialAttackImmunity(Handle h, int userid) {
 	return Plugin_Continue;
 }
 
-Action SetUnderAttack(Event event, const char[] checkString) {
+Action SetUnderAttack(Event event, const char[] name, const char[] checkString) {
 	int userid = event.GetInt("victim");
 	int victim = GetClientOfUserId(userid);
 	if(victim) {
@@ -322,15 +322,15 @@ Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& dam
 			if(pData[victim].jumpAttempts > hSuicideLimit.IntValue) {
 				if(hSuicideAction.IntValue == 1) {
 					LogMessage("[NOTICE] Kicking %N for suicide attempts", victim, hBanTime.IntValue);
-					PrintToChatAdmins("[Notice]  Kicking %N for suicide attempts", victim, hBanTime.IntValue);
+					PrintChatToAdmins("[Notice]  Kicking %N for suicide attempts", victim, hBanTime.IntValue);
 					KickClient(victim, "Troll");
 				} else if(hSuicideAction.IntValue == 2) {
 					LogMessage("[NOTICE] Banning %N for suicide attempts for %d minutes.", victim, hBanTime.IntValue);
-					PrintToChatAdmins("[Notice] Banning %N for suicide attempts for %d minutes.", victim, hBanTime.IntValue);
+					PrintChatToAdmins("[Notice] Banning %N for suicide attempts for %d minutes.", victim, hBanTime.IntValue);
 					BanClient(victim, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Suicide fall attempts", "Troll", "TKStopper");
 				} else if(hSuicideAction.IntValue == 3) {
 					LogMessage("[NOTICE] %N will be banned for suicide attempts for %d minutes. ", victim, hBanTime.IntValue);
-					PrintToChatAdmins("[Notice] %N will be banned for suicide attempts for %d minutes. Use \"/ignore <player> tk\" to make them immune.", victim, hBanTime.IntValue);
+					PrintChatToAdmins("[Notice] %N will be banned for suicide attempts for %d minutes. Use \"/ignore <player> tk\" to make them immune.", victim, hBanTime.IntValue);
 					pData[victim].isTroll = true;
 				}
 			}
@@ -397,15 +397,15 @@ Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& dam
 			if(!pData[attacker].pendingAction) {
 				if(hTKAction.IntValue == 1) {
 					LogMessage("[TKStopper] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
-					PrintToChatAdmins("[Notice] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
+					PrintChatToAdmins("[Notice] Kicking %N for excessive FF (%.2f HP)", attacker, pData[attacker].TKDamageBuffer);
 					KickClient(attacker, "Excessive FF");
 				} else if(hTKAction.IntValue == 2) {
 					LogMessage("[TKStopper] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
-					PrintToChatAdmins("[Notice] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
+					PrintChatToAdmins("[Notice] Banning %N for excessive FF (%.2f HP) for %d minutes.", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
 					BanClient(attacker, hBanTime.IntValue, BANFLAG_AUTO | BANFLAG_AUTHID, "Excessive FF (Auto)", "Excessive Friendly Fire (Automatic)", "TKStopper");
 				} else if(hTKAction.IntValue == 3) {
 					LogMessage("[TKStopper] %N will be banned for FF on disconnect (%.2f HP) for %d minutes. ", attacker, pData[attacker].TKDamageBuffer, hBanTime.IntValue);
-					CPrintToChatAdmins("[Notice] %N will be banned for %d minutes for attempted teamkilling (%.2f HP) when they disconnect. Use {olive}/ignore <player> tk{default} to make them immune.", attacker, hBanTime.IntValue, pData[attacker].TKDamageBuffer);
+					CPrintChatToAdmins("[Notice] %N will be banned for %d minutes for attempted teamkilling (%.2f HP) when they disconnect. Use {olive}/ignore <player> tk{default} to make them immune.", attacker, hBanTime.IntValue, pData[attacker].TKDamageBuffer);
 					pData[attacker].isTroll = true;
 				}
 				pData[attacker].pendingAction = true;
@@ -478,8 +478,9 @@ Action Command_TKInfo(int client, int args) {
 			ReplyToTargetError(client, target_count);
 			return Plugin_Handled;
 		}
+		
 		int target = target_list[0];
-		CReplyToCommand(client, "FF Review for {yellow}%N", target);
+		CReplyToCommand(client, "- FF Review for {olive}%N -", target);
 		if(pData[target].isTroll) {
 			CReplyToCommand(client, "{olive}- will be banned on disconnect for TK -", target);
 		}
@@ -490,12 +491,16 @@ Action Command_TKInfo(int client, int args) {
 		} else if(view_as<int>(pData[target].immunityFlags) > 0) {
 			CReplyToCommand(client, "Immunity: {yellow}Teamkiller Detection, Auto reverse-ff", target);
 		} else {
-			CReplyToCommand(client, "Immunity: (none, use {green}/ignore <player> [immunity]{default} to toggle)", target);
+			CReplyToCommand(client, "Immunity: {yellow}None", target);
+			CReplyToCommand(client, "\tUse {olive}/ignore <player> [immunity type]{default} to toggle");
 		}
 		float minutesSinceiLastFFTime = GetLastFFMinutes(target);
 		float activeRate = GetActiveRate(target);
 		CReplyToCommand(client, "FF Frequency: {yellow}%d {default}(recent: %d, %d forgiven)", pData[target].totalFFCount, pData[target].ffCount, (pData[target].totalFFCount - pData[target].ffCount));
-		CReplyToCommand(client, "Total FF Damage: {yellow}%.1f HP{default} (last fff %.1f min ago)", pData[target].totalDamageFF, minutesSinceiLastFFTime);
+		if(pData[client].lastFFTime == 0)
+			CReplyToCommand(client, "Total FF Damage: {yellow}%.1f HP{default} (last fff Never)", pData[target].totalDamageFF);
+		else
+			CReplyToCommand(client, "Total FF Damage: {yellow}%.1f HP{default} (last fff %.1f min ago)", pData[target].totalDamageFF, minutesSinceiLastFFTime);
 		if(~pData[target].immunityFlags & Immune_TK)
 			CReplyToCommand(client, "Recent FF (TKDetectBuffer): {yellow}%.1f", pData[target].TKDamageBuffer);
 		if(~pData[target].immunityFlags & Immune_RFF)
