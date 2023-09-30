@@ -369,8 +369,6 @@ public void OnPluginStart() {
 
 }
 
-
-
 Action Timer_Director(Handle h) {
 	if(abmExtraCount <= 4) return Plugin_Continue;
 

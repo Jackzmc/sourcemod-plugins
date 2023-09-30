@@ -125,6 +125,9 @@ Action Command_DoAHat(int client, int args) {
 			ReplyToCommand(client, "Flags: %d", hatData[client].flags);
 			// ReplyToCommand(client, "CurOffset: %f %f %f", );
 			return Plugin_Handled;
+		} else if(arg[0] == 'a') {
+			ShowAttachPointMenu(client);
+			return Plugin_Handled;
 		}
 		// int orgEntity = entity;
 		if(HasFlag(client, HAT_REVERSED)) {
@@ -455,13 +458,63 @@ Action Command_DoAHat(int client, int args) {
 }
 
 
+#define MAX_ATTACHMENT_POINTS 20
+char ATTACHMENT_POINTS[MAX_ATTACHMENT_POINTS][] = {
+	"eyes",
+	"molotov",
+	"pills",
+	"grenade",
+	"primary",
+	"medkit",
+	"melee",
+	"survivor_light",
+	"bleedout",
+	"forward",
+	"survivor_neck",
+	"muzzle_flash",
+	"spine",
+	"legL",
+	"legR",
+	"thighL",
+	"thighR",
+	"lfoot",
+	"rfoot",
+	"mouth",
+};
+
+void ShowAttachPointMenu(int client) { 
+	Menu menu = new Menu(AttachPointHandler);
+	menu.SetTitle("Choose an attach point");
+	for(int i = 0; i < MAX_ATTACHMENT_POINTS; i++) {
+		menu.AddItem(ATTACHMENT_POINTS[i], ATTACHMENT_POINTS[i]);
+	}
+	menu.Display(client, 0);
+}
+
+int AttachPointHandler(Menu menu, MenuAction action, int client, int param2) {
+	if (action == MenuAction_Select) {
+		char attachPoint[32];
+		menu.GetItem(param2, attachPoint, sizeof(attachPoint));
+		if(!HasHat(client)) {
+			ReplyToCommand(client, "No hat is equipped");
+		} else { 
+			int hat = GetHat(client);
+			char classname[32];
+			GetEntityClassname(hat, classname, sizeof(classname));
+			EquipHat(client, hat, classname, hatData[client].flags, attachPoint);
+			CReplyToCommand(client, "Attachment point set to {olive}%s", attachPoint);
+		}
+	} else if (action == MenuAction_End)	
+		delete menu;
+	return 0;
+}
 
 // Handles consent that a person to be hatted by another player
-public int HatConsentHandler(Menu menu, MenuAction action, int target, int param2) {
+int HatConsentHandler(Menu menu, MenuAction action, int target, int param2) {
 	if (action == MenuAction_Select) {
-		static char info[8];
+		char info[8];
 		menu.GetItem(param2, info, sizeof(info));
-		static char str[2][8];
+		char str[2][8];
 		ExplodeString(info, "|", str, 2, 8, false);
 		int activator = GetClientOfUserId(StringToInt(str[0]));
 		int hatAction = StringToInt(str[1]);

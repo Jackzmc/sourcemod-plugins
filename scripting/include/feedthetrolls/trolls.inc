@@ -527,7 +527,7 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		while(numFlags > 0) {
 			// Apply a random flag
 			rndFlags |= GetRandomInt(0, maxFlags)
-			maxFlags--;
+			numFlags--;
 		}
 		trollModifier rndMod = Trolls[rndTroll].GetDefaultMod();
 		if(Trolls[rndTroll].HasMod(TrollMod_Constant) && GetURandomFloat() > 0.5) {

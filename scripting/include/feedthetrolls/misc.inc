@@ -176,7 +176,7 @@ ArrayList GetPhrasesArray(const char[] key) {
 
 stock int FindClosestClientAdminPriority(int source, float pos[3]) {
 	int c = FindClosestAdmin(source, pos);
-	if(c == -1) return FindClosestClient(source, ignoreBots, pos);
+	if(c == -1) return FindClosestClient(source, true,pos);
 	else return c;
 }
 
