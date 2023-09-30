@@ -6,6 +6,8 @@
 #define DIRECTOR_MIN_SPAWN_TIME 20.0 // Possibly randomized, per-special
 #define DIRECTOR_SPAWN_CHANCE 30.0 // The raw chance of a spawn 
 #define DIRECTOR_CHANGE_LIMIT_CHANCE 0.10 // The chance that the maximum amount per-special is changed
+#define DIRECTOR_SPECIAL_TANK_CHANCE 0.05 // The chance that specials can spawn when a tank is active
+#define DIRECTOR_STRESS_CUTOFF 0.60 // The minimum chance a random cut off stress value is chosen [this, 1.0]
 
 /// DEFINITIONS
 #define NUM_SPECIALS 6
@@ -35,6 +37,8 @@ static float highestFlowAchieved;
 static float g_lastSpawnTime[TOTAL_NUM_SPECIALS];
 static int g_spawnLimit[TOTAL_NUM_SPECIALS];
 static int g_spawnCount[TOTAL_NUM_SPECIALS];
+static float g_minFlowSpawn; // The minimum flow for specials to start spawning (waiting for players to leave saferom)
+static float g_minStressIntensity; // The minimum stress that specials arent allowed to spawn
 
 static int extraWitchCount;
 static Handle witchSpawnTimer = null;
@@ -76,7 +80,13 @@ void Event_WitchSpawn(Event event, const char[] name, bool dontBroadcast) {
 void Director_OnClientPutInServer(int client) {
 	if(client > 0 && GetClientTeam(client) == 3) {
 		int class = GetEntProp(client, Prop_Send, "m_zombieClass");
-		g_spawnCount[class]++;
+		// Ignore a hacky temp bot spawn
+		// To bypass director limits many plugins spawn an infected "bot" that immediately gets kicked, which allows a window to spawn a special
+		static char buf[32];
+		GetClientName(special, buf, sizeof(buf));
+		if(StrContains(buf, "bot", false) == -1) {
+			g_spawnCount[class]++;
+		}
 	}
 }
 void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
@@ -125,6 +135,11 @@ void Director_RandomizeLimits() {
 		g_spawnLimit[i] = GetRandomInt(0, max);
 	}
 }
+void Director_RandomizeThings() {
+	g_minStressIntensity = GetRandomFloat(DIRECTOR_STRESS_CUTOFF, 1.0);
+	g_minFlowSpawn = GetRandomFloat(FLOW_CUTOFF, FLOW_CUTOFF * 2);
+
+}
 
 /// TIMERS
 
@@ -138,14 +153,27 @@ Action Timer_Director(Handle h) {
 	if(flow > highestFlowAchieved) { 
 		highestFlowAchieved = flow;
 	}
+	// Only start spawning once they get to g_minFlowSpawn - a little past the start saferoom
+	if(highestFlowAchieved < g_minFlowSpawn) return Plugin_Continue;
+	float curAvgStress = L4D_GetAvgSurvivorIntensity();
+	// Don't spawn specials when tanks active, but have a small chance (DIRECTOR_SPECIAL_TANK_CHANCE) to bypass
+	if(L4D2_IsTankInPlay() && GetURandomFloat() > DIRECTOR_SPECIAL_TANK_CHANCE) {
+		return Plugin_Continue;
+	} else {
+		// Stop spawning when players are stressed from a random value chosen by [DIRECTOR_STRESS_CUTOFF, 1.0]
+		if(curAvgStress >= g_minStressIntensity) return Plugin_Continue;
+	}
 
+	// TODO: Scale spawning chance based on intensity? 0.0 = more likely, < g_minStressIntensity = less likely
+	// Scale the chance where stress = 0.0, the chance is 50% more, and stress = 1.0, the chance is 50% less
+	float spawnChance = DIRECTOR_SPAWN_CHANCE + (0.5 - curAvgStress) / 10
 	for(int i = 0; i < NUM_SPECIALS; i++) {
 		specialType special = view_as<specialType>(i);
 		// Skip if we hit our limit, or too soon:
 		if(g_spawnCount[i] >= g_spawnLimit[i]) continue;
 		if(time - g_lastSpawnTime[i] < DIRECTOR_MIN_SPAWN_TIME) continue;
 
-		if(GetURandomFloat() < DIRECTOR_SPAWN_CHANCE) {
+		if(GetURandomFloat() < spawnChance) {
 			DirectorSpawn(special);
 		}
 	}
@@ -175,7 +203,7 @@ Action Timer_DirectorWitch(Handle h) {
 // UTIL functions
 void DirectorSpawn(specialType special) {
 	PrintChatToAdmins("EPI: DirectorSpawn(%s) (dont worry about it)", SPECIAL_IDS[view_as<int>(special)]);
-	int player = L4D_GetHighestFlowSurvivor();
+	int player = GetSuitableVictim();
 	PrintDebug(DEBUG_SPAWNLOGIC, "Director: spawning %s from %N (cnt=%d,lim=%d)", SPECIAL_IDS[view_as<int>(special)], player, g_spawnCount[view_as<int>(special)], g_spawnLimit[view_as<int>(special)]);
 	PrintToServer("[EPI] Spawning %s On %N", SPECIAL_IDS[view_as<int>(special)], player);
 	if(special != Special_Witch && special != Special_Tank) {
@@ -193,4 +221,20 @@ void DirectorSpawn(specialType special) {
 // TODO: make
 void DirectSpawn(specialType special, const float pos[3]) {
 
+}
+// Finds a player that is suitable (lowest intensity)
+int GetSuitableVictim() {
+	int victim = -1;
+	float lowestIntensity = 0.0;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
+			float intensity = L4D_GetPlayerIntensity(i);
+			// TODO: possibly add perm health into calculations
+			if(intensity < lowestIntensity || victim == -1) {
+				lowestIntensity = intensity;
+				victim = i;
+			}
+		}
+	}
+	return victim;
 }
