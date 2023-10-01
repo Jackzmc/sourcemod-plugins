@@ -28,10 +28,7 @@
 #define EXTRA_PLAYER_HUD_UPDATE_INTERVAL 0.8
 //Sets abmExtraCount to this value if set
 // #define DEBUG_FORCE_PLAYERS 7
-#define DIRECTOR_WITCH_MIN_TIME 120 // The minimum amount of time to pass since last witch spawn for the next extra witch to spawn
-#define DIRECTOR_WITCH_CHECK_TIME 30.0 // How often to check if a witch should be spawned
-#define DIRECTOR_WITCH_MAX_WITCHES 6 // The maximum amount of extra witches to spawn 
-#define DIRECTOR_WITCH_ROLLS 2 // The number of dice rolls, increase if you want to increase freq
+
 #define FLOW_CUTOFF 100.0 // The cutoff of flow, so that witches / tanks don't spawn in saferooms / starting areas, [0 + FLOW_CUTOFF, MapMaxFlow - FLOW_CUTOFF]
 
 #define EXTRA_TANK_MIN_SEC 2.0
@@ -82,21 +79,15 @@ public Plugin myinfo =
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
-static ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags, cvEPISpecialSpawning;
-static int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
+ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags, cvEPISpecialSpawning;
+int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
 static int currentChapter;
 static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound, areItemsPopulated;
-static float highestFlowAchieved;
 static ArrayList ammoPacks;
 static Handle updateHudTimer;
 static bool showHudPingMode;
 static int hudModeTicks;
 static char gamemode[32];
-
-
-static int witchSpawnCount, witchLastSpawnTime, extraWitchCount;
-float ExtraWitchFlowPositions[DIRECTOR_WITCH_MAX_WITCHES] = {};
-static Handle witchSpawnTimer = null;
 
 
 bool isCoop;
@@ -236,7 +227,9 @@ enum struct Cabinet {
 }
 static Cabinet cabinets[10]; //Store 10 cabinets
 
-//// Definitions complete
+//// Definitions completSe
+
+#include <epi/director.sp>
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	if(late) isLateLoaded = true;
@@ -270,6 +263,7 @@ public void OnPluginStart() {
 	//Special Event Tracking
 	HookEvent("player_info", Event_PlayerInfo);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
+	HookEvent("player_death", Event_PlayerDeath);
 
 	HookEvent("charger_carry_start", Event_ChargerCarry);
 	HookEvent("charger_carry_end", Event_ChargerCarry);
@@ -369,32 +363,7 @@ public void OnPluginStart() {
 
 }
 
-Action Timer_Director(Handle h) {
-	if(abmExtraCount <= 4) return Plugin_Continue;
 
-	// Calculate the new highest flow
-	int highestPlayer = L4D_GetHighestFlowSurvivor();
-	float flow = L4D2Direct_GetFlowDistance(highestPlayer);
-	if(flow > highestFlowAchieved) { 
-		highestFlowAchieved = flow;
-	}
-	return Plugin_Continue;
-}
-Action Timer_DirectorWitch(Handle h) {
-	int time = GetTime();
-	if(witchSpawnCount < extraWitchCount && time - witchLastSpawnTime > DIRECTOR_WITCH_MIN_TIME) {
-		for(int i = 0; i <= extraWitchCount; i++) {
-			if(ExtraWitchFlowPositions[i] > 0.0 && highestFlowAchieved >= ExtraWitchFlowPositions[i]) {
-				PrintChatToAdmins("EPI: (ignore me) DirectorSpawn(Special_Witch)");
-				PrintDebug(DEBUG_SPAWNLOGIC, "DirectorSpawn(Special_Witch)");
-				// Reset
-				ExtraWitchFlowPositions[i] = 0.0;
-				break;
-			}
-		}
-	}
-	return Plugin_Continue;
-}
 
 Action Timer_ForceUpdateInventories(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
@@ -406,6 +375,7 @@ Action Timer_ForceUpdateInventories(Handle h) {
 }
 
 public void OnClientPutInServer(int client) {
+	Director_OnClientPutInServer(client);
 	if(!IsFakeClient(client)) {
 		playerData[client].Setup(client);
 
@@ -492,14 +462,6 @@ void Cvar_HudStateChange(ConVar convar, const char[] oldValue, const char[] newV
 			PrintToServer("[EPI] Creating new hud timer");
 			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
 		}
-	}
-}
-void Cvar_SpecialSpawningChange(ConVar convar, const char[] oldValue, const char[] newValue) {
-	if(convar.IntValue & 2 && abmExtraCount > 4) {
-		if(witchSpawnTimer == null)
-			witchSpawnTimer = CreateTimer(DIRECTOR_WITCH_CHECK_TIME, Timer_DirectorWitch, _, TIMER_REPEAT);
-	} else {
-		delete witchSpawnTimer;
 	}
 }
 
@@ -660,12 +622,7 @@ Action Command_RunExtraItems(int client, int args) {
 }
 Action Command_Debug(int client, int args) {
 	PrintToConsole(client, "abmExtraCount = %d", abmExtraCount);
-	PrintToConsole(client, "===Extra Witches===");
-	PrintToConsole(client, "Map Bounds: [%f, %f]", FLOW_CUTOFF, L4D2Direct_GetMapMaxFlowDistance() - (FLOW_CUTOFF*2.0));
-	PrintToConsole(client, "Total Witches Spawned: %d | Target: %d", witchSpawnCount, extraWitchCount);
-	for(int i = 0; i < extraWitchCount && i < DIRECTOR_WITCH_MAX_WITCHES; i++) {
-		PrintToConsole(client, "%d. %f", i, ExtraWitchFlowPositions[i]);
-	}
+	Director_PrintDebug(client);
 	return Plugin_Handled;
 }
 Action Command_DebugStats(int client, int args) {
@@ -818,10 +775,6 @@ public void OnGetWeaponsInfo(int pThis, const char[] classname) {
 	int maxClipSize = StringToInt(clipsize);
 	if(maxClipSize > 0) 
 		weaponMaxClipSizes.SetValue(classname, maxClipSize);
-}
-void Event_WitchSpawn(Event event, const char[] name, bool dontBroadcast) {
-	witchSpawnCount++;
-	witchLastSpawnTime = GetTime();
 }
 
 ///////////////////////////////////////////////////////
@@ -1168,8 +1121,6 @@ void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
 public void OnMapStart() {
 	PrintDebug(DEBUG_GENERIC, "OnMapStart");
 	isCheckpointReached = false;
-	witchSpawnCount = 0;
-	witchLastSpawnTime = GetTime();
 	//If previous round was a failure, restore the amount of kits that were left directly after map transition
 	if(isFailureRound) {
 		extraKitsAmount = extraKitsStarted;
@@ -1235,28 +1186,7 @@ public void OnMapStart() {
 	finaleStage = Stage_Inactive;
 
 	L4D2_RunScript(HUD_SCRIPT_CLEAR);
-	if(cvEPISpecialSpawning.BoolValue && abmExtraCount > 4) { 
-		InitExtraWitches();
-	}
-}
-
-void InitExtraWitches() { 
-	float flowMax = L4D2Direct_GetMapMaxFlowDistance() - (FLOW_CUTOFF*2); // *2 to calculate (max-min), save a minus
-	// Just in case we don't have max flow or the map is extremely tiny, don't run:
-	if(flowMax > 0.0) {
-		int count = abmExtraCount;
-		if(count < 4) count = 4;
-		// Calculate the number of witches we want to spawn.
-		// We bias the dice roll to the right. We slowly increase min based on player count to shift distribution to the right
-		int min = RoundToFloor(float(count - 4) / 4.0);
-		extraWitchCount = DiceRoll(min, DIRECTOR_WITCH_MAX_WITCHES, DIRECTOR_WITCH_ROLLS, BIAS_LEFT);
-		PrintDebug(DEBUG_SPAWNLOGIC, "Extra witch count: %d (%d min)", extraWitchCount, min);
-		for(int i = 0; i <= extraWitchCount; i++) {
-			ExtraWitchFlowPositions[i] = GetURandomFloat() * flowMax + FLOW_CUTOFF;
-			PrintDebug(DEBUG_SPAWNLOGIC, "Spawn location #%d: %f", i, ExtraWitchFlowPositions[i]);
-		}
-		witchSpawnTimer = CreateTimer(DIRECTOR_WITCH_CHECK_TIME, Timer_DirectorWitch, _, TIMER_REPEAT);
-	}
+	Director_OnMapStart();
 }
 
 /*
@@ -1288,15 +1218,11 @@ public void OnMapEnd() {
 			cabinets[i].items[b] = 0;
 		}
 	}
-	for(int i = 0; i <= DIRECTOR_WITCH_MAX_WITCHES; i++) {
-		ExtraWitchFlowPositions[i] = 0.0;
-	}
 	ammoPacks.Clear();
 	playersLoadedIn = 0;
-	highestFlowAchieved = 0.0;
 	// abmExtraCount = 0;
 	delete updateHudTimer;
-	delete witchSpawnTimer;
+	Director_OnMapEnd();
 }
 
 public void Event_RoundFreezeEnd(Event event, const char[] name, bool dontBroadcast) {
@@ -2074,40 +2000,7 @@ stock float GetSurvivorFlowDifference() {
 	client = GetLowestFlowSurvivor();
 	return highestFlow - L4D2Direct_GetFlowDistance(client);
 }
-char SPECIAL_IDS[8][] = {
-    "smoker",
-    "boomer",
-    "hunter",
-    "spitter",
-    "jockey",
-    "charger",
-    "witch",
-    "tank"
-};
-enum SpecialType {
-	Special_Smoker,
-	Special_Boomer,
-	Special_Hunter,
-	Special_Spitter,
-	Special_Jockey,
-	Special_Charger,
-	Special_Witch,
-	Special_Tank,
-}
 
-void DirectorSpawn(SpecialType special) {
-	int player = L4D_GetHighestFlowSurvivor();
-	PrintToServer("[EPI] Spawning %s On %N", SPECIAL_IDS[view_as<int>(special)], player);
-	if(special != Special_Witch && special != Special_Tank) {
-		// Bypass director
-		int bot = CreateFakeClient("EPI_BOT");
-		if (bot != 0) {
-			ChangeClientTeam(bot, 3);
-			CreateTimer(0.1, Timer_Kick, bot);
-		}
-	}
-	CheatCommand(player, "z_spawn_old", SPECIAL_IDS[view_as<int>(special)], "auto");
-}
 Action Timer_Kick(Handle h, int bot) { 
 	KickClient(bot);
 	return Plugin_Handled;
