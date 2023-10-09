@@ -4,6 +4,7 @@
 //#define DEBUG
 
 #define ALLOW_HEALING_MIN_IDLE_TIME 180
+#define MIN_IGNORE_IDLE_TIME 5
 #define PLUGIN_VERSION "1.0"
 
 #include <sourcemod>
@@ -11,10 +12,10 @@
 #include <actions>
 //#include <sdkhooks>
 
+int lastIdleTimeStart[MAXPLAYERS+1];
 int idleTimeStart[MAXPLAYERS+1];
 
-public Plugin myinfo = 
-{
+public Plugin myinfo = {
 	name =  "L4D2 AI Tweaks", 
 	author = "jackzmc", 
 	description = "", 
@@ -27,14 +28,24 @@ public void OnPluginStart() {
 	if(g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
-	// HookEvent("player_bot_replace", Event_PlayerOutOfIdle );
+	HookEvent("player_bot_replace", Event_PlayerOutOfIdle );
 	HookEvent("bot_player_replace", Event_PlayerToIdle);
 }
 
-public Action Event_PlayerToIdle(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerToIdle(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0) {
+		lastIdleTimeStart[client] = idleTimeStart[client];
 		idleTimeStart[client] = GetTime();
+	}
+}
+void Event_PlayerOutOfIdle(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0) {
+		// After saferooms, idle players get resumed then immediately idle - so ignore that
+		if(GetTime() - idleTimeStart[client] < MIN_IGNORE_IDLE_TIME) {
+			idleTimeStart[client] = lastIdleTimeStart[client];
+		}
 	}
 }
 
