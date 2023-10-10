@@ -59,7 +59,7 @@ char DIRECTOR_STATE[8][] = {
 	"tank in play",
 	"high stress",
 };
-directorState g_lastState; 
+static directorState g_lastState; 
 
 static float g_highestFlowAchieved;
 static float g_lastSpawnTime[TOTAL_NUM_SPECIALS];
@@ -69,9 +69,9 @@ static int g_spawnCount[TOTAL_NUM_SPECIALS];
 static float g_minFlowSpawn; // The minimum flow for specials to start spawning (waiting for players to leave saferom)
 static float g_maxStressIntensity; // The max stress that specials arent allowed to spawn
 
-static int extraWitchCount;
+int g_extraWitchCount;
 static int g_infectedCount;
-static int g_restCount;
+int g_restCount;
 static Handle witchSpawnTimer = null;
 
 float g_extraWitchFlowPositions[DIRECTOR_WITCH_MAX_WITCHES] = {};
@@ -79,7 +79,8 @@ float g_extraWitchFlowPositions[DIRECTOR_WITCH_MAX_WITCHES] = {};
 /// EVENTS
 
 void Director_OnMapStart() {
-	if(cvEPISpecialSpawning.IntValue & 2 && IsEPIActive()) { 
+	// Only spawn witches if enabled, and not loate loaded
+	if(!g_isLateLoaded && cvEPISpecialSpawning.IntValue & 2 && IsEPIActive()) { 
 		InitExtraWitches();
 	}
 	float time = GetGameTime();
@@ -126,7 +127,7 @@ void Director_CheckClient(int client) {
 		if(class > view_as<int>(Special_Tank)) {
 			return;
 		}
-		if(IsFakeClient(client) && class == view_as<int>(Special_Tank) && IsEPIActive() && cvEPISpecialSpawning.IntValue & 4) {
+		if(IsFakeClient(client) && class == view_as<int>(Special_Tank)) {
 			OnTankBotSpawn(client);
 		}
 		
@@ -139,15 +140,43 @@ void Director_CheckClient(int client) {
 	}
 }
 
+static int g_newTankHealth = 0; 
 void OnTankBotSpawn(int client) {
-	if(g_finaleStage == Stage_FinaleActive) {
-
+	if(!IsEPIActive() || !(cvEPISpecialSpawning.IntValue & 4)) return;
+	if(g_finaleStage == Stage_FinaleTank2) {
+		if(hExtraFinaleTank.IntValue > 0 && g_extraFinaleTankEnabled) {
+			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
+			// Pass it 0, which doesnt make it a split tank, has default health
+			CreateTimer(duration, Timer_SpawnSplitTank, 0);
+		}
+	} else if(g_newTankHealth > 0) {
+		// A split tank has spawned, set its health
+		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: split tank spawned, setting health", g_newTankHealth);
+		SetEntProp(client, Prop_Send, "m_iHealth", g_newTankHealth);
+		g_newTankHealth = 0;
 	} else {
+		// Normal (non-finale) tank spawned. Set its health
 		int health = GetEntProp(client, Prop_Send, "m_iHealth");
 		float additionalHealth = float(g_survivorCount - 4) * cvEPITankHealth.FloatValue;
 		health += RoundFloat(additionalHealth);
-		SetEntProp(client, Prop_Send, "m_iHealth", health);
+		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: Setting tank health to %d", health);
+
+		if(hExtraFinaleTank.IntValue & 1 && GetURandomFloat() <= hSplitTankChance.FloatValue) {
+			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
+			int splitHealth = health / 2;
+			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: split tank in %.1fs, health=%d", duration, g_newTankHealth);
+			CreateTimer(duration, Timer_SpawnSplitTank, splitHealth);
+			SetEntProp(client, Prop_Send, "m_iHealth", splitHealth);
+		} else {
+			SetEntProp(client, Prop_Send, "m_iHealth", health);
+		}
 	}
+}
+
+Action Timer_SpawnSplitTank(Handle h, int health) {
+	g_newTankHealth = health;
+	DirectorSpawn(Special_Tank);
+	return Plugin_Handled;
 }
 
 void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
@@ -191,9 +220,9 @@ void InitExtraWitches() {
 		// TODO: max based on count
 		int max = RoundToFloor(float(count) / 4.0);
 
-		extraWitchCount = DiceRoll(min, DIRECTOR_WITCH_MAX_WITCHES, DIRECTOR_WITCH_ROLLS, BIAS_LEFT);
-		PrintDebug(DEBUG_SPAWNLOGIC, "InitExtraWitches: %d witches (min=%d, max=%d, rolls=%d) checkInterval=%f", extraWitchCount, min, max, DIRECTOR_WITCH_ROLLS, DIRECTOR_WITCH_CHECK_TIME);
-		for(int i = 0; i <= extraWitchCount; i++) {
+		g_extraWitchCount = DiceRoll(min, DIRECTOR_WITCH_MAX_WITCHES, DIRECTOR_WITCH_ROLLS, BIAS_LEFT);
+		PrintDebug(DEBUG_SPAWNLOGIC, "InitExtraWitches: %d witches (min=%d, max=%d, rolls=%d) checkInterval=%f", g_extraWitchCount, min, max, DIRECTOR_WITCH_ROLLS, DIRECTOR_WITCH_CHECK_TIME);
+		for(int i = 0; i <= g_extraWitchCount; i++) {
 			g_extraWitchFlowPositions[i] = GetURandomFloat() * (flowMax-FLOW_CUTOFF) + FLOW_CUTOFF;
 			PrintDebug(DEBUG_SPAWNLOGIC, "Witch position #%d: flow %.2f (%.0f%%)", i, g_extraWitchFlowPositions[i], g_extraWitchFlowPositions[i] / flowMax);
 		}
@@ -203,11 +232,10 @@ void InitExtraWitches() {
 }
 
 void Director_PrintDebug(int client) {
-	PrintToConsole(client, "===Extra Witches===");
 	PrintToConsole(client, "State: %s(%d)", DIRECTOR_STATE[g_lastState], g_lastState);
 	PrintToConsole(client, "Map Bounds: [%f, %f]", FLOW_CUTOFF, L4D2Direct_GetMapMaxFlowDistance() - (FLOW_CUTOFF*2.0));
-	PrintToConsole(client, "Total Witches Spawned: %d | Target: %d", g_spawnCount[Special_Witch], extraWitchCount);
-	for(int i = 0; i < extraWitchCount && i < DIRECTOR_WITCH_MAX_WITCHES; i++) {
+	PrintToConsole(client, "Total Witches Spawned: %d | Target: %d", g_spawnCount[Special_Witch], g_extraWitchCount);
+	for(int i = 0; i < g_extraWitchCount && i < DIRECTOR_WITCH_MAX_WITCHES; i++) {
 		PrintToConsole(client, "%d. %f", i+1, g_extraWitchFlowPositions[i]);
 	}
 	PrintToConsole(client, "highestFlow = %f, g_minFlowSpawn = %f, current flow = %f", g_highestFlowAchieved, g_minFlowSpawn, L4D2Direct_GetFlowDistance(client));
@@ -353,8 +381,8 @@ Action Timer_Director(Handle h) {
 
 
 Action Timer_DirectorWitch(Handle h) {
-	if(g_spawnCount[Special_Witch] < extraWitchCount) { //&& time - g_lastSpawnTimes.witch > DIRECTOR_WITCH_MIN_TIME
- 		for(int i = 0; i <= extraWitchCount; i++) {
+	if(g_spawnCount[Special_Witch] < g_extraWitchCount) { //&& time - g_lastSpawnTimes.witch > DIRECTOR_WITCH_MIN_TIME
+ 		for(int i = 0; i <= g_extraWitchCount; i++) {
 			if(g_extraWitchFlowPositions[i] > 0.0 && g_highestFlowAchieved >= g_extraWitchFlowPositions[i]) {
 				// Reset the flow so we don't spawn another
 				g_extraWitchFlowPositions[i] = 0.0;

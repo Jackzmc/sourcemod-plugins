@@ -48,6 +48,7 @@
 #include <l4d_info_editor>
 #include <jutils>
 #include <l4d2_weapon_stocks>
+#include <multicolors>
 
 #define L4D2_WEPUPGFLAG_NONE            (0 << 0)
 #define L4D2_WEPUPGFLAG_INCENDIARY      (1 << 0)
@@ -82,7 +83,7 @@ public Plugin myinfo =
 ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags, cvEPISpecialSpawning, cvEPIGamemodes, hGamemode, cvEPITankHealth;
 int g_extraKitsAmount, g_extraKitsStart, g_saferoomDoorEnt, g_prevPlayerCount;
 static int g_currentChapter;
-static bool g_isCheckpointReached, isLateLoaded, g_startCampaignGiven, g_isFailureRound, g_areItemsPopulated;
+bool g_isCheckpointReached, g_isLateLoaded, g_startCampaignGiven, g_isFailureRound, g_areItemsPopulated;
 static ArrayList g_ammoPacks;
 static Handle updateHudTimer;
 static bool showHudPingMode;
@@ -91,9 +92,9 @@ static char g_currentGamemode[32];
 static bool g_isGamemodeAllowed;
 int g_survivorCount, g_realSurvivorCount;
 bool g_isFinaleEnding;
+static bool g_epiEnabled;
 
 bool g_isSpeaking[MAXPLAYERS+1];
-bool isCoop;
 
 enum Difficulty {
 	Difficulty_Easy,
@@ -104,7 +105,7 @@ enum Difficulty {
 
 Difficulty zDifficulty;
 
-static bool g_tankSplitEnabled = true;
+bool g_extraFinaleTankEnabled;
 
 enum State {
 	State_Empty,
@@ -254,7 +255,7 @@ FinaleStage g_finaleStage;
 #include <epi/director.sp>
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
-	if(late) isLateLoaded = true;
+	if(late) g_isLateLoaded = true;
 	return APLRes_Success;
 } 
 
@@ -330,7 +331,7 @@ public void OnPluginStart() {
 		if(hMinPlayers != null) PrintDebug(DEBUG_INFO, "Found convar abm_minplayers");
 	}
 
-	if(isLateLoaded) {
+	if(g_isLateLoaded) {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
 				if(GetClientTeam(i) == 2) {
@@ -359,6 +360,7 @@ public void OnPluginStart() {
 	AutoExecConfig(true, "l4d2_extraplayeritems");
 
 	RegAdminCmd("sm_epi_sc", Command_SetSurvivorCount, ADMFLAG_KICK);
+	RegAdminCmd("sm_epi_val", Command_EpiVal, ADMFLAG_GENERIC);
 	#if defined DEBUG_LEVEL
 		RegAdminCmd("sm_epi_setkits", Command_SetKitAmount, ADMFLAG_CHEATS, "Sets the amount of extra kits that will be provided");
 		RegAdminCmd("sm_epi_lock", Command_ToggleDoorLocks, ADMFLAG_CHEATS, "Toggle all toggle\'s lock state");
@@ -520,6 +522,63 @@ public void Event_DifficultyChange(ConVar cvar, const char[] oldValue, const cha
 /////////////////////////////////////
 /// COMMANDS
 ////////////////////////////////////
+void ValBool(int client, const char[] name, bool &value, const char[] input) {
+	if(input[0] != '\0') {
+		value = input[0] == '1' || input[0] == 't';
+		CReplyToCommand(client, "Set {olive}%s{default} to {yellow}%b", name, value);
+	} else {
+		CReplyToCommand(client, "Value of {olive}%s{default}: {yellow}%b", name, value);
+	}
+}
+void ValInt(int client, const char[] name, int &value, const char[] input) {
+	if(input[0] != '\0') {
+		value = StringToInt(input);
+		CReplyToCommand(client, "Set {olive}%s{default} to {yellow}%d", name, value);
+	} else {
+		CReplyToCommand(client, "Value of {olive}%s{default}: {yellow}%d", name, value);
+	}
+}
+void ValFloat(int client, const char[] name, float &value, const char[] input) {
+	if(input[0] != '\0') {
+		value = StringToFloat(input);
+		CReplyToCommand(client, "Set {olive}%s{default} to {yellow}%f", name, value);
+	} else {
+		CReplyToCommand(client, "Value of {olive}%s{default}: {yellow}%f", name, value);
+	}
+}
+Action Command_EpiVal(int client, int args) {
+	if(args == 0) {
+		PrintToConsole(client, "epiEnabled = %b", g_epiEnabled);
+		PrintToConsole(client, "isGamemodeAllowed = %b", g_isGamemodeAllowed);
+		PrintToConsole(client, "extraKitsAmount = %d", g_extraKitsAmount);
+		PrintToConsole(client, "extraKitsStart = %d", g_extraKitsStart);
+		PrintToConsole(client, "currentChapter = %d", g_currentChapter);
+		PrintToConsole(client, "extraWitchCount = %d", g_extraWitchCount);
+		PrintToConsole(client, "restCount = %d", g_restCount);
+		return Plugin_Handled;
+	}
+	char arg[32], value[32];
+	GetCmdArg(1, arg, sizeof(arg));
+	GetCmdArg(2, value, sizeof(value));
+	if(StrEqual(arg, "epiEnabled")) {
+		ValBool(client, "g_epiEnabled", g_epiEnabled, value);
+	} else if(StrEqual(arg, "isGamemodeAllowed")) {
+		ValBool(client, "g_isGamemodeAllowed", g_isGamemodeAllowed, value);
+	} else if(StrEqual(arg, "extraKitsAmount")) {
+		ValInt(client, "g_extraKitsAmount", g_extraKitsAmount, value);
+	} else if(StrEqual(arg, "extraKitsStart")) {
+		ValInt(client, "g_extraKitsStart", g_extraKitsStart, value);
+	} else if(StrEqual(arg, "currentChapter")) {
+		ValInt(client, "g_currentChapter", g_currentChapter, value);
+	} else if(StrEqual(arg, "extraWitchCount")) {
+		ValInt(client, "g_extraWitchCount", g_extraWitchCount, value);
+	} else if(StrEqual(arg, "restCount")) {
+		ValInt(client, "g_restCount", g_restCount, value);
+	} else {
+		ReplyToCommand(client, "Unknown value");
+	}
+	return Plugin_Handled;
+}
 Action Command_Trigger(int client, int args) {
 	char arg[32];
 	GetCmdArg(1, arg, sizeof(arg));
@@ -566,7 +625,7 @@ Action Command_RestoreInventory(int client, int args) {
 		return Plugin_Handled;
 	}
 
-	if(StrEqual(arg, "full")) { 
+	if(StrEqual(arg, "full") || StrEqual(arg, "all")) { 
 		RestoreInventory(client, inv);
 	} else if(StrEqual(arg, "pos")) {
 		TeleportEntity(player, inv.location, NULL_VECTOR, NULL_VECTOR);
@@ -577,34 +636,46 @@ Action Command_RestoreInventory(int client, int args) {
 	return Plugin_Handled;
 }
 // TODO: allow sc <players> <bots> for new sys
-public Action Command_SetSurvivorCount(int client, int args) {
-	int oldCount = g_realSurvivorCount;
-	if(args > 0) {
-		static char arg1[8];
-		GetCmdArg(1, arg1, sizeof(arg1));
-		int newCount;
-		if(StringToIntEx(arg1, newCount) > 0) {
-			if(newCount < 0 || newCount > MaxClients) {
-				ReplyToCommand(client, "Invalid survivor count. Must be between 0 and %d", MaxClients);
-				return Plugin_Handled;
-			} else {
-				g_realSurvivorCount = g_survivorCount = newCount;
-				hMinPlayers.IntValue = g_realSurvivorCount;
-				ReplyToCommand(client, "Changed extra survivor count to %d -> %d", oldCount, newCount);
-				bool add = (newCount - oldCount) > 0;
-				if(add)
-					ServerCommand("abm-mk -%d 2", newCount);
-				else
-					ServerCommand("abm-rm -%d 2", newCount);
-			}
-		} else {
-			ReplyToCommand(client, "Invalid number");
+int parseSurvivorCount(const char arg[8]) {
+	int newCount;
+	if(StringToIntEx(arg, newCount) > 0) {
+		if(newCount >= 0 && newCount <= MaxClients) {
+			return newCount;
 		}
+	}
+	return -1;
+}
+Action Command_SetSurvivorCount(int client, int args) {
+	if(args > 0) {
+		char arg[8];
+		GetCmdArg(1, arg, sizeof(arg));
+		int survivorCount = parseSurvivorCount(arg);
+		int oldSurvivorCount = g_survivorCount;
+		if(survivorCount == -1) {
+			ReplyToCommand(client, "Invalid survivor count. Must be between 0 and %d", MaxClients);
+			return Plugin_Handled;
+		} else if(args >= 2) {
+			GetCmdArg(2, arg, sizeof(arg));
+			int realCount = parseSurvivorCount(arg);
+			if(realCount == -1 || realCount <= survivorCount) {
+				ReplyToCommand(client, "Invalid bot count. Must be between 0 and %d", survivorCount);
+				return Plugin_Handled;
+			}
+			int oldRealCount = g_realSurvivorCount;
+			g_realSurvivorCount = realCount;
+			ReplyToCommand(client, "Changed real survivor count %d -> %d", oldRealCount, realCount);
+		} else {
+			// If no real count count, it's the same as survivor count
+			g_realSurvivorCount = survivorCount;
+		}
+		g_survivorCount = survivorCount;
+		ReplyToCommand(client, "Changed survivor count %d -> %d", oldSurvivorCount, survivorCount);
 	} else {
-		ReplyToCommand(client, "Current extra count is %d.", oldCount);
+		ReplyToCommand(client, "Survivor Count = %d | Real Survivor Count = %d", g_survivorCount, g_realSurvivorCount);
 	}
 	return Plugin_Handled;
 }
+
 #if defined DEBUG_LEVEL
 Action Command_SetKitAmount(int client, int args) {
 	char arg[32];
@@ -632,7 +703,7 @@ Action Command_ToggleDoorLocks(int client, int args) {
 
 Action Command_GetKitAmount(int client, int args) {
 	ReplyToCommand(client, "Extra kits available: %d (%d) | Survivors: %d", g_extraKitsAmount, g_extraKitsStart, GetSurvivorsCount());
-	ReplyToCommand(client, "isCheckpointReached %b, isLateLoaded %b, firstGiven %b", g_isCheckpointReached, isLateLoaded, g_startCampaignGiven);
+	ReplyToCommand(client, "isCheckpointReached %b, g_isLateLoaded %b, firstGiven %b", g_isCheckpointReached, g_isLateLoaded, g_startCampaignGiven);
 	return Plugin_Handled;
 }
 Action Command_RunExtraItems(int client, int args) {
@@ -717,7 +788,7 @@ void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int tank = GetClientOfUserId(user);
 	if(tank > 0 && IsFakeClient(tank) && g_realSurvivorCount > 4 && hExtraFinaleTank.IntValue > 0) {
 		PrintToConsoleAll("[EPI] Split tank is enabled, checking new spawned tank");
-		if(g_finaleStage == Stage_FinaleTank2 && g_tankSplitEnabled && hExtraFinaleTank.IntValue & 2) {
+		if(g_finaleStage == Stage_FinaleTank2 && g_extraFinaleTankEnabled && hExtraFinaleTank.IntValue & 2) {
 			PrintToConsoleAll("[EPI] Second tank spawned, setting health.");
 			// Sets health in half, sets finaleStage to health
 			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
@@ -725,7 +796,7 @@ void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
 		} else if(g_finaleStage == Stage_FinaleDuplicatePending) {
 			PrintToConsoleAll("[EPI] Third & final tank spawned");
 			RequestFrame(Frame_SetExtraTankHealth, user);
-		} else if(g_finaleStage == Stage_Inactive && g_tankSplitEnabled && hExtraFinaleTank.IntValue & 1 && GetSurvivorsCount() > 6) {
+		} else if(g_finaleStage == Stage_Inactive && g_extraFinaleTankEnabled && hExtraFinaleTank.IntValue & 1 && GetSurvivorsCount() > 6) {
 			g_finaleStage = Stage_TankSplit;
 			if(GetRandomFloat() <= hSplitTankChance.FloatValue) {
 				// Half their HP, assign half to self and for next tank
@@ -733,7 +804,7 @@ void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
 				PrintToConsoleAll("[EPI] Creating a split tank (hp=%d)", hp);
 				extraTankHP = hp;
 				CreateTimer(0.2, Timer_SetHealth, user);
-				CreateTimer(GetRandomFloat(10.0, 18.0), Timer_SpawnSplitTank, user);
+				CreateTimer(GetRandomFloat(10.0, 18.0), Timer_SpawnSplitTank, hp);
 			} else {
 				PrintToConsoleAll("[EPI] Random chance for split tank failed");
 			}
@@ -749,11 +820,6 @@ Action Timer_SpawnFinaleTank(Handle t, int user) {
 		// ServerCommand("sm_forcespecial tank");
 		g_finaleStage = Stage_Inactive;
 	}
-	return Plugin_Handled;
-}
-Action Timer_SpawnSplitTank(Handle t, int user) {
-	DirectorSpawn(Special_Tank);
-	// ServerCommand("sm_forcespecial tank");
 	return Plugin_Handled;
 }
 Action Timer_SetHealth(Handle h, int user) {
@@ -1113,10 +1179,9 @@ public void OnMapStart() {
 		GetCurrentMap(curMap, sizeof(curMap));
 
 		// Disable tank split on hard rain finale
+		g_extraFinaleTankEnabled = true;
 		if(StrEqual(curMap, "c4m5_milltown_escape")) {
-			g_tankSplitEnabled = false;
-		} else {
-			g_tankSplitEnabled = true;
+			g_extraFinaleTankEnabled = false;
 		}
 
 		int extraKits = GetSurvivorsCount() - 4;
@@ -1128,10 +1193,6 @@ public void OnMapStart() {
 		g_currentChapter++;
 	} else {
 		g_currentChapter++;
-	}
-
-	if(!isLateLoaded) {
-		isLateLoaded = false;
 	}
 
 	//Lock the beginning door
@@ -1162,6 +1223,9 @@ public void OnMapStart() {
 
 	L4D2_RunScript(HUD_SCRIPT_CLEAR);
 	Director_OnMapStart();
+	if(g_isLateLoaded) {
+		g_isLateLoaded = false;
+	}
 }
 
 /*
@@ -1254,7 +1318,7 @@ public Action Event_MapTransition(Event event, const char[] name, bool dontBroad
 	#if defined DEBUG
 	PrintToServer("Map transition | %d Extra Kits", g_extraKitsAmount);
 	#endif
-	isLateLoaded = false;
+	g_isLateLoaded = false;
 	g_extraKitsStart = g_extraKitsAmount;
 	// Update g_survivorCount, people may have dipped right before transition
 	UpdateSurvivorCount();
@@ -1431,8 +1495,8 @@ void UnlockDoor(int flag) {
 }
 
 Action Timer_UpdateHud(Handle h) {
-	if(hEPIHudState.IntValue == 1 && !isCoop) {
-		PrintToServer("[EPI] Gamemode no longer coop, stopping (hudState=%d, g_survivorCount=%d, g_realSurvivorCount=%d)", hEPIHudState.IntValue, g_survivorCount, g_realSurvivorCount);
+	if(hEPIHudState.IntValue == 1 && !g_isGamemodeAllowed) {
+		PrintToServer("[EPI] Gamemode not whitelisted, stopping (hudState=%d, g_survivorCount=%d, g_realSurvivorCount=%d)", hEPIHudState.IntValue, g_survivorCount, g_realSurvivorCount);
 		L4D2_RunScript(HUD_SCRIPT_CLEAR);
 		updateHudTimer = null;
 		return Plugin_Stop;
@@ -1521,14 +1585,14 @@ Action Timer_UpdateHud(Handle h) {
 void PopulateItems() {
 	if(g_areItemsPopulated) return;
 	UpdateSurvivorCount();
-	if(g_realSurvivorCount <= 4) return;
+	if(!IsEPIActive()) return;
 
 	g_areItemsPopulated = true;
 
 	//Generic Logic
-	float percentage = hExtraItemBasePercentage.FloatValue * g_realSurvivorCount;
-	PrintToServer("[EPI] Populating extra items based on player count (%d) | Percentage %.2f%%", g_realSurvivorCount, percentage * 100);
-	PrintToConsoleAll("[EPI] Populating extra items based on player count (%d) | Percentage %.2f%%", g_realSurvivorCount, percentage * 100);
+	float percentage = hExtraItemBasePercentage.FloatValue * (g_survivorCount - 4);
+	PrintToServer("[EPI] Populating extra items based on player count (%d-4) | Percentage %.2f%%", g_survivorCount, percentage * 100);
+	PrintToConsoleAll("[EPI] Populating extra items based on player count (%d-4) | Percentage %.2f%%", g_survivorCount, percentage * 100);
 	char classname[64];
 	int affected = 0;
 
@@ -1550,7 +1614,11 @@ void PopulateItems() {
 	}
 	PrintDebug(DEBUG_SPAWNLOGIC, "Incremented counts for %d items", affected);
 
+	PopulateCabinets();
+}
 
+void PopulateCabinets() {
+	char classname[64];
 	//Cabinet logic
 	PrintDebug(DEBUG_SPAWNLOGIC, "Populating cabinets with extra items");
 	int spawner, count;
@@ -1633,8 +1701,9 @@ void SaveInventory(int client) {
 
 void RestoreInventory(int client, PlayerInventory inventory) {
 	PrintToConsoleAll("[debug:RINV] health=%d primaryID=%d secondID=%d throw=%d kit=%d pill=%d surv=%d", inventory.primaryHealth, inventory.itemID[0], inventory.itemID[1], inventory.itemID[2], inventory.itemID[3], inventory.itemID[4], inventory.itemID[5], inventory.survivorType);
-
-	SetEntityModel(client, inventory.model);
+	
+	if(inventory.model[0] != '\0')
+		SetEntityModel(client, inventory.model);
 	SetEntProp(client, Prop_Send, "m_survivorCharacter", inventory.survivorType);
 
 	char buffer[32];
@@ -1685,7 +1754,7 @@ bool DoesInventoryDiffer(int client) {
 }
 
 bool IsEPIActive() {
-	return g_realSurvivorCount > 4 && IsGamemodeAllowed();
+	return g_epiEnabled;
 }
 
 void UpdateSurvivorCount() {
@@ -1711,7 +1780,7 @@ void UpdateSurvivorCount() {
 		g_realSurvivorCount = DEBUG_FORCE_PLAYERS;
 	#endif
 
-	if(g_realSurvivorCount > 4) {
+	if(g_survivorCount > 4) {
 		// Update friendly fire values to reduce accidental FF in crowded corridors
 		ConVar friendlyFireFactor = GetActiveFriendlyFireFactor();
 		// TODO: Get previous default
@@ -1719,10 +1788,12 @@ void UpdateSurvivorCount() {
 		if(friendlyFireFactor.FloatValue < 0.0) {
 			friendlyFireFactor.FloatValue = 0.01;
 		}
+		g_epiEnabled = g_isGamemodeAllowed;
+	} else {
+		g_epiEnabled = false;
 	}
 
 	// TODO: update hMinPlayers
-
 }
 
 stock int FindFirstSurvivor() {
