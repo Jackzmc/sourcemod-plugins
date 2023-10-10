@@ -79,15 +79,18 @@ public Plugin myinfo =
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
-ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags, cvEPISpecialSpawning;
-int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
-static int currentChapter;
-static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound, areItemsPopulated;
-static ArrayList ammoPacks;
+ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags, cvEPISpecialSpawning, cvEPIGamemodes, hGamemode;
+int g_extraKitsAmount, g_extraKitsStart, abmExtraCount, g_saferoomDoorEnt, playersLoadedIn, g_prevPlayerCount;
+static int g_currentChapter;
+static bool g_isCheckpointReached, isLateLoaded, g_startCampaignGiven, g_isFailureRound, g_areItemsPopulated;
+static ArrayList g_ammoPacks;
 static Handle updateHudTimer;
 static bool showHudPingMode;
 static int hudModeTicks;
-static char gamemode[32];
+static char g_currentGamemode[32];
+static bool g_isGamemodeAllowed;
+static int g_survivorCount;
+static ArrayList g_allowedGamemodes;
 
 
 bool isCoop;
@@ -101,11 +104,12 @@ enum Difficulty {
 
 Difficulty zDifficulty;
 
-static bool allowTankSplit = true;
+static bool g_tankSplitEnabled = true;
 
 enum State {
 	State_Empty,
 	State_PendingEmpty,
+	State_Pending,
 	State_Active
 }
 #if defined DEBUG_LEVEL
@@ -244,7 +248,7 @@ public void OnPluginStart() {
 
 	weaponMaxClipSizes = new StringMap();
 	pInv = new StringMap();
-	ammoPacks = new ArrayList(2); //<int entityID, ArrayList clients>
+	g_ammoPacks = new ArrayList(2); //<int entityID, ArrayList clients>
 	
 	HookEvent("player_spawn", 		Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
@@ -258,7 +262,6 @@ public void OnPluginStart() {
 	HookEvent("game_end", 			Event_GameStart);
 	HookEvent("round_freeze_end",   Event_RoundFreezeEnd);
 	HookEvent("tank_spawn", 		Event_TankSpawn);
-	HookEvent("round_start", 		Event_RoundStart);
 
 	//Special Event Tracking
 	HookEvent("player_info", Event_PlayerInfo);
@@ -282,8 +285,7 @@ public void OnPluginStart() {
 	HookEvent("witch_spawn", Event_WitchSpawn);
 
 
-
-	hExtraItemBasePercentage = CreateConVar("l4d2_extraitems_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
+	hExtraItemBasePercentage = CreateConVar("l4d2_extraitems_chance", "0.059", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hAddExtraKits 			 = CreateConVar("l4d2_extraitems_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits, 1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
 	hUpdateMinPlayers		 = CreateConVar("l4d2_extraitems_updateminplayers", "1", "Should the plugin update abm\'s cvar min_players convar to the player count?\n 0 -> NO, 1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
 	hMinPlayersSaferoomDoor  = CreateConVar("l4d2_extraitems_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -295,7 +297,8 @@ public void OnPluginStart() {
 	cvDropDisconnectTime     = CreateConVar("l4d2_extraitems_disconnect_time", "120.0", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
 	cvFFDecreaseRate         = CreateConVar("l4d2_extraitems_ff_decrease_rate", "0.3", "The friendly fire factor is subtracted from the formula (playerCount-4) * this rate. Effectively reduces ff penalty when more players. 0.0 to subtract none", FCVAR_NONE, true, 0.0);
 	cvEPIHudFlags 			 = CreateConVar("l4d2_extraitems_hud_flags", "3", "Add together.\n1 = Scrolling hud, 2 = Show ping", FCVAR_NONE, true, 0.0);
-	cvEPISpecialSpawning     = CreateConVar("l4d2_extraitems_special_spawning", "2", "Determines what specials are spawned. Add bits together.\n1 = Normal specials\n2 = Witches\n4 = Tanks", FCVAR_NONE, true, 0.0);
+	cvEPISpecialSpawning     = CreateConVar("l4d2_extraitems_director_spawns", "2", "Determines what specials are spawned. Add bits together.\n1 = Normal specials\n2 = Witches\n4 = Tanks", FCVAR_NONE, true, 0.0);
+	cvEPIGamemodes           = CreateConVar("l4d2_epi_gamemodes", "coop,realism,versus", "Gamemodes where plugin is active. Comma-separated", FCVAR_NONE);
 	// TODO: hook flags, reset name index / ping mode
 	cvEPIHudFlags.AddChangeHook(Cvar_HudStateChange);
 	cvEPISpecialSpawning.AddChangeHook(Cvar_SpecialSpawningChange);
@@ -315,19 +318,9 @@ public void OnPluginStart() {
 				playerData[i].Setup(i);
 			}
 		}
-		
-		int count = GetRealSurvivorsCount();
-		abmExtraCount = count;
-		int threshold = hEPIHudState.IntValue == 1 ? 5 : 0;
-		if(hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
-			PrintToServer("[EPI] Creating new hud timer");
-			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
-		}
+		UpdateSurvivorCount();
+		TryStartHud();
 	}
-
-	#if defined DEBUG_FORCE_PLAYERS 
-	abmExtraCount = DEBUG_FORCE_PLAYERS;
-	#endif
 
 	char buffer[16];
 	cvZDifficulty = FindConVar("z_difficulty");
@@ -335,10 +328,10 @@ public void OnPluginStart() {
 	cvZDifficulty.AddChangeHook(Event_DifficultyChange);
 	Event_DifficultyChange(cvZDifficulty, buffer, buffer);
 
-	ConVar hGamemode = FindConVar("mp_gamemode"); 
-	hGamemode.GetString(gamemode, sizeof(gamemode));
+	hGamemode = FindConVar("mp_gamemode"); 
+	hGamemode.GetString(g_currentGamemode, sizeof(g_currentGamemode));
 	hGamemode.AddChangeHook(Event_GamemodeChange);
-	Event_GamemodeChange(hGamemode, gamemode, gamemode);
+	Event_GamemodeChange(hGamemode, g_currentGamemode, g_currentGamemode);
 
 
 	AutoExecConfig(true, "l4d2_extraplayeritems");
@@ -351,8 +344,6 @@ public void OnPluginStart() {
 		RegAdminCmd("sm_epi_items", Command_RunExtraItems, ADMFLAG_CHEATS);
 		RegConsoleCmd("sm_epi_stats", Command_DebugStats);
 		RegConsoleCmd("sm_epi_debug", Command_Debug);
-		// TODO: Should we have sm_epi_value or use CVAR for state
-		// no cvar
 		// RegAdminCmd("sm_epi_val", Command_EPIValue);
 		RegAdminCmd("sm_epi_trigger", Command_Trigger, ADMFLAG_CHEATS);
 	#endif
@@ -362,8 +353,6 @@ public void OnPluginStart() {
 	CreateTimer(30.0, Timer_ForceUpdateInventories, _, TIMER_REPEAT);
 
 }
-
-
 
 
 Action Timer_ForceUpdateInventories(Handle h) {
@@ -381,13 +370,13 @@ public void OnClientPutInServer(int client) {
 		playerData[client].Setup(client);
 
 		if(GetClientTeam(client) == 2) {
-			if(!StrEqual(gamemode, "hideandseek")) {
+			if(g_isGamemodeAllowed) {
 				// CreateTimer(0.2, Timer_CheckInventory, client);
 			}
-		} else if(abmExtraCount >= 4 && GetClientTeam(client) == 0) {
+		}/* else if(abmExtraCount >= 4 && GetClientTeam(client) == 0) {
 			// TODO: revert revert
 			// L4D_TakeOverBot(client);
-		} 
+		} */
 	}
 }
 
@@ -398,7 +387,7 @@ public void OnClientDisconnect(int client) {
 
 public void OnPluginEnd() {
 	delete weaponMaxClipSizes;
-	delete ammoPacks;
+	delete g_ammoPacks;
 	L4D2_ExecVScriptCode(HUD_SCRIPT_CLEAR);
 }
 
@@ -447,28 +436,30 @@ void Cvar_HudStateChange(ConVar convar, const char[] oldValue, const char[] newV
 	}
 	if(convar.IntValue == 0) {
 		if(updateHudTimer != null) {
-		PrintToServer("[EPI] Stopping timer externally: Cvar changed to 0");
-		delete updateHudTimer;
+			PrintToServer("[EPI] Stopping timer externally: Cvar changed to 0");
+			delete updateHudTimer;
 		}
 	} else {
-		int count = GetRealSurvivorsCount();
-		int threshold = 0;
-		// Default to 0 for state == 2 (force)
-		if(hEPIHudState.IntValue == 1) {
-			// On L4D1 map start if 5 players, on L4D2 start with 6
-			// On L4D1 more chance of duplicate models, so can't see health
-			threshold = L4D2_GetSurvivorSetMap() == 2 ? 4 : 5;
-		}
-		if(count > threshold && updateHudTimer == null) {
-			PrintToServer("[EPI] Creating new hud timer");
-			updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
-		}
+		TryStartHud();
+	}
+}
+void TryStartHud() {
+	int threshold = 0;
+	// Default to 0 for state == 2 (force)
+	if(hEPIHudState.IntValue == 1) {
+		// On L4D1 map start if 5 players, on L4D2 start with 6
+		// On L4D1 more chance of duplicate models, so can't see health
+		threshold = L4D2_GetSurvivorSetMap() == 2 ? 4 : 5;
+	}
+	if(g_realSurvivorCount > threshold && updateHudTimer == null) {
+		PrintToServer("[EPI] Creating new hud timer");
+		updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
 	}
 }
 
 public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[] newValue) {
-	cvar.GetString(gamemode, sizeof(gamemode));
-	isCoop = StrEqual(gamemode, "coop", false);
+	cvar.GetString(g_currentGamemode, sizeof(g_currentGamemode));
+	g_isGamemodeAllowed = IsGamemodeAllowed();
 }
 
 ConVar GetActiveFriendlyFireFactor() {
@@ -559,7 +550,7 @@ Action Command_RestoreInventory(int client, int args) {
 	return Plugin_Handled;
 }
 public Action Command_SetSurvivorCount(int client, int args) {
-	int oldCount = abmExtraCount;
+	int oldCount = g_realSurvivorCount;
 	if(args > 0) {
 		static char arg1[8];
 		GetCmdArg(1, arg1, sizeof(arg1));
@@ -569,7 +560,7 @@ public Action Command_SetSurvivorCount(int client, int args) {
 				ReplyToCommand(client, "Invalid survivor count. Must be between 0 and %d", MaxClients);
 				return Plugin_Handled;
 			} else {
-				abmExtraCount = newCount;
+				g_realSurvivorCount = g_survivorCount = newCount;
 				hMinPlayers.IntValue = abmExtraCount;
 				ReplyToCommand(client, "Changed extra survivor count to %d -> %d", oldCount, newCount);
 				bool add = (newCount - oldCount) > 0;
@@ -592,8 +583,8 @@ Action Command_SetKitAmount(int client, int args) {
 	GetCmdArg(1, arg, sizeof(arg));
 	int number = StringToInt(arg);
 	if(number > 0 || number == -1) {
-		extraKitsAmount = number;
-		extraKitsStarted = extraKitsAmount;
+		g_extraKitsAmount = number;
+		g_extraKitsStart = g_extraKitsAmount;
 		ReplyToCommand(client, "Set extra kits amount to %d", number);
 	} else {
 		ReplyToCommand(client, "Must be a number greater than 0. -1 to disable");
@@ -612,8 +603,8 @@ Action Command_ToggleDoorLocks(int client, int args) {
 }
 
 Action Command_GetKitAmount(int client, int args) {
-	ReplyToCommand(client, "Extra kits available: %d (%d) | Survivors: %d", extraKitsAmount, extraKitsStarted, GetSurvivorsCount());
-	ReplyToCommand(client, "isCheckpointReached %b, isLateLoaded %b, firstGiven %b", isCheckpointReached, isLateLoaded, firstGiven);
+	ReplyToCommand(client, "Extra kits available: %d (%d) | Survivors: %d", g_extraKitsAmount, g_extraKitsStart, GetSurvivorsCount());
+	ReplyToCommand(client, "isCheckpointReached %b, isLateLoaded %b, firstGiven %b", g_isCheckpointReached, isLateLoaded, g_startCampaignGiven);
 	return Plugin_Handled;
 }
 Action Command_RunExtraItems(int client, int args) {
@@ -623,6 +614,7 @@ Action Command_RunExtraItems(int client, int args) {
 }
 Action Command_Debug(int client, int args) {
 	PrintToConsole(client, "abmExtraCount = %d", abmExtraCount);
+	PrintToConsole(client, "g_survivorCount = %d | g_realSurvivorCount = %d", g_survivorCount, g_realSurvivorCount);
 	Director_PrintDebug(client);
 	return Plugin_Handled;
 }
@@ -691,18 +683,18 @@ enum FinaleStage {
 	Stage_InactiveFinale = -1
 }
 int extraTankHP;
-FinaleStage finaleStage;
+FinaleStage g_finaleStage;
 
 public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
-	if(finaleType == FINALE_STARTED && abmExtraCount > 4) {
-		finaleStage = Stage_FinaleActive;
+	if(finaleType == FINALE_STARTED && g_realSurvivorCount > 4) {
+		g_finaleStage = Stage_FinaleActive;
 		PrintToConsoleAll("[EPI] Finale started and over threshold");
 	} else if(finaleType == FINALE_TANK) {
-		if(finaleStage == Stage_FinaleActive) {
-			finaleStage = Stage_FinaleTank1;
+		if(g_finaleStage == Stage_FinaleActive) {
+			g_finaleStage = Stage_FinaleTank1;
 			PrintToConsoleAll("[EPI] First tank stage has started");
-		} else if(finaleStage == Stage_FinaleTank1) {
-			finaleStage = Stage_FinaleTank2;
+		} else if(g_finaleStage == Stage_FinaleTank1) {
+			g_finaleStage = Stage_FinaleTank2;
 			PrintToConsoleAll("[EPI] Second stage started, waiting for tank");
 		}
 	}
@@ -712,18 +704,18 @@ public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
 void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int user = event.GetInt("userid");
 	int tank = GetClientOfUserId(user);
-	if(tank > 0 && IsFakeClient(tank) && abmExtraCount > 4 && hExtraFinaleTank.IntValue > 0) {
+	if(tank > 0 && IsFakeClient(tank) && g_realSurvivorCount > 4 && hExtraFinaleTank.IntValue > 0) {
 		PrintToConsoleAll("[EPI] Split tank is enabled, checking new spawned tank");
-		if(finaleStage == Stage_FinaleTank2 && allowTankSplit && hExtraFinaleTank.IntValue & 2) {
+		if(g_finaleStage == Stage_FinaleTank2 && g_tankSplitEnabled && hExtraFinaleTank.IntValue & 2) {
 			PrintToConsoleAll("[EPI] Second tank spawned, setting health.");
 			// Sets health in half, sets finaleStage to health
 			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
 			CreateTimer(duration, Timer_SpawnFinaleTank, user);
-		} else if(finaleStage == Stage_FinaleDuplicatePending) {
+		} else if(g_finaleStage == Stage_FinaleDuplicatePending) {
 			PrintToConsoleAll("[EPI] Third & final tank spawned");
 			RequestFrame(Frame_SetExtraTankHealth, user);
-		} else if(finaleStage == Stage_Inactive && allowTankSplit && hExtraFinaleTank.IntValue & 1 && GetSurvivorsCount() > 6) {
-			finaleStage = Stage_TankSplit;
+		} else if(g_finaleStage == Stage_Inactive && g_tankSplitEnabled && hExtraFinaleTank.IntValue & 1 && GetSurvivorsCount() > 6) {
+			g_finaleStage = Stage_TankSplit;
 			if(GetRandomFloat() <= hSplitTankChance.FloatValue) {
 				// Half their HP, assign half to self and for next tank
 				int hp = GetEntProp(tank, Prop_Send, "m_iHealth") / 2;
@@ -735,16 +727,16 @@ void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
 				PrintToConsoleAll("[EPI] Random chance for split tank failed");
 			}
 			// Then, summon the next tank
-		} else if(finaleStage == Stage_TankSplit) {
+		} else if(g_finaleStage == Stage_TankSplit) {
 			CreateTimer(0.2, Timer_SetHealth, user);
 		}
 	}
 }
 Action Timer_SpawnFinaleTank(Handle t, int user) {
-	if(finaleStage == Stage_FinaleTank2) {
+	if(g_finaleStage == Stage_FinaleTank2) {
 		DirectorSpawn(Special_Tank);
 		// ServerCommand("sm_forcespecial tank");
-		finaleStage = Stage_Inactive;
+		g_finaleStage = Stage_Inactive;
 	}
 	return Plugin_Handled;
 }
@@ -763,9 +755,9 @@ Action Timer_SetHealth(Handle h, int user) {
 
 void Frame_SetExtraTankHealth(int user) {
 	int tank = GetClientOfUserId(user);
-	if(tank > 0 && finaleStage == Stage_FinaleDuplicatePending) {
+	if(tank > 0 && g_finaleStage == Stage_FinaleDuplicatePending) {
 		SetEntProp(tank, Prop_Send, "m_iHealth", extraTankHP);
-		finaleStage = Stage_InactiveFinale;
+		g_finaleStage = Stage_InactiveFinale;
 	}
 }
 
@@ -784,126 +776,106 @@ public void OnGetWeaponsInfo(int pThis, const char[] classname) {
 
 //Called on the first spawn in a mission. 
 void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
-	firstGiven = false;
-	extraKitsAmount = 0;
-	extraKitsStarted = 0;
+	g_startCampaignGiven = false;
+	g_extraKitsAmount = 0;
+	g_extraKitsStart = 0;
 	abmExtraCount = 0;
+	g_realSurvivorCount = 0;
+	g_survivorCount = 0;
 	hMinPlayers.IntValue = 4;
-	currentChapter = 0;
+	g_currentChapter = 0;
 	pInv.Clear();
 	for(int i = 1; i <= MaxClients; i++) {
 		playerData[i].state = State_Empty;
 	}
 }
 
+// This is only called when a player joins for the first time during an entire campaign, unless they fully disconnect.
+// Idle bots also call this as they are created and destroyed on idle/resume
 void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) { 
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
 	if(GetClientTeam(client) != 2) return;
 	if(IsFakeClient(client)) {
-		// Make the real player's bot invincible, ONLY for the first time it appears
+		// Ignore any 'BOT' bots (ABMBot, etc), they are temporarily
+		char classname[32];
+		GetEntityClassname(client, classname, sizeof(classname));
+		if(StrContains(classname, "bot", false) > -1) return;
+
+		// Make new bots invincible for a few seconds, as they spawn on other players. Only applies to a player's bot
 		int player = L4D_GetIdlePlayerOfBot(client);
+		// TODO: check instead hasJoined but state == state_empty
 		if(player > 0 && !playerData[client].hasJoined) {
 			playerData[client].hasJoined = true;
-			// TODO: Confirm this fix works
+			playerData[client].state = State_Pending;
 			CreateTimer(1.5, Timer_RemoveInvincibility, userid);
 			SDKHook(client, SDKHook_OnTakeDamage, OnInvincibleDamageTaken);
 		}
 	} else {
-		// Make the (real) player invincible:
+		// Is a player
+
+		// Make the (real) player invincible as well:
 		CreateTimer(1.5, Timer_RemoveInvincibility, userid);
 		SDKHook(client, SDKHook_OnTakeDamage, OnInvincibleDamageTaken);
 
 		playerData[client].state = State_Active;
-		if(L4D_IsFirstMapInScenario() && !firstGiven) {
-			//Check if all clients are ready, and survivor count is > 4. 
+		if(L4D_IsFirstMapInScenario() && !g_startCampaignGiven) {
+			// Players are joining the campaign, but not all clients are ready yet. Once a client is ready, we will give the extra players their items
 			if(AreAllClientsReady()) {
-				abmExtraCount = GetRealSurvivorsCount();
-				if(abmExtraCount > 4) {
+				UpdateSurvivorCount();
+				if(g_realSurvivorCount > 4) {
 					PrintToServer("[EPI] First chapter kits given");
-					firstGiven = true;
+					g_startCampaignGiven = true;
 					//Set the initial value ofhMinPlayers
-					if(hUpdateMinPlayers.BoolValue && hMinPlayers != null) {
-						hMinPlayers.IntValue = abmExtraCount;
-					}
 					PopulateItems();	
 					CreateTimer(1.0, Timer_GiveKits);
 				}
 				UnlockDoor(2);
 			}
 		} else {
-			// New client has connected, not on first map.
-			// TODO: Check if Timer_UpdateMinPlayers is needed, or if this works:
-			// Never decrease abmExtraCount
-			int newCount = GetRealSurvivorsCount();
-			if(newCount > abmExtraCount && abmExtraCount > 4) {
-				abmExtraCount = newCount;
-				PrintDebug(DEBUG_GENERIC, "New client, setting abmExtraCount to %d", newCount);
-				hMinPlayers.IntValue = abmExtraCount;
-				
-				ConVar friendlyFireFactor = GetActiveFriendlyFireFactor();
-				// TODO: Get previous default
-				friendlyFireFactor.FloatValue = friendlyFireFactor.FloatValue - ((newCount - 4) * cvFFDecreaseRate.FloatValue);
-				if(friendlyFireFactor.FloatValue < 0.0) {
-					friendlyFireFactor.FloatValue = 0.01;
-				}
-			}
+			// New client has connected, late on the first chapter or on any other chapter
+			UpdateSurvivorCount();
 			// If 5 survivors, then set them up, TP them.
-			if(newCount > 4) {
+			if(g_realSurvivorCount > 4) {
 				CreateTimer(0.1, Timer_SetupNewClient, userid);
 			}
 		}
 	}
 }
+// This is called everytime a player joins, such as map transitions
 void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
-	if(!StrEqual(gamemode, "coop") && !StrEqual(gamemode, "realism")) return;
+	if(!g_isGamemodeAllowed) return;
 
-	int user = event.GetInt("userid");
+	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(user);
-	if(GetClientTeam(client) == 2) {
-		if(!IsFakeClient(client)) {
-			if(!L4D_IsFirstMapInScenario()) {
-				playersLoadedIn++;
-				if(playersLoadedIn == 1) {
-					CreateTimer(hSaferoomDoorWaitSeconds.FloatValue, Timer_OpenSaferoomDoor, _, TIMER_FLAG_NO_MAPCHANGE);
-				}
-				if(playerstoWaitFor > 0) {
-					float percentIn = float(playersLoadedIn) / float(playerstoWaitFor);
-					if(percentIn > hMinPlayersSaferoomDoor.FloatValue)
-						UnlockDoor(2);
-				}else{
-					UnlockDoor(2);
-				}
-			}
+	UpdateSurvivorCount();
+	if(GetClientTeam(client) == 2 && !IsFakeClient(client) && !L4D_IsFirstMapInScenario()) {
+		// Start door timeout:
+		CreateTimer(hSaferoomDoorWaitSeconds.FloatValue, Timer_OpenSaferoomDoor, _, TIMER_FLAG_NO_MAPCHANGE);
+
+		if(g_prevPlayerCount > 0) {
+			// Open the door if we hit % percent
+			float percentIn = float(g_realSurvivorCount) / float(g_prevPlayerCount);
+			if(percentIn > hMinPlayersSaferoomDoor.FloatValue)
+				UnlockDoor(2);
+		} else{
+			UnlockDoor(2);
 		}
-		CreateTimer(0.5, Timer_GiveClientKit, user);
+		CreateTimer(0.5, Timer_GiveClientKit, userid);
 		SDKHook(client, SDKHook_WeaponEquip, Event_Pickup);
 	}
-	int count = GetRealSurvivorsCount();
-	int threshold = 0;
-	if(hEPIHudState.IntValue == 1) {
-		threshold = L4D2_GetSurvivorSetMap() == 2 ? 4 : 5;
-	}
-	if(hEPIHudState.IntValue > 0 && count > threshold && updateHudTimer == null) {
-		PrintToServer("[EPI] Creating new hud timer (player spawn)");
-		updateHudTimer = CreateTimer(EXTRA_PLAYER_HUD_UPDATE_INTERVAL, Timer_UpdateHud, _, TIMER_REPEAT);
-	}
+	TryStartHud();
 	UpdatePlayerInventory(client);
-
 }
 
 void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
-	if(client > 0 && IsClientConnected(client) && IsClientInGame(client) && !IsFakeClient(client) && GetClientTeam(client) == 2) { //TODO: re-add && !event.GetBool("isbot") 
+	if(client > 0 && GetClientTeam(client) == 2) {
 		playerData[client].hasJoined = false;
-		PrintToServer("debug: Player %N (index %d, uid %d) now pending empty", client, client, userid);
 		playerData[client].state = State_PendingEmpty;
 		playerData[client].nameCache[0] = '\0';
-		/*DataPack pack;
-		CreateDataTimer(cvDropDisconnectTime.FloatValue, Timer_DropSurvivor, pack);
-		pack.WriteCell(userid);
-		pack.WriteCell(client);*/
+		PrintToServer("debug: Player (index %d, uid %d) now pending empty", client, client, userid);
 		CreateTimer(cvDropDisconnectTime.FloatValue, Timer_DropSurvivor, client);
 	}
 }
@@ -921,7 +893,7 @@ Action Timer_DropSurvivor(Handle h, int client) {
 		if(hMinPlayers != null) {
 			PrintToServer("[EPI] Dropping survivor %d. hMinPlayers-pre:%d abmCount=%d", client, hMinPlayers.IntValue, abmExtraCount);
 			PrintToConsoleAll("[EPI] Dropping survivor %d. hMinPlayers-pre:%d abmCount=%d", client, hMinPlayers.IntValue, abmExtraCount);
-			hMinPlayers.IntValue = --abmExtraCount;
+			hMinPlayers.IntValue = g_realSurvivorCount;
 			if(hMinPlayers.IntValue < 4) {
 				hMinPlayers.IntValue = 4;
 			}
@@ -946,7 +918,7 @@ void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
 public Action L4D_OnIsTeamFull(int team, bool &full) {
 	if(team == 2 && full) {
 		full = false;
-		return Plugin_Continue;
+		return Plugin_Changed;
 	} 
 	return Plugin_Continue;
 }
@@ -967,11 +939,15 @@ char TIER2_WEAPONS[9][] = {
 Action Timer_SetupNewClient(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client == 0) return Plugin_Handled;
+	// Incase their bot snagged a kit before we could give them one:
 	if(!DoesClientHaveKit(client)) {
 		int item = GivePlayerItem(client, "weapon_first_aid_kit");
 		EquipPlayerWeapon(client, item);
 	}
 
+	// Iterate all clients and get:
+	// a) the client with the lowest intensity
+	// b) every survivor's tier2 / tier1 / secondary weapons
 	int lowestClient = -1;
 	float lowestIntensity;
 	char weaponName[64];
@@ -985,6 +961,7 @@ Action Timer_SetupNewClient(Handle h, int userid) {
 			int wpn = GetPlayerWeaponSlot(i, 0);
 			if(wpn > 0) {
 				GetEdictClassname(wpn, weaponName, sizeof(weaponName));
+				// Ignore grenade launcher / m60, not a normal weapon to give
 				if(!StrEqual(weaponName, "weapon_grenade_launcher") && !StrEqual(weaponName, "weapon_rifle_m60")) {
 					for(int j = 0; j < TIER2_WEAPON_COUNT; j++) {
 						if(StrEqual(TIER2_WEAPONS[j], weaponName)) {
@@ -1014,29 +991,32 @@ Action Timer_SetupNewClient(Handle h, int userid) {
 		}
 	}
 
-	// Give player any random t2 weapon, if no one has one, fallback to t1, if no one has one, give them a magnum
+	// Give player any random t2 weapon, if no one has one, fallback to t1. 
 	if(tier2Weapons.Length > 0) {
 		tier2Weapons.GetString(GetRandomInt(0, tier2Weapons.Length - 1), weaponName, sizeof(weaponName));
 		// Format(weaponName, sizeof(weaponName), "weapon_%s", weaponName);
-		PrintToServer("[EPI/debug] Giving new client (%N) tier 2: %s", client, weaponName);
+		PrintDebug(DEBUG_SPAWNLOGIC, "Giving new client (%N) tier 2: %s", client, weaponName);
 		GiveWeapon(client, weaponName, 0.3, 0);
 	} else if(tier1Weapons.Length > 0) {
 		// Format(weaponName, sizeof(weaponName), "weapon_%s", TIER1_WEAPONS[GetRandomInt(0, TIER1_WEAPON_COUNT - 1)]);
 		tier1Weapons.GetString(GetRandomInt(0, tier1Weapons.Length - 1), weaponName, sizeof(weaponName));
-		PrintToServer("[EPI/debug] Giving new client (%N) tier 1: %s", client, weaponName);
+		PrintDebug(DEBUG_SPAWNLOGIC, "Giving new client (%N) tier 1: %s", client, weaponName);
 		GiveWeapon(client, weaponName, 0.6, 0);
 	}
-	PrintToServer("%N: Giving random secondary / %d", secondaryWeapons.Length, client);
-	PrintToConsoleAll("%N: Giving random secondary / %d", secondaryWeapons.Length, client);
+	PrintDebug(DEBUG_SPAWNLOGIC, "%N: Giving random secondary / %d", secondaryWeapons.Length, client);
 	if(secondaryWeapons.Length > 0) {
 		secondaryWeapons.GetString(GetRandomInt(0, secondaryWeapons.Length - 1), weaponName, sizeof(weaponName));
 		GiveWeapon(client, weaponName, 0.6, 1);
 	}
 
 	if(lowestClient > 0) {
+		// Get a position behind the player, but not too far to put them in a wall.
+		// Hopefully reducing the chance they shot for "appearing" infront of a player
 		float pos[3];
-		GetClientAbsOrigin(lowestClient, pos);
+		GetHorizontalPositionFromClient(lowestClient, -20.0, pos);
 		TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
+		// Just incase they _are_ in a wall, let the game check:
+		L4D_WarpToValidPositionIfStuck(client);
 	}
 
 	delete tier2Weapons;
@@ -1046,6 +1026,7 @@ Action Timer_SetupNewClient(Handle h, int userid) {
 	return Plugin_Handled;
 }
 
+// Gives a player a weapon, clearing their previous and with a configurable delay to prevent issues
 void GiveWeapon(int client, const char[] weaponName, float delay = 0.3, int clearSlot = -1) {
 	if(clearSlot > 0) {
 		int oldWpn = GetPlayerWeaponSlot(client, clearSlot);
@@ -1075,6 +1056,7 @@ Action Timer_GiveWeapon(Handle h, DataPack pack) {
 	}
 	return Plugin_Handled;
 }
+// First spawn invincibility:
 Action Timer_RemoveInvincibility(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0) {
@@ -1087,6 +1069,7 @@ Action OnInvincibleDamageTaken(int victim,  int& attacker, int& inflictor, float
 	damage = 0.0;
 	return Plugin_Stop;
 }
+// Gives 5+ kit after saferoom loaded:
 Action Timer_GiveClientKit(Handle hdl, int user) {
 	int client = GetClientOfUserId(user);
 	if(client > 0 && !DoesClientHaveKit(client)) {
@@ -1095,66 +1078,47 @@ Action Timer_GiveClientKit(Handle hdl, int user) {
 	return Plugin_Continue;
 
 }
-Action Timer_UpdateMinPlayers(Handle hdl) {
-	//Set abm's min players to the amount of real survivors. Ran AFTER spawned incase they are pending joining
-	int newPlayerCount = GetRealSurvivorsCount();
-	if(hUpdateMinPlayers.BoolValue && hMinPlayers != null) {
-		if(newPlayerCount > 4 && hMinPlayers.IntValue < newPlayerCount && newPlayerCount < 18) {
-			abmExtraCount = newPlayerCount;
-			PrintDebug(DEBUG_GENERIC, "update abm_minplayers -> %d", abmExtraCount);
-			//Create the extra player hud
-			hMinPlayers.IntValue = abmExtraCount;
-		}
-	}
-	return Plugin_Continue;
-}
 
+// Gives start of campaign kits
 Action Timer_GiveKits(Handle timer) { 
 	GiveStartingKits(); 
 	return Plugin_Continue;	
 }
 
-void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
-	PrintDebug(DEBUG_GENERIC, "round_start");
-	// TODO: check for any non-assigned specs
-}
-
 public void OnMapStart() {
-	PrintDebug(DEBUG_GENERIC, "OnMapStart");
-	isCheckpointReached = false;
+	g_isCheckpointReached = false;
 	//If previous round was a failure, restore the amount of kits that were left directly after map transition
-	if(isFailureRound) {
-		extraKitsAmount = extraKitsStarted;
+	if(g_isFailureRound) {
+		g_extraKitsAmount = g_extraKitsStart;
 		//give kits if first
 		if(L4D_IsFirstMapInScenario()) {
 			GiveStartingKits();
 		}
-		isFailureRound = false;
+		g_isFailureRound = false;
 	} else if(!L4D_IsFirstMapInScenario()) {
-		//Re-set value incase it reset.
-		//hMinPlayers.IntValue = abmExtraCount;
-		currentChapter++;
+		g_currentChapter++;
 	} else if(L4D_IsMissionFinalMap()) {
 		//Add extra kits for finales
 		char curMap[64];
 		GetCurrentMap(curMap, sizeof(curMap));
 
+		// Disable tank split on hard rain finale
 		if(StrEqual(curMap, "c4m5_milltown_escape")) {
-			allowTankSplit = false;
+			g_tankSplitEnabled = false;
 		} else {
-			allowTankSplit = true;
+			g_tankSplitEnabled = true;
 		}
 
 		int extraKits = GetSurvivorsCount() - 4;
 		if(extraKits > 0) {
-			extraKitsAmount += extraKits;
-			extraKitsStarted = extraKitsAmount;
+			// Keep how many extra kits were left after we loaded in, for resetting on failure rounds
+			g_extraKitsAmount += extraKits;
+			g_extraKitsStart = g_extraKitsAmount;
 		}
-		currentChapter++;
+		g_currentChapter++;
 	} else {
-		currentChapter++;
+		g_currentChapter++;
 	}
-	
 
 	if(!isLateLoaded) {
 		isLateLoaded = false;
@@ -1166,7 +1130,8 @@ public void OnMapStart() {
 		while ((entity = FindEntityByClassname(entity, "prop_door_rotating_checkpoint")) != -1 && entity > MaxClients) {
 			bool isLocked = GetEntProp(entity, Prop_Send, "m_bLocked") == 1;
 			if(isLocked) {
-				firstSaferoomDoorEntity = EntIndexToEntRef(entity);
+				g_saferoomDoorEnt = EntIndexToEntRef(entity);
+				AcceptEntityInput(entity, "Open");
 				AcceptEntityInput(entity, "Close");
 				AcceptEntityInput(entity, "Lock");
 				AcceptEntityInput(entity, "ForceClosed");
@@ -1183,8 +1148,7 @@ public void OnMapStart() {
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 
-	playersLoadedIn = 0;
-	finaleStage = Stage_Inactive;
+	g_finaleStage = Stage_Inactive;
 
 	L4D2_RunScript(HUD_SCRIPT_CLEAR);
 	Director_OnMapStart();
@@ -1209,19 +1173,19 @@ public void OnConfigsExecuted() {
 
 
 public void OnMapEnd() {
-	for(int i = 0; i < ammoPacks.Length; i++) {
-		ArrayList clients = ammoPacks.Get(i, AMMOPACK_USERS);
+	// Reset the ammo packs, deleting the internal arraylist
+	for(int i = 0; i < g_ammoPacks.Length; i++) {
+		ArrayList clients = g_ammoPacks.Get(i, AMMOPACK_USERS);
 		delete clients;
 	}
+	g_ammoPacks.Clear();
+	// Reset cabinets:
 	for(int i = 0; i < sizeof(cabinets); i++) {
 		cabinets[i].id = 0;
 		for(int b = 0; b < CABINET_ITEM_BLOCKS; b++) {
 			cabinets[i].items[b] = 0;
 		}
 	}
-	ammoPacks.Clear();
-	playersLoadedIn = 0;
-	// abmExtraCount = 0;
 	delete updateHudTimer;
 	Director_OnMapEnd();
 }
@@ -1236,8 +1200,8 @@ public Action Timer_Populate(Handle h) {
 }
 
 public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
-	if(!isCheckpointReached  && client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
-		isCheckpointReached = true;
+	if(!g_isCheckpointReached  && client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
+		g_isCheckpointReached = true;
 		abmExtraCount = GetSurvivorsCount();
 		if(abmExtraCount > 4) {
 			int extraPlayers = abmExtraCount - 4;
@@ -1250,33 +1214,33 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 
 			//If hAddExtraKits TRUE: Append to previous, FALSE: Overwrite
 			if(hAddExtraKits.BoolValue) 
-				extraKitsAmount += extraPlayers;
+				g_extraKitsAmount += extraPlayers;
 			else
-				extraKitsAmount = extraPlayers;
+				g_extraKitsAmount = extraPlayers;
 				
-			extraKitsStarted = extraKitsAmount;
+			g_extraKitsStart = g_extraKitsAmount;
 
 			hMinPlayers.IntValue = abmExtraCount;
 			PrintToConsoleAll("CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
-			PrintToServer("Player entered saferoom. Providing %d extra kits", extraKitsAmount);
+			PrintToServer("Player entered saferoom. Providing %d extra kits", g_extraKitsAmount);
 		}
 	}
 }
 
 public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
-	if(!isFailureRound) isFailureRound = true;
-	areItemsPopulated = false;
+	if(!g_isFailureRound) g_isFailureRound = true;
+	g_areItemsPopulated = false;
 	return Plugin_Continue;
 }
 
 public Action Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
 	#if defined DEBUG
-	PrintToServer("Map transition | %d Extra Kits", extraKitsAmount);
+	PrintToServer("Map transition | %d Extra Kits", g_g_extraKitsAmount);
 	#endif
 	isLateLoaded = false;
-	extraKitsStarted = extraKitsAmount;
+	g_extraKitsStart = g_extraKitsAmount;
 	abmExtraCount = GetRealSurvivorsCount();
-	playerstoWaitFor = GetRealSurvivorsCount();
+	g_prevPlayerCount = GetRealSurvivorsCount();
 	return Plugin_Continue;
 }
 //TODO: Possibly hacky logic of on third different ent id picked up, in short timespan, detect as set of 4 (pills, kits) & give extra
@@ -1298,8 +1262,8 @@ public void OnEntityCreated(int entity, const char[] classname) {
 	}else if(StrEqual(classname, "prop_health_cabinet", true)) {
 		SDKHook(entity, SDKHook_SpawnPost, Hook_CabinetSpawn);
 	}else if (StrEqual(classname, "upgrade_ammo_explosive") || StrEqual(classname, "upgrade_ammo_incendiary")) {
-		int index = ammoPacks.Push(entity);
-		ammoPacks.Set(index, new ArrayList(1), AMMOPACK_USERS);
+		int index = g_ammoPacks.Push(entity);
+		g_ammoPacks.Set(index, new ArrayList(1), AMMOPACK_USERS);
 		SDKHook(entity, SDKHook_Use, OnUpgradePackUse);
 	}
 }
@@ -1347,10 +1311,10 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 
 	int primaryWeapon = GetPlayerWeaponSlot(activator, 0);
 	if(IsValidEdict(primaryWeapon) && HasEntProp(primaryWeapon, Prop_Send, "m_upgradeBitVec")) {
-		int index = ammoPacks.FindValue(entity, AMMOPACK_ENTID);
+		int index = g_ammoPacks.FindValue(entity, AMMOPACK_ENTID);
 		if(index == -1) return Plugin_Continue;
 
-		ArrayList clients = ammoPacks.Get(index, AMMOPACK_USERS);
+		ArrayList clients = g_ammoPacks.Get(index, AMMOPACK_USERS);
 		if(clients.FindValue(activator) > -1) {
 			ClientCommand(activator, "play ui/menu_invalid.wav");
 			return Plugin_Handled;
@@ -1386,7 +1350,7 @@ public Action OnUpgradePackUse(int entity, int activator, int caller, UseType ty
 		if(clients.Length >= GetSurvivorsCount()) {
 			AcceptEntityInput(entity, "kill");
 			delete clients;
-			ammoPacks.Erase(index);
+			g_ammoPacks.Erase(index);
 		}
 		return Plugin_Handled;
 	}
@@ -1416,10 +1380,10 @@ public Action Hook_Use(int entity, int activator, int caller, UseType type, floa
 
 public Action Timer_ResetAmmoPack(Handle h, int entity) {
 	if(IsValidEntity(entity)) {
-		int index = ammoPacks.FindValue(entity, AMMOPACK_ENTID);
+		int index = g_ammoPacks.FindValue(entity, AMMOPACK_ENTID);
 		if(index == -1) return Plugin_Continue;
 
-		ArrayList clients = ammoPacks.Get(index, AMMOPACK_USERS);
+		ArrayList clients = g_ammoPacks.Get(index, AMMOPACK_USERS);
 		clients.Clear();
 	}
 	return Plugin_Continue;
@@ -1431,7 +1395,7 @@ public Action Timer_OpenSaferoomDoor(Handle h) {
 }
 
 void UnlockDoor(int flag) {
-	int entity = EntRefToEntIndex(firstSaferoomDoorEntity);
+	int entity = EntRefToEntIndex(g_saferoomDoorEnt);
 	if(entity > 0) {
 		PrintDebug(DEBUG_GENERIC, "Door unlocked, flag %d", flag);
 		AcceptEntityInput(entity, "Unlock");
@@ -1439,10 +1403,11 @@ void UnlockDoor(int flag) {
 		SDKUnhook(entity, SDKHook_Use, Hook_Use);
 		if(hSaferoomDoorAutoOpen.IntValue & flag) {
 			AcceptEntityInput(entity, "Open");
+			g_saferoomDoorEnt = INVALID_ENT_REFERENCE;
+			if(!g_areItemsPopulated)
+				PopulateItems();
 		}
-		firstSaferoomDoorEntity = INVALID_ENT_REFERENCE;
-		if(!areItemsPopulated)
-			PopulateItems();
+		
 	}
 
 }
@@ -1535,10 +1500,11 @@ Action Timer_UpdateHud(Handle h) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PopulateItems() {
-	int survivors = GetRealSurvivorsCount();
-	if(survivors <= 4) return;
+	if(g_areItemsPopulated) return;
+	UpdateSurvivorCount();
+	if(g_realSurvivorCount <= 4) return;
 
-	areItemsPopulated = true;
+	g_areItemsPopulated = true;
 
 	//Generic Logic
 	float percentage = hExtraItemBasePercentage.FloatValue * survivors;
@@ -1556,7 +1522,7 @@ void PopulateItems() {
 				&& HasEntProp(i, Prop_Data, "m_itemCount")
 			) {
 				int count = GetEntProp(i, Prop_Data, "m_itemCount");
-				if(count > 0 && GetRandomFloat() < percentage) {
+				if(count > 0 && GetURandomFloat() < percentage) {
 					SetEntProp(i, Prop_Data, "m_itemCount", ++count);
 					++affected;
 				}
@@ -1579,21 +1545,21 @@ void PopulateItems() {
 		}
 		int spawnCount = GetEntProp(cabinets[i].id, Prop_Data, "m_pillCount");
 		int extraAmount = RoundToCeil(float(abmExtraCount) * (float(spawnCount)/4.0) - spawnCount);
-		bool hasASpawner;
+		bool hasSpawner;
 		while(extraAmount > 0) {
 			//FIXME: spawner is sometimes invalid entity. Ref needed?
 			for(int block = 0; block < CABINET_ITEM_BLOCKS; block++) {
 				spawner = cabinets[i].items[block];
 				if(spawner > 0) {
 					if(!HasEntProp(spawner, Prop_Data, "m_itemCount")) continue;
-					hasASpawner = true;
+					hasSpawner = true;
 					count = GetEntProp(spawner, Prop_Data, "m_itemCount") + 1;
 					SetEntProp(spawner, Prop_Data, "m_itemCount", count);
 					if(--extraAmount == 0) break;
 				}
 			}
 			//Incase cabinet is empty
-			if(!hasASpawner) break;
+			if(!hasSpawner) break;
 		}
 	}
 }
@@ -1601,21 +1567,11 @@ void PopulateItems() {
 /////////////////////////////////////
 /// Stocks
 ////////////////////////////////////
-// enum struct PlayerData {
-// 	bool itemGiven; //Is player being given an item (such that the next pickup event is ignored)
-// 	bool isUnderAttack; //Is the player under attack (by any special)
-// 	bool active;
-
-// 	WeaponId itemID[6]; //int -> char?
-// 	bool lasers;
-// 	char meleeID[32];
-
-
-// 	int primaryHealth;
-// 	int tempHealth;
-
-// 	char model[32];
-// }
+bool IsGamemodeAllowed() {
+	char buffer[64], curGamemode;
+	cvEPIGamemodes.GetString(buffer, sizeof(buffer));
+	return StrContains(buffer, g_currentGamemode, false) > -1;
+}
 
 void DropDroppedInventories() {
 	StringMapSnapshot snapshot = pInv.Snapshot();
@@ -1709,6 +1665,45 @@ bool DoesInventoryDiffer(int client) {
 	return currentPrimary != storedPrimary || currentSecondary != storedSecondary;
 }
 
+void UpdateSurvivorCount() {
+	return DEBUG_FORCE_PLAYERS;
+	#endif
+	int countTotal = 0, countReal = 0, countActive = 0;
+	#if !defined DEBUG_FORCE_PLAYERS
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+			if(!IsFakeClient(i)) {
+				countReal++;
+			}
+			countTotal++;
+			if(pdata[i].state == State_Active) {
+				countActive++;
+			}
+		}
+	}
+	g_survivorCount = countTotal;	
+	g_realSurvivorCount = countReal;
+	PrintDebug(DEBUG_GENERIC, "UpdateSurvivorCount: total=%d real=%d active=%d", countTotal, countReal, countActive);
+	#endif
+	#if defined DEBUG_FORCE_PLAYERS
+		g_survivorCount = DEBUG_FORCE_PLAYERS;
+		g_realSurvivorCount = DEBUG_FORCE_PLAYERS;
+	#endif
+
+	if(g_realSurvivorCount > 4) {
+		// Update friendly fire values to reduce accidental FF in crowded corridors
+		ConVar friendlyFireFactor = GetActiveFriendlyFireFactor();
+		// TODO: Get previous default
+		friendlyFireFactor.FloatValue = friendlyFireFactor.FloatValue - ((newCount - 4) * cvFFDecreaseRate.FloatValue);
+		if(friendlyFireFactor.FloatValue < 0.0) {
+			friendlyFireFactor.FloatValue = 0.01;
+		}
+	}
+
+	// TODO: update hMinPlayers
+
+}
+
 stock int FindFirstSurvivor() {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
@@ -1727,7 +1722,7 @@ stock void GiveStartingKits() {
 			if(skipLeft > 0 || DoesClientHaveKit(i)) {
 				--skipLeft;
 				continue;
-			}else{
+			} else {
 				int item = GivePlayerItem(i, "weapon_first_aid_kit");
 				EquipPlayerWeapon(i, item);
 			}
@@ -1743,16 +1738,6 @@ stock int GetSurvivorsCount() {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
 			++count;
-		}
-	}
-	return count;
-}
-
-stock int GetActiveCount() {
-	int count;
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && playerData[i].state == State_Active) {
-			count++;
 		}
 	}
 	return count;
@@ -1784,21 +1769,19 @@ stock bool AreAllClientsReady() {
 stock bool DoesClientHaveKit(int client) {
 	char wpn[32];
 	if(IsClientConnected(client) && IsClientInGame(client) && GetClientWeaponName(client, 3, wpn, sizeof(wpn))) {
-		if(StrEqual(wpn, "weapon_first_aid_kit")) {
-			return true;
-		}
+		return StrEqual(wpn, "weapon_first_aid_kit");
 	}
 	return false;
 }
 
 stock bool UseExtraKit(int client) {
-	if(extraKitsAmount > 0) {
+	if(g_extraKitsAmount > 0) {
 		playerData[client].itemGiven = true;
 		int ent = GivePlayerItem(client, "weapon_first_aid_kit");
 		EquipPlayerWeapon(client, ent);
 		playerData[client].itemGiven = false;
-		if(--extraKitsAmount <= 0) {
-			extraKitsAmount = 0;
+		if(--g_extraKitsAmount <= 0) {
+			g_extraKitsAmount = 0;
 		}
 		return true;
 	}
