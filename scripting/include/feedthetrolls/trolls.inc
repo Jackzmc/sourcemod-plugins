@@ -1,8 +1,8 @@
 // UP THE VALUE 'MAX_TROLLS' in base.inc before adding new ones!
 
-int slipperyShoesIndex = 0;
-int stickyGooIndex = 0;
-int invertedTrollIndex;
+int t_slipperyShoesIndex = 0;
+int t_stickyGooIndex = 0;
+int t_invertedTrollIndex;
 int t_randomizeAnglesIndex;
 int t_randomizeVelocityIndex;
 int t_vomitPlayerIndex;
@@ -52,7 +52,7 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("50% Movement Speed", false);
 	Trolls[index].AddFlag("30% Movement Speed", false);
 	Trolls[index].AddFlag("0% Movement Speed", false);
-	stickyGooIndex = index;
+	t_stickyGooIndex = index;
 	index = SetupTroll("Vocalize Specials", "Spawn commons on special vocals", TrollMod_Constant)
 	Trolls[index].AddFlagPrompt(false);
 	Trolls[index].AddFlag("Mute Vocalization", true);
@@ -209,7 +209,7 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("30% Movement Speed", false);
 	Trolls[index].AddFlag("0% Movement Speed", false);
 	SetupTroll("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
-	invertedTrollIndex = SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant);
+	t_invertedTrollIndex = SetupTroll("Inverted Controls", "Well, aint it obvious", TrollMod_Constant);
 	SetupTroll("Stagger", "Like a slap, but different", TrollMod_Instant);
 	index = SetupTroll("Slippery Shoes", "Periodically stumbles around.", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(true);
@@ -218,7 +218,7 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("On throwable use", false);
 	Trolls[index].AddFlag("On pills/adrenaline use", false);
 	Trolls[index].AddFlag("On zombie bite", false);
-	slipperyShoesIndex = index;
+	t_slipperyShoesIndex = index;
 	index = SetupTroll("Randomize Angles", "Randomly change their angles", TrollMod_Constant);
 	Trolls[index].AddCustomFlagPrompt("Frequency:", false);
 	Trolls[index].AddFlag("Once in a while", true); //1

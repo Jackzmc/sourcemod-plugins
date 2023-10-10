@@ -90,7 +90,7 @@ Action Timer_Main(Handle timer) {
 			if(Trolls[swarmIndex].IsActive(i)) {
 				L4D2_RunScript("RushVictim(GetPlayerFromUserID(%d), %d)", GetClientUserId(i), 15000);
 			} 
-			if(Trolls[slipperyShoesIndex].IsActive(i) && Trolls[slipperyShoesIndex].activeFlagClients[i] & 1) {
+			if(Trolls[t_slipperyShoesIndex].IsActive(i) && Trolls[t_slipperyShoesIndex].activeFlagClients[i] & 1) {
 				if(GetRandomFloat() <= 0.4) {
 					L4D_StaggerPlayer(i, i, NULL_VECTOR);
 				}

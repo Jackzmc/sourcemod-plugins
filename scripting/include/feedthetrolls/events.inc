@@ -109,8 +109,8 @@ void EntityCreateCallback(int entity) {
 				SpawnItem("pipe_bomb", pos);
 			}
 			return;
-		} else if(Trolls[slipperyShoesIndex].IsActive(entOwner)) {
-			if(Trolls[slipperyShoesIndex].activeFlagClients[entOwner] & 4) {
+		} else if(Trolls[t_slipperyShoesIndex].IsActive(entOwner)) {
+			if(Trolls[t_slipperyShoesIndex].activeFlagClients[entOwner] & 4) {
 				L4D_StaggerPlayer(entOwner, entOwner, NULL_VECTOR);
 			}
 			return;
@@ -130,14 +130,14 @@ enum ProjectileMagnetType {
 
 public void Event_DoorToggle(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(client && Trolls[slipperyShoesIndex].IsActive(client) && Trolls[slipperyShoesIndex].activeFlagClients[client] & 2) { 
+	if(client && Trolls[t_slipperyShoesIndex].IsActive(client) && Trolls[t_slipperyShoesIndex].activeFlagClients[client] & 2) { 
 		L4D_StaggerPlayer(client, client, NULL_VECTOR);
 	}
 }
 
 void Event_SecondaryHealthUsed(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(client && Trolls[slipperyShoesIndex].IsActive(client) && Trolls[slipperyShoesIndex].activeFlagClients[client] & 8) { 
+	if(client && Trolls[t_slipperyShoesIndex].IsActive(client) && Trolls[t_slipperyShoesIndex].activeFlagClients[client] & 8) { 
 		L4D_StaggerPlayer(client, client, NULL_VECTOR);
 	}
 }
@@ -728,7 +728,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	}
 
 	// Inverted control code:
- 	if(Trolls[invertedTrollIndex].IsActive(client)) {
+ 	if(Trolls[t_invertedTrollIndex].IsActive(client)) {
 		if(buttons & IN_MOVELEFT || buttons & IN_MOVERIGHT) {
 			vel[1] = -vel[1];
 		}
@@ -787,7 +787,7 @@ Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage
 			SetSlot(victim, -1);
 		}
 		if(victim != attacker) {
-			if(damage > 0.0 && Trolls[slipperyShoesIndex].IsActive(victim) && Trolls[slipperyShoesIndex].activeFlagClients[victim] & 16) { 
+			if(damage > 0.0 && Trolls[t_slipperyShoesIndex].IsActive(victim) && Trolls[t_slipperyShoesIndex].activeFlagClients[victim] & 16) { 
 				L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
 			}
 			if(isSameTeam && Trolls[t_reverseFFIndex].IsActive(attacker)) {
@@ -1050,8 +1050,8 @@ public void L4D2_CInsectSwarm_CanHarm_Post(int acid, int spitter, int entity) {
 
 public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(Trolls[stickyGooIndex].IsActive(client)) {
-		int flags = Trolls[stickyGooIndex].activeFlagClients[client];
+	if(Trolls[t_stickyGooIndex].IsActive(client)) {
+		int flags = Trolls[t_stickyGooIndex].activeFlagClients[client];
 		float movement = 0.0;
 		if(flags & 1) movement = 0.9;
 		else if(flags & 2) movement = 0.8;
