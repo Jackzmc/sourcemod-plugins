@@ -348,22 +348,6 @@ stock void ExplodeProjectile(int entity, bool smoke = true) {
 		SetEntProp(entity, Prop_Data, "m_nNextThinkTick", 1); //for smoke
 }  
 
-bool SpawnCarOnPlayer(int target) {
-	float min[3] = { -30.0, -30.0, -2.0};
-	float max[3] = { 30.0, 30.0, 50.0 };
-	float pos[3];
-	float ang[3];
-	GetClientEyePosition(target, pos);
-	GetClientEyeAngles(target, ang);
-	if(IsAreaClear(pos, ang, min, max)) {
-		pos[2] += 40.0;
-		int id = CreateProp("prop_physics", MODEL_CAR, pos, ang);
-		CreateTimer(4.0, Timer_Delete, id);
-		return true;
-	}
-	return false;
-}
-
 stock int CreateProp(const char[] entClass, const char[] model, const float pos[3], const float ang[3] = { 0.0, 0.0, 0.0 }, const float vel[3] = {0.0, 0.0, 0.0}) {
 	int entity = CreateEntityByName(entClass);
 	DispatchKeyValue(entity, "model", model);
@@ -412,6 +396,22 @@ bool SpawnCarToPlayer(int target, float distance) {
 	return true;
 }
 
+bool SpawnCarOnPlayer(int target) {
+	float min[3] = { -30.0, -30.0, -2.0};
+	float max[3] = { 30.0, 30.0, 50.0 };
+	float pos[3];
+	float ang[3];
+	GetClientEyePosition(target, pos);
+	GetClientEyeAngles(target, ang);
+	if(IsAreaClear(pos, ang, min, max)) {
+		pos[2] += 40.0;
+		int id = CreateProp("prop_physics", MODEL_CAR, pos, ang);
+		CreateTimer(4.0, Timer_Delete, id);
+		return true;
+	}
+	return false;
+}
+
 bool g_iPendingSurvivorAdd;
 int isCustomSurvivor[MAXPLAYERS+1];
 
@@ -446,7 +446,7 @@ void ClearInventory(int client) {
 	}
 }
 
-void StopHealingBots(bool dontKill = false) {
+void StopHealingBots() {
 	healTargetPlayer = 0;
 	for(int i = 1; i <= MaxClients; i++) {
 		pdata[i].flags &= ~view_as<int>(Flag_IsTargettingHealer);

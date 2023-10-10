@@ -8,7 +8,11 @@ int t_randomizeVelocityIndex;
 int t_vomitPlayerIndex;
 int t_shakeyCameraIndex;
 int t_slotRouletteIndex;
-// int fireSpitMagnetTrollIndex;
+int t_damageBoostIndex;
+int t_reverseFFIndex;
+int t_throwItAllIndex;
+int t_hideHUDIndex;
+int t_cameraTurnIndex;
 
 void SetupTrolls() {
 	trollKV = new StringMap();
@@ -87,7 +91,8 @@ void SetupTrolls() {
 
 	// CATEGORY: Items
 	SetCategory("Items");
-	SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
+	index = SetupTroll("Throw It All", "Player throws their item(s) periodically to a nearby player", TrollMod_Instant);
+	Trolls[index].SetTimer(THROWITALL_INTERVAL, Timer_ThrowTimer);
 	index = SetupTroll("Spicy Gas", "Gascans player picks up just ignite. Magic.", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(false);
 	Trolls[index].AddFlag("Always (100%)", false);
@@ -159,7 +164,7 @@ void SetupTrolls() {
 
 	/// CATEGORY: Health
 	SetCategory("Health");
-	SetupTroll("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant);
+	t_damageBoostIndex = SetupTroll("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant);
 	SetupTroll("Temp Health Quick Drain", "Makes a player's temporarily health drain very quickly", TrollMod_Constant);
 	SetupTroll("Slow Drain", "Will make the player slowly lose health over time", TrollMod_Constant);
 	SetupTroll("KillMeSoftly", "Make player eat or waste pills whenever possible", TrollMod_Instant | TrollMod_Constant);
@@ -173,6 +178,7 @@ void SetupTrolls() {
 	Trolls[index].AddCustomFlagPrompt("Modes", true);
 	Trolls[index].AddFlag("Reverse Fire Damage", false); //32
 	Trolls[index].AddFlag("Reverse Explosions", false); //64
+	t_reverseFFIndex = index;
 
 
 	index = SetupTroll("Dep Bots", "Makes bots heal a player. At any cost", TrollMod_Constant);
@@ -230,6 +236,12 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("Severe Earthquake", false); //8
 	Trolls[index].AddFlag("Bouncy Castle", false); //16
 	t_randomizeVelocityIndex = index;
+	index = SetupTroll("Camera Turn", "Constantly turn their camera", TrollMod_Constant);
+	Trolls[index].SetTimer(0.1, Timer_TurnCamera);
+	Trolls[index].AddCustomFlagPrompt("Direction:", false);
+	Trolls[index].AddFlag("Left/Right", true); //1
+	Trolls[index].AddFlag("Up/Down", false); //2
+	t_cameraTurnIndex = index;
 
 
 	/// CATEGORY: MISC
@@ -253,13 +265,20 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("Violent", false);
 	Trolls[index].AddFlag("Violent XX", false);
 	t_shakeyCameraIndex = index;
+	index = SetupTroll("Hide HUD", "Horrible", TrollMod_Constant);
+	Trolls[index].AddFlagPrompt(false);
+	Trolls[index].AddFlag("Rare & Short", false);
+	Trolls[index].AddFlag("Sometimes & Medium", false);
+	Trolls[index].AddFlag("Constantly", true);
+	t_hideHUDIndex = index;
+	index = SetupTroll("Meta: Random", "Picks a random troll", TrollMod_Instant);
 	index = SetupTroll("Meta: Inverse", "Uhm you are not supposed to see this...", TrollMod_Instant);
 	Trolls[index].hidden = true;
 	Trolls[index].AddFlagPrompt(false);
 	Trolls[index].AddFlag("100%", true);
 	Trolls[index].AddFlag("50%", false);
 	Trolls[index].AddFlag("10%", false);
-	index = SetupTroll("Meta: Random", "Picks a random troll", TrollMod_Instant);
+
 
 
 	
@@ -336,9 +355,6 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 			if(flags & 1) { // Hacky, just throw their kit
 				ThrowItemToPlayer(victim, activator, 3);
 			} else ThrowAllItems(victim);
-		}
-		if(hThrowTimer == INVALID_HANDLE && modifier & TrollMod_Constant) {
-			hThrowTimer = CreateTimer(hThrowItemInterval.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT);
 		}
 	} else if(StrEqual(troll.name, "Swarm")) {
 		if(modifier & TrollMod_Instant) {
@@ -519,6 +535,11 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		CreateTimer(1.0, Timer_CheckForChargerOpportunity, GetClientUserId(victim), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}  else if(StrEqual(troll.name, "No Rushing Us")) {
 		SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
+	} else if(StrEqual(troll.name, "Hide HUD")) {
+		if(toActive)
+			HideHUDRandom(victim);
+		else
+			SetEntProp(victim, Prop_Send, "m_iHideHUD", 0);
 	} else if(StrEqual(troll.name, "Meta: Random")) {
 		int rndTroll = GetRandomInt(0, MAX_TROLLS);
 		int rndFlags = 0;
@@ -531,10 +552,9 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		}
 		trollModifier rndMod = Trolls[rndTroll].GetDefaultMod();
 		if(Trolls[rndTroll].HasMod(TrollMod_Constant) && GetURandomFloat() > 0.5) {
+			rndMod = TrollMod_Instant;
+		} else if(Trolls[rndTroll].HasMod(TrollMod_Instant) && GetURandomFloat() > 0.5) {
 			rndMod = TrollMod_Constant;
-		}
-		if(Trolls[rndTroll].HasMod(TrollMod_Instant) && GetURandomFloat() > 0.5) {
-			rndMod |= TrollMod_Instant;
 		}
 		Trolls[rndTroll].Activate(victim, activator, rndMod, rndFlags);
 	} else if(~modifier & TrollMod_Constant) {

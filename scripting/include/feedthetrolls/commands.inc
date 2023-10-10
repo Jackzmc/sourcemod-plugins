@@ -732,6 +732,7 @@ Action Command_SetReverseFF(int client, int args) {
 	ApplyTroll(target, "Reverse FF", client, TrollMod_Constant, flag);
 	return Plugin_Handled;
 }
+
 Action Command_SetMagnetShortcut(int client, int args) {
 	if(args < 1) {
 		ReplyToCommand(client, "Usage: sm_magnet <target>");
@@ -744,5 +745,43 @@ Action Command_SetMagnetShortcut(int client, int args) {
 		return Plugin_Handled;
 	}
 	ShowTrollsForCategory(client, GetClientUserId(target), 0);
+	return Plugin_Handled;
+}
+Action Command_CarSplat(int client, int args) {
+	if(args < 1) {
+		ReplyToCommand(client, "Usage: sm_magnet <target> [top/front/back]");
+		return Plugin_Handled;
+	}
+	char arg[32];
+	GetCmdArg(1, arg, sizeof(arg));
+	int target = GetSinglePlayer(client, arg, COMMAND_FILTER_ALIVE);
+	if(target <= 0) {
+		return Plugin_Handled;
+	}
+	if(args == 2) {
+		GetCmdArg(2, arg, sizeof(arg));
+		float speed = 450.0;
+		if(args == 3) {
+			GetCmdArg(3, arg, sizeof(arg));
+			speed = StringToFloat(arg);
+			if(speed <= 0.0) speed = 450.0;
+		}
+		if(StrEqual(arg, "top")) {
+			SpawnCarOnPlayer(target);
+		} else if(StrEqual(arg, "front")) {
+			SpawnCarToPlayer(target, speed);
+		} else if(StrEqual(arg, "back")) {
+			SpawnCarToPlayer(target, -speed);
+		} else {
+			ReplyToCommand(client, "Invalid direction: top/front/back or blank for menu");
+			return Plugin_Handled;
+		}
+		LogAction(client, target, "spawned car on/in %s of \"%L\"", arg, target);
+		ShowActivity(client, "spawned car (%s) of %N", arg, target);
+	} else {
+		Troll troll;
+		GetTroll("Car Splat", troll);
+		ShowSelectFlagMenu(client, GetClientUserId(target), view_as<int>(TrollMod_Instant), troll);
+	}
 	return Plugin_Handled;
 }

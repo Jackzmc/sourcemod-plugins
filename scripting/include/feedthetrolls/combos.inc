@@ -65,8 +65,8 @@ void SetupsTrollCombos() {
 
     SetupCombo(combo, "Nuclear");
     combo.AddTroll("Slow Speed");
-    combo.AddTroll("Special Magnet");
-    combo.AddTroll("Tank Magnet");
+    combo.AddTroll("Special Magnet", .flags=1);
+    combo.AddTroll("Tank Magnet", .flags=1);
     #if defined _behavior_included
     combo.AddTroll("Witch Magnet");
     #endif

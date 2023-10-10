@@ -15,10 +15,8 @@ GlobalForward g_PlayerMarkedForward;
 GlobalForward g_TrollAppliedForward;
 Handle g_hWitchAttack;
 int g_iWitchAttackVictim;
-Handle hThrowTimer;
 
 ConVar hAllowEnemyTeam;
-ConVar hThrowItemInterval;
 ConVar hAutoPunish;
 ConVar hShoveFailChance;
 ConVar hAutoPunishExpire;
