@@ -31,7 +31,7 @@ public void OnPluginStart() {
 	HookEvent("bot_player_replace", Event_PlayerToIdle);
 }
 
-public Action Event_PlayerToIdle(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerToIdle(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0) {
 		idleTimeStart[client] = GetTime();
@@ -40,9 +40,24 @@ public Action Event_PlayerToIdle(Event event, const char[] name, bool dontBroadc
 
 public void OnActionCreated( BehaviorAction action, int actor, const char[] name ) {
 	/* Hooking friend healing action (when bot wants to heal someone) */
-	if ( strcmp(name, "SurvivorHealFriend") == 0 )    
+	if ( strcmp(name, "SurvivorHealFriend") == 0 )  {
 		action.OnStartPost = OnFriendAction;
+	} else if(strcmp(name, "InfectedAttack") == 0) {
+		// action.OnStartPost = OnInfectedAttack;
+		action.OnThreatChanged = OnThreatChanged;
+	}
 } 
+
+Action OnInfectedAttack(BehaviorAction action, int actor, BehaviorAction priorAction, ActionResult result) {
+	return Plugin_Continue;
+}
+
+Action OnThreatChanged(BehaviorAction action, int actor, BehaviorAction priorAction, ActionResult result) {
+	// int target = action.Get(0x34) & 0xFFF; 
+	SetEntProp(actor, Prop_Data, "m_target", actor);
+	result.type = DONE;
+	return Plugin_Continue;
+}
 
 public Action OnFriendAction( BehaviorAction action, int actor, BehaviorAction priorAction, ActionResult result ) {
 	// Do not allow idle bots to heal another player, unless they are black and white.
