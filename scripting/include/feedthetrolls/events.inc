@@ -75,21 +75,21 @@ void EntityCreateCallback(int entity) {
 		if(Trolls[badThrowID].IsActive(entOwner)) {
 			static float pos[3];
 			GetClientEyePosition(entOwner, pos);
-			if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_1) && StrEqual(class, "vomitjar_projectile", true)) {
-				AcceptEntityInput(entity, "Kill");
+			if(Trolls[badThrowID].activeFlagClients[entOwner] & 1 && StrEqual(class, "vomitjar_projectile", true)) {
+				RemoveEntity(entity);
 				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
 					L4D_CTerrorPlayer_OnVomitedUpon(entOwner, entOwner);
 					EmitSoundToAll("weapons/ceda_jar/ceda_jar_explode.wav", entOwner);
 					FindClosestClient(entOwner, false, pos);
 				}
 				SpawnItem("vomitjar", pos);
-			} else if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_2) && StrEqual(class, "molotov_projectile", true)) {
+			} else if(Trolls[badThrowID].activeFlagClients[entOwner] & 2 && StrEqual(class, "molotov_projectile", true)) {
 				// Burn them if no one near :)
 				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
 					GetClientAbsOrigin(entOwner, pos);
 					// Kill molotov if too close to a player, else teleport to feet
 					if(IsAnyPlayerNear(entOwner, 500.0)) {
-						AcceptEntityInput(entity, "Kill");
+						RemoveEntity(entity);
 						EmitSoundToAll("weapons/molotov/molotov_detonate_1.wav", entOwner);
 					} else {
 						float vel[3];
@@ -101,7 +101,7 @@ void EntityCreateCallback(int entity) {
 					SpawnItem("molotov", pos);
 					AcceptEntityInput(entity, "Kill");
 				}
-			} else if(Trolls[badThrowID].IsFlagActive(entOwner, Flag_3) && StrEqual(class, "pipe_bomb_projectile", true)) {
+			} else if(Trolls[badThrowID].activeFlagClients[entOwner] & 3 && StrEqual(class, "pipe_bomb_projectile", true)) {
 				if(hBadThrowHitSelf.FloatValue > 0.0 && GetRandomFloat() <= hBadThrowHitSelf.FloatValue) {
 					TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
 					ExplodeProjectile(entity);
@@ -386,7 +386,9 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 }
 
 bool WillMagnetRun(const Troll troll, int i) {
-	if(troll.activeFlagClients[i] == 0) return false;
+	// In the case none of the flags are set, return true (100% chance)
+	// Some systems may give magnet w/  no flags
+	if(troll.activeFlagClients[i] == 0) return true;
 
 	float cChance = 1.0;
 	//Skip first bit as it is ('Always')
@@ -424,11 +426,13 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		// Honk Processing
 		static char strings[32][8]; 
 		int words = ExplodeString(sArgs, " ", strings, sizeof(strings), 5);
+		
 		for(int i = 0; i < words; i++) {
+			// Strings should be padded by 7 characters (+ null term) to fill up 8 bytes
 			if(GetRandomFloat() <= 0.8) strings[i] = "honk   ";
-			else strings[i] = "squeak";
+			else strings[i] = "squeak ";
 		}
-		int length = 7 * words;
+		int length = 8 * words;
 		char[] message = new char[length];
 		ImplodeStrings(strings, 32, " ", message, length);
 		if(Trolls[honkID].activeFlagClients[client] & 1)
@@ -761,71 +765,85 @@ public Action NerfGun_OnTakeDamage(int victim, int& attacker, int& inflictor, fl
 	return Plugin_Continue;
 }
 
-public Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
-	//Stop FF from marked:
-	static int reverseFF;
-	if(reverseFF == 0) reverseFF = GetTrollID("Reverse FF");
+// Only triggered for players, victim is 0 < victim <= MaxClients
+Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
+	// Ignore passing bots from FF
 	if(attacker > 0 && attacker <= MaxClients) {
 		if(GetClientTeam(attacker) == 4 && IsFakeClient(attacker)) return Plugin_Continue;
 	}
-
-	if(attacker > 0 && victim <= MaxClients && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
+	// Boost all damage no matter what
+	if(Trolls[t_damageBoostIndex].IsActive(victim)) {
+		damage * 2;
+		return Plugin_Changed;
+	}
+	// Only apply for when attackers are players
+	if(attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker)) {
 		if(pdata[attacker].shootAtTarget == victim) return Plugin_Continue;
-		if(pdata[attacker].pendingTrollBan > 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
+		bool isSameTeam =  GetClientTeam(attacker) == GetClientTeam(victim);
+		if(pdata[attacker].pendingTrollBan > 0 && isSameTeam) {
 			return Plugin_Stop;
-		}
-
-		
-
-		if(damage > 0.0 && victim != attacker && Trolls[slipperyShoesIndex].IsActive(victim) && Trolls[slipperyShoesIndex].activeFlagClients[victim] & 16) { 
-			L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
 		}
 		if(Trolls[t_slotRouletteIndex].IsActive(victim)) {
 			SetSlot(victim, -1);
 		}
-
-		if(IsTrollActive(victim, "Damage Boost")) {
-			damage * 2;
-			return Plugin_Changed;
-		} else if(Trolls[reverseFF].IsActive(attacker) && attacker != victim && GetClientTeam(attacker) == GetClientTeam(victim)
-			&& (damagetype == DMG_BURN && Trolls[reverseFF].activeFlagClients[attacker] & 32)
-			&& (damagetype == DMG_BLAST && Trolls[reverseFF].activeFlagClients[attacker] & 64)
-		) {
-			float returnDmg = damage; //default is 1:1
-			if(Trolls[reverseFF].activeFlagClients[attacker] & 2) {
-				returnDmg *= 2.0;
-			} else if(Trolls[reverseFF].activeFlagClients[attacker] & 4) {
-				returnDmg /= 2.0;
-			} else if(Trolls[reverseFF].activeFlagClients[attacker] & 8) {
-				returnDmg = 0.0;
-			} else if(Trolls[reverseFF].activeFlagClients[attacker] & 16) {
-				returnDmg *= 3.0;
+		if(victim != attacker) {
+			if(damage > 0.0 && Trolls[slipperyShoesIndex].IsActive(victim) && Trolls[slipperyShoesIndex].activeFlagClients[victim] & 16) { 
+				L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
 			}
-			SDKHooks_TakeDamage(attacker, attacker, attacker, returnDmg, damagetype, -1);
-			damage = 0.0;
-			return Plugin_Changed;
-		}
+			if(isSameTeam && Trolls[t_reverseFFIndex].IsActive(attacker)) {
+				// Should this be applied? (as in no FF granted)
+				bool disableFF = false;
+				if(damagetype == DMG_BURN) {
+					disableFF = Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 32 != 0;
+				} else if(damagetype == DMG_BLAST) {
+					disableFF = Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 64 != 0;
+				} else {
+					// Does not run if DMG_BURN or DMG_BLAST
+					disableFF = true;
+				}
 
+				if(disableFF) {
+					float returnDmg = damage; //default is 1:1
+					if(Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 2) {
+						returnDmg *= 2.0;
+					} else if(Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 4) {
+						returnDmg /= 2.0;
+					} else if(Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 8) {
+						returnDmg = 0.0;
+					} else if(Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 16) {
+						returnDmg *= 3.0;
+					}
+					SDKHooks_TakeDamage(attacker, attacker, attacker, returnDmg, damagetype, -1);
+					damage = 0.0;
+					return Plugin_Changed;
+				}
+			}
+			// Only retailate if 2 (anyone) or 1 and they aren't an admin. If we are also a bot.
+			if(IsFakeClient(victim) && (hBotReverseFFDefend.IntValue == 2 || GetUserAdmin(attacker) == INVALID_ADMIN_ID)) {
+				// If the attacker is not a bot and on our team, then retaliate
+				if(!IsFakeClient(attacker) && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
+					if(hBotDefendChance.IntValue >= GetURandomFloat()) {
+						if(pdata[victim].shootAtTarget == attacker) {
+							pdata[attacker].shootAtTargetHealth -= RoundToCeil(damage);
+							pdata[victim].shootAtLoops += 4;
+							return Plugin_Continue;
+						} else if(pdata[victim].shootAtTarget > 0) {
+							// Don't switch, wait for timer to stop
+							return Plugin_Continue;
+						}
+						SetBotTarget(attacker, victim, GetClientRealHealth(attacker) - RoundFloat(damage));
+					}
+				}
+			}
+		}
+		// If FF is fire / blast, allow through unless its from a bot, then stop.
+		// Prevents players with no FF from lighting team on fire and disconnecting, making their new bot do the FF
 		if(damagetype & DMG_BURN || damagetype & DMG_BLAST) {
 			if(IsFakeClient(attacker)) return Plugin_Handled;
 			else return Plugin_Continue;
 		}
+		// Don't let bots do damage to the wrong targets if they are "defending" themselves
 		if(hBotReverseFFDefend.IntValue > 0 && IsFakeClient(attacker) && pdata[attacker].shootAtTarget == 0 && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) return Plugin_Stop;
-		if(attacker != victim && hBotReverseFFDefend.IntValue > 0 && hBotReverseFFDefend.IntValue == 2 || GetUserAdmin(attacker) == INVALID_ADMIN_ID) {
-			if(IsFakeClient(victim) && !IsFakeClient(attacker) && GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 2) {
-				if(hBotDefendChance.IntValue >= GetRandomFloat()) {
-					if(pdata[victim].shootAtTarget == attacker) {
-						pdata[attacker].shootAtTargetHealth -= RoundFloat(damage);
-						pdata[victim].shootAtLoops += 4;
-						return Plugin_Continue;
-					} else if(pdata[victim].shootAtTarget > 0) {
-						// Don't switch, wait for timer to stop
-						return Plugin_Continue;
-					}
-					SetBotTarget(attacker, victim, GetClientRealHealth(attacker) - RoundFloat(damage));
-				}
-			}
-		}
 	}
 	return Plugin_Continue;
 }

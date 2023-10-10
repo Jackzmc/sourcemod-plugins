@@ -36,7 +36,7 @@ int g_BeamSprite;
 int g_HaloSprite;
 int g_iLaserIndex;
 
-#define MAX_FORBIDDEN_CLASSNAMES 7
+#define MAX_FORBIDDEN_CLASSNAMES 9
 static char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	// "env_physics_blocker",
 	// "env_player_blocker",
@@ -45,7 +45,8 @@ static char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"func_button",
 	"func_elevator",
 	"func_button_timed",
-	// "func_movelinear",
+	"func_movelinear",
+	"func_tracktrain",
 	// "infected",
 	"func_lod",
 	"prop_ragdoll"
@@ -148,6 +149,9 @@ public Action Cmd_Grab(client, args) {
 	int parent = GetEntPropEnt(ent, Prop_Data, "m_hParent");
 	if(parent > 0) {
 		ent = parent;
+	}
+	if(!CheckBlacklist(ent)) {
+		return Plugin_Handled;
 	}
 
 	float entOrigin[3], playerGrabOrigin[3];
@@ -569,6 +573,7 @@ bool Filter_IgnoreForbidden(int entity, int mask, int data) {
 bool CheckBlacklist(int entity) {
 	static char buffer[64];
 	GetEntityClassname(entity, buffer, sizeof(buffer));
+	PrintToServer("GrabEnt:CheckBlacklist | classname=\"%s\"", buffer);
 	for(int i = 0; i < MAX_FORBIDDEN_CLASSNAMES; i++) {
 		if(StrEqual(FORBIDDEN_CLASSNAMES[i], buffer)) {
 			return false;
@@ -577,6 +582,7 @@ bool CheckBlacklist(int entity) {
 	if(StrContains(buffer, "prop_") > -1) {
 		GetEntPropString(entity, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
 		for(int i = 0; i < MAX_FORBIDDEN_MODELS; i++) {
+			PrintToServer("GrabEnt:CheckBlacklist | model=\"%s\" FORBIDDEN_MODELS[%d] = \"%s\"", buffer, i, FORBIDDEN_MODELS[i]);
 			if(StrEqual(FORBIDDEN_MODELS[i], buffer)) {
 				return false;
 			}

@@ -225,6 +225,7 @@ enum struct WallBuilderData {
 		DispatchSpawn(entity);
 		TeleportEntity(entity, this.origin, this.angles, NULL_VECTOR);
 		this.entity = entity;
+		SetEntProp(entity, Prop_Send, "m_nSolidType", 2);
 		return entity;
 	}
 
@@ -247,7 +248,7 @@ WallBuilderData WallBuilder[MAXPLAYERS+1];
 // TODO: Stacker, copy tool, new command?
 public Action Command_MakeWall(int client, int args) {
 	if(WallBuilder[client].IsActive()) {
-		ReplyToCommand(client, "\x04[Hats]\x01 You are already editing/building, either finish with \x05/wall build\x01 or cancel with \x04/wall cancel\x01");
+		ReplyToCommand(client, "\x04[Hats]\x01 You are currently editing an entity. Finish editing your current entity with with \x05/edit done\x01 or cancel with \x04/edit cancel\x01");
 	} else {
 		WallBuilder[client].Reset();
 		if(args > 0) {

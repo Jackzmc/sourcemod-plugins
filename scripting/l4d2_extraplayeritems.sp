@@ -29,7 +29,7 @@
 //Sets abmExtraCount to this value if set
 // #define DEBUG_FORCE_PLAYERS 7
 
-#define FLOW_CUTOFF 100.0 // The cutoff of flow, so that witches / tanks don't spawn in saferooms / starting areas, [0 + FLOW_CUTOFF, MapMaxFlow - FLOW_CUTOFF]
+#define FLOW_CUTOFF 500.0 // The cutoff of flow, so that witches / tanks don't spawn in saferooms / starting areas, [0 + FLOW_CUTOFF, MapMaxFlow - FLOW_CUTOFF]
 
 #define EXTRA_TANK_MIN_SEC 2.0
 #define EXTRA_TANK_MAX_SEC 20.0
@@ -79,8 +79,8 @@ public Plugin myinfo =
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
-ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags, cvEPISpecialSpawning, cvEPIGamemodes, hGamemode;
-int g_extraKitsAmount, g_extraKitsStart, abmExtraCount, g_saferoomDoorEnt, playersLoadedIn, g_prevPlayerCount;
+ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags, cvEPISpecialSpawning, cvEPIGamemodes, hGamemode, cvEPITankHealth;
+int g_extraKitsAmount, g_extraKitsStart, g_saferoomDoorEnt, g_prevPlayerCount;
 static int g_currentChapter;
 static bool g_isCheckpointReached, isLateLoaded, g_startCampaignGiven, g_isFailureRound, g_areItemsPopulated;
 static ArrayList g_ammoPacks;
@@ -89,10 +89,10 @@ static bool showHudPingMode;
 static int hudModeTicks;
 static char g_currentGamemode[32];
 static bool g_isGamemodeAllowed;
-static int g_survivorCount;
-static ArrayList g_allowedGamemodes;
+int g_survivorCount, g_realSurvivorCount;
+bool g_isFinaleEnding;
 
-
+bool g_isSpeaking[MAXPLAYERS+1];
 bool isCoop;
 
 enum Difficulty {
@@ -231,6 +231,24 @@ enum struct Cabinet {
 }
 static Cabinet cabinets[10]; //Store 10 cabinets
 
+#define FINALE_TANK 8
+#define FINALE_STARTED 1
+#define FINALE_RESCUE_READY 6
+#define FINALE_HORDE 7
+#define FINALE_WAIT 10
+
+enum FinaleStage {
+	Stage_Inactive = 0,
+	Stage_FinaleActive = 1,
+	Stage_FinaleTank1 = 2,
+	Stage_FinaleTank2 = 3,
+	Stage_FinaleDuplicatePending = 4,
+	Stage_TankSplit = 5,
+	Stage_InactiveFinale = -1
+}
+int extraTankHP;
+FinaleStage g_finaleStage;
+
 //// Definitions completSe
 
 #include <epi/director.sp>
@@ -267,6 +285,7 @@ public void OnPluginStart() {
 	HookEvent("player_info", Event_PlayerInfo);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_death", Event_PlayerDeath);
+	HookEvent("player_incapacitated", Event_PlayerIncapped);
 
 	HookEvent("charger_carry_start", Event_ChargerCarry);
 	HookEvent("charger_carry_end", Event_ChargerCarry);
@@ -283,22 +302,25 @@ public void OnPluginStart() {
 	HookEvent("jockey_ride_end", Event_JockeyRide);
 
 	HookEvent("witch_spawn", Event_WitchSpawn);
+	HookEvent("finale_vehicle_incoming", Event_FinaleVehicleIncoming);
 
 
-	hExtraItemBasePercentage = CreateConVar("l4d2_extraitems_chance", "0.059", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
-	hAddExtraKits 			 = CreateConVar("l4d2_extraitems_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits, 1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
-	hUpdateMinPlayers		 = CreateConVar("l4d2_extraitems_updateminplayers", "1", "Should the plugin update abm\'s cvar min_players convar to the player count?\n 0 -> NO, 1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
-	hMinPlayersSaferoomDoor  = CreateConVar("l4d2_extraitems_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
-	hSaferoomDoorWaitSeconds = CreateConVar("l4d2_extraitems_doorunlock_wait", "25", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
-	hSaferoomDoorAutoOpen 	 = CreateConVar("l4d2_extraitems_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
-	hEPIHudState 			 = CreateConVar("l4d2_extraitems_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 3.0);
-	hExtraFinaleTank 		 = CreateConVar("l4d2_extraitems_extra_tanks", "3", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 3.0);
-	hSplitTankChance 		 = CreateConVar("l4d2_extraitems_splittank_chance", "0.80", "The % chance of a split tank occurring in non-finales", FCVAR_NONE, true, 0.0, true, 1.0);
-	cvDropDisconnectTime     = CreateConVar("l4d2_extraitems_disconnect_time", "120.0", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
-	cvFFDecreaseRate         = CreateConVar("l4d2_extraitems_ff_decrease_rate", "0.3", "The friendly fire factor is subtracted from the formula (playerCount-4) * this rate. Effectively reduces ff penalty when more players. 0.0 to subtract none", FCVAR_NONE, true, 0.0);
-	cvEPIHudFlags 			 = CreateConVar("l4d2_extraitems_hud_flags", "3", "Add together.\n1 = Scrolling hud, 2 = Show ping", FCVAR_NONE, true, 0.0);
-	cvEPISpecialSpawning     = CreateConVar("l4d2_extraitems_director_spawns", "2", "Determines what specials are spawned. Add bits together.\n1 = Normal specials\n2 = Witches\n4 = Tanks", FCVAR_NONE, true, 0.0);
-	cvEPIGamemodes           = CreateConVar("l4d2_epi_gamemodes", "coop,realism,versus", "Gamemodes where plugin is active. Comma-separated", FCVAR_NONE);
+
+	hExtraItemBasePercentage = CreateConVar("epi_item_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
+	hAddExtraKits 			 = CreateConVar("epi_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits\n1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
+	hUpdateMinPlayers		 = CreateConVar("epi_updateminplayers", "1", "Should the plugin update abm\'s cvar min_players convar to the player count?\n 0 -> NO\n1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
+	hMinPlayersSaferoomDoor  = CreateConVar("epi_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
+	hSaferoomDoorWaitSeconds = CreateConVar("epi_doorunlock_wait", "25", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
+	hSaferoomDoorAutoOpen 	 = CreateConVar("epi_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
+	hEPIHudState 			 = CreateConVar("epi_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 3.0);
+	hExtraFinaleTank 		 = CreateConVar("epi_extra_tanks", "3", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 3.0);
+	hSplitTankChance 		 = CreateConVar("epi_splittank_chance", "0.80", "The % chance of a split tank occurring in non-finales", FCVAR_NONE, true, 0.0, true, 1.0);
+	cvDropDisconnectTime     = CreateConVar("epi_disconnect_time", "120.0", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
+	cvFFDecreaseRate         = CreateConVar("epi_ff_decrease_rate", "0.3", "The friendly fire factor is subtracted from the formula (playerCount-4) * this rate. Effectively reduces ff penalty when more players. 0.0 to subtract none", FCVAR_NONE, true, 0.0);
+	cvEPIHudFlags 			 = CreateConVar("epi_hud_flags", "3", "Add together.\n1 = Scrolling hud, 2 = Show ping", FCVAR_NONE, true, 0.0);
+	cvEPISpecialSpawning     = CreateConVar("epi_sp_spawning", "2", "Determines what specials are spawned. Add bits together.\n1 = Normal specials\n2 = Witches\n4 = Tanks", FCVAR_NONE, true, 0.0);
+	cvEPITankHealth			 = CreateConVar("epi_tank_chunkhp", "2500", "The amount of health added to tank, for each extra player", FCVAR_NONE, true, 0.0);
+	cvEPIGamemodes           = CreateConVar("epi_gamemodes", "coop,realism,versus", "Gamemodes where plugin is active. Comma-separated", FCVAR_NONE);
 	// TODO: hook flags, reset name index / ping mode
 	cvEPIHudFlags.AddChangeHook(Cvar_HudStateChange);
 	cvEPISpecialSpawning.AddChangeHook(Cvar_SpecialSpawningChange);
@@ -349,11 +371,14 @@ public void OnPluginStart() {
 	#endif
 	RegAdminCmd("sm_epi_restore", Command_RestoreInventory, ADMFLAG_KICK);
 	RegAdminCmd("sm_epi_save", Command_SaveInventory, ADMFLAG_KICK);
-	CreateTimer(2.0, Timer_Director, _, TIMER_REPEAT);
+	CreateTimer(DIRECTOR_TIMER_INTERVAL, Timer_Director, _, TIMER_REPEAT);
 	CreateTimer(30.0, Timer_ForceUpdateInventories, _, TIMER_REPEAT);
 
 }
 
+void Event_FinaleVehicleIncoming(Event event, const char[] name, bool dontBroadcast) {
+	g_isFinaleEnding = true;
+}
 
 Action Timer_ForceUpdateInventories(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
@@ -361,6 +386,7 @@ Action Timer_ForceUpdateInventories(Handle h) {
 			// SaveInventory(i);
 		}
 	}
+	Director_CheckSpawnCounts();
 	return Plugin_Continue;
 }
 
@@ -383,6 +409,7 @@ public void OnClientPutInServer(int client) {
 public void OnClientDisconnect(int client) {
 	if(!IsFakeClient(client) && IsClientInGame(client))
 		SaveInventory(client);
+	g_isSpeaking[client] = false;
 }
 
 public void OnPluginEnd() {
@@ -549,6 +576,7 @@ Action Command_RestoreInventory(int client, int args) {
 	}
 	return Plugin_Handled;
 }
+// TODO: allow sc <players> <bots> for new sys
 public Action Command_SetSurvivorCount(int client, int args) {
 	int oldCount = g_realSurvivorCount;
 	if(args > 0) {
@@ -561,7 +589,7 @@ public Action Command_SetSurvivorCount(int client, int args) {
 				return Plugin_Handled;
 			} else {
 				g_realSurvivorCount = g_survivorCount = newCount;
-				hMinPlayers.IntValue = abmExtraCount;
+				hMinPlayers.IntValue = g_realSurvivorCount;
 				ReplyToCommand(client, "Changed extra survivor count to %d -> %d", oldCount, newCount);
 				bool add = (newCount - oldCount) > 0;
 				if(add)
@@ -613,7 +641,6 @@ Action Command_RunExtraItems(int client, int args) {
 	return Plugin_Handled;
 }
 Action Command_Debug(int client, int args) {
-	PrintToConsole(client, "abmExtraCount = %d", abmExtraCount);
 	PrintToConsole(client, "g_survivorCount = %d | g_realSurvivorCount = %d", g_survivorCount, g_realSurvivorCount);
 	Director_PrintDebug(client);
 	return Plugin_Handled;
@@ -667,24 +694,6 @@ Action Command_DebugStats(int client, int args) {
 /// EVENTS
 ////////////////////////////////////
 
-#define FINALE_TANK 8
-#define FINALE_STARTED 1
-#define FINALE_RESCUE_READY 6
-#define FINALE_HORDE 7
-#define FINALE_WAIT 10
-
-enum FinaleStage {
-	Stage_Inactive = 0,
-	Stage_FinaleActive = 1,
-	Stage_FinaleTank1 = 2,
-	Stage_FinaleTank2 = 3,
-	Stage_FinaleDuplicatePending = 4,
-	Stage_TankSplit = 5,
-	Stage_InactiveFinale = -1
-}
-int extraTankHP;
-FinaleStage g_finaleStage;
-
 public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
 	if(finaleType == FINALE_STARTED && g_realSurvivorCount > 4) {
 		g_finaleStage = Stage_FinaleActive;
@@ -702,6 +711,8 @@ public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
 }
 
 void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
+	// Only run when we aren't touching tanks (ABM in control)
+	if(cvEPISpecialSpawning.IntValue & 4) return;
 	int user = event.GetInt("userid");
 	int tank = GetClientOfUserId(user);
 	if(tank > 0 && IsFakeClient(tank) && g_realSurvivorCount > 4 && hExtraFinaleTank.IntValue > 0) {
@@ -779,7 +790,6 @@ void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
 	g_startCampaignGiven = false;
 	g_extraKitsAmount = 0;
 	g_extraKitsStart = 0;
-	abmExtraCount = 0;
 	g_realSurvivorCount = 0;
 	g_survivorCount = 0;
 	hMinPlayers.IntValue = 4;
@@ -847,7 +857,7 @@ void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	if(!g_isGamemodeAllowed) return;
 
 	int userid = event.GetInt("userid");
-	int client = GetClientOfUserId(user);
+	int client = GetClientOfUserId(userid);
 	UpdateSurvivorCount();
 	if(GetClientTeam(client) == 2 && !IsFakeClient(client) && !L4D_IsFirstMapInScenario()) {
 		// Start door timeout:
@@ -891,8 +901,8 @@ Action Timer_DropSurvivor(Handle h, int client) {
 	if(playerData[client].state == State_PendingEmpty) {
 		playerData[client].state = State_Empty;
 		if(hMinPlayers != null) {
-			PrintToServer("[EPI] Dropping survivor %d. hMinPlayers-pre:%d abmCount=%d", client, hMinPlayers.IntValue, abmExtraCount);
-			PrintToConsoleAll("[EPI] Dropping survivor %d. hMinPlayers-pre:%d abmCount=%d", client, hMinPlayers.IntValue, abmExtraCount);
+			PrintToServer("[EPI] Dropping survivor %d. hMinPlayers-pre:%d g_survivorCount=%d g_realSurvivorCount=%d", client, hMinPlayers.IntValue, g_survivorCount, g_realSurvivorCount);
+			PrintToConsoleAll("[EPI] Dropping survivor %d. hMinPlayers-pre:%d g_survivorCount=%d g_realSurvivorCount=%d", client, hMinPlayers.IntValue, g_survivorCount, g_realSurvivorCount);
 			hMinPlayers.IntValue = g_realSurvivorCount;
 			if(hMinPlayers.IntValue < 4) {
 				hMinPlayers.IntValue = 4;
@@ -1167,12 +1177,13 @@ Timer_Director then checks if highest flow achieved (never decreases) is >= each
 
 public void OnConfigsExecuted() {
 	if(hUpdateMinPlayers.BoolValue && hMinPlayers != null) {
-		hMinPlayers.IntValue = abmExtraCount;
+		hMinPlayers.IntValue = g_realSurvivorCount;
 	}
 }
 
 
 public void OnMapEnd() {
+	g_isFinaleEnding = false;
 	// Reset the ammo packs, deleting the internal arraylist
 	for(int i = 0; i < g_ammoPacks.Length; i++) {
 		ArrayList clients = g_ammoPacks.Get(i, AMMOPACK_USERS);
@@ -1198,13 +1209,19 @@ public Action Timer_Populate(Handle h) {
 	return Plugin_Continue;
 
 }
+public void OnClientSpeaking(int client) {
+	g_isSpeaking[client] = true;
+}
+public void OnClientSpeakingEnd(int client) {
+	g_isSpeaking[client] = false;
+}
 
 public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
 	if(!g_isCheckpointReached  && client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
 		g_isCheckpointReached = true;
-		abmExtraCount = GetSurvivorsCount();
-		if(abmExtraCount > 4) {
-			int extraPlayers = abmExtraCount - 4;
+		UpdateSurvivorCount();
+		if(IsEPIActive()) {
+			int extraPlayers = g_survivorCount - 4;
 			float averageTeamHP = GetAverageHP();
 			if(averageTeamHP <= 30.0) extraPlayers += (extraPlayers / 2); //if perm. health < 30, give an extra 4 on top of the extra
 			else if(averageTeamHP <= 50.0) extraPlayers += (extraPlayers / 3); //if the team's average health is less than 50 (permament) then give another
@@ -1220,9 +1237,9 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 				
 			g_extraKitsStart = g_extraKitsAmount;
 
-			hMinPlayers.IntValue = abmExtraCount;
-			PrintToConsoleAll("CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
-			PrintToServer("Player entered saferoom. Providing %d extra kits", g_extraKitsAmount);
+			hMinPlayers.IntValue = g_survivorCount;
+			PrintToConsoleAll("[EPI] CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
+			PrintToServer("[EPI] Player entered saferoom. Providing %d extra kits", g_extraKitsAmount);
 		}
 	}
 }
@@ -1235,12 +1252,13 @@ public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 
 public Action Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
 	#if defined DEBUG
-	PrintToServer("Map transition | %d Extra Kits", g_g_extraKitsAmount);
+	PrintToServer("Map transition | %d Extra Kits", g_extraKitsAmount);
 	#endif
 	isLateLoaded = false;
 	g_extraKitsStart = g_extraKitsAmount;
-	abmExtraCount = GetRealSurvivorsCount();
-	g_prevPlayerCount = GetRealSurvivorsCount();
+	// Update g_survivorCount, people may have dipped right before transition
+	UpdateSurvivorCount();
+	g_prevPlayerCount = g_survivorCount;
 	return Plugin_Continue;
 }
 //TODO: Possibly hacky logic of on third different ent id picked up, in short timespan, detect as set of 4 (pills, kits) & give extra
@@ -1414,7 +1432,7 @@ void UnlockDoor(int flag) {
 
 Action Timer_UpdateHud(Handle h) {
 	if(hEPIHudState.IntValue == 1 && !isCoop) {
-		PrintToServer("[EPI] Gamemode no longer coop, stopping (hudState=%d, abmExtraCount=%d)", hEPIHudState.IntValue, abmExtraCount);
+		PrintToServer("[EPI] Gamemode no longer coop, stopping (hudState=%d, g_survivorCount=%d, g_realSurvivorCount=%d)", hEPIHudState.IntValue, g_survivorCount, g_realSurvivorCount);
 		L4D2_RunScript(HUD_SCRIPT_CLEAR);
 		updateHudTimer = null;
 		return Plugin_Stop;
@@ -1455,6 +1473,8 @@ Action Timer_UpdateHud(Handle h) {
 			} else {
 				Format(prefix, HUD_NAME_LENGTH, "%s", playerData[client].nameCache[playerData[client].scrollIndex]);
 			}
+			if(g_isSpeaking[i])
+				Format(prefix, HUD_NAME_LENGTH, "🔊%s", prefix);
 
 			playerData[client].AdvanceScroll();
 			
@@ -1478,7 +1498,6 @@ Action Timer_UpdateHud(Handle h) {
 	}
 
 	if(players[0] == '\0') {
-		PrintToServer("[EPI] No players online", hEPIHudState.IntValue, abmExtraCount);
 		L4D2_RunScript(HUD_SCRIPT_CLEAR);
 		updateHudTimer = null;
 		return Plugin_Stop;
@@ -1507,9 +1526,9 @@ void PopulateItems() {
 	g_areItemsPopulated = true;
 
 	//Generic Logic
-	float percentage = hExtraItemBasePercentage.FloatValue * survivors;
-	PrintToServer("[EPI] Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
-	PrintToConsoleAll("[EPI] Populating extra items based on player count (%d) | Percentage %.2f%%", survivors, percentage * 100);
+	float percentage = hExtraItemBasePercentage.FloatValue * g_realSurvivorCount;
+	PrintToServer("[EPI] Populating extra items based on player count (%d) | Percentage %.2f%%", g_realSurvivorCount, percentage * 100);
+	PrintToConsoleAll("[EPI] Populating extra items based on player count (%d) | Percentage %.2f%%", g_realSurvivorCount, percentage * 100);
 	char classname[64];
 	int affected = 0;
 
@@ -1544,7 +1563,7 @@ void PopulateItems() {
 			continue;
 		}
 		int spawnCount = GetEntProp(cabinets[i].id, Prop_Data, "m_pillCount");
-		int extraAmount = RoundToCeil(float(abmExtraCount) * (float(spawnCount)/4.0) - spawnCount);
+		int extraAmount = RoundToCeil(float(g_survivorCount) * (float(spawnCount)/4.0) - spawnCount);
 		bool hasSpawner;
 		while(extraAmount > 0) {
 			//FIXME: spawner is sometimes invalid entity. Ref needed?
@@ -1568,7 +1587,7 @@ void PopulateItems() {
 /// Stocks
 ////////////////////////////////////
 bool IsGamemodeAllowed() {
-	char buffer[64], curGamemode;
+	char buffer[128];
 	cvEPIGamemodes.GetString(buffer, sizeof(buffer));
 	return StrContains(buffer, g_currentGamemode, false) > -1;
 }
@@ -1665,9 +1684,11 @@ bool DoesInventoryDiffer(int client) {
 	return currentPrimary != storedPrimary || currentSecondary != storedSecondary;
 }
 
+bool IsEPIActive() {
+	return g_realSurvivorCount > 4 && IsGamemodeAllowed();
+}
+
 void UpdateSurvivorCount() {
-	return DEBUG_FORCE_PLAYERS;
-	#endif
 	int countTotal = 0, countReal = 0, countActive = 0;
 	#if !defined DEBUG_FORCE_PLAYERS
 	for(int i = 1; i <= MaxClients; i++) {
@@ -1676,7 +1697,7 @@ void UpdateSurvivorCount() {
 				countReal++;
 			}
 			countTotal++;
-			if(pdata[i].state == State_Active) {
+			if(playerData[i].state == State_Active) {
 				countActive++;
 			}
 		}
@@ -1694,7 +1715,7 @@ void UpdateSurvivorCount() {
 		// Update friendly fire values to reduce accidental FF in crowded corridors
 		ConVar friendlyFireFactor = GetActiveFriendlyFireFactor();
 		// TODO: Get previous default
-		friendlyFireFactor.FloatValue = friendlyFireFactor.FloatValue - ((newCount - 4) * cvFFDecreaseRate.FloatValue);
+		friendlyFireFactor.FloatValue = friendlyFireFactor.FloatValue - ((g_realSurvivorCount - 4) * cvFFDecreaseRate.FloatValue);
 		if(friendlyFireFactor.FloatValue < 0.0) {
 			friendlyFireFactor.FloatValue = 0.01;
 		}

@@ -1,18 +1,16 @@
 
-Action Timer_ThrowTimer(Handle timer) {
-	int count = 0;
-	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && IsTrollActive(i, "Throw It All")) {
-			ThrowAllItems(i);
-			count++;
-		}
+Action Timer_ThrowTimer(Handle timer, int client) {
+	if(!IsClientInGame(client)) {
+		Trolls[t_throwItAllIndex].timerHandles[client] = null;
+		return Plugin_Stop;
 	}
-	return count > 0 ? Plugin_Continue : Plugin_Stop;
+	ThrowAllItems(client);
+	return Plugin_Continue;
 }
 int instantCommonRef[MAXPLAYERS+1];
 
 Action Timer_RandomVelocity(Handle h, int client) {
-	if(!IsClientConnected(client)) {
+	if(!IsClientInGame(client)) {
 		Trolls[t_randomizeVelocityIndex].timerHandles[client] = null;
 		return Plugin_Stop;
 	}
@@ -139,7 +137,7 @@ Action Timer_Main(Handle timer) {
 					amplitude = 100.0;
 					freq = 200.0;
 				}
-				ShakePlayer(i, amplitude, freq, MAIN_TIMER_INTERVAL_S + 1.0);
+				ShakePlayer(i, amplitude, freq, MAIN_TIMER_INTERVAL_S + 2.0);
 			}
 			if(Trolls[t_slotRouletteIndex].IsActive(i) && Trolls[t_slotRouletteIndex].activeFlagClients[i] & 8) {
 				float chance = 1.0;
@@ -155,6 +153,9 @@ Action Timer_Main(Handle timer) {
 					SetSlot(i, -1);
 				}
 			}
+			if(Trolls[t_hideHUDIndex].IsActive(i)) {
+				HideHUDRandom(i);
+			}
 		}
 	}
 	if(++loopTick >= 60) {
@@ -163,7 +164,7 @@ Action Timer_Main(Handle timer) {
 	return Plugin_Continue;
 }
 Action Timer_SlotRoulette(Handle h, int client) {
-	if(!IsClientConnected(client)) {
+	if(!IsClientInGame(client)) {
 		Trolls[t_slotRouletteIndex].timerHandles[client] = null;
 		return Plugin_Stop;
 	}
@@ -411,8 +412,7 @@ Action Timer_StopHealBots(Handle h, DataPack pack) {
 	if(victim) {
 		DisableTroll(victim, "Dep Bots");
 	}
-	// TODO: stop right one
-	StopHealingBots(true);
+	StopHealingBots();
 	return Plugin_Stop;
 }
 
@@ -474,4 +474,27 @@ Action Timer_ResetGravity(Handle h, int entref) {
 		SetEntityGravity(entity, 800.0); // could pull from sv_gravity but no ones gonna notice
 	}
 	return Plugin_Handled;
+}
+Action Timer_RestoreHud(Handle h, int userid) {
+	int client = GetClientOfUserId(userid);
+	if(client > 0) {
+		SetEntProp(client, Prop_Send, "m_iHideHUD", 0);
+	}
+	return Plugin_Handled;
+}
+
+Action Timer_TurnCamera(Handle h, int client) {
+	if(!IsClientInGame(client)) {
+		Trolls[t_cameraTurnIndex].timerHandles[client] = null;
+		return Plugin_Stop;
+	}
+	static float ang[3];
+	GetClientEyeAngles(client, ang);
+	if(Trolls[t_cameraTurnIndex].activeFlagClients[client] & 1) {
+		ang[1] += 2.0;
+	} else { 
+		ang[0] += 2.0;
+	}
+	SetAbsAngles(client, ang);
+	return Plugin_Continue;
 }
