@@ -44,7 +44,7 @@ char ActivePreset[MAXPLAYERS+1][32];
 StringMap g_HatPresets;
 int lastHatRequestTime[MAXPLAYERS+1];
 
-#define MAX_FORBIDDEN_CLASSNAMES 13
+#define MAX_FORBIDDEN_CLASSNAMES 14
 char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"prop_door_rotating_checkpoint",
 	"env_physics_blocker",
@@ -56,7 +56,7 @@ char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"func_elevator",
 	"func_button_timed",
 	"func_tracktrain",
-	// "func_movelinear",
+	"func_movelinear",
 	// "infected",
 	"func_lod",
 	"func_door",
@@ -763,7 +763,8 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 				PrintToChat(entity, "[Hats] %N has set themselves as your hat", client);
 			}
 		} else {
-			if(StrEqual(classname, "infected") || StrEqual(classname, "witch")) {
+			// TODO: freeze tank
+			if(StrEqual(classname, "infected") || StrEqual(classname, "witch") || (entity <= MaxClients && GetClientTeam(entity) == 3 && L4D2_GetPlayerZombieClass(entity) == L4D2ZombieClass_Tank)) {
 				int eflags = GetEntityFlags(entity) | FL_FROZEN;
 				SetEntityFlags(entity, eflags);
 				hatData[client].offset[2] = 36.0;

@@ -29,7 +29,7 @@
 //Sets abmExtraCount to this value if set
 // #define DEBUG_FORCE_PLAYERS 7
 
-#define FLOW_CUTOFF 100.0 // The cutoff of flow, so that witches / tanks don't spawn in saferooms / starting areas, [0 + FLOW_CUTOFF, MapMaxFlow - FLOW_CUTOFF]
+#define FLOW_CUTOFF 500.0 // The cutoff of flow, so that witches / tanks don't spawn in saferooms / starting areas, [0 + FLOW_CUTOFF, MapMaxFlow - FLOW_CUTOFF]
 
 #define EXTRA_TANK_MIN_SEC 2.0
 #define EXTRA_TANK_MAX_SEC 20.0
@@ -80,7 +80,7 @@ public Plugin myinfo =
 };
 
 ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags, cvEPISpecialSpawning;
-int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor;
+int extraKitsAmount, extraKitsStarted, abmExtraCount, firstSaferoomDoorEntity, playersLoadedIn, playerstoWaitFor, cvEPITankHealth;
 static int currentChapter;
 static bool isCheckpointReached, isLateLoaded, firstGiven, isFailureRound, areItemsPopulated;
 static ArrayList ammoPacks;
@@ -88,8 +88,9 @@ static Handle updateHudTimer;
 static bool showHudPingMode;
 static int hudModeTicks;
 static char gamemode[32];
+bool g_isFinaleEnding;
 
-
+bool g_isSpeaking[MAXPLAYERS+1];
 bool isCoop;
 
 enum Difficulty {
@@ -264,6 +265,7 @@ public void OnPluginStart() {
 	HookEvent("player_info", Event_PlayerInfo);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_death", Event_PlayerDeath);
+	HookEvent("player_incapacitated", Event_PlayerIncapped);
 
 	HookEvent("charger_carry_start", Event_ChargerCarry);
 	HookEvent("charger_carry_end", Event_ChargerCarry);
@@ -280,22 +282,25 @@ public void OnPluginStart() {
 	HookEvent("jockey_ride_end", Event_JockeyRide);
 
 	HookEvent("witch_spawn", Event_WitchSpawn);
+	HookEvent("finale_vehicle_incoming", Event_FinaleVehicleIncoming);
 
 
 
-	hExtraItemBasePercentage = CreateConVar("l4d2_extraitems_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
-	hAddExtraKits 			 = CreateConVar("l4d2_extraitems_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits, 1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
-	hUpdateMinPlayers		 = CreateConVar("l4d2_extraitems_updateminplayers", "1", "Should the plugin update abm\'s cvar min_players convar to the player count?\n 0 -> NO, 1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
-	hMinPlayersSaferoomDoor  = CreateConVar("l4d2_extraitems_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
-	hSaferoomDoorWaitSeconds = CreateConVar("l4d2_extraitems_doorunlock_wait", "25", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
-	hSaferoomDoorAutoOpen 	 = CreateConVar("l4d2_extraitems_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
-	hEPIHudState 			 = CreateConVar("l4d2_extraitems_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 3.0);
-	hExtraFinaleTank 		 = CreateConVar("l4d2_extraitems_extra_tanks", "3", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 3.0);
-	hSplitTankChance 		 = CreateConVar("l4d2_extraitems_splittank_chance", "0.80", "The % chance of a split tank occurring in non-finales", FCVAR_NONE, true, 0.0, true, 1.0);
-	cvDropDisconnectTime     = CreateConVar("l4d2_extraitems_disconnect_time", "120.0", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
-	cvFFDecreaseRate         = CreateConVar("l4d2_extraitems_ff_decrease_rate", "0.3", "The friendly fire factor is subtracted from the formula (playerCount-4) * this rate. Effectively reduces ff penalty when more players. 0.0 to subtract none", FCVAR_NONE, true, 0.0);
-	cvEPIHudFlags 			 = CreateConVar("l4d2_extraitems_hud_flags", "3", "Add together.\n1 = Scrolling hud, 2 = Show ping", FCVAR_NONE, true, 0.0);
-	cvEPISpecialSpawning     = CreateConVar("l4d2_extraitems_special_spawning", "2", "Determines what specials are spawned. Add bits together.\n1 = Normal specials\n2 = Witches\n4 = Tanks", FCVAR_NONE, true, 0.0);
+	hExtraItemBasePercentage = CreateConVar("epi_item_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
+	hAddExtraKits 			 = CreateConVar("epi_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits\n1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
+	hUpdateMinPlayers		 = CreateConVar("epi_updateminplayers", "1", "Should the plugin update abm\'s cvar min_players convar to the player count?\n 0 -> NO\n1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
+	hMinPlayersSaferoomDoor  = CreateConVar("epi_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
+	hSaferoomDoorWaitSeconds = CreateConVar("epi_doorunlock_wait", "25", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
+	hSaferoomDoorAutoOpen 	 = CreateConVar("epi_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
+	hEPIHudState 			 = CreateConVar("epi_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 3.0);
+	hExtraFinaleTank 		 = CreateConVar("epi_extra_tanks", "3", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 3.0);
+	hSplitTankChance 		 = CreateConVar("epi_splittank_chance", "0.80", "The % chance of a split tank occurring in non-finales", FCVAR_NONE, true, 0.0, true, 1.0);
+	cvDropDisconnectTime     = CreateConVar("epi_disconnect_time", "120.0", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
+	cvFFDecreaseRate         = CreateConVar("epi_ff_decrease_rate", "0.3", "The friendly fire factor is subtracted from the formula (playerCount-4) * this rate. Effectively reduces ff penalty when more players. 0.0 to subtract none", FCVAR_NONE, true, 0.0);
+	cvEPIHudFlags 			 = CreateConVar("epi_hud_flags", "3", "Add together.\n1 = Scrolling hud, 2 = Show ping", FCVAR_NONE, true, 0.0);
+	cvEPISpecialSpawning     = CreateConVar("epi_sp_spawning", "2", "Determines what specials are spawned. Add bits together.\n1 = Normal specials\n2 = Witches\n4 = Tanks", FCVAR_NONE, true, 0.0);
+	cvEPITankHealth			 = CreateConVar("epi_tank_chunkhp", "2500", "The amount of health added to tank, for each extra player", FCVAR_NONE, true, 0.0);
+
 	// TODO: hook flags, reset name index / ping mode
 	cvEPIHudFlags.AddChangeHook(Cvar_HudStateChange);
 	cvEPISpecialSpawning.AddChangeHook(Cvar_SpecialSpawningChange);
@@ -358,12 +363,14 @@ public void OnPluginStart() {
 	#endif
 	RegAdminCmd("sm_epi_restore", Command_RestoreInventory, ADMFLAG_KICK);
 	RegAdminCmd("sm_epi_save", Command_SaveInventory, ADMFLAG_KICK);
-	CreateTimer(2.0, Timer_Director, _, TIMER_REPEAT);
+	CreateTimer(DIRECTOR_TIMER_INTERVAL, Timer_Director, _, TIMER_REPEAT);
 	CreateTimer(30.0, Timer_ForceUpdateInventories, _, TIMER_REPEAT);
 
 }
 
-
+void Event_FinaleVehicleIncoming(Event event, const char[] name, bool dontBroadcast) {
+	g_isFinaleEnding = true;
+}
 
 Action Timer_ForceUpdateInventories(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
@@ -371,6 +378,7 @@ Action Timer_ForceUpdateInventories(Handle h) {
 			// SaveInventory(i);
 		}
 	}
+	Director_CheckSpawnCounts();
 	return Plugin_Continue;
 }
 
@@ -393,6 +401,7 @@ public void OnClientPutInServer(int client) {
 public void OnClientDisconnect(int client) {
 	if(!IsFakeClient(client) && IsClientInGame(client))
 		SaveInventory(client);
+	g_isSpeaking[client] = false;
 }
 
 public void OnPluginEnd() {
@@ -557,6 +566,7 @@ Action Command_RestoreInventory(int client, int args) {
 	}
 	return Plugin_Handled;
 }
+// TODO: allow sc <players> <bots> for new sys
 public Action Command_SetSurvivorCount(int client, int args) {
 	int oldCount = abmExtraCount;
 	if(args > 0) {
@@ -569,7 +579,6 @@ public Action Command_SetSurvivorCount(int client, int args) {
 				return Plugin_Handled;
 			} else {
 				abmExtraCount = newCount;
-				hMinPlayers.IntValue = abmExtraCount;
 				ReplyToCommand(client, "Changed extra survivor count to %d -> %d", oldCount, newCount);
 				bool add = (newCount - oldCount) > 0;
 				if(add)
@@ -690,18 +699,18 @@ enum FinaleStage {
 	Stage_InactiveFinale = -1
 }
 int extraTankHP;
-FinaleStage finaleStage;
+FinaleStage g_finaleStage;
 
 public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
 	if(finaleType == FINALE_STARTED && abmExtraCount > 4) {
-		finaleStage = Stage_FinaleActive;
+		g_finaleStage = Stage_FinaleActive;
 		PrintToConsoleAll("[EPI] Finale started and over threshold");
 	} else if(finaleType == FINALE_TANK) {
-		if(finaleStage == Stage_FinaleActive) {
-			finaleStage = Stage_FinaleTank1;
+		if(g_finaleStage == Stage_FinaleActive) {
+			g_finaleStage = Stage_FinaleTank1;
 			PrintToConsoleAll("[EPI] First tank stage has started");
-		} else if(finaleStage == Stage_FinaleTank1) {
-			finaleStage = Stage_FinaleTank2;
+		} else if(g_finaleStage == Stage_FinaleTank1) {
+			g_finaleStage = Stage_FinaleTank2;
 			PrintToConsoleAll("[EPI] Second stage started, waiting for tank");
 		}
 	}
@@ -709,20 +718,22 @@ public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
 }
 
 void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
+	// Only run when we aren't touching tanks (ABM in control)
+	if(cvEPISpecialSpawning.IntValue & 4) return;
 	int user = event.GetInt("userid");
 	int tank = GetClientOfUserId(user);
 	if(tank > 0 && IsFakeClient(tank) && abmExtraCount > 4 && hExtraFinaleTank.IntValue > 0) {
 		PrintToConsoleAll("[EPI] Split tank is enabled, checking new spawned tank");
-		if(finaleStage == Stage_FinaleTank2 && allowTankSplit && hExtraFinaleTank.IntValue & 2) {
+		if(g_finaleStage == Stage_FinaleTank2 && allowTankSplit && hExtraFinaleTank.IntValue & 2) {
 			PrintToConsoleAll("[EPI] Second tank spawned, setting health.");
 			// Sets health in half, sets finaleStage to health
 			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
 			CreateTimer(duration, Timer_SpawnFinaleTank, user);
-		} else if(finaleStage == Stage_FinaleDuplicatePending) {
+		} else if(g_finaleStage == Stage_FinaleDuplicatePending) {
 			PrintToConsoleAll("[EPI] Third & final tank spawned");
 			RequestFrame(Frame_SetExtraTankHealth, user);
-		} else if(finaleStage == Stage_Inactive && allowTankSplit && hExtraFinaleTank.IntValue & 1 && GetSurvivorsCount() > 6) {
-			finaleStage = Stage_TankSplit;
+		} else if(g_finaleStage == Stage_Inactive && allowTankSplit && hExtraFinaleTank.IntValue & 1 && GetSurvivorsCount() > 6) {
+			g_finaleStage = Stage_TankSplit;
 			if(GetRandomFloat() <= hSplitTankChance.FloatValue) {
 				// Half their HP, assign half to self and for next tank
 				int hp = GetEntProp(tank, Prop_Send, "m_iHealth") / 2;
@@ -734,16 +745,16 @@ void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
 				PrintToConsoleAll("[EPI] Random chance for split tank failed");
 			}
 			// Then, summon the next tank
-		} else if(finaleStage == Stage_TankSplit) {
+		} else if(g_finaleStage == Stage_TankSplit) {
 			CreateTimer(0.2, Timer_SetHealth, user);
 		}
 	}
 }
 Action Timer_SpawnFinaleTank(Handle t, int user) {
-	if(finaleStage == Stage_FinaleTank2) {
+	if(g_finaleStage == Stage_FinaleTank2) {
 		DirectorSpawn(Special_Tank);
 		// ServerCommand("sm_forcespecial tank");
-		finaleStage = Stage_Inactive;
+		g_finaleStage = Stage_Inactive;
 	}
 	return Plugin_Handled;
 }
@@ -762,9 +773,9 @@ Action Timer_SetHealth(Handle h, int user) {
 
 void Frame_SetExtraTankHealth(int user) {
 	int tank = GetClientOfUserId(user);
-	if(tank > 0 && finaleStage == Stage_FinaleDuplicatePending) {
+	if(tank > 0 && g_finaleStage == Stage_FinaleDuplicatePending) {
 		SetEntProp(tank, Prop_Send, "m_iHealth", extraTankHP);
-		finaleStage = Stage_InactiveFinale;
+		g_finaleStage = Stage_InactiveFinale;
 	}
 }
 
@@ -1183,7 +1194,7 @@ public void OnMapStart() {
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 
 	playersLoadedIn = 0;
-	finaleStage = Stage_Inactive;
+	g_finaleStage = Stage_Inactive;
 
 	L4D2_RunScript(HUD_SCRIPT_CLEAR);
 	Director_OnMapStart();
@@ -1208,6 +1219,7 @@ public void OnConfigsExecuted() {
 
 
 public void OnMapEnd() {
+	g_isFinaleEnding = false;
 	for(int i = 0; i < ammoPacks.Length; i++) {
 		ArrayList clients = ammoPacks.Get(i, AMMOPACK_USERS);
 		delete clients;
@@ -1233,6 +1245,12 @@ public Action Timer_Populate(Handle h) {
 	return Plugin_Continue;
 
 }
+public void OnClientSpeaking(int client) {
+	g_isSpeaking[client] = true;
+}
+public void OnClientSpeakingEnd(int client) {
+	g_isSpeaking[client] = false;
+}
 
 public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, int client, float time) {
 	if(!isCheckpointReached  && client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
@@ -1256,8 +1274,8 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 			extraKitsStarted = extraKitsAmount;
 
 			hMinPlayers.IntValue = abmExtraCount;
-			PrintToConsoleAll("CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
-			PrintToServer("Player entered saferoom. Providing %d extra kits", extraKitsAmount);
+			PrintToConsoleAll("[EPI] CHECKPOINT REACHED BY %N | EXTRA KITS: %d", client, extraPlayers);
+			PrintToServer("[EPI] Player entered saferoom. Providing %d extra kits", extraKitsAmount);
 		}
 	}
 }
@@ -1489,6 +1507,8 @@ Action Timer_UpdateHud(Handle h) {
 			} else {
 				Format(prefix, HUD_NAME_LENGTH, "%s", playerData[client].nameCache[playerData[client].scrollIndex]);
 			}
+			if(g_isSpeaking[i])
+				Format(prefix, HUD_NAME_LENGTH, "🔊%s", prefix);
 
 			playerData[client].AdvanceScroll();
 			
