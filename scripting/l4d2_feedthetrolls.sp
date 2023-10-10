@@ -3,10 +3,9 @@
 
 //#define DEBUG
 
-#define MAIN_TIMER_INTERVAL_S 4.0
+#define MAIN_TIMER_INTERVAL_S 3.5
 #define PLUGIN_VERSION "1.0"
-#define ANTI_RUSH_DEFAULT_FREQUENCY 20.0
-#define ANTI_RUSH_FREQ_INC 0.75
+#define THROWITALL_INTERVAL 30.0
 
 #include <sourcemod>
 #include <sdktools>
@@ -67,8 +66,6 @@ public void OnPluginStart() {
 	delete data;
 	
 	hAllowEnemyTeam     = CreateConVar("sm_ftt_select_enemy", "0", "Allow applying trolls to enemy teams", FCVAR_NONE, true, 0.0, true, 1.0);
-	hThrowItemInterval  = CreateConVar("sm_ftt_throw_interval", "30", "The interval in seconds to throw items. 0 to disable", FCVAR_NONE, true, 0.0);
-	hThrowItemInterval.AddChangeHook(Change_ThrowInterval);
 	hAutoPunish 		= CreateConVar("sm_ftt_autopunish_action", "0", "Setup automatic punishment of players. Add bits together\n0=Disabled, 1=Tank magnet, 2=Special magnet, 4=Swarm, 8=InstantVomit", FCVAR_NONE, true, 0.0);
 	hAutoPunishExpire 	= CreateConVar("sm_ftt_autopunish_expire", "0", "How many minutes of gametime until autopunish is turned off? 0 for never.", FCVAR_NONE, true, 0.0);
 	hMagnetTargetMode   = CreateConVar("sm_ftt_magnet_targetting", "6", "How does the specials target players. Add bits together\n0=Incapped are ignored, 1=Specials targets incapped, 2=Tank targets incapped 4=Witch targets incapped");
@@ -104,6 +101,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_healbots", Command_HealTarget, ADMFLAG_BAN, "Make bots heal a player");
 	RegAdminCmd("sm_rff", Command_SetReverseFF, ADMFLAG_KICK, "Set reverse FF on player");
 	RegAdminCmd("sm_magnet", Command_SetMagnetShortcut, ADMFLAG_KICK, "");
+	RegAdminCmd("sm_csplat", Command_CarSplat, ADMFLAG_KICK, "");
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
@@ -133,16 +131,8 @@ public void OnPluginStart() {
 // CVAR CHANGES
 ///////////////////////////////////////////////////////////////////////////////
 
-public void Change_ThrowInterval(ConVar convar, const char[] oldValue, const char[] newValue) {
-	//If a throw timer exists (someone has mode 11), destroy & recreate w/ new interval
-	if(hThrowTimer != INVALID_HANDLE) {
-		delete hThrowTimer;
-		hThrowTimer = CreateTimer(convar.FloatValue, Timer_ThrowTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
-	}
-}
-
 // Turn on bot FF if bot defend enabled
-public void Change_BotDefend(ConVar convar, const char[] oldValue, const char[] newValue) {
+void Change_BotDefend(ConVar convar, const char[] oldValue, const char[] newValue) {
 	hSbFriendlyFire.IntValue = convar.IntValue != 0;
 }
 
@@ -221,3 +211,24 @@ Action OnWitchActionUpdate(BehaviorAction action, int actor, float interval, Act
 	result.SetReason("FTT");
 	return Plugin_Handled;
 } 
+
+void HideHUD(int victim, float timeout = 0.0) {
+	SetEntProp(victim, Prop_Send, "m_iHideHUD", 64);
+	if(timeout > 0.0)
+		CreateTimer(timeout, Timer_RestoreHud, GetClientUserId(victim));
+}
+void HideHUDRandom(int victim) {
+	float timeout = 0.0;
+	if(~Trolls[t_hideHUDIndex].activeFlagClients[victim] & 3) {
+		if(Trolls[t_hideHUDIndex].activeFlagClients[victim] & 1) {
+			if(GetURandomFloat() > 0.2)
+				return;
+			timeout = GetRandomFloat(1.0, 5.0);
+		} else if(Trolls[t_hideHUDIndex].activeFlagClients[victim] & 2) {
+			if(GetURandomFloat() < 0.5)
+				return;
+			timeout = GetRandomFloat(5.0, 10.0);
+		}
+	}
+	HideHUD(victim, timeout);
+}
