@@ -140,8 +140,8 @@ void Director_CheckClient(int client) {
 }
 
 void OnTankBotSpawn(int client) {
-	if(g_finaleStage = Stage_FinaleActive) {
-		
+	if(g_finaleStage == Stage_FinaleActive) {
+
 	} else {
 		int health = GetEntProp(client, Prop_Send, "m_iHealth");
 		int additionalHealth = float(abmExtraCount - 4) * cvEPITankHealth.FloatValue;
