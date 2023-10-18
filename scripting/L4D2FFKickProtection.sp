@@ -100,7 +100,7 @@ public Action VoteStart(int client, const char[] command, int argc) {
 					PrintToServer("debug: admin immunity is %d. username: %s", targetAdmin.ImmunityLevel, option);
 					PrintToServer("ADMIN VOTE KICK BLOCKED | Target=%N | Caller=%N", target, client);
 					return Plugin_Handled;
-				} else if(callerAdmin != INVALID_ADMIN_ID && targetAdmin == INVALID_ADMIN_ID) {
+				} else if(callerAdmin != INVALID_ADMIN_ID) {
 					PrintToServer("Vote kick by admin, instantly passing");
 					for(int i = 1; i <= MaxClients; i++) {
 						if(IsClientConnected(i) && !IsFakeClient(i) && GetClientTeam(i) == GetClientTeam(target)) {
