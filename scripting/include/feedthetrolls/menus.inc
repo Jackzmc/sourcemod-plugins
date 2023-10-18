@@ -16,15 +16,15 @@ public int Insta_PlayerHandler(Menu menu, MenuAction action, int client, int par
 }
 
 void ShowInstaSpecialChooser(int activator, int userid, int instaMode) {
-	Menu spMenu = new Menu(Insta_SpecialHandler);
-	spMenu.SetTitle("Choose a Insta-Special™");
-	static char data[16];
+	Menu menu = new Menu(Insta_SpecialHandler);
+	menu.SetTitle("Choose a Insta-Special™");
+	char data[16];
 	for(int i = 1; i <= 8; i++) {
 		Format(data, sizeof(data), "%d|%d|%d", userid, instaMode, i);
-		spMenu.AddItem(data, SPECIAL_NAMES[i-1]);
+		menu.AddItem(data, SPECIAL_NAMES[i-1]);
 	}
-	spMenu.ExitButton = true;
-	spMenu.Display(activator, 0);
+	menu.ExitButton = true;
+	menu.Display(activator, 0);
 }
 
 public int Insta_SpecialHandler(Menu menu, MenuAction action, int client, int param2) {
@@ -212,8 +212,10 @@ public int ChooseModeMenuHandler(Menu menu, MenuAction action, int param1, int p
 		} else if(!troll.IsActive(client) && troll.HasFlags()) {
  			ShowSelectFlagMenu(param1, userid, -1, troll);
 		} else {
-			troll.Activate(client, param1);
-			ShowTrollsForCategory(param1, userid, troll.categoryID);
+			TrollEffectResponse response = troll.Activate(client, param1);
+			// Only show menu if success or error, not TE_Menu
+			if(response != TE_Menu)
+				ShowTrollsForCategory(param1, userid, troll.categoryID);
 		}
 		
 	} else if (action == MenuAction_End)
@@ -277,11 +279,13 @@ public int ChooseTrollModiferHandler(Menu menu, MenuAction action, int param1, i
 			// Show flag selection if troll is not enabled already
  			ShowSelectFlagMenu(param1, userid, modifiers, troll);
 		} else {
+			TrollEffectResponse response;
 			if(modifiers == 1 || modifiers == 3)
-				troll.Activate(client, param1, TrollMod_Instant);
+				response = troll.Activate(client, param1, TrollMod_Instant);
 			if(modifiers == 2 || modifiers == 3)
-				troll.Activate(client, param1, TrollMod_Constant);	
-			ShowTrollsForCategory(param1, userid, troll.categoryID);
+				response = troll.Activate(client, param1, TrollMod_Constant);	
+			if(response != TE_Menu)
+				ShowTrollsForCategory(param1, userid, troll.categoryID);
 		}
 		
 	} else if (action == MenuAction_End)	
@@ -327,17 +331,19 @@ public int ChooseTrollFlagHandler(Menu menu, MenuAction action, int param1, int 
 			return 0;
 		}
 
+		TrollEffectResponse response;
 		// Done with prompts, apply flags & modifiers
 		if(modifiers > 0) {
 			if(modifiers & view_as<int>(TrollMod_Instant))
-				troll.Activate(client, param1, TrollMod_Instant, flags);
+				response = troll.Activate(client, param1, TrollMod_Instant, flags);
 			if(modifiers & view_as<int>(TrollMod_Constant))
-				troll.Activate(client, param1, TrollMod_Constant, flags);
+				response = troll.Activate(client, param1, TrollMod_Constant, flags);
 		} else {
-			troll.Activate(client, param1, TrollMod_Invalid, flags);
+			response = troll.Activate(client, param1, TrollMod_Invalid, flags);
 		}
 		// Jump back to selection screen
-		ShowTrollsForCategory(param1, userid, troll.categoryID);
+		if(response != TE_Menu)
+			ShowTrollsForCategory(param1, userid, troll.categoryID);
 	} else if (action == MenuAction_End)	
 		delete menu;
 	return 0;	

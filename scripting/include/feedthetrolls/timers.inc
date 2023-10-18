@@ -142,11 +142,11 @@ Action Timer_Main(Handle timer) {
 			if(Trolls[t_slotRouletteIndex].IsActive(i) && Trolls[t_slotRouletteIndex].activeFlagClients[i] & 8) {
 				float chance = 1.0;
 				if(Trolls[t_slotRouletteIndex].activeFlagClients[i] & 16) { 
-					chance = 0.2;
+					chance = 0.05;
 				} else if(Trolls[t_slotRouletteIndex].activeFlagClients[i] & 32) { 
-					chance = 0.4;
+					chance = 0.2;
 				} else if(Trolls[t_slotRouletteIndex].activeFlagClients[i] & 64) { 
-					chance = 0.6;
+					chance = 0.4;
 				}
 
 				if(GetURandomFloat() < chance) {
@@ -481,20 +481,4 @@ Action Timer_RestoreHud(Handle h, int userid) {
 		SetEntProp(client, Prop_Send, "m_iHideHUD", 0);
 	}
 	return Plugin_Handled;
-}
-
-Action Timer_TurnCamera(Handle h, int client) {
-	if(!IsClientInGame(client)) {
-		Trolls[t_cameraTurnIndex].timerHandles[client] = null;
-		return Plugin_Stop;
-	}
-	static float ang[3];
-	GetClientEyeAngles(client, ang);
-	if(Trolls[t_cameraTurnIndex].activeFlagClients[client] & 1) {
-		ang[1] += 2.0;
-	} else { 
-		ang[0] += 2.0;
-	}
-	SetAbsAngles(client, ang);
-	return Plugin_Continue;
 }

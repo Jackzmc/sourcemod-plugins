@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 56
+    #define MAX_TROLLS 55
 #endif
 
 enum trollModifier {
@@ -12,6 +12,12 @@ enum trollModifier {
 	TrollMod_Instant = 1 << 0,
 	TrollMod_Constant = 1 << 1,
     TrollMod_PlayerOnly = 1 << 2, // Does the troll only work on players, not bots? If set, troll only applied on real user. If not, troll applied to both bot and idler
+}
+
+enum TrollEffectResponse { 
+	TE_Success, // Success, continue menu
+	TE_Error, // Error, continue menu (retry)
+	TE_Menu // Switching menus / etc, don't continue menu
 }
 
 StringMap trollKV;
@@ -102,8 +108,22 @@ enum struct Troll {
 /////// FLAGS
 
     bool GetFlagName(int index, char[] buffer, int maxlength) {
-        if(this.flagNames == null) return false;
+        if(this.flagNames == null || index >= this.flagNames.Length) return false;
         this.flagNames.GetString(index, buffer, maxlength);
+        return true;
+    }
+
+    bool GetFlagNames(int client, char[] output, int maxlength) {
+        if(this.flagNames == null) return false;
+        char buffer[16];
+        for(int i = 0; i < this.flagNames.Length; i++) {
+            int value = 1 << i;
+            // If client has this flag:
+            if(this.activeFlagClients[client] & value) {
+                this.flagNames.GetString(i, buffer, sizeof(buffer));
+                Format(output, maxlength, "%s%s,", output, buffer);
+            }
+        }
         return true;
     }
 
@@ -191,10 +211,10 @@ enum struct Troll {
 
 /////// TROLL ACTIVATION
 
-    void Activate(int client, int activator, trollModifier modifier = TrollMod_Invalid, int flags = 0, bool silent = false) {
+    TrollEffectResponse Activate(int client, int activator, trollModifier modifier = TrollMod_Invalid, int flags = 0, bool silent = false) {
         if(modifier == TrollMod_Invalid) modifier = this.GetDefaultMod();
         // Sadly, unable to pass in <this> to ApplyTroll, so it has to do unnecessary lookup via string
-        ApplyTroll(client, this.name, activator, modifier, flags, silent);
+        return ApplyTroll(client, this.name, activator, modifier, flags, silent);
     }
 
 
@@ -328,13 +348,14 @@ void SetTrollFlags(int client, const char[] name, int flags = -1) {
         Trolls[index].Enable(client, flags);
 }
 
-void ApplyTroll(int victim, const char[] name, int activator, trollModifier modifier, int flags = 0, bool silent = false) {
+
+TrollEffectResponse ApplyTroll(int victim, const char[] name, int activator, trollModifier modifier, int flags = 0, bool silent = false) {
     static Troll troll;
     int trollIndex = GetTroll(name, troll);
     if(trollIndex == -1) {
         ReplyToCommand(activator, "Unknown troll \"%s\"", name);
         PrintToServer("[FTT] %N attempted to apply unknown troll: %s", activator, name);
-        return;
+        return TE_Error;
     }
 
     bool isActive = Trolls[trollIndex].activeFlagClients[victim] > -1;
@@ -372,7 +393,7 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
             // If there is an idle player, apply troll to them
             ApplyTroll(player, name, activator, modifier, flags, silent);
             // And continue IF there is TrollMod_PlayerOnly mod
-            if(troll.mods & view_as<int>(TrollMod_PlayerOnly)) return;
+            if(troll.mods & view_as<int>(TrollMod_PlayerOnly)) return TE_Success;
             // Don't want to show two logs, so just ignore the bot
             silent = true;
         }
@@ -385,9 +406,8 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
     }
 
     // Applies any custom logic needed for a troll, mostly only used for TrollMod_Instant
-    if(!ApplyAffect(victim, troll, activator, modifier, flags)) {
-        return;
-    }
+    TrollEffectResponse response = ApplyAffect(victim, troll, activator, modifier, flags);
+    if(response != TE_Success) return response; // Let the menu handler deal with checking
 
     // Log all actions, indicating if constant or single-fire, and if any flags
     if(!silent) {
@@ -403,42 +423,30 @@ void ApplyTroll(int victim, const char[] name, int activator, trollModifier modi
             // Call_PushCell(flags);
             // Call_PushCell(activator);
             // Call_Finish();
-            for(int i = 0; i < 32; i++) {
-                if(flags & (1 << i)) {
-                    // If at least one flag already, reset to none:
-                    if(flagName[0] != '\0') {
-                        flagName[0] = '\0';
-                        break;
-                    }
-                    troll.GetFlagName(i, flagName, sizeof(flagName));
-                }
-            }
-
             if(flags > 0) {
+                troll.GetFlagNames(victim, flagName, sizeof(flagName));
                 // Checks if there is not more than one flag set on the bitfield
-                if(flags & flags - 1 == 0 && flags & flags + 1 == 0) {
-                    // Get the flag name if there is only one flag set
-                    troll.GetFlagName(GetIndexFromPower(flags), flagName, sizeof(flagName));
-                } else {
-                    Format(flagName, sizeof(flagName), "%d", flags);
-                }
+                // if(flags & flags - 1 == 0 && flags & flags + 1 == 0) {
+                //     // Get the flag name if there is only one flag set
+                //     troll.GetFlagName(GetIndexFromPower(flags), flagName, sizeof(flagName));
+                // } else {
+                //     Format(flagName, sizeof(flagName), "%d", flags);
+                // }
+                Format(flagName, sizeof(flagName), " (\x04%s|%d\x01)", flagName, flags);
+                // CFormatColor(flagName, sizeof(flagName));
             }
 
             if(modifier & TrollMod_Constant) {
-                if(flags > 0) {
-                    CShowActivityEx(activator, "[FTT] ", "activated constant {yellow}%s{default} ({yellow}%s{default}) for %N. ", troll.name, flagName, victim);
-                } else
-                    CShowActivityEx(activator, "[FTT] ", "activated constant {yellow}%s{default} for %N. ", troll.name, victim);
-            } else if(flags > 0) {
-                CShowActivityEx(activator, "[FTT] ", "activated {yellow}%s{default} ({yellow}%s{default}) for %N. ", troll.name, flagName, victim);
+                CShowActivityEx(activator, "[FTT] ", "activated constant {yellow}%s{default}%s for %N. ", troll.name, flagName, victim);
             } else {
-				CShowActivityEx(activator, "[FTT] ", "activated {yellow}%s{default} for %N. ", troll.name, victim);
+                CShowActivityEx(activator, "[FTT] ", "activated {yellow}%s{default}%s for %N. ", troll.name, flagName, victim);
             }
             LogAction(activator, victim, "\"%L\" activated \"%s\" (%d) for \"%L\"", activator, troll.name, flags, victim);
         }
     } else {
         CReplyToCommand(activator, "[FTT] Applied silently {yellow}\"%s\"{default} on %N with flags=%d", troll.name, victim, flags);
     }
+    return TE_Success;
 }
 
 bool IsTrollActive(int client, const char[] troll) {

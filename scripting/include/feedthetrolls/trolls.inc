@@ -12,7 +12,6 @@ int t_damageBoostIndex;
 int t_reverseFFIndex;
 int t_throwItAllIndex;
 int t_hideHUDIndex;
-int t_cameraTurnIndex;
 
 void SetupTrolls() {
 	trollKV = new StringMap();
@@ -41,8 +40,10 @@ void SetupTrolls() {
 	SetCategory("Infected");
 	SetupTroll("Swarm", "Swarms a player with zombies. Requires swarm plugin", TrollMod_Instant | TrollMod_Constant);
 	t_vomitPlayerIndex = SetupTroll("Vomit Player", "Shortcut to sm_vomitplayer. vomits the player.", TrollMod_Instant | TrollMod_Constant);
-	SetupTroll("Inface Special", "Shortcut to sm_inface", TrollMod_Instant);
-	SetupTroll("Insta Special", "Shortcut to sm_insta", TrollMod_Instant);
+	index = SetupTroll("Insta Special", "Shortcut to sm_insta", TrollMod_Instant);
+	Trolls[index].AddFlagPrompt(false);
+	Trolls[index].AddFlag("Around them (Director)", true);
+	Trolls[index].AddFlag("On top / in-face", false);
 	SetupTroll("Goo", "Spawns a spitter puddle underneath them", TrollMod_Instant);
 	index = SetupTroll("Sticky Goo", "Slows player down in goo", TrollMod_Constant);
 	Trolls[index].AddFlagPrompt(false);
@@ -130,7 +131,7 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("Confusing", false); // 32
 	Trolls[index].AddFlag("Annoying", false); // 64
 	Trolls[index].AddFlag("Unusable", false); // 128
-	Trolls[index].SetTimer(0.3, Timer_SlotRoulette, 8);
+	Trolls[index].SetTimer(0.2, Timer_SlotRoulette, 8);
 	t_slotRouletteIndex = index;
 
 
@@ -236,13 +237,6 @@ void SetupTrolls() {
 	Trolls[index].AddFlag("Severe Earthquake", false); //8
 	Trolls[index].AddFlag("Bouncy Castle", false); //16
 	t_randomizeVelocityIndex = index;
-	index = SetupTroll("Camera Turn", "Constantly turn their camera", TrollMod_Constant);
-	Trolls[index].SetTimer(0.1, Timer_TurnCamera);
-	Trolls[index].AddCustomFlagPrompt("Direction:", false);
-	Trolls[index].AddFlag("Left/Right", true); //1
-	Trolls[index].AddFlag("Up/Down", false); //2
-	t_cameraTurnIndex = index;
-
 
 	/// CATEGORY: MISC
 	SetCategory("Misc");
@@ -300,7 +294,7 @@ void AddMagnetFlags(int index) {
 	Trolls[index].AddFlag("Rare (10%)", false);
 }
 
-bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier modifier, int flags) {
+TrollEffectResponse ApplyAffect(int victim, const Troll troll, int activator, trollModifier modifier, int flags) {
 	bool toActive = IsTrollActiveByRawID(victim, troll.id);
 	if(StrEqual(troll.name, "Reset User")) {
 		LogAction(activator, victim, "\"%L\" reset all effects for \"%L\"", activator, victim);
@@ -311,7 +305,7 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		// SetEntityGravity(victim, 1.0);
 		// SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
 		ResetClient(victim, true);
-		return false;
+		return TE_Error; // Not an error, but don't want to show activation
 	} else if(StrEqual(troll.name, "Slow Speed")) {
 		if(toActive) {
 			float movement = 0.0;
@@ -346,10 +340,10 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 			pdata[victim].flags |= view_as<int>(Flag_PendingItemGive);
 		}else{
 			ReplyToCommand(activator, "User does not have pills or adrenaline");
-			return false;
+			return TE_Error;
 		}
 		//TODO: Implement TrollMod_Constant
-		return false;
+		return TE_Error;
 	} else if(StrEqual(troll.name, "Throw It All")) {
 		if(modifier & TrollMod_Instant) {
 			if(flags & 1) { // Hacky, just throw their kit
@@ -366,16 +360,15 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 			SDKHook(wpn, SDKHook_Reload, Event_WeaponReload);
 		else {
 			ReplyToCommand(activator, "Victim does not have a primary weapon.");
-			return false;
+			return TE_Error;
 		}
 	} else if(StrEqual(troll.name, "Vomit Player"))
 		L4D_CTerrorPlayer_OnVomitedUpon(victim, victim);
-	else if(StrEqual(troll.name, "Inface Special")) {
-		ShowInstaSpecialChooser(activator, GetClientUserId(victim), 1);
-		return false;
-	} else if(StrEqual(troll.name, "Insta Special")) {
-		ShowInstaSpecialChooser(activator, GetClientUserId(victim), 0);
-		return false;
+	else if(StrEqual(troll.name, "Insta Special")) {
+		int mode = 0;
+		if(flags & 2) mode = 1;
+		ShowInstaSpecialChooser(activator, GetClientUserId(victim), mode);
+		return TE_Menu;
 	} else if(StrEqual(troll.name, "Goo")) {
 		static float pos[3], ang[3];
 		GetClientAbsOrigin(victim, pos);
@@ -391,17 +384,17 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		if(flags & 1) {
 			if(!SpawnCarOnPlayer(victim)) {
 				ReplyToCommand(activator, "Could not find a suitable area to spawn a car. Requires vertical space above victim.");
-				return false;
+				return TE_Error;
 			}
 		} else if(flags & 2) {
 			if(!SpawnCarToPlayer(victim, 450.0)) {
 				ReplyToCommand(activator, "Could not find a suitable area to spawn a car. Requires space ahead of victim");
-				return false;
+				return TE_Error;
 			}
 		} else if(flags & 4) {
 			if(!SpawnCarToPlayer(victim, -450.0)) {
 				ReplyToCommand(activator, "Could not find a suitable area to spawn a car. Requires space behind victim");
-				return false;
+				return TE_Error;
 			}
 		}
 	} else if(StrEqual(troll.name, "Instant Commons")) {
@@ -430,7 +423,7 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		TR_TraceRayFilter(pos, dropPos, MASK_SOLID, RayType_EndPoint, Filter_IgnorePlayer, victim);
 		if(TR_DidHit()) {
 			ReplyToCommand(activator, "Could not find a suitable area. Requires vertical space.");
-			return false;
+			return TE_Error;
 		}
 		float ang[3];
 		ang[0] = 90.0;
@@ -445,11 +438,11 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		TR_TraceRayFilter(pos, dropPos, MASK_SOLID, RayType_EndPoint, Filter_IgnorePlayer, victim);
 		if(TR_DidHit()) {
 			ReplyToCommand(activator, "Could not find a suitable area. Requires vertical space.");
-			return false;
+			return TE_Error;
 		}
 		if(IsAnySurvivorInRange(pos, 55.0, victim)) {
 			ReplyToCommand(activator, "Victim is too close to other players.");
-			return false;
+			return TE_Error;
 		}
 		float vel[3];
 		vel[2] = -90.0;
@@ -459,12 +452,12 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 	} else if(StrEqual(troll.name, "Dep Bots")) {
 		if(!toActive) {
 			StopHealingBots();
-			return true;
+			return TE_Success;
 		} else if(healTargetPlayer != 0) {
 			if(stopHealingTimer != null) {
 				TriggerTimer(stopHealingTimer);
 			}
-			return true;
+			return TE_Success;
 		}
 		bool spawnExtra = flags & 2 > 0;
 
@@ -523,7 +516,7 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 	} else if(StrEqual(troll.name, "Smart Charge")) {
 		if(pdata[victim].smartChargeActivator > 0) {
 			ReplyToCommand(activator, "Target already has smart charge enabled");
-			return false;
+			return TE_Error;
 		} 
 		int timeout = 15;
 		if(flags & 2) timeout = 30;
@@ -563,5 +556,5 @@ bool ApplyAffect(int victim, const Troll troll, int activator, trollModifier mod
 		ReplyToCommand(activator, "[FTT/Debug] If nothing occurs, this troll possibly was not implemented correctly. ");
 		#endif
 	}  
-	return true;
+	return TE_Success;
 }

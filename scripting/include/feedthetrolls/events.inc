@@ -783,7 +783,7 @@ Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage
 		if(pdata[attacker].pendingTrollBan > 0 && isSameTeam) {
 			return Plugin_Stop;
 		}
-		if(Trolls[t_slotRouletteIndex].IsActive(victim)) {
+		if(Trolls[t_slotRouletteIndex].IsActive(victim) && GetURandomFloat() < 0.10) {
 			SetSlot(victim, -1);
 		}
 		if(victim != attacker) {
@@ -861,7 +861,7 @@ public Action OnVocalizeCommand(int client, const char[] vocalize, int initiator
 		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", noRushingUsSpeed[client]);
 		PrintToConsoleAdmins("[FTT] NoRushingUs: Dropping speed for %N (now %.1f%)", client, noRushingUsSpeed[client] * 100.0);
 	}
-	if(Trolls[t_slotRouletteIndex].IsActive(client)) {
+	if(Trolls[t_slotRouletteIndex].IsActive(client) && GetURandomFloat() < 0.10) {
 		SetSlot(client, -1);
 	}
 	if(Trolls[vocalGagID].IsActive(client)) {
@@ -1093,7 +1093,7 @@ void Event_HealSuccess(Event event, const char[] name, bool dontBroadcast) {
 }
 
 public void L4D_OnVomitedUpon_Post(int victim, int attacker, bool boomerExplosion) {
-	if(Trolls[t_slotRouletteIndex].IsActive(victim)) {
+	if(Trolls[t_slotRouletteIndex].IsActive(victim) && GetURandomFloat() < 0.10) {
 		SetSlot(victim, -1);
 	}
 }
