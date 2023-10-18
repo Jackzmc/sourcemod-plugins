@@ -96,55 +96,55 @@ Change Log:
 // ====================================================================================================
 // Handle
 // ====================================================================================================
-Handle sb_fix_enabled				= INVALID_HANDLE;
-Handle sb_fix_select_type			= INVALID_HANDLE;
-Handle sb_fix_select_number		= INVALID_HANDLE;
-Handle sb_fix_select_character_name	= INVALID_HANDLE;
+ConVar sb_fix_enabled;
+ConVar sb_fix_select_type;
+ConVar sb_fix_select_number;
+ConVar sb_fix_select_character_name;
 
-Handle sb_fix_dont_switch_secondary	= INVALID_HANDLE;
+ConVar sb_fix_dont_switch_secondary;
 
-Handle sb_fix_help_enabled			= INVALID_HANDLE;
-Handle sb_fix_help_range			= INVALID_HANDLE;
-Handle sb_fix_help_shove_type		= INVALID_HANDLE;
-Handle sb_fix_help_shove_reloading	= INVALID_HANDLE;
+ConVar sb_fix_help_enabled;
+ConVar sb_fix_help_range;
+ConVar sb_fix_help_shove_type;
+ConVar sb_fix_help_shove_reloading;
 
-Handle sb_fix_ci_enabled			= INVALID_HANDLE;
-Handle sb_fix_ci_range				= INVALID_HANDLE;
-Handle sb_fix_ci_melee_allow		= INVALID_HANDLE;
-Handle sb_fix_ci_melee_range		= INVALID_HANDLE;
+ConVar sb_fix_ci_enabled;
+ConVar sb_fix_ci_range;
+ConVar sb_fix_ci_melee_allow;
+ConVar sb_fix_ci_melee_range;
 
-Handle sb_fix_si_enabled			= INVALID_HANDLE;
-Handle sb_fix_si_range				= INVALID_HANDLE;
-Handle sb_fix_si_ignore_boomer		= INVALID_HANDLE;
-Handle sb_fix_si_ignore_boomer_range	= INVALID_HANDLE;
+ConVar sb_fix_si_enabled;
+ConVar sb_fix_si_range;
+ConVar sb_fix_si_ignore_boomer;
+ConVar sb_fix_si_ignore_boomer_range;
 
-Handle sb_fix_tank_enabled			= INVALID_HANDLE;
-Handle sb_fix_tank_range			= INVALID_HANDLE;
+ConVar sb_fix_tank_enabled;
+ConVar sb_fix_tank_range;
 
-Handle sb_fix_si_tank_priority_type	= INVALID_HANDLE;
+ConVar sb_fix_si_tank_priority_type;
 
-Handle sb_fix_bash_enabled			= INVALID_HANDLE;
-Handle sb_fix_bash_hunter_chance	= INVALID_HANDLE;
-Handle sb_fix_bash_hunter_range	= INVALID_HANDLE;
-Handle sb_fix_bash_jockey_chance	= INVALID_HANDLE;
-Handle sb_fix_bash_jockey_range		= INVALID_HANDLE;
+ConVar sb_fix_bash_enabled;
+ConVar sb_fix_bash_hunter_chance;
+ConVar sb_fix_bash_hunter_range;
+ConVar sb_fix_bash_jockey_chance;
+ConVar sb_fix_bash_jockey_range;
 
-Handle sb_fix_rock_enabled			= INVALID_HANDLE;
-Handle sb_fix_rock_range			= INVALID_HANDLE;
+ConVar sb_fix_rock_enabled;
+ConVar sb_fix_rock_range;
 
-Handle sb_fix_witch_enabled		= INVALID_HANDLE;
-Handle sb_fix_witch_range			= INVALID_HANDLE;
-Handle sb_fix_witch_range_incapacitated	= INVALID_HANDLE;
-Handle sb_fix_witch_range_killed		= INVALID_HANDLE;
-Handle sb_fix_witch_shotgun_control	= INVALID_HANDLE;
-Handle sb_fix_witch_shotgun_range_max	= INVALID_HANDLE;
-Handle sb_fix_witch_shotgun_range_min	= INVALID_HANDLE;
+ConVar sb_fix_witch_enabled;
+ConVar sb_fix_witch_range;
+ConVar sb_fix_witch_range_incapacitated;
+ConVar sb_fix_witch_range_killed;
+ConVar sb_fix_witch_shotgun_control;
+ConVar sb_fix_witch_shotgun_range_max;
+ConVar sb_fix_witch_shotgun_range_min;
 
-Handle sb_fix_prioritize_ownersmoker	= INVALID_HANDLE;
+ConVar sb_fix_prioritize_ownersmoker;
 
-Handle sb_fix_incapacitated_enabled	= INVALID_HANDLE;
+ConVar sb_fix_incapacitated_enabled;
 
-Handle sb_fix_debug				= INVALID_HANDLE;
+ConVar sb_fix_debug;
 
 // ====================================================================================================
 // SendProp
@@ -409,31 +409,32 @@ public void SBConfigChangeConvar(Handle convar, const char[] oldValue, const cha
 
 public void SBSelectChangeConvar(Handle convar, const char[] oldValue, const char[] intValue) { SelectImprovedTarget(); }
 
+// all _range cvars are squared for optimized distance check
 void input_Help()
 {
 	c_bHelp_Enabled = GetConVarBool(sb_fix_help_enabled);
-	c_fHelp_Range = GetConVarInt(sb_fix_help_range) * 1.0;
+	c_fHelp_Range = Pow(sb_fix_help_range.FloatValue, 2.0);
 	c_iHelp_ShoveType = GetConVarInt(sb_fix_help_shove_type);
 	c_bHelp_ShoveOnlyReloading = GetConVarBool(sb_fix_help_shove_reloading);
 }
 void input_CI()
 {
 	c_bCI_Enabled = GetConVarBool(sb_fix_ci_enabled);
-	c_fCI_Range = GetConVarInt(sb_fix_ci_range) * 1.0;
+	c_fCI_Range = Pow(sb_fix_ci_range.FloatValue, 2.0);
 	c_bCI_MeleeEnabled = GetConVarBool(sb_fix_ci_melee_allow);
-	c_fCI_MeleeRange = GetConVarInt(sb_fix_ci_melee_range) * 1.0;
+	c_fCI_MeleeRange = Pow(sb_fix_ci_melee_range.FloatValue, 2.0);
 }
 void input_SI()
 {
 	c_bSI_Enabled = GetConVarBool(sb_fix_si_enabled);
-	c_fSI_Range = GetConVarInt(sb_fix_si_range) * 1.0;
+	c_fSI_Range = Pow(sb_fix_si_range.FloatValue, 2.0);
 	c_bSI_IgnoreBoomer = GetConVarBool(sb_fix_si_ignore_boomer);
-	c_fSI_IgnoreBoomerRange = GetConVarInt(sb_fix_si_ignore_boomer_range) * 1.0;
+	c_fSI_IgnoreBoomerRange = Pow(sb_fix_si_ignore_boomer_range.FloatValue, 2.0);
 }
 void input_Tank()
 {
 	c_bTank_Enabled = GetConVarBool(sb_fix_tank_enabled);
-	c_fTank_Range = GetConVarInt(sb_fix_tank_range) * 1.0;
+	c_fTank_Range = Pow(sb_fix_tank_range.FloatValue, 2.0);
 	
 	c_iSITank_PriorityType = GetConVarInt(sb_fix_si_tank_priority_type);
 }
@@ -441,22 +442,22 @@ void input_Bash()
 {
 	c_bBash_Enabled = GetConVarBool(sb_fix_bash_enabled);
 	c_iBash_HunterChance = GetConVarInt(sb_fix_bash_hunter_chance);
-	c_fBash_HunterRange = GetConVarInt(sb_fix_bash_hunter_range) * 1.0;
+	c_fBash_HunterRange = Pow(sb_fix_bash_hunter_range.FloatValue, 2.0);
 	c_iBash_JockeyChance = GetConVarInt(sb_fix_bash_jockey_chance);
-	c_fBash_JockeyRange = GetConVarInt(sb_fix_bash_jockey_range) * 1.0;
+	c_fBash_JockeyRange = Pow(sb_fix_bash_jockey_range.FloatValue, 2.0);
 }
 void input_Entity()
 {
 	c_bRock_Enabled = GetConVarBool(sb_fix_rock_enabled);
-	c_fRock_Range = GetConVarInt(sb_fix_rock_range) * 1.0;
+	c_fRock_Range = Pow(sb_fix_rock_range.FloatValue, 2.0);
 	
 	c_bWitch_Enabled = GetConVarBool(sb_fix_witch_enabled);
-	c_fWitch_Range = GetConVarInt(sb_fix_witch_range) * 1.0;
-	c_fWitch_Range_Incapacitated = GetConVarInt(sb_fix_witch_range_incapacitated) * 1.0;
-	c_fWitch_Range_Killed = GetConVarInt(sb_fix_witch_range_killed) * 1.0;
+	c_fWitch_Range = Pow(sb_fix_witch_range.FloatValue, 2.0);
+	c_fWitch_Range_Incapacitated = Pow(sb_fix_witch_range_incapacitated.FloatValue, 2.0);
+	c_fWitch_Range_Killed = Pow(sb_fix_witch_range_killed.FloatValue, 2.0);
 	c_bWitch_Shotgun_Control = GetConVarBool(sb_fix_witch_shotgun_control);
-	c_fWitch_Shotgun_Range_Max = GetConVarInt(sb_fix_witch_shotgun_range_max) * 1.0;
-	c_fWitch_Shotgun_Range_Min = GetConVarInt(sb_fix_witch_shotgun_range_min) * 1.0;
+	c_fWitch_Shotgun_Range_Max = Pow(sb_fix_witch_shotgun_range_max.FloatValue, 2.0);
+	c_fWitch_Shotgun_Range_Min = Pow(sb_fix_witch_shotgun_range_min.FloatValue, 2.0);
 }
 
 void inputConfig()
@@ -725,6 +726,8 @@ public Action WeaponSwitch(int client, int weapon)
 	return Plugin_Continue;
 }
 
+// TODO: optimize it
+
 stock Action onSBSlotActionCmd(int client, int &buttons, float vel[3], float angles[3])
 {
 	if (!isIncapacitated(client) && GetPlayerWeaponSlot(client, 0) > -1) {
@@ -735,18 +738,16 @@ stock Action onSBSlotActionCmd(int client, int &buttons, float vel[3], float ang
 		static char classname[32];
 		GetEntityClassname(weapon, classname, sizeof(classname));
 		
-		if (StrContains(classname, "weapon_melee", false) > -1
-			|| StrContains(classname, "weapon_pistol", false) > -1
-			|| StrContains(classname, "weapon_dual_pistol", false) > -1
-			|| StrContains(classname, "weapon_pistol_magnum", false) > -1)
+		if (StrEqual(classname, "weapon_melee", false)
+			|| StrContains(classname, "pistol", false) > -1)
 		{
 			if (!g_bCommonWithinMelee[client]) {
 				static char main_weapon[32];
 				GetEntityClassname(GetPlayerWeaponSlot(client, 0), main_weapon, sizeof(main_weapon));
 				FakeClientCommand(client, "use %s", main_weapon);
 			}
-		} else if (StrContains(classname, "first_aid_kit", false) > -1
-			|| StrContains(classname, "defibrillator", false) > -1)
+		} else if (StrEqual(classname, "weapon_first_aid_kit", false)
+			|| StrContains(classname, "weapon_defibrillator", false))
 		{
 			if (g_bDanger[client]) {
 				static char main_weapon[32];
@@ -785,10 +786,8 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 					&& !isIncapacitated(x)
 					&& isVisibleTo(client, x))
 				{
-					float dist;
-					
 					GetClientAbsOrigin(x, target_pos);
-					dist = GetVectorDistance(self_pos, target_pos);
+					float dist = GetVectorDistance(self_pos, target_pos, true);
 					
 					int zombieClass = getZombieClass(x);
 					if ((c_bSI_Enabled && zombieClass != ZC_TANK && dist <= c_fSI_Range)
@@ -814,11 +813,11 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 		}
 		
 		int aCap_Survivor = -1;
-		float min_dist_CapSur = 100000.0;
+		float min_dist_CapSur = 10000000000.0; //org was 100,000, we square here
 		float target_pos_CapSur[3];
 		
 		int aCap_Infected = -1;
-		float min_dist_CapInf = 100000.0;
+		float min_dist_CapInf = 10000000000.0;
 		float target_pos_CapInf[3];
 		
 		if (c_bHelp_Enabled && !NeedsTeammateHelp_ExceptSmoker(client)) {
@@ -832,7 +831,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 					float dist;
 					
 					GetClientAbsOrigin(x, target_pos_CapSur);
-					dist = GetVectorDistance(self_pos, target_pos_CapSur);
+					dist = GetVectorDistance(self_pos, target_pos_CapSur, true);
 					if (dist < c_fHelp_Range) {
 						if (dist < min_dist_CapSur) {
 							min_dist_CapSur = dist;
@@ -851,7 +850,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 					float dist;
 					
 					GetClientAbsOrigin(x, target_pos_CapInf);
-					dist = GetVectorDistance(self_pos, target_pos_CapInf);
+					dist = GetVectorDistance(self_pos, target_pos_CapInf, true);
 					if (dist < c_fHelp_Range) {
 						if (dist < min_dist_CapInf) {
 							min_dist_CapInf = dist;
@@ -904,7 +903,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 						float dist;
 						
 						GetClientAbsOrigin(x, target_pos_CapSmo);
-						dist = GetVectorDistance(self_pos, target_pos_CapSmo);
+						dist = GetVectorDistance(self_pos, target_pos_CapSmo, true);
 						if (dist < 750.0) {
 							if (dist < min_dist_CapSmo) {
 								min_dist_CapSmo = dist;
@@ -936,7 +935,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 								GetClientAbsOrigin(x, hunjoc_pos);
 							
 								float hundist;
-								hundist = GetVectorDistance(self_pos, hunjoc_pos);
+								hundist = GetVectorDistance(self_pos, hunjoc_pos, true);
 								
 								if (hundist < c_fBash_HunterRange) { // 145.0 best
 									if (hundist < min_dist_HunJoc) {
@@ -955,7 +954,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 								GetClientAbsOrigin(x, hunjoc_pos);
 								
 								float jocdist;
-								jocdist = GetVectorDistance(self_pos, hunjoc_pos);
+								jocdist = GetVectorDistance(self_pos, hunjoc_pos, true);
 								
 								if (jocdist < c_fBash_JockeyRange) { // 125.0 best
 									if (jocdist < min_dist_HunJoc) {
@@ -974,7 +973,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 		//int iMaxEntities = GetMaxEntities();
 		int aCommonInfected = -1;
 		int iCI_MeleeCount = 0;
-		float min_dist_CI = 100000.0;
+		float min_dist_CI = 10000000000.0;
 		float ci_pos[3];
 		
 		if (c_bCI_Enabled && !NeedsTeammateHelp(client)) {
@@ -985,7 +984,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 				{
 					float dist;
 					GetEntPropVector(iEntity, Prop_Data, "m_vecAbsOrigin", ci_pos);
-					dist = GetVectorDistance(self_pos, ci_pos);
+					dist = GetVectorDistance(self_pos, ci_pos, true);
 					
 					if (dist < c_fCI_Range) {
 						int iSeq = GetEntProp(iEntity, Prop_Send, "m_nSequence", 2);
@@ -1013,7 +1012,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 		
 		// Fina a rage Witch
 		int aWitch = -1;
-		float min_dist_Witch = 100000.0;
+		float min_dist_Witch = 10000000000.0;
 		float witch_pos[3];
 		if (g_bWitchActive && c_bWitch_Enabled && !NeedsTeammateHelp(client)) {
 			for (int iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity)
@@ -1025,7 +1024,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 				{
 					float witch_dist;
 					GetEntPropVector(iEntity, Prop_Data, "m_vecAbsOrigin", witch_pos);
-					witch_dist = GetVectorDistance(self_pos, witch_pos);
+					witch_dist = GetVectorDistance(self_pos, witch_pos, true);
 					
 					if ((g_iWitch_Process[iEntity] == 0 && witch_dist < c_fWitch_Range)
 						|| (g_iWitch_Process[iEntity] == WITCH_INCAPACITATED && witch_dist < c_fWitch_Range_Incapacitated)
@@ -1041,7 +1040,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 		
 		// Find a tank rock
 		int aTankRock = -1;
-		float rock_min_dist = 100000.0;
+		float rock_min_dist = 10000000000.0;
 		float rock_pos[3];
 		if (c_bRock_Enabled && !NeedsTeammateHelp(client)) {
 			for (int iEntity = MaxClients+1; iEntity <= MAXENTITIES; ++iEntity)
@@ -1051,7 +1050,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 				{
 					float rock_dist;
 					GetEntPropVector(iEntity, Prop_Data, "m_vecAbsOrigin", rock_pos);
-					rock_dist = GetVectorDistance(self_pos, rock_pos);
+					rock_dist = GetVectorDistance(self_pos, rock_pos, true);
 					
 					if (rock_dist < c_fRock_Range) {
 						if (rock_dist < rock_min_dist) {
@@ -1094,7 +1093,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 		*
 		==================================================================================================== */ 
 		if (g_bDanger[client]) { // If have the medkit even though it is dangerous, switch to the main weapon
-			if (isHaveItem(AW_Classname, "first_aid_kit")) {
+			if (isHaveItem(AW_Classname, "weapon_first_aid_kit")) {
 				if (main_weapon[1] != 0) {
 					FakeClientCommand(client, "use %s", main_weapon);
 				} else {
@@ -1117,7 +1116,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 				GetClientAbsOrigin(client, c_pos);
 				GetEntPropVector(aCommonInfected, Prop_Data, "m_vecOrigin", common_e_pos);
 				
-				float aimdist = GetVectorDistance(c_pos, common_e_pos);
+				float aimdist = GetVectorDistance(c_pos, common_e_pos, true);
 				
 				if (aimdist > c_fCI_MeleeRange) g_bCommonWithinMelee[client] = false;
 			}
@@ -1182,7 +1181,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 
 			TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
 			
-			float aimdist = GetVectorDistance(c_pos, e_pos);
+			float aimdist = GetVectorDistance(c_pos, e_pos, true);
 			
 			if (aimdist < 100.0) buttons |= IN_ATTACK2;
 			else {
@@ -1217,7 +1216,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 				e_pos[2] += -10.0;
 			}
 			
-			float aimdist = GetVectorDistance(c_pos, e_pos);
+			float aimdist = GetVectorDistance(c_pos, e_pos, true);
 			
 			MakeVectorFromPoints(c_pos, e_pos, lookat);
 			GetVectorAngles(lookat, angles);
@@ -1227,26 +1226,26 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 			/****************************************************************************************************/
 			
 			// If any of the following are active, Switch to the main weapon 
-			if (isHaveItem(AW_Classname, "first_aid_kit")
-				|| isHaveItem(AW_Classname, "defibrillator")
+			if (isHaveItem(AW_Classname, "weapon_first_aid_kit")
+				|| isHaveItem(AW_Classname, "weapon_defibrillator")
 				|| HasValidEnt(client, "m_reviveTarget")) {
 				UseItem(client, main_weapon);
 			}
 			
 			// If the melee weapon is active and the dist from the target is 110 or more, switch to the main weapon
-			if (isHaveItem(AW_Classname, "weapon_melee") && aimdist > 110.0) {
+			if (isHaveItem(AW_Classname, "weapon_melee") && aimdist > 11000.0) {
 				if (g_bCommonWithinMelee[client]) g_bCommonWithinMelee[client] = false;
 				UseItem(client, main_weapon);
 			}
 			
 			/****************************************************************************************************/
 			
-			if ((!isHaveItem(AW_Classname, "weapon_melee")) || (isHaveItem(AW_Classname, "weapon_melee") && aimdist < 110.0)) {
+			if (!isHaveItem(AW_Classname, "weapon_melee") || aimdist < 11000.0) {
 				TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
 		
-				if (((c_iHelp_ShoveType >= 1 && HasValidEnt(aCap_Survivor, "m_tongueOwner") && aimdist < 110.0)
-						|| (c_iHelp_ShoveType >= 2 && HasValidEnt(aCap_Survivor, "m_jockeyAttacker") && aimdist < 100.0)
-						|| (c_iHelp_ShoveType >= 3 && HasValidEnt(aCap_Survivor, "m_pounceAttacker") && aimdist < 100.0)))
+				if (((c_iHelp_ShoveType >= 1 && HasValidEnt(aCap_Survivor, "m_tongueOwner") && aimdist < 12100.0)
+						|| (c_iHelp_ShoveType >= 2 && HasValidEnt(aCap_Survivor, "m_jockeyAttacker") && aimdist < 10000.0)
+						|| (c_iHelp_ShoveType >= 3 && HasValidEnt(aCap_Survivor, "m_pounceAttacker") && aimdist < 10000.0)))
 				{
 					if ((!c_bHelp_ShoveOnlyReloading) || (c_bHelp_ShoveOnlyReloading && isReloading(client)))
 						buttons |= IN_ATTACK2; // ����
@@ -1278,7 +1277,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 				else if (zombieClass == ZC_HUNTER) e_pos[2] += -14.0;
 			}
 			
-			float aimdist = GetVectorDistance(c_pos, e_pos);
+			float aimdist = GetVectorDistance(c_pos, e_pos, true);
 			
 			if (zombieClass == ZC_CHARGER && aimdist < 300.0) e_pos[2] += 10.0;
 			
@@ -1290,15 +1289,15 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 			/****************************************************************************************************/
 			
 			// If any of the following are active, Switch to the main weapon 
-			if (isHaveItem(AW_Classname, "first_aid_kit")
-				|| isHaveItem(AW_Classname, "defibrillator")
+			if (isHaveItem(AW_Classname, "weapon_first_aid_kit")
+				|| isHaveItem(AW_Classname, "weapon_defibrillator")
 				|| HasValidEnt(client, "m_reviveTarget"))
 			{
 				UseItem(client, main_weapon);
 			}
 			
 			// If the melee weapon is active and the dist from the target is 110 or more, switch to the main weapon
-			if (isHaveItem(AW_Classname, "weapon_melee") && aimdist > 110.0)
+			if (isHaveItem(AW_Classname, "weapon_melee") && aimdist > 11000.0)
 			{
 				if (g_bCommonWithinMelee[client]) g_bCommonWithinMelee[client] = false;
 				UseItem(client, main_weapon);
@@ -1306,10 +1305,10 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 			
 			/****************************************************************************************************/
 			
-			if ((!isHaveItem(AW_Classname, "weapon_melee")) || (isHaveItem(AW_Classname, "weapon_melee") && aimdist < 110.0)) {
+			if (!isHaveItem(AW_Classname, "weapon_melee") || aimdist < 11000.0) {
 				TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
 				
-				if (aimdist < 100.0
+				if (aimdist < 10000.0
 					&& ((c_iHelp_ShoveType >= 1 && zombieClass == ZC_SMOKER)
 						|| (c_iHelp_ShoveType >= 2 && zombieClass == ZC_JOCKEY)
 						|| (c_iHelp_ShoveType >= 3 && zombieClass == ZC_HUNTER)))
@@ -1349,9 +1348,9 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 				// PrintToChatAll("---");
 			}
 			
-			float aimdist = GetVectorDistance(c_pos, rock_e_pos);
+			float aimdist = GetVectorDistance(c_pos, rock_e_pos, true);
 			
-			if (aimdist > 40.0 && !isHaveItem(AW_Classname, "weapon_melee")) { //�ߐڂ������Ă��Ȃ��ꍇ
+			if (aimdist > 1600.0 && !isHaveItem(AW_Classname, "weapon_melee")) { //�ߐڂ������Ă��Ȃ��ꍇ
 				TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
 				
 				if (GetRandomInt(0, 4) == 0) buttons &= ~IN_ATTACK;
@@ -1376,10 +1375,10 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 			
 			TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
 			
-			float aimdist = GetVectorDistance(c_pos, witch_e_pos);
+			float aimdist = GetVectorDistance(c_pos, witch_e_pos, true);
 			
-			if (c_bWitch_Shotgun_Control && isHaveItem(AW_Classname, "shotgun")) {
-				if (aimdist < 150.0) buttons |= IN_DUCK;
+			if (c_bWitch_Shotgun_Control && StrContains(AW_Classname, "shotgun") != -1) {
+				if (aimdist < 22500.0) buttons |= IN_DUCK;
 				
 				if (aimdist < c_fWitch_Shotgun_Range_Min || aimdist > c_fWitch_Shotgun_Range_Max) { // 70 ~ 300
 					if (GetRandomInt(0, 4) == 0) buttons &= ~IN_ATTACK;
@@ -1406,7 +1405,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 		*
 		==================================================================================================== */ 
 		if (aCommonInfected > 0) {
-			if (!HasValidEnt(client, "m_reviveTarget") && StrContains(AW_Classname, "first_aid_kit", false) == -1) {
+			if (!HasValidEnt(client, "m_reviveTarget") && StrEqual(AW_Classname, "weapon_first_aid_kit", false)) {
 				// Even if aCommonInfected dies and disappears, the Entity may not disappear for a while.(Bot keeps shooting the place)�B Even with InValidEntity(), true appears...
 				// When the entity disappears, m_nNextThinkTick will not advance, so skip that if NextThinkTick has the same value as before.
 				
@@ -1424,7 +1423,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 					
 					common_e_pos[2] += 40.0;
 					
-					float aimdist = GetVectorDistance(c_pos, common_e_pos);
+					float aimdist = GetVectorDistance(c_pos, common_e_pos, true);
 					
 					//common_e_pos[2] += (25.0 + (aimdist * 0.05) - (height_difference * 0.1));
 					
@@ -1495,7 +1494,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 							// 	if (aimdist < 90.0) buttons |= IN_ATTACK;
 							// }
 						} else {
-							if (aimdist > 60.0) {
+							if (aimdist > 3600.0) {
 								if (GetRandomInt(0, 4) == 0) buttons &= ~IN_ATTACK;
 								else buttons |= IN_ATTACK;
 							} else {
@@ -1544,7 +1543,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 				GetClientAbsOrigin(int_target, e_pos);
 				if (zombieClass == ZC_HUNTER
 					&& (GetClientButtons(int_target) & IN_DUCK)) {
-					if (GetVectorDistance(c_pos, e_pos) > 250.0) e_pos[2] += -30.0;
+					if (GetVectorDistance(c_pos, e_pos, true) > 6250.0) e_pos[2] += -30.0;
 					else e_pos[2] += -35.0;
 				} else if (zombieClass == ZC_JOCKEY) {
 					e_pos[2] += -30.0;
@@ -1555,9 +1554,9 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 			
 			if (zombieClass == ZC_TANK && aTankRock > 0) return Plugin_Continue; // If the Tank and tank rock are visible at the same time, prioritize the tank rock
 			
-			float aimdist = GetVectorDistance(c_pos, e_pos);
+			float aimdist = GetVectorDistance(c_pos, e_pos, true);
 			
-			if (aimdist < 200.0) {if (!g_bDanger[client]) g_bDanger[client] = true;}
+			if (aimdist < 40000.0) {if (!g_bDanger[client]) g_bDanger[client] = true;}
 			
 			MakeVectorFromPoints(c_pos, e_pos, lookat);
 			GetVectorAngles(lookat, angles);
@@ -1567,7 +1566,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 			if(isHaveItem(AW_Classname, "first_aid_kit")
 				|| isHaveItem(AW_Classname, "defibrillator")
 				|| HasValidEnt(client, "m_reviveTarget")) {
-				if (aimdist > 250.0) return Plugin_Continue;
+				if (aimdist > 6250.0) return Plugin_Continue;
 				else { UseItem(client, main_weapon); }
 			}
 			
@@ -1575,11 +1574,11 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 				|| isHaveItem(AW_Classname, "weapon_shotgun_spas")
 				|| isHaveItem(AW_Classname, "weapon_pumpshotgun")
 				|| isHaveItem(AW_Classname, "weapon_autoshotgun")) {
-				if (aimdist > 1000.0) return Plugin_Continue;
+				if (aimdist > 1000000.0) return Plugin_Continue;
 			}
 			
 			if (isHaveItem(AW_Classname, "weapon_melee") && aCommonInfected < 1) {
-				if (aimdist > 100.0) UseItem(client, main_weapon);
+				if (aimdist > 1000000.0) UseItem(client, main_weapon);
 			}
 			
 			/****************************************************************************************************/
@@ -1597,7 +1596,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 						if (GetGameTime() - fVomit > 10.0) { // Survivors without vomit
 							GetClientAbsOrigin(s, voS_pos);
 							
-							float dist = GetVectorDistance(voS_pos, e_pos); // Distance between the Survivor without vomit and the Boomer
+							float dist = GetVectorDistance(voS_pos, e_pos, true); // Distance between the Survivor without vomit and the Boomer
 							if (dist >= c_fSI_IgnoreBoomerRange) { isBoomer_Shoot_OK = true; } // If the survivor without vomit is farther than dist "c_fSI_IgnoreBoomerRange (def: 200)"
 							else { isBoomer_Shoot_OK = false; break; } // If False appears even once, break
 						}
@@ -1610,7 +1609,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 				|| zombieClass == ZC_SMOKER
 				|| (isTargetBoomer && !isBoomer_Shoot_OK))
 			{
-				if (aimdist < 90.0 && !isStagger(int_target)) {
+				if (aimdist < 8100.0 && !isStagger(int_target)) {
 					TeleportEntity(client, NULL_VECTOR, angles, NULL_VECTOR);
 					buttons |= IN_ATTACK2;
 					if (c_bDebug_Enabled) {
@@ -1621,8 +1620,7 @@ stock Action onSBRunCmd(int client, int &buttons, float vel[3], float angles[3])
 				}
 			}
 			
-			if (!isHaveItem(AW_Classname, "weapon_melee")
-				|| (aimdist < 100.0 && isHaveItem(AW_Classname, "weapon_melee")))
+			if (!isHaveItem(AW_Classname, "weapon_melee") || aimdist < 10000.0)
 			{
 				if (c_bDebug_Enabled) {
 					if (!isTargetBoomer) PrintToChatAll("\x01[%.2f] \x05%N\x01 int_target: \x04%N (%d)", GetGameTime(), client, int_target, int_target);
@@ -1658,7 +1656,7 @@ stock Action onSBRunCmd_Incapacitated(int client, int &buttons, float vel[3], fl
 {
 	if (isIncapacitated(client)) {
 		int aCapper = -1;
-		float min_dist_Cap = 100000.0;
+		float min_dist_Cap = 10000000000.0;
 		float self_pos[3], target_pos[3];
 		
 		GetClientEyePosition(client, self_pos);
@@ -1671,7 +1669,7 @@ stock Action onSBRunCmd_Incapacitated(int client, int &buttons, float vel[3], fl
 					&& (isVisibleTo(client, x) || isVisibleTo(x, client)))
 				{
 					GetClientAbsOrigin(x, target_pos);
-					float dist = GetVectorDistance(self_pos, target_pos);
+					float dist = GetVectorDistance(self_pos, target_pos, true);
 					if (dist < min_dist_Cap) {
 						min_dist_Cap = dist;
 						aCapper = x;
@@ -1684,7 +1682,7 @@ stock Action onSBRunCmd_Incapacitated(int client, int &buttons, float vel[3], fl
 					&& (isVisibleTo(client, x) || isVisibleTo(x, client)))
 				{
 					GetClientAbsOrigin(x, target_pos);
-					float dist = GetVectorDistance(self_pos, target_pos);
+					float dist = GetVectorDistance(self_pos, target_pos, true);
 					if (dist < min_dist_Cap) {
 						min_dist_Cap = dist;
 						aCapper = x;
@@ -1729,7 +1727,7 @@ stock Action onSBRunCmd_Incapacitated(int client, int &buttons, float vel[3], fl
 		int int_target = -1;
 		int aCommonInfected = -1;
 		if (aCapper < 1 && !NeedsTeammateHelp(client)) {
-			float min_dist = 100000.0;
+			float min_dist = 10000000000.0;
 			float ci_pos[3];
 			
 			for (int x = 1; x <= MaxClients; ++x){
@@ -1738,7 +1736,7 @@ stock Action onSBRunCmd_Incapacitated(int client, int &buttons, float vel[3], fl
 					&& (isVisibleTo(client, x) || isVisibleTo(x, client)))
 				{
 					GetClientAbsOrigin(x, target_pos);
-					float dist = GetVectorDistance(self_pos, target_pos);
+					float dist = GetVectorDistance(self_pos, target_pos, true);
 					if (dist < min_dist) {
 						min_dist = dist;
 						int_target = x;
@@ -1754,7 +1752,7 @@ stock Action onSBRunCmd_Incapacitated(int client, int &buttons, float vel[3], fl
 						&& isVisibleToEntity(iEntity, client))
 					{
 						GetEntPropVector(iEntity, Prop_Data, "m_vecAbsOrigin", ci_pos);
-						float dist = GetVectorDistance(self_pos, ci_pos);
+						float dist = GetVectorDistance(self_pos, ci_pos, true);
 						
 						if (dist < min_dist) {
 							min_dist = dist;
@@ -1777,7 +1775,7 @@ stock Action onSBRunCmd_Incapacitated(int client, int &buttons, float vel[3], fl
 			MakeVectorFromPoints(c_pos, common_e_pos, lookat);
 			GetVectorAngles(lookat, angles);
 			
-			float aimdist = GetVectorDistance(c_pos, common_e_pos);
+			float aimdist = GetVectorDistance(c_pos, common_e_pos, true);
 			
 			/****************************************************************************************************/
 			
@@ -2118,9 +2116,7 @@ stock bool isJockeyLeaping(int client)
 
 stock bool isHaveItem(const char[] FItem, const char[] SItem)
 {
-	if (StrContains(FItem, SItem, false) > -1) return true;
-	
-	return false;
+	return StrEqual(FItem, SItem, false);
 }
 
 stock void UseItem(int client, const char[] FItem)
