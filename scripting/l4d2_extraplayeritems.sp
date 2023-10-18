@@ -333,7 +333,7 @@ public void OnPluginStart() {
 	cvEPISpecialSpawning     = CreateConVar("epi_sp_spawning", "2", "Determines what specials are spawned. Add bits together.\n1 = Normal specials\n2 = Witches\n4 = Tanks", FCVAR_NONE, true, 0.0);
 	cvEPITankHealth			 = CreateConVar("epi_tank_chunkhp", "2500", "The amount of health added to tank, for each extra player", FCVAR_NONE, true, 0.0);
 	cvEPIGamemodes           = CreateConVar("epi_gamemodes", "coop,realism,versus", "Gamemodes where plugin is active. Comma-separated", FCVAR_NONE);
-	cvEPIEnabledMode		 = CreateConVar("epi_enabled", "1", "Is EPI 5+ spawning (if epi_sp_spawning enabled as well) enabled?\n0=OFF\n1=Auto (Official Maps Only)(5+)\n2=Auto (Any map) (5+)\n3=Forced on", FCVAR_NONE, true, 0.0, true, 3.0);
+	cvEPIEnabledMode		 = CreateConVar("epi_enabled", "1", "Is EPI enabled?\n0=OFF\n1=Auto (Official Maps Only)(5+)\n2=Auto (Any map) (5+)\n3=Forced on", FCVAR_NONE, true, 0.0, true, 3.0);
 	// TODO: hook flags, reset name index / ping mode
 	cvEPIHudFlags.AddChangeHook(Cvar_HudStateChange);
 	cvEPISpecialSpawning.AddChangeHook(Cvar_SpecialSpawningChange);

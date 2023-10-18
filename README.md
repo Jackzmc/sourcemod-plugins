@@ -214,12 +214,9 @@ See updated list of trolls and their descriptions:
 https://admin.jackz.me/docs/ftt
 
 * **Convars:**
-  * `sm_ftt_throw_interval` - For troll mode 'ThrowItAll' (#11), how often players will re-throw all their items. 0 to disable
   * `sm_ftt_autopunish_mode <#>` - (Not used, WIP) Sets the modes that auto punish will activate for. 1 -> Early crescendo activations
   * `sm_ftt_autopunish_action <#>` - Which actions will autopunish activate? Add bits together. 0=None, 1=TankMagnet 2=SpecialMagnet 4=Swarm 8=VomitPlayer
   * `sm_ftt_autopunish_expires <0...>` - How many minutes (in gameticks) until autopunish trolls are removed. 0 for never.
-  * `sm_ftt_magnet_chance <0.0 - 1.0>` - % of the time that the magnet will work on a player."
-  * `sm_ftt_shove_fail_chance <0.0 - 1.0>` - The % chance that a shove fails
 * **Commands:**
   * `sm_fta [player]` - The main command, opens a menu to select a troll to apply, with modifiers and flags
   * `sm_ftr [player]` - Removes all active trolls from a player
@@ -234,7 +231,7 @@ https://admin.jackz.me/docs/ftt
   * `sm_witch_attack <player>` - Makes all witches agro on the player
   * `sm_scharge <player> [timeout seconds]` - Will wait till there's no obstructions and players in the way, then spawns a charger behind them to charge them.
   * `sm_healbots <player> [# bots or 0 default]` - Makes n amount of bots chase a player down to heal them. Won't stop until they are healed, they die, or you run command again.
-
+  * `sm_csplat <player> <top/front/back> - Shortcut to Car Splat. Spawns car in top/front/back that hits the player`
 
 ### l4d2_autobotcrown
 Makes any suitable bot (> 40 hp, has shotgun) automatically crown a witch. Supports multiple bots and witches, but only one bot can crown one witch at a time. Plugin is disabled in realism, and is really on suitable for coop or versus. Even works with idle players.
@@ -259,21 +256,29 @@ Features:
 * Increasing item count for items randomly depending on player count
 * Fix same-models survivors having to fight over ammo pack usage
 * Automatically lock the first saferoom door for every chapter, until a threshold of players or time has passed
-* Includes a HUD that shows all the survivors and their items, and optionally their ping
+* Includes a HUD that shows all the survivors and their items, and optionally their ping (breaks randomly not sure why)
+* Includes a new 5+ special spawning director
+* Spawn an extra tank that scales with player count
 
 * **Convars:**
-  * `l4d2_extraitem_chance` - The base chance (multiplied by player count) of an extra item being spawned. Default: 0.056
-  * `l4d2_extraitems_kitmode` - Decides how extra kits should be added. Default is 0
+  * `epi_item_chance` - The base chance (multiplied by player count) of an extra item being spawned. Default: 0.056
+  * `epi_kitmode` - Decides how extra kits should be added. Default is 0
     * 0 -> Overwrites previous extra kits
     * 1 -> Adds onto previous extra kits
-  * `l4d2_extraitems_updateminplayers` - Should the plugin update abm's cvar min_players convar to the player count? (0 no, 1 yes)
-  * `l4d2_extraitems_doorunlock_percent` - The percent of players that need to be loaded in before saferoom door is opened.
+  * `epi_updateminplayers` - Should the plugin update abm's cvar min_players convar to the player count? (0 no, 1 yes)
+  * `epi_doorunlock_percent` - The percent of players that need to be loaded in before saferoom door is opened.
     * Default is 0.8, set to 0 to disable door locking
-  * `l4d2_extraitems_doorunlock_wait` - How many seconds after to unlock saferoom door. 0 to disable timer
-  * `l4d2_extraitems_doorunlock_open` - Controls when or if the door automatically opens after unlocked. Add bits together.
+  * `epi_doorunlock_wait` - How many seconds after to unlock saferoom door. 0 to disable timer
+  * `epi_doorunlock_open` - Controls when or if the door automatically opens after unlocked. Add bits together.
     * 0 = Never, 1 = When timer expires, 2 = When all players loaded in
-  * `l4d2_extraitems_hudstate` - Controls when the extra player hud shows.
+  * `epi_hudstate` - Controls when the extra player hud shows.
     * 0 = Never, 1 = When 5+ players, 2 = Always on
+  * `epi_sp_spawning` - Determines what specials are spawned. Add bits together.
+    * 1 = Specials, 2 = Witches, 4 = Tanks
+  * `epi_enabled` - When should epi be enabled?
+    * 0 = OFF, 1 = Only when 5+ and official map, 2 = Only when 5+, 3 = Always
+  * `epi_tank_chunkhp` - The amount of health to add to a tank per extra player
+  * `epi_gamemodes` - Comma separated list of allowed gamemodes.
 
 
 ### l4d_survivor_identity_fix
