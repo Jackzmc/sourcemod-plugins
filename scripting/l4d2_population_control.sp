@@ -119,9 +119,9 @@ public void OnMapEnd() {
 public void CVAR_hTotalZombiesChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
 	if(hTotalZombies.IntValue > 0) {
 		commonLimit = hTotalZombies.IntValue;
-	}else if(hTotalZombies.IntValue < 0) {
+	} else if(hTotalZombies.IntValue < 0) {
 		commonLimit = hZCommonLimit.IntValue - hTotalZombies.IntValue;
-	}else {
+	} else {
 		commonLimit = 0;
 	}
 }
@@ -132,8 +132,8 @@ public void OnEntityCreated(int entity, const char[] classname) {
 	if (StrEqual(classname, "infected") && IsDoneLoading) {
 		SDKHook(entity, SDKHook_SpawnPost, Hook_SpawnPost);
 
-		char m_ModelName[PLATFORM_MAX_PATH];
-		GetEntPropString(entity, Prop_Data, "m_ModelName", m_ModelName, sizeof(m_ModelName));
+		// char m_ModelName[PLATFORM_MAX_PATH];
+		// GetEntPropString(entity, Prop_Data, "m_ModelName", m_ModelName, sizeof(m_ModelName));
 		if(GetRandomFloat() <= hPercentTotal.FloatValue) {
 			if(GetRandomFloat() <= hPercentClown.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Clown]);
