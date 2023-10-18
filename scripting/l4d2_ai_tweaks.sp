@@ -53,22 +53,9 @@ public void OnActionCreated( BehaviorAction action, int actor, const char[] name
 	/* Hooking friend healing action (when bot wants to heal someone) */
 	if ( strcmp(name, "SurvivorHealFriend") == 0 )  {
 		action.OnStartPost = OnFriendAction;
-	} else if(strcmp(name, "InfectedAttack") == 0) {
-		// action.OnStartPost = OnInfectedAttack;
-		action.OnThreatChanged = OnThreatChanged;
 	}
 } 
 
-Action OnInfectedAttack(BehaviorAction action, int actor, BehaviorAction priorAction, ActionResult result) {
-	return Plugin_Continue;
-}
-
-Action OnThreatChanged(BehaviorAction action, int actor, BehaviorAction priorAction, ActionResult result) {
-	// int target = action.Get(0x34) & 0xFFF; 
-	SetEntProp(actor, Prop_Data, "m_target", actor);
-	result.type = DONE;
-	return Plugin_Continue;
-}
 
 public Action OnFriendAction( BehaviorAction action, int actor, BehaviorAction priorAction, ActionResult result ) {
 	// Do not allow idle bots to heal another player, unless they are black and white.
