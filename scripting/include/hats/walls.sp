@@ -24,8 +24,10 @@ enum struct WallBuilderData {
 	int entity;
 	bool canScale;
 	bool hasCollision;
+	bool isCopy;
 
 	void Reset(bool initial = false) {
+		this.isCopy = false;
 		this.size[0] = this.size[1] = this.size[2] = 5.0;
 		this.angles[0] = this.angles[1] = this.angles[2] = 0.0;
 		this.axis = 1;
@@ -220,11 +222,14 @@ enum struct WallBuilderData {
 		PrintToServer("Created %s: %d", classname, entity);
 		if(entity == -1) return -1;
 		GetEntPropString(this.entity, Prop_Data, "m_ModelName", classname, sizeof(classname));
+		DispatchKeyValueVector(entity, "origin", this.origin);
+		DispatchKeyValue(entity, "solid", "6");
 		DispatchKeyValue(entity, "model", classname);
 		PrintToServer("Set model %s: %d", classname, entity);
 		DispatchSpawn(entity);
 		TeleportEntity(entity, this.origin, this.angles, NULL_VECTOR);
 		this.entity = entity;
+		this.isCopy = true;
 		SetEntProp(entity, Prop_Send, "m_nSolidType", 2);
 		return entity;
 	}
@@ -239,6 +244,14 @@ enum struct WallBuilderData {
 			this.entity = entity;
 		}
 		this.SetMode(mode);
+	}
+
+	void Cancel() {
+		// Delete any copies:
+		if(this.isCopy) {
+			RemoveEntity(this.entity);
+		}
+		this.SetMode(INACTIVE);
 	}
 }
 
@@ -313,7 +326,7 @@ public Action Command_ManageWalls(int client, int args) {
 	} else if(StrEqual(arg1, "cancel")) {
 		int flags = GetEntityFlags(client) & ~FL_FROZEN;
 		SetEntityFlags(client, flags);
-		WallBuilder[client].SetMode(INACTIVE);
+		WallBuilder[client].Cancel();
 		PrintToChat(client, "\x04[Hats]\x01 Wall Creation: \x04Cancelled\x01");
 	} else if(StrEqual(arg1, "export")) {
 		// TODO: support exp #id
@@ -583,7 +596,8 @@ void LoadModels() {
 		PrintToServer("[FTT] Could not load phrase list from data/walls_data.cfg");
 		return;
 	}
-	char name[32];
+	// TODO: implement models to spawn
+	// char name[32];
 	// Go through all the words:
 	// kv.GotoFirstSubKey();
 	// int i = 0;

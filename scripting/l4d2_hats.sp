@@ -355,7 +355,7 @@ Action Timer_RemoveGod(Handle h, int userid) {
 	return Plugin_Handled;
 }
 
-public void Event_PlayerOutOfIdle(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerOutOfIdle(Event event, const char[] name, bool dontBroadcast) {
 	int bot = GetClientOfUserId(event.GetInt("bot"));
 	int client = GetClientOfUserId(event.GetInt("player"));
 	if(GetClientTeam(client) != 2) return;
