@@ -8,9 +8,9 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
-#include <jutils>
 #include <left4dhooks>
 #include <multicolors>
+#include <jutils>
 
 enum {
 	Immune_None,
@@ -514,7 +514,7 @@ Action Command_TKInfo(int client, int args) {
 				if(activeRate < 0.0) {
 					activeRate = 0.0;
 				} 
-				PrintToConsoleAll("%20N: %.1f TK-FF buf (%.2f total ff, %d freq., inter %d) | %.3f (buf %f) rFF rate | lastff %.1f min ago | %d suicide jumps", 
+				PrintToConsoleAll("%20N: %.1f TK-FF buf / %.2f total ff / %d freq. (intrl %d) | %.3f (buf %f) rFF rate | lastff %.1f min ago | %d suicide jumps", 
 					i,
 					pData[i].TKDamageBuffer, 
 					pData[i].totalDamageFF, 
