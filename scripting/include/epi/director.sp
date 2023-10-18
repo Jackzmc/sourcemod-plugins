@@ -5,21 +5,20 @@
 #define DIRECTOR_WITCH_CHECK_TIME 30.0 // How often to check if a witch should be spawned
 #define DIRECTOR_WITCH_MAX_WITCHES 5 // The maximum amount of extra witches to spawn 
 #define DIRECTOR_WITCH_ROLLS 4 // The number of dice rolls, increase if you want to increase freq
-#define DIRECTOR_MIN_SPAWN_TIME 12.0 // Possibly randomized, per-special
-#define DIRECTOR_SPAWN_CHANCE 0.05 // The raw chance of a spawn 
+#define DIRECTOR_MIN_SPAWN_TIME 13.0 // Possibly randomized, per-special
+#define DIRECTOR_SPAWN_CHANCE 0.04 // The raw chance of a spawn 
 #define DIRECTOR_CHANGE_LIMIT_CHANCE 0.05 // The chance that the maximum amount per-special is changed
 #define DIRECTOR_SPECIAL_TANK_CHANCE 0.05 // The chance that specials can spawn when a tank is active
 #define DIRECTOR_STRESS_CUTOFF 0.75 // The minimum chance a random cut off stress value is chosen [this, 1.0]
-#define DIRECTOR_REST_CHANCE 0.03 // The chance the director ceases spawning
-#define DIRECTOR_REST_MAX_COUNT 10 // The maximum amount of rest given (this * DIRECTOR_TIMER_INTERVAL)
+#define DIRECTOR_REST_CHANCE 0.04 // The chance the director ceases spawning
+#define DIRECTOR_REST_MAX_COUNT 8 // The maximum amount of rest given (this * DIRECTOR_TIMER_INTERVAL)
 
 #define DIRECTOR_DEBUG_SPAWN 1 // Dont actually spawn
 
 /// DEFINITIONS
 #define NUM_SPECIALS 6
 #define TOTAL_NUM_SPECIALS 8
-char SPECIAL_IDS[TOTAL_NUM_SPECIALS+1][] = {
-	"invalid",
+char SPECIAL_IDS[TOTAL_NUM_SPECIALS][] = {
 	"smoker",
 	"boomer",
 	"hunter",
@@ -30,14 +29,14 @@ char SPECIAL_IDS[TOTAL_NUM_SPECIALS+1][] = {
 	"tank"
 };
 enum specialType {
-	Special_Smoker = 1,
-	Special_Boomer = 2,
-	Special_Hunter = 3,
-	Special_Spitter = 4,
-	Special_Jockey = 5,
-	Special_Charger = 6,
-	Special_Witch = 7,
-	Special_Tank = 8,
+	Special_Smoker = 0,
+	Special_Boomer = 1,
+	Special_Hunter = 2,
+	Special_Spitter = 3,
+	Special_Jockey = 4,
+	Special_Charger = 5,
+	Special_Witch = 6,
+	Special_Tank = 7,
 };
 enum directorState {
 	DState_Normal,
@@ -84,7 +83,7 @@ void Director_OnMapStart() {
 		InitExtraWitches();
 	}
 	float time = GetGameTime();
-	for(int i = 1; i <= TOTAL_NUM_SPECIALS; i++) {
+	for(int i = 0; i < TOTAL_NUM_SPECIALS; i++) {
 		g_lastSpawnTime[i] = time;
 		g_spawnLimit[i] = 1;
 		g_spawnCount[i] = 0;
@@ -123,10 +122,18 @@ void Director_CheckClient(int client) {
 	if(IsClientConnected(client) && GetClientTeam(client) == 3) {
 		// To bypass director limits many plugins spawn an infected "bot" that immediately gets kicked, which allows a window to spawn a special
 		// The fake bot's class is usually 9, an invalid
-		int class = GetEntProp(client, Prop_Send, "m_zombieClass");
+		int class = GetEntProp(client, Prop_Send, "m_zombieClass") - 1;
 		if(class > view_as<int>(Special_Tank)) {
 			return;
+		} else if(IsFakeClient(client)) {
+			// Sometimes the bot class is _not_ invalid, but usually has BOT in its name. Ignore those players.
+			char name[32];
+			GetClientName(client, name, sizeof(name));
+			if(StrContains(name, "bot", false) != -1) {
+				return;
+			}
 		}
+		
 		if(IsFakeClient(client) && class == view_as<int>(Special_Tank)) {
 			OnTankBotSpawn(client);
 		}
@@ -143,6 +150,8 @@ void Director_CheckClient(int client) {
 static int g_newTankHealth = 0; 
 void OnTankBotSpawn(int client) {
 	if(!IsEPIActive() || !(cvEPISpecialSpawning.IntValue & 4)) return;
+	// Only run on 6+ survivors
+	if(g_realSurvivorCount < 6) return;
 	if(g_finaleStage == Stage_FinaleTank2) {
 		if(hExtraFinaleTank.IntValue > 0 && g_extraFinaleTankEnabled) {
 			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
@@ -151,7 +160,7 @@ void OnTankBotSpawn(int client) {
 		}
 	} else if(g_newTankHealth > 0) {
 		// A split tank has spawned, set its health
-		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: split tank spawned, setting health", g_newTankHealth);
+		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: split tank spawned, setting health to %d", g_newTankHealth);
 		SetEntProp(client, Prop_Send, "m_iHealth", g_newTankHealth);
 		g_newTankHealth = 0;
 	} else {
@@ -159,15 +168,15 @@ void OnTankBotSpawn(int client) {
 		int health = GetEntProp(client, Prop_Send, "m_iHealth");
 		float additionalHealth = float(g_survivorCount - 4) * cvEPITankHealth.FloatValue;
 		health += RoundFloat(additionalHealth);
-		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: Setting tank health to %d", health);
 
 		if(hExtraFinaleTank.IntValue & 1 && GetURandomFloat() <= hSplitTankChance.FloatValue) {
 			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
 			int splitHealth = health / 2;
-			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: split tank in %.1fs, health=%d", duration, g_newTankHealth);
+			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: split tank in %.1fs, health=%d", duration, splitHealth);
 			CreateTimer(duration, Timer_SpawnSplitTank, splitHealth);
 			SetEntProp(client, Prop_Send, "m_iHealth", splitHealth);
 		} else {
+			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: Setting tank health to %d", health);
 			SetEntProp(client, Prop_Send, "m_iHealth", health);
 		}
 	}
@@ -184,7 +193,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	if(client > 0) {
 		int team = GetClientTeam(client);
 		if(team == 3) {
-			int class = GetEntProp(client, Prop_Send, "m_zombieClass");
+			int class = GetEntProp(client, Prop_Send, "m_zombieClass") - 1;
 			if(class > view_as<int>(Special_Tank)) return;
 			g_spawnCount[class]--;
 			if(g_spawnCount[class] < 0) {
@@ -208,6 +217,17 @@ void Event_PlayerIncapped(Event event, const char[] name, bool dontBroadcast) {
 }
 /// METHODS
 
+
+/*
+Extra Witch Algo:
+On map start, knowing # of total players, compute a random number of witches. 
+The random number calculated by DiceRoll with 2 rolls and biased to the left. [min, 6]
+The minimum number in the dice is shifted to the right by the # of players (abmExtraCount-4)/4 (1 extra=0, 10 extra=2)
+
+Then, with the # of witches, as N, calculate N different flow values between [0, L4D2Direct_GetMapMaxFlowDistance()]
+Timer_Director then checks if highest flow achieved (never decreases) is >= each flow value, if one found, a witch is spawned
+(the witch herself is not spawned at the flow, just her spawning is triggered)
+*/
 void InitExtraWitches() { 
 	float flowMax = L4D2Direct_GetMapMaxFlowDistance() - FLOW_CUTOFF;
 	// Just in case we don't have max flow or the map is extremely tiny, don't run:
@@ -220,9 +240,10 @@ void InitExtraWitches() {
 		// TODO: max based on count
 		int max = RoundToFloor(float(count) / 4.0);
 
+		// TODO: inc chance based on map max flow
 		g_extraWitchCount = DiceRoll(min, DIRECTOR_WITCH_MAX_WITCHES, DIRECTOR_WITCH_ROLLS, BIAS_LEFT);
 		PrintDebug(DEBUG_SPAWNLOGIC, "InitExtraWitches: %d witches (min=%d, max=%d, rolls=%d) checkInterval=%f", g_extraWitchCount, min, max, DIRECTOR_WITCH_ROLLS, DIRECTOR_WITCH_CHECK_TIME);
-		for(int i = 0; i <= g_extraWitchCount; i++) {
+		for(int i = 0; i < g_extraWitchCount; i++) {
 			g_extraWitchFlowPositions[i] = GetURandomFloat() * (flowMax-FLOW_CUTOFF) + FLOW_CUTOFF;
 			PrintDebug(DEBUG_SPAWNLOGIC, "Witch position #%d: flow %.2f (%.0f%%)", i, g_extraWitchFlowPositions[i], g_extraWitchFlowPositions[i] / flowMax);
 		}
@@ -244,17 +265,17 @@ void Director_PrintDebug(int client) {
 	char buffer[128];
 	float time = GetGameTime();
 	PrintToConsole(client, "Last Spawn Deltas: (%.1f s) (min %f)", time - g_lastSpecialSpawnTime, DIRECTOR_MIN_SPAWN_TIME);
-	for(int i = 1; i <= TOTAL_NUM_SPECIALS; i++) {
+	for(int i = 0; i < TOTAL_NUM_SPECIALS; i++) {
 		Format(buffer, sizeof(buffer), "%s %s=%.1f", buffer, SPECIAL_IDS[i], time-g_lastSpawnTime[i]);
 	}
 	PrintToConsole(client, "\t%s", buffer);
 	buffer[0] = '\0';
 	PrintToConsole(client, "Spawn Counts: (%d/%d)", g_infectedCount, g_survivorCount - 4);
-	for(int i = 1; i <= TOTAL_NUM_SPECIALS; i++) {
+	for(int i = 0; i < TOTAL_NUM_SPECIALS; i++) {
 		Format(buffer, sizeof(buffer), "%s %s=%d/%d", buffer, SPECIAL_IDS[i], g_spawnCount[i], g_spawnLimit[i]);
 	}
 	PrintToConsole(client, "\t%s", buffer);
-	PrintToConsole(client, "timer interval=%.0f, rest count=%d", DIRECTOR_TIMER_INTERVAL, g_restCount);
+	PrintToConsole(client, "timer interval=%.0f, rest count=%d, rest time left=%.0fs", DIRECTOR_TIMER_INTERVAL, g_restCount, float(g_restCount) * DIRECTOR_TIMER_INTERVAL);
 }
 
 void Director_RandomizeLimits() {
@@ -268,7 +289,7 @@ void Director_RandomizeLimits() {
 void Director_RandomizeThings() {
 	g_maxStressIntensity = GetRandomFloat(DIRECTOR_STRESS_CUTOFF, 1.0);
 	g_minFlowSpawn = GetRandomFloat(FLOW_CUTOFF, FLOW_CUTOFF * 2);
-
+	Director_RandomizeLimits();
 }
 
 bool Director_ShouldRest() { 
@@ -291,14 +312,14 @@ void TryGrantRest() {
 // Little hacky, need to track when one leaves instead
 void Director_CheckSpawnCounts() {
 	if(!IsEPIActive()) return;
-	for(int i = 1; i <= TOTAL_NUM_SPECIALS; i++) {
+	for(int i = 0; i < TOTAL_NUM_SPECIALS; i++) {
 		g_spawnCount[i] = 0;
 	}
 	g_infectedCount = 0;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientInGame(i) && GetClientTeam(i) == 3) {
 			int class = GetEntProp(i, Prop_Send, "m_zombieClass") - 1; // make it 0-based
-			if(class == 8) continue;
+			if(class > view_as<int>(Special_Tank)) continue;
 			g_spawnCount[class]++;
 			g_infectedCount++;
 		}
@@ -329,7 +350,13 @@ directorState Director_Think() {
 	// TODO: scaling chance, low chance when hitting g_infectedCount, higher on 0
 	if(g_highestFlowAchieved < g_minFlowSpawn ||  ~cvEPISpecialSpawning.IntValue & 1) return DState_PendingMinFlowOrDisabled;
 
+	// Check if a rest period is given
+	if(Director_ShouldRest()) {
+		return DState_Resting;
+	}
+
 	// Only spawn more than one special within 2s at 10%
+	// TODO: randomized time between spawns? 0, ?? instead of repeat timer?
 	if(time - g_lastSpecialSpawnTime < 2.0 && GetURandomFloat() > 0.5) return DState_MaxSpecialTime;
 
 	if(GetURandomFloat() < DIRECTOR_CHANGE_LIMIT_CHANCE) {
@@ -340,15 +367,12 @@ directorState Director_Think() {
 	// abmExtraCount=6 g_infectedCount=0   chance=1.0   ((abmExtraCount-g_infectedCount)/abmExtraCount)
 	// abmExtraCount=6 g_infectedCount=1   chance=0.9   ((6-1)/6)) = (5/6)
 	// abmExtraCount=6 g_infectedCount=6   chance=0.2
+	// TODO: in debug calculate this
 	float eCount = float(g_survivorCount - 3);
 	float chance = (eCount - float(g_infectedCount)) / eCount;
 	// TODO: verify (abmExtraCount-4)
 	if(GetURandomFloat() > chance) return DState_PlayerChance;
 
-	// Check if a rest period is given
-	if(Director_ShouldRest()) {
-		return DState_Resting;
-	}
 
 	float curAvgStress = L4D_GetAvgSurvivorIntensity();
 	// Don't spawn specials when tanks active, but have a small chance (DIRECTOR_SPECIAL_TANK_CHANCE) to bypass
@@ -409,12 +433,14 @@ void DirectorSpawn(specialType special, int player = -1) {
 			CreateTimer(0.1, Timer_Kick, bot);
 		}
 	}
-	// TODO: dont use z_spawn_old, spawns too close!!
 	float pos[3];
-	if(L4D_GetRandomPZSpawnPosition(player, view_as<int>(special), 10, pos)) {
+	if(L4D_GetRandomPZSpawnPosition(player, view_as<int>(special) + 1, 10, pos)) {
 		// They use 1-index
-		L4D2_SpawnSpecial(view_as<int>(special) + 1, pos, NULL_VECTOR);
-		g_lastSpawnTime[view_as<int>(special)] = GetGameTime();
+		if(special == Special_Tank) {
+			L4D2_SpawnTank(pos, NULL_VECTOR);
+		} else {
+			L4D2_SpawnSpecial(view_as<int>(special) + 1, pos, NULL_VECTOR);
+		}
 	}
 }
 
