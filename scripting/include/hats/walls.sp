@@ -1,5 +1,8 @@
 int BUILDER_COLOR[4] = { 0, 255, 0, 235 };
-int WALL_COLOR[4] = { 255, 0, 0, 235 };
+int GLOW_BLUE[4] = { 3, 148, 252 };
+int GLOW_RED[4] = { 255, 0, 0, 235 };
+int GLOW_WHITE[4] = { 255, 255, 255, 255 };
+int GLOW_GREEN[4] = { 3, 252, 53 };
 float ORIGIN_SIZE[3] = { 2.0, 2.0, 2.0 };
 
 enum wallMode {
@@ -27,13 +30,13 @@ enum struct WallBuilderData {
 	bool isCopy;
 
 	void Reset(bool initial = false) {
+		this.entity = INVALID_ENT_REFERENCE;
 		this.isCopy = false;
 		this.size[0] = this.size[1] = this.size[2] = 5.0;
 		this.angles[0] = this.angles[1] = this.angles[2] = 0.0;
 		this.axis = 1;
 		this.canScale = true;
 		this.moveDistance = 200.0;
-		this.entity = INVALID_ENT_REFERENCE;
 		this.hasCollision = true;
 		this.CalculateMins();
 		this.SetMode(INACTIVE);
@@ -188,6 +191,7 @@ enum struct WallBuilderData {
 		DispatchKeyValueVector(blocker, "maxs", this.size);
 		DispatchKeyValueVector(blocker, "boxmins", this.mins);
 		DispatchKeyValueVector(blocker, "boxmaxs", this.size);
+		DispatchKeyValue(blocker, "excludednpc", "player");
 
 		DispatchKeyValueVector(blocker, "angles", this.angles);
 		DispatchKeyValue(blocker, "model", DUMMY_MODEL);
@@ -207,8 +211,9 @@ enum struct WallBuilderData {
 		enteffects |= 32; //EF_NODRAW
 		SetEntProp(blocker, Prop_Send, "m_fEffects", enteffects); 
 		AcceptEntityInput(blocker, "Enable");
+		SDKHook(blocker, SDKHook_Use, OnWallClicked);
 
-		this.Draw(WALL_COLOR, 5.0, 1.0);
+		this.Draw(GLOW_GREEN, 5.0, 1.0);
 		this.Reset();
 		return isEdit ? -2 : createdWalls.Push(EntIndexToEntRef(blocker));
 	}
@@ -219,18 +224,22 @@ enum struct WallBuilderData {
 		GetEntityClassname(this.entity, classname, sizeof(classname));
 
 		int entity = CreateEntityByName(classname);
-		PrintToServer("Created %s: %d", classname, entity);
 		if(entity == -1) return -1;
 		GetEntPropString(this.entity, Prop_Data, "m_ModelName", classname, sizeof(classname));
-		DispatchKeyValueVector(entity, "origin", this.origin);
-		DispatchKeyValue(entity, "solid", "6");
 		DispatchKeyValue(entity, "model", classname);
-		PrintToServer("Set model %s: %d", classname, entity);
+		
+
+		Format(classname, sizeof(classname), "hats_copy_%d", this.entity);
+		DispatchKeyValue(entity, "targetname", classname);
+
+		DispatchKeyValue(entity, "solid", "6");
+
 		DispatchSpawn(entity);
+		// SetEntProp(entity, Prop_Send, "m_CollisionGroup", 1);
+		// SetEntProp(entity, Prop_Send, "m_nSolidType", 6);
 		TeleportEntity(entity, this.origin, this.angles, NULL_VECTOR);
 		this.entity = entity;
 		this.isCopy = true;
-		SetEntProp(entity, Prop_Send, "m_nSolidType", 2);
 		return entity;
 	}
 
@@ -253,6 +262,17 @@ enum struct WallBuilderData {
 		}
 		this.SetMode(INACTIVE);
 	}
+}
+
+Action OnWallClicked(int entity, int activator, int caller, UseType type, float value) {
+	int wallId = FindWallId(entity);
+	if(wallId > 0) {
+		GlowWall(wallId, GLOW_BLUE);
+		AcceptEntityInput(entity, "Toggle");
+	} else {
+		PrintHintText(activator, "Invalid wall entity (%d)", entity);
+	}
+	return Plugin_Continue;
 }
 
 WallBuilderData WallBuilder[MAXPLAYERS+1];
@@ -301,7 +321,7 @@ public Action Command_ManageWalls(int client, int args) {
 	if(args == 0) {
 		PrintToChat(client, "\x04[Hats]\x01 Created Walls: \x05%d\x01", createdWalls.Length);
 		for(int i = 1; i <= createdWalls.Length; i++) {
-			GlowWall(i, 20.0);
+			GlowWall(i, GLOW_WHITE, 20.0);
 		}
 		return Plugin_Handled;
 	}
@@ -381,7 +401,7 @@ public Action Command_ManageWalls(int client, int args) {
 			for(int i = 1; i <= createdWalls.Length; i++) {
 				int entity = GetWallEntity(i);
 				AcceptEntityInput(entity, "Toggle");
-				GlowWall(i);
+				GlowWall(i, GLOW_BLUE);
 			}
 			PrintToChat(client, "\x04[Hats]\x01 Toggled \x05%d\x01 walls", walls);
 		} else {
@@ -389,7 +409,7 @@ public Action Command_ManageWalls(int client, int args) {
 			if(id > -1) {
 				int entity = GetWallEntity(id);
 				AcceptEntityInput(entity, "Toggle");
-				GlowWall(id);
+				GlowWall(id, GLOW_BLUE);
 				PrintToChat(client, "\x04[Hats]\x01 Toggled Wall: \x05#%d\x01", id);
 			}
 		}
@@ -487,7 +507,7 @@ int GetWallId(int client, const char[] arg) {
 		int entity = GetWallEntity(id);
 		if(!IsValidEntity(entity)) {
 			ReplyToCommand(client, "\x04[Hats]\x01 The wall with specified id no longer exists.");
-			createdWalls.Erase(id);
+			createdWalls.Erase(id - 1);
 			return -2;
 		}
 		return id;
@@ -504,7 +524,19 @@ int GetWallEntity(int id) {
 	return createdWalls.Get(id - 1);
 }
 
-void GlowWall(int id, float lifetime = 5.0) {
+/// Tries to find the id of the  wall based off entity
+int FindWallId(int entity) {
+	for(int i = 1; i <= createdWalls.Length; i++) {
+		int entRef = createdWalls.Get(i - 1);
+		int ent = EntRefToEntIndex(entRef);
+		if(ent == entity) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+void GlowWall(int id, int glowColor[4], float lifetime = 5.0) {
 	int ref = GetWallEntity(id);
 	if(IsValidEntity(ref)) {
 		float pos[3], mins[3], maxs[3], angles[3];
@@ -512,12 +544,12 @@ void GlowWall(int id, float lifetime = 5.0) {
 		GetEntPropVector(ref, Prop_Send, "m_vecOrigin", pos);
 		GetEntPropVector(ref, Prop_Send, "m_vecMins", mins);
 		GetEntPropVector(ref, Prop_Send, "m_vecMaxs", maxs);
-		Effect_DrawBeamBoxRotatableToAll(pos, mins, maxs, angles, g_iLaserIndex, 0, 0, 30, lifetime, 0.4, 0.4, 0, 1.0, WALL_COLOR, 0);
+		Effect_DrawBeamBoxRotatableToAll(pos, mins, maxs, angles, g_iLaserIndex, 0, 0, 30, lifetime, 0.4, 0.4, 0, 1.0, glowColor, 0);
 	}
 }
 
 void DeleteWall(int id) {
-	GlowWall(id);
+	GlowWall(id, GLOW_RED);
 	int ref = GetWallEntity(id);
 	if(IsValidEntity(ref)) {
 		RemoveEntity(ref);

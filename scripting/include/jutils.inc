@@ -965,3 +965,11 @@ stock void GetMenuDisplayName(int client, char[] display, int maxlen) {
 		GetClientName(client, display, maxlen);
 	}
 }
+
+stock int MathMax(int a, int b) {
+	return a > b ? a : b;
+}
+
+stock int MathMin(int a, int b) {
+	return a < b ? a : b;
+}

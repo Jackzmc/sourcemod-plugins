@@ -563,6 +563,13 @@ public Action Timer_RemoveGlow(Handle h, int userid) {
 	return Plugin_Handled;
 }
 GameState prevState;
+
+// #define HEARTBEAT_NEAR_DIST 1_000_000
+// #define HEARTBEAT_CLOSE_DIST 250_000
+
+#define HEARTBEAT_NEAR_DIST 1000
+#define HEARTBEAT_CLOSE_DIST 300
+
 public Action Timer_Music(Handle h) {
 	static float seekerLoc[3];
 	static float playerLoc[3];
@@ -586,13 +593,14 @@ public Action Timer_Music(Handle h) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && i != currentSeeker) {
 			playerCount++;
-			GetClientAbsOrigin(i, playerLoc);
-			float dist = GetVectorDistance(seekerLoc, playerLoc, true);
-			if(dist <= 250000.0) {
+			// GetClientAbsOrigin(i, playerLoc);
+			// float dist = GetVectorDistance(seekerLoc, playerLoc, true);
+			float dist = GetFlowDistance(currentSeeker, i);
+			if(dist <= HEARTBEAT_CLOSE_DIST) {
 				StopSound(i, SNDCHAN_AUTO, SOUND_SUSPENSE_1);
 				EmitSoundToClient(i, SOUND_SUSPENSE_1_FAST, i, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEPITCH, 1.0, 100, currentSeeker, seekerLoc, playerLoc, true);
 				isNearbyPlaying[i] = true;
-			} else if(dist <= 1000000.0) {
+			} else if(dist <= HEARTBEAT_CLOSE_DIST) {
 				EmitSoundToClient(i, SOUND_SUSPENSE_1, i, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEPITCH, 0.4, 90, currentSeeker, seekerLoc, playerLoc, true);
 				isNearbyPlaying[i] = true;
 				StopSound(i, SNDCHAN_AUTO, SOUND_SUSPENSE_1_FAST);
@@ -605,6 +613,12 @@ public Action Timer_Music(Handle h) {
 	}
 	return Plugin_Continue;
 }
+
+
+float GetFlowDistance(int survivorA, int survivorB) {
+	return FloatAbs(L4D2Direct_GetFlowDistance(survivorA) - L4D2Direct_GetFlowDistance(survivorB));
+}
+
 public Action Timer_RoundStart(Handle h) {
 	PrintToServer("[H&S] Running round entity tweaks");
 	CreateTimer(0.1, Timer_CheckWeapons);

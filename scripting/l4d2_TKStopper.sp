@@ -278,41 +278,22 @@ void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) 
 
 Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
 	if(isEnabled && damage > 0.0 && victim <= MaxClients && attacker <= MaxClients && attacker > 0 && victim > 0) {
-		if(GetClientTeam(victim) != GetClientTeam(attacker) || attacker == victim) 
+		if(GetClientTeam(attacker) != 2 || GetClientTeam(victim) != 2 || attacker == victim) 
 			return Plugin_Continue;
-		else if(damagetype & DMG_BURN && hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_MolotovDamage) && IsFakeClient(attacker) && GetClientTeam(attacker) == 2) {
-			// Ignore damage from fire caused by bots (players who left after causing fire)
-			damage = 0.0;
-			return Plugin_Changed;
-		} else if((damagetype & DMG_BLAST || damagetype & DMG_BLAST_SURFACE) && hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_BlastDamage) && IsFakeClient(attacker) && GetClientTeam(attacker) == 2) {
-			damage = 0.0;
-			return Plugin_Changed;
+		else if(IsFakeClient(attacker) && attacker != victim) {
+				// Ignore damage from fire/explosives caused by bots (players who left after causing fire)
+			if(damagetype & DMG_BURN && hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_MolotovDamage)) {
+				damage = 0.0;
+				return Plugin_Changed;
+			} else if((damagetype & DMG_BLAST || damagetype & DMG_BLAST_SURFACE) && hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_BlastDamage)) {
+				damage = 0.0;
+				return Plugin_Changed;
+			}
 		}
-		// Otherwise if attacker was ignored or is a bot, stop here and let vanilla handle it
-		else if(pData[attacker].immunityFlags & Immune_RFF || IsFakeClient(attacker) || IsFakeClient(victim)) return Plugin_Continue;
-		// If victim is black and white and rff damage isnt turned on for it, allow it:
-		else if(damagetype & DMG_DIRECT && GetEntProp(victim, Prop_Send, "m_isGoingToDie") && ~hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_BlackAndWhiteDamage)) {
-			return Plugin_Continue;
-		}
-
-		
-		//Allow friendly firing BOTS that aren't idle players:
-		//if(IsFakeClient(victim) && !HasEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") || GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) return Plugin_Continue;
-		
-		// Stop all damage early if already marked as troll
-		else if(pData[attacker].isTroll) {
-			SDKHooks_TakeDamage(attacker, attacker, attacker, pData[attacker].autoRFFScaleFactor * damage);
-			return Plugin_Stop;
-		}
-		// Allow vanilla-damage if being attacked by special (example, charger carry)
-		else if(pData[victim].underAttack) return Plugin_Continue;
-	
 		bool isAdmin = GetUserAdmin(attacker) != INVALID_ADMIN_ID;
-		// Is damage not caused by fire or pipebombs?
-		bool isDamageDirect = damagetype & (DMG_BURN) == 0;
 		int time = GetTime();
 		// If is a fall within first 2 minutes, do appropiate action
-		if(!isAdmin && damagetype & DMG_FALL && attacker == victim && damage > 0.0 && time - pData[victim].joinTime <= hJoinTime.IntValue * 60) {
+		if(damagetype & DMG_FALL && attacker == victim && damage > 0.0 && time - pData[victim].joinTime <= hJoinTime.IntValue * 60) {
 			pData[victim].jumpAttempts++;
 			float pos[3];
 			GetNearestPlayerPosition(victim, pos);
@@ -336,6 +317,30 @@ Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& dam
 			}
 			return Plugin_Stop;
 		}
+		// Disregard any self inflicted damage from here: 
+		else if(attacker == victim) return Plugin_Continue;
+
+		// Stop all damage early if already marked as troll
+		else if(pData[attacker].isTroll) {
+			SDKHooks_TakeDamage(attacker, attacker, attacker, pData[attacker].autoRFFScaleFactor * damage);
+			return Plugin_Stop;
+		}
+		// Otherwise if attacker is immune, is a bot, or victim is a bot, let it continue
+		else if(pData[attacker].immunityFlags & Immune_RFF || IsFakeClient(attacker) || IsFakeClient(victim)) return Plugin_Continue;
+		// If victim is black and white and rff damage isnt turned on for it, allow it:
+		else if(GetEntProp(victim, Prop_Send, "m_isGoingToDie") && ~hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_BlackAndWhiteDamage)) {
+			return Plugin_Continue;
+		}
+
+		//Allow friendly firing BOTS that aren't idle players:
+		//if(IsFakeClient(victim) && !HasEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") || GetEntProp(attacker, Prop_Send, "m_humanSpectatorUserID") == 0) return Plugin_Continue;
+		
+		// Allow vanilla-damage if being attacked by special (example, charger carry)
+		// We don't want to track someone accidently ffing them when theres a window where you can
+		else if(pData[victim].underAttack) return Plugin_Continue;
+	
+		// Is damage not caused by fire or pipebombs?
+		bool isDamageDirect = (damagetype & DMG_BURN) == 0;
 
 		// Forgive player teamkill based on threshold, resetting accumlated damage
 		if(time - pData[attacker].lastFFTime > hForgivenessTime.IntValue) {
@@ -498,13 +503,13 @@ Action Command_TKInfo(int client, int args) {
 		float activeRate = GetActiveRate(target);
 		CReplyToCommand(client, "FF Frequency: {yellow}%d {default}(recent: %d, %d forgiven)", pData[target].totalFFCount, pData[target].ffCount, (pData[target].totalFFCount - pData[target].ffCount));
 		if(pData[client].lastFFTime == 0)
-			CReplyToCommand(client, "Total FF Damage: {yellow}%.1f HP{default} (last fff Never)", pData[target].totalDamageFF);
+			CReplyToCommand(client, "Total FF Damage: {yellow}%.1f HP{default} (last ff Never)", pData[target].totalDamageFF);
 		else
-			CReplyToCommand(client, "Total FF Damage: {yellow}%.1f HP{default} (last fff %.1f min ago)", pData[target].totalDamageFF, minutesSinceiLastFFTime);
+			CReplyToCommand(client, "Total FF Damage: {yellow}%.1f HP{default} (last ff %.1f min ago)", pData[target].totalDamageFF, minutesSinceiLastFFTime);
 		if(~pData[target].immunityFlags & Immune_TK)
 			CReplyToCommand(client, "Recent FF (TKDetectBuffer): {yellow}%.1f", pData[target].TKDamageBuffer);
 		if(~pData[target].immunityFlags & Immune_RFF)
-			CReplyToCommand(client, "Auto Reverse-FF: {yellow}%.1fx return rate", activeRate);
+			CReplyToCommand(client, "Auto Reverse-FF: {yellow}%.1fx rate", activeRate);
 		CReplyToCommand(client, "Attempted suicide jumps: {yellow}%d", pData[target].jumpAttempts);
 	} else {
 		for(int i = 1; i <= MaxClients; i++) {

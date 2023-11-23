@@ -573,7 +573,6 @@ bool Filter_IgnoreForbidden(int entity, int mask, int data) {
 bool CheckBlacklist(int entity) {
 	static char buffer[64];
 	GetEntityClassname(entity, buffer, sizeof(buffer));
-	PrintToServer("GrabEnt:CheckBlacklist | classname=\"%s\"", buffer);
 	for(int i = 0; i < MAX_FORBIDDEN_CLASSNAMES; i++) {
 		if(StrEqual(FORBIDDEN_CLASSNAMES[i], buffer)) {
 			return false;
@@ -582,7 +581,6 @@ bool CheckBlacklist(int entity) {
 	if(StrContains(buffer, "prop_") > -1) {
 		GetEntPropString(entity, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
 		for(int i = 0; i < MAX_FORBIDDEN_MODELS; i++) {
-			PrintToServer("GrabEnt:CheckBlacklist | model=\"%s\" FORBIDDEN_MODELS[%d] = \"%s\"", buffer, i, FORBIDDEN_MODELS[i]);
 			if(StrEqual(FORBIDDEN_MODELS[i], buffer)) {
 				return false;
 			}

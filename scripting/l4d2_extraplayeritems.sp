@@ -12,8 +12,6 @@
 		extraitems = (playerCount) * (cabinetAmount/4) - cabinetAmount
 */
 
-//TODO: On 3rd/4th kit pickup in area, add more
-//TODO: Add extra pills too, on pickup
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -35,7 +33,7 @@
 #define FLOW_CUTOFF 500.0 // The cutoff of flow, so that witches / tanks don't spawn in saferooms / starting areas, [0 + FLOW_CUTOFF, MapMaxFlow - FLOW_CUTOFF]
 
 #define EXTRA_TANK_MIN_SEC 2.0
-#define EXTRA_TANK_MAX_SEC 20.0
+#define EXTRA_TANK_MAX_SEC 16.0
 #define DATE_FORMAT "%F at %I:%M %p"
 
 
@@ -196,8 +194,8 @@ enum struct PlayerInventory {
 	bool isAlive;
 
 	WeaponId itemID[6]; //int -> char?
+	MeleeWeaponId meleeID; // If itemID[1] == WeaponId_Melee, pull from this
 	bool lasers;
-	char meleeID[32];
 
 	int primaryHealth;
 	int tempHealth;
@@ -225,7 +223,7 @@ Restore from saved inventory
 static StringMap weaponMaxClipSizes;
 static StringMap pInv;
 static int g_lastInvSave[MAXPLAYERS+1];
-static Handle g_saveTimer[MAXPLAYERS+1];
+static Handle g_saveTimer[MAXPLAYERS+1] = { null, ... };
 
 static char HUD_SCRIPT_DATA[] = "eph <- { Fields = { players = { slot = g_ModeScript.HUD_RIGHT_BOT, dataval = \"%s\", flags = g_ModeScript.HUD_FLAG_ALIGN_LEFT | g_ModeScript.HUD_FLAG_TEAM_SURVIVORS | g_ModeScript.HUD_FLAG_NOBG } } }\nHUDSetLayout(eph)\nHUDPlace(g_ModeScript.HUD_RIGHT_BOT,0.78,0.77,0.3,0.3)\ng_ModeScript;";
  
@@ -360,7 +358,6 @@ public void OnPluginStart() {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
 				if(GetClientTeam(i) == 2) {
 					SaveInventory(i, true);
-					SDKHook(i, SDKHook_WeaponEquip, Event_Pickup);
 				}
 				playerData[i].Setup(i);
 			}
@@ -539,7 +536,7 @@ public void Event_DifficultyChange(ConVar cvar, const char[] oldValue, const cha
 /////////////////////////////////////
 /// COMMANDS
 ////////////////////////////////////
-void ValBool(int client, const char[] name, bool &value, const char[] input) {
+public void ValBool(int client, const char[] name, bool &value, const char[] input) {
 	if(input[0] != '\0') {
 		value = input[0] == '1' || input[0] == 't';
 		CReplyToCommand(client, "Set {olive}%s{default} to {yellow}%b", name, value);
@@ -547,7 +544,7 @@ void ValBool(int client, const char[] name, bool &value, const char[] input) {
 		CReplyToCommand(client, "Value of {olive}%s{default}: {yellow}%b", name, value);
 	}
 }
-void ValInt(int client, const char[] name, int &value, const char[] input) {
+public void ValInt(int client, const char[] name, int &value, const char[] input) {
 	if(input[0] != '\0') {
 		value = StringToInt(input);
 		CReplyToCommand(client, "Set {olive}%s{default} to {yellow}%d", name, value);
@@ -555,7 +552,7 @@ void ValInt(int client, const char[] name, int &value, const char[] input) {
 		CReplyToCommand(client, "Value of {olive}%s{default}: {yellow}%d", name, value);
 	}
 }
-void ValFloat(int client, const char[] name, float &value, const char[] input) {
+public void ValFloat(int client, const char[] name, float &value, const char[] input) {
 	if(input[0] != '\0') {
 		value = StringToFloat(input);
 		CReplyToCommand(client, "Set {olive}%s{default} to {yellow}%f", name, value);
@@ -794,7 +791,6 @@ Action Command_DebugStats(int client, int args) {
 				ReplyToCommand(client, "\x04%d. \x05%s", i, arg);
 			}
 		}
-		ReplyToCommand(client, "%s", inv.meleeID);
 	}
 	return Plugin_Handled;
 }
@@ -812,7 +808,7 @@ void Event_PlayerToIdle(Event event, const char[] name, bool dontBroadcast) {
 	if(GetClientTeam(client) != 2) return;
 	PrintToServer("%N -> idle %N", client, bot);
 }
-public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
+public void L4D2_OnChangeFinaleStage_PostHandled(int finaleType, const char[] arg) {
 	if(finaleType == FINALE_STARTED && g_realSurvivorCount > 4) {
 		g_finaleStage = Stage_FinaleActive;
 		PrintToConsoleAll("[EPI] Finale started and over threshold");
@@ -822,10 +818,9 @@ public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
 			PrintToConsoleAll("[EPI] First tank stage has started");
 		} else if(g_finaleStage == Stage_FinaleTank1) {
 			g_finaleStage = Stage_FinaleTank2;
-			PrintToConsoleAll("[EPI] Second stage started, waiting for tank");
+			PrintToConsoleAll("[EPI] Second tank stage started. Waiting for tank");
 		}
 	}
-	return Plugin_Continue;
 }
 
 void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast) {
@@ -962,7 +957,7 @@ void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) 
 			// New client has connected, late on the first chapter or on any other chapter
 			// If 5 survivors, then set them up, TP them.
 			if(g_realSurvivorCount > 4) {
-				CreateTimer(0.1, Timer_SetupNewClient, userid);
+				CreateTimer(0.2, Timer_SetupNewClient, userid);
 			}
 		}
 	}
@@ -990,7 +985,6 @@ void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 			}
 		}
 		CreateTimer(0.5, Timer_GiveClientKit, userid);
-		SDKHook(client, SDKHook_WeaponEquip, Event_Pickup);
 	}
 	TryStartHud();
 	UpdatePlayerInventory(client);
@@ -1005,9 +999,10 @@ void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) 
 		playerData[client].nameCache[0] = '\0';
 		PrintToServer("debug: Player (index %d, uid %d) now pending empty", client, client, userid);
 		CreateTimer(cvDropDisconnectTime.FloatValue, Timer_DropSurvivor, client);
-		if(g_saveTimer[client] != null)
-			delete g_saveTimer[client];
+		
 	}
+	if(g_saveTimer[client] != null)
+		delete g_saveTimer[client];
 }
 
 void Event_PlayerInfo(Event event, const char[] name, bool dontBroadcast) {
@@ -1328,7 +1323,7 @@ public void OnMapEnd() {
 public void Event_RoundFreezeEnd(Event event, const char[] name, bool dontBroadcast) {
 	CreateTimer(50.0, Timer_Populate);
 }
-public Action Timer_Populate(Handle h) {
+Action Timer_Populate(Handle h) {
 	PopulateItems();	
 	return Plugin_Continue;
 
@@ -1368,13 +1363,12 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 	}
 }
 
-public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
+void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast) {
 	if(!g_isFailureRound) g_isFailureRound = true;
 	g_areItemsPopulated = false;
-	return Plugin_Continue;
 }
 
-public Action Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
+void Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
 	#if defined DEBUG
 	PrintToServer("Map transition | %d Extra Kits", g_extraKitsAmount);
 	#endif
@@ -1383,19 +1377,6 @@ public Action Event_MapTransition(Event event, const char[] name, bool dontBroad
 	// Update g_survivorCount, people may have dipped right before transition
 	UpdateSurvivorCount();
 	g_prevPlayerCount = g_survivorCount;
-	return Plugin_Continue;
-}
-//TODO: Possibly hacky logic of on third different ent id picked up, in short timespan, detect as set of 4 (pills, kits) & give extra
-public Action Event_Pickup(int client, int weapon) {
-	static char name[32];
-	GetEntityClassname(weapon, name, sizeof(name));
-	if(StrEqual(name, "weapon_first_aid_kit", true)) {
-		if(playerData[client].itemGiven) return Plugin_Continue;
-		if((L4D_IsInFirstCheckpoint(client) || L4D_IsInLastCheckpoint(client)) && UseExtraKit(client)) {
-			return Plugin_Handled;
-		}
-	}
-	return Plugin_Continue;
 }
 
 public void OnEntityCreated(int entity, const char[] classname) {
@@ -1416,7 +1397,7 @@ public void OnEntityCreated(int entity, const char[] classname) {
 
 //TODO: Implement extra kit amount to this
 //TODO: Possibly check ammo stash and kit (relv. distance). Would fire on Last Stand 2nd .
-public Action Hook_CabinetItemSpawn(int entity) {
+Action Hook_CabinetItemSpawn(int entity) {
 	int cabinet = FindNearestEntityInRange(entity, "prop_health_cabinet", 60.0);
 	if(cabinet > 0) {
 		int ci = FindCabinetIndex(cabinet);
@@ -1432,11 +1413,10 @@ public Action Hook_CabinetItemSpawn(int entity) {
 		}
 		//If Cabinet is full, spawner can not be a part of cabinet and is ignored. 
 	}
-	return Plugin_Continue;
-
+	return Plugin_Handled;
 }
 
-public Action Hook_CabinetSpawn(int entity) {
+Action Hook_CabinetSpawn(int entity) {
 	for(int i = 0; i < sizeof(cabinets); i++) {
 		if(cabinets[i].id == 0) {
 			cabinets[i].id = entity;
@@ -1444,11 +1424,10 @@ public Action Hook_CabinetSpawn(int entity) {
 		}
 	}
 	PrintDebug(DEBUG_SPAWNLOGIC, "Adding cabinet %d", entity);
-	return Plugin_Continue;
-
+	return Plugin_Handled;
 }
 
-public Action OnUpgradePackUse(int entity, int activator, int caller, UseType type, float value) {
+Action OnUpgradePackUse(int entity, int activator, int caller, UseType type, float value) {
 	if (entity > 2048 || entity <= MaxClients || !IsValidEntity(entity)) return Plugin_Continue;
 
 	int primaryWeapon = GetPlayerWeaponSlot(activator, 0);
@@ -1520,18 +1499,7 @@ public Action Hook_Use(int entity, int activator, int caller, UseType type, floa
 	Prioritize first aid kits somehow? Or split two groups: "utility" (throwables, kits, pill/shots), and "weapon" (all other spawns) 
 */
 
-public Action Timer_ResetAmmoPack(Handle h, int entity) {
-	if(IsValidEntity(entity)) {
-		int index = g_ammoPacks.FindValue(entity, AMMOPACK_ENTID);
-		if(index == -1) return Plugin_Continue;
-
-		ArrayList clients = g_ammoPacks.Get(index, AMMOPACK_USERS);
-		clients.Clear();
-	}
-	return Plugin_Continue;
-}
-
-public Action Timer_OpenSaferoomDoor(Handle h) {
+Action Timer_OpenSaferoomDoor(Handle h) {
 	UnlockDoor(1);
 	return Plugin_Continue;
 }
@@ -1770,14 +1738,12 @@ Action Timer_SaveInventory(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0) {
 		// Force save to bypass our timeout
-		g_saveTimer[client] = null;
 		SaveInventory(client, true);
 	}
 	return Plugin_Stop;
 }
 
 void SaveInventory(int client, bool force = false) {
-	// TODO: dont save during join time
 	int time = GetTime();
 	if(!force) {
 		if(time - playerData[client].joinTime < MIN_JOIN_TIME) return;
@@ -1787,6 +1753,8 @@ void SaveInventory(int client, bool force = false) {
 		if(g_saveTimer[client] != null)
 			delete g_saveTimer[client];
 		g_saveTimer[client] = CreateTimer(INV_SAVE_TIME, Timer_SaveInventory, GetClientUserId(client));
+	} else {
+		g_saveTimer[client] = null;
 	}
 	PlayerInventory inventory;
 	inventory.timestamp = time;
@@ -1803,8 +1771,12 @@ void SaveInventory(int client, bool force = false) {
 	for(int i = 5; i >= 0; i--) {
 		weapon = GetPlayerWeaponSlot(client, i);
 		inventory.itemID[i] = IdentifyWeapon(weapon);
+		// If slot 1 is melee, get the melee ID
+		if(i == 1 && inventory.itemID[i] == WEPID_MELEE) {
+			inventory.meleeID = IdentifyMeleeWeapon(weapon);
+		}
 	}
-	if(inventory.itemID[0] != WEPID_MELEE && inventory.itemID[0] != WEPID_NONE)
+	if(inventory.itemID[0] != WEPID_NONE)
 		inventory.lasers = GetEntProp(weapon, Prop_Send, "m_upgradeBitVec") == 4;
 	
 	GetClientAuthId(client, AuthId_Steam3, buffer, sizeof(buffer));
@@ -1827,10 +1799,11 @@ void RestoreInventory(int client, PlayerInventory inventory) {
 		for(int i = 5; i >= 0; i--) {
 			WeaponId id = inventory.itemID[i];
 			if(id != WEPID_NONE) {
-				if(id == WEPID_MELEE)
+				if(id == WEPID_MELEE) {
 					GetWeaponName(id, buffer, sizeof(buffer));
-				else 
-					GetMeleeWeaponName(id, buffer, sizeof(buffer));
+				} else { 
+					GetMeleeWeaponName(inventory.meleeID, buffer, sizeof(buffer));
+				}
 				weapon = GiveClientWeapon(client, buffer);
 			}
 		}
@@ -1872,7 +1845,6 @@ bool DoesInventoryDiffer(int client) {
 	return currentPrimary != storedPrimary || currentSecondary != storedSecondary;
 }
 
-// TODO: disable by cvar as well (replace abm_autohard)
 bool IsEPIActive() {
 	return g_epiEnabled;
 }
@@ -1908,7 +1880,7 @@ void UpdateSurvivorCount() {
 	}
 	g_survivorCount = countTotal;
 	g_realSurvivorCount = countReal;
-	PrintDebug(DEBUG_GENERIC, "UpdateSurvivorCount: total=%d real=%d active=%d", countTotal, countReal, countActive);
+	// PrintDebug(DEBUG_GENERIC, "UpdateSurvivorCount: total=%d real=%d active=%d", countTotal, countReal, countActive);
 	// Temporarily for now use g_realSurvivorCount, as players joining have a brief second where they are 5 players
 	
 	// 1 = 5+ official

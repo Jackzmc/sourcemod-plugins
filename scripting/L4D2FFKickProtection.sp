@@ -8,7 +8,7 @@
 #include <sdktools>
 #include <sdkhooks>
 
-static int disableFFClient, ffDamageCount; //client to disable FF for
+static int disableFFClient = -1, ffDamageCount; //client to disable FF for
 static ConVar forceKickFFThreshold;
 
 public Plugin myinfo = {

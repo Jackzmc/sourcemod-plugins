@@ -408,8 +408,8 @@ stock int GetWeaponName(WeaponId wepid, char[] nameBuffer, int length) {
     return IsValidWeaponId(wepid) ? strcopy(nameBuffer, length, WeaponNames[wepid]) : 0;
 }
 
-stock int GetMeleeWeaponName(WeaponId wepid, char[] nameBuffer, int length) {
-    return IsValidWeaponId(wepid) ? strcopy(nameBuffer, length, MeleeWeaponNames[wepid]) : 0;
+stock int GetMeleeWeaponName(MeleeWeaponId wepid, char[] nameBuffer, int length) {
+    return IsValidMeleeWeaponId(wepid) ? strcopy(nameBuffer, length, MeleeWeaponNames[wepid]) : 0;
 }
 
 /**

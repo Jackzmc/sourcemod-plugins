@@ -93,6 +93,7 @@ public void OnPluginStart() {
 		GetEntPropString(entity, Prop_Data, "m_iName", targetName, sizeof(targetName));
 		if(StrContains(targetName, "l4d2_hats_") == 0) {
 			createdWalls.Push(EntIndexToEntRef(entity));
+			SDKHook(entity, SDKHook_Use, OnWallClicked);
 		}
 
 	}

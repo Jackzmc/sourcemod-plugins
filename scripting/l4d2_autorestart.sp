@@ -48,7 +48,7 @@ Action Command_Status(int client, int args) {
 	int exceedRestartMin = exceedRestart / 60;
 	int exceedRestartHour = exceedRestartMin / 60;
 	ReplyToCommand(client, "Overdue restart time: %d hr / %d min / %d s", exceedRestartHour, exceedRestartMin, exceedRestart);
-	ReplyToCommand(client, "triesBots = %d\ttriesEmpty = %d / %d", triesBots, triesEmpty);
+	ReplyToCommand(client, "triesBots = %d\ttriesEmpty = %d / %d", triesBots, triesEmpty, 4);
 	return Plugin_Handled;
 }
 

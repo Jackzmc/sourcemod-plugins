@@ -152,11 +152,14 @@ void OnTankBotSpawn(int client) {
 	if(!IsEPIActive() || !(cvEPISpecialSpawning.IntValue & 4)) return;
 	// Only run on 6+ survivors
 	if(g_realSurvivorCount < 6) return;
-	if(g_finaleStage == Stage_FinaleTank2) {
-		if(hExtraFinaleTank.IntValue > 0 && g_extraFinaleTankEnabled) {
-			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
-			// Pass it 0, which doesnt make it a split tank, has default health
-			CreateTimer(duration, Timer_SpawnSplitTank, 0);
+	// Check if any finale is active
+	if(g_finaleStage != Stage_Inactive) {
+		if(g_finaleStage == Stage_FinaleTank2) {
+			if(hExtraFinaleTank.IntValue > 0 && g_extraFinaleTankEnabled) {
+				float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
+				// Pass it 0, which doesnt make it a split tank, has default health
+				CreateTimer(duration, Timer_SpawnSplitTank, 0);
+			}
 		}
 	} else if(g_newTankHealth > 0) {
 		// A split tank has spawned, set its health
@@ -164,11 +167,13 @@ void OnTankBotSpawn(int client) {
 		SetEntProp(client, Prop_Send, "m_iHealth", g_newTankHealth);
 		g_newTankHealth = 0;
 	} else {
-		// Normal (non-finale) tank spawned. Set its health
+		// This should not run on active finales (different than finale maps, such as swamp fever's, where finale isnt full map)
+		// Normal tank (not stage 2 / not secondary tank) spawned. Set its health and spawn split tank
 		int health = GetEntProp(client, Prop_Send, "m_iHealth");
 		float additionalHealth = float(g_survivorCount - 4) * cvEPITankHealth.FloatValue;
 		health += RoundFloat(additionalHealth);
 
+		// Only split if split tank chance, if enabled, and we aren't on 2nd finale tank
 		if(hExtraFinaleTank.IntValue & 1 && GetURandomFloat() <= hSplitTankChance.FloatValue) {
 			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
 			int splitHealth = health / 2;
@@ -183,6 +188,7 @@ void OnTankBotSpawn(int client) {
 }
 
 Action Timer_SpawnSplitTank(Handle h, int health) {
+	PrintDebug(DEBUG_SPAWNLOGIC, "Timer_SpawnSplitTank(%d)", health);
 	g_newTankHealth = health;
 	DirectorSpawn(Special_Tank);
 	return Plugin_Handled;
@@ -215,6 +221,7 @@ void Event_PlayerIncapped(Event event, const char[] name, bool dontBroadcast) {
 		TryGrantRest();
 	}
 }
+
 /// METHODS
 
 
@@ -237,7 +244,6 @@ void InitExtraWitches() {
 		// Calculate the number of witches we want to spawn.
 		// We bias the dice roll to the right. We slowly increase min based on player count to shift distribution to the right
 		int min = RoundToFloor(float(count - 5) / 4.0);
-		// TODO: max based on count
 		int max = RoundToFloor(float(count) / 4.0);
 
 		// TODO: inc chance based on map max flow
@@ -288,7 +294,7 @@ void Director_RandomizeLimits() {
 }
 void Director_RandomizeThings() {
 	g_maxStressIntensity = GetRandomFloat(DIRECTOR_STRESS_CUTOFF, 1.0);
-	g_minFlowSpawn = GetRandomFloat(FLOW_CUTOFF, FLOW_CUTOFF * 2);
+	g_minFlowSpawn = GetRandomFloat(500.0 + FLOW_CUTOFF, FLOW_CUTOFF * 2);
 	Director_RandomizeLimits();
 }
 
@@ -304,8 +310,6 @@ bool Director_ShouldRest() {
 void TryGrantRest() {
 	if(GetURandomFloat() <= DIRECTOR_REST_CHANCE) {
 		g_restCount = GetRandomInt(0, DIRECTOR_REST_MAX_COUNT);
-		if(g_restCount > 0)
-			PrintDebug(DEBUG_SPAWNLOGIC, "new rest period: %.1f s", g_restCount * DIRECTOR_TIMER_INTERVAL);
 	}
 }
 
@@ -347,8 +351,7 @@ directorState Director_Think() {
 	// A. They reach minimum flow (little past start saferoom)
 	// B. Under the total limited (equal to player count)
 	// C. Special spawning is enabled
-	// TODO: scaling chance, low chance when hitting g_infectedCount, higher on 0
-	if(g_highestFlowAchieved < g_minFlowSpawn ||  ~cvEPISpecialSpawning.IntValue & 1) return DState_PendingMinFlowOrDisabled;
+	if( ~cvEPISpecialSpawning.IntValue & 1 || !L4D_HasAnySurvivorLeftSafeArea() || g_highestFlowAchieved < g_minFlowSpawn) return DState_PendingMinFlowOrDisabled;
 
 	// Check if a rest period is given
 	if(Director_ShouldRest()) {
@@ -424,7 +427,7 @@ Action Timer_DirectorWitch(Handle h) {
 void DirectorSpawn(specialType special, int player = -1) {
 	if(player <= 0)
 		player = GetSuitableVictim();
-	PrintDebug(DEBUG_SPAWNLOGIC, "Director: spawning %s(%d) around %N (cnt=%d,lim=%d)", SPECIAL_IDS[view_as<int>(special)], special, player, g_spawnCount[view_as<int>(special)], g_spawnLimit[view_as<int>(special)]);
+	// PrintDebug(DEBUG_SPAWNLOGIC, "Director: spawning %s(%d) around %N (cnt=%d,lim=%d)", SPECIAL_IDS[view_as<int>(special)], special, player, g_spawnCount[view_as<int>(special)], g_spawnLimit[view_as<int>(special)]);
 	if(special != Special_Witch && special != Special_Tank) {
 		// Bypass director
 		int bot = CreateFakeClient("EPI_BOT");
