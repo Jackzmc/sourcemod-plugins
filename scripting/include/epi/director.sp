@@ -4,7 +4,7 @@
 #define DIRECTOR_WITCH_MIN_TIME 120 // The minimum amount of time to pass since last witch spawn for the next extra witch to spawn
 #define DIRECTOR_WITCH_CHECK_TIME 30.0 // How often to check if a witch should be spawned
 #define DIRECTOR_WITCH_MAX_WITCHES 5 // The maximum amount of extra witches to spawn 
-#define DIRECTOR_WITCH_ROLLS 4 // The number of dice rolls, increase if you want to increase freq
+#define DIRECTOR_WITCH_ROLLS 3 // The number of dice rolls, increase if you want to increase freq
 #define DIRECTOR_MIN_SPAWN_TIME 13.0 // Possibly randomized, per-special
 #define DIRECTOR_SPAWN_CHANCE 0.04 // The raw chance of a spawn 
 #define DIRECTOR_CHANGE_LIMIT_CHANCE 0.05 // The chance that the maximum amount per-special is changed
@@ -46,9 +46,10 @@ enum directorState {
 	DState_PlayerChance,
 	DState_Resting,
 	DState_TankInPlay,
-	DState_HighStress
+	DState_HighStress,
+	DState_MaxDirectorSpecials,
 }
-char DIRECTOR_STATE[8][] = {
+char DIRECTOR_STATE[9][] = {
 	"normal",
 	"no players / not coop",
 	"pending minflow OR disabled",
@@ -57,6 +58,7 @@ char DIRECTOR_STATE[8][] = {
 	"rest period",
 	"tank in play",
 	"high stress",
+	"director MaxSpecials"
 };
 static directorState g_lastState; 
 
@@ -65,6 +67,7 @@ static float g_lastSpawnTime[TOTAL_NUM_SPECIALS];
 static float g_lastSpecialSpawnTime; // for any special
 static int g_spawnLimit[TOTAL_NUM_SPECIALS];
 static int g_spawnCount[TOTAL_NUM_SPECIALS];
+static int gd_maxSpecials;
 static float g_minFlowSpawn; // The minimum flow for specials to start spawning (waiting for players to leave saferom)
 static float g_maxStressIntensity; // The max stress that specials arent allowed to spawn
 
@@ -150,41 +153,61 @@ void Director_CheckClient(int client) {
 static int g_newTankHealth = 0; 
 void OnTankBotSpawn(int client) {
 	if(!IsEPIActive() || !(cvEPISpecialSpawning.IntValue & 4)) return;
-	// Only run on 6+ survivors
-	if(g_realSurvivorCount < 6) return;
 	// Check if any finale is active
-	if(g_finaleStage != Stage_Inactive) {
-		if(g_finaleStage == Stage_FinaleTank2) {
-			if(hExtraFinaleTank.IntValue > 0 && g_extraFinaleTankEnabled) {
-				float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
-				// Pass it 0, which doesnt make it a split tank, has default health
-				CreateTimer(duration, Timer_SpawnSplitTank, 0);
-			}
-		}
-	} else if(g_newTankHealth > 0) {
+	if(g_newTankHealth > 0) {
 		// A split tank has spawned, set its health
 		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: split tank spawned, setting health to %d", g_newTankHealth);
 		SetEntProp(client, Prop_Send, "m_iHealth", g_newTankHealth);
 		g_newTankHealth = 0;
-	} else {
-		// This should not run on active finales (different than finale maps, such as swamp fever's, where finale isnt full map)
-		// Normal tank (not stage 2 / not secondary tank) spawned. Set its health and spawn split tank
-		int health = GetEntProp(client, Prop_Send, "m_iHealth");
-		float additionalHealth = float(g_survivorCount - 4) * cvEPITankHealth.FloatValue;
-		health += RoundFloat(additionalHealth);
-
-		// Only split if split tank chance, if enabled, and we aren't on 2nd finale tank
-		if(hExtraFinaleTank.IntValue & 1 && GetURandomFloat() <= hSplitTankChance.FloatValue) {
+		return;
+	} else if(g_realSurvivorCount >= hExtraTankThreshold.IntValue && g_extraFinaleTankEnabled && hExtraFinaleTank.IntValue > 1) {
+		// If we have hExtraTankThreshold or more and finale tanks enabled, spawn finale tanks:
+		if(g_finaleStage == Stage_Active) {
+			// 1st tank spawned
+			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: [FINALE] 1st tank spawned");
+			g_finaleStage = Stage_FirstTankSpawned;
+			return;
+		} else if(g_realSurvivorCount < 6 && g_finaleStage == Stage_FirstTankSpawned) {
+			// 2nd tank spawned
+			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: [FINALE] 2nd tank spawned");
 			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
-			int splitHealth = health / 2;
-			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: split tank in %.1fs, health=%d", duration, splitHealth);
-			CreateTimer(duration, Timer_SpawnSplitTank, splitHealth);
-			SetEntProp(client, Prop_Send, "m_iHealth", splitHealth);
-		} else {
-			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: Setting tank health to %d", health);
-			SetEntProp(client, Prop_Send, "m_iHealth", health);
+			// Pass it 0, which doesnt make it a split tank, has default health
+			CreateTimer(duration, Timer_SpawnSplitTank, 0);
+			g_finaleStage = Stage_SecondTankSpawned;
+			return;
 		}
 	}
+
+	// End finale logic:
+	if(g_finaleStage == Stage_SecondTankSpawned) {
+		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: [FINALE] Health set, tank logic done");
+		g_finaleStage = Stage_ActiveDone;
+		// We don't return, letting the 2nd 5+ finale tank get buffed:
+	}
+	// This should not run on active finales (different than finale maps, such as swamp fever's, where finale isnt full map)
+	// Normal tank (not stage 2 / not secondary tank) spawned. Set its health and spawn split tank
+	int health = GetEntProp(client, Prop_Send, "m_iHealth");
+	float additionalHealth = float(g_survivorCount - 4) * cvEPITankHealth.FloatValue;
+	health += RoundFloat(additionalHealth);
+
+	/* Split tank can only spawn if: 
+		(1) not finale
+		(2) over threshold hExtraTankThreshold
+		(3) split tanks enabled
+		(4) random chance set by hSplitTankChance
+	Otherwise, just scale health based on survivor count
+	*/
+	if(g_finaleStage == Stage_Inactive && g_realSurvivorCount >= hExtraTankThreshold.IntValue && hExtraFinaleTank.IntValue & 1 && GetURandomFloat() <= hSplitTankChance.FloatValue) {
+		float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
+		int splitHealth = health / 2;
+		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: split tank in %.1fs, health=%d", duration, splitHealth);
+		CreateTimer(duration, Timer_SpawnSplitTank, splitHealth);
+		SetEntProp(client, Prop_Send, "m_iHealth", splitHealth);
+	} else {
+		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: Setting tank health to %d", health);
+		SetEntProp(client, Prop_Send, "m_iHealth", health);
+	}
+	
 }
 
 Action Timer_SpawnSplitTank(Handle h, int health) {
@@ -267,7 +290,7 @@ void Director_PrintDebug(int client) {
 	}
 	PrintToConsole(client, "highestFlow = %f, g_minFlowSpawn = %f, current flow = %f", g_highestFlowAchieved, g_minFlowSpawn, L4D2Direct_GetFlowDistance(client));
 	PrintToConsole(client, "g_maxStressIntensity = %f, current avg = %f", g_maxStressIntensity, L4D_GetAvgSurvivorIntensity());
-	PrintToConsole(client, "TankInPlay=%b, FinaleEscapeReady=%b, DirectorTankCheck:%b", L4D2_IsTankInPlay(), g_isFinaleEnding, L4D2_IsTankInPlay() && !g_isFinaleEnding);
+	PrintToConsole(client, "TankInPlay=%b, FinaleStage=%d, FinaleEscapeReady=%b, DirectorTankCheck:%b", L4D2_IsTankInPlay(), g_finaleStage, g_isFinaleEnding, L4D2_IsTankInPlay() && !g_isFinaleEnding);
 	char buffer[128];
 	float time = GetGameTime();
 	PrintToConsole(client, "Last Spawn Deltas: (%.1f s) (min %f)", time - g_lastSpecialSpawnTime, DIRECTOR_MIN_SPAWN_TIME);
@@ -291,6 +314,7 @@ void Director_RandomizeLimits() {
 		g_spawnLimit[i] = GetRandomInt(0, max);
 		// PrintDebug(DEBUG_SPAWNLOGIC, "new spawn limit (special=%d, b=[0,%d], limit=%d)", i, max, g_spawnLimit[i]);
 	}
+	gd_maxSpecials = L4D2_GetScriptValueInt("MaxSpecials", 0);
 }
 void Director_RandomizeThings() {
 	g_maxStressIntensity = GetRandomFloat(DIRECTOR_STRESS_CUTOFF, 1.0);
@@ -351,6 +375,8 @@ directorState Director_Think() {
 	// A. They reach minimum flow (little past start saferoom)
 	// B. Under the total limited (equal to player count)
 	// C. Special spawning is enabled
+	gd_maxSpecials = L4D2_GetScriptValueInt("MaxSpecials", 0);
+	if(gd_maxSpecials <= 0) return DState_MaxDirectorSpecials;
 	if( ~cvEPISpecialSpawning.IntValue & 1 || !L4D_HasAnySurvivorLeftSafeArea() || g_highestFlowAchieved < g_minFlowSpawn) return DState_PendingMinFlowOrDisabled;
 
 	// Check if a rest period is given
@@ -360,7 +386,7 @@ directorState Director_Think() {
 
 	// Only spawn more than one special within 2s at 10%
 	// TODO: randomized time between spawns? 0, ?? instead of repeat timer?
-	if(time - g_lastSpecialSpawnTime < 2.0 && GetURandomFloat() > 0.5) return DState_MaxSpecialTime;
+	if(time - g_lastSpecialSpawnTime < 1.0 && GetURandomFloat() > 0.45) return DState_MaxSpecialTime;
 
 	if(GetURandomFloat() < DIRECTOR_CHANGE_LIMIT_CHANCE) {
 		Director_RandomizeLimits();
@@ -408,7 +434,8 @@ Action Timer_Director(Handle h) {
 
 
 Action Timer_DirectorWitch(Handle h) {
-	if(g_spawnCount[Special_Witch] < g_extraWitchCount) { //&& time - g_lastSpawnTimes.witch > DIRECTOR_WITCH_MIN_TIME
+	// TODO: instead of +1, do it when director spawned a witch
+	if(g_spawnCount[Special_Witch] < g_extraWitchCount + 1) { //&& time - g_lastSpawnTimes.witch > DIRECTOR_WITCH_MIN_TIME
  		for(int i = 0; i <= g_extraWitchCount; i++) {
 			if(g_extraWitchFlowPositions[i] > 0.0 && g_highestFlowAchieved >= g_extraWitchFlowPositions[i]) {
 				// Reset the flow so we don't spawn another
@@ -433,6 +460,7 @@ void DirectorSpawn(specialType special, int player = -1) {
 		int bot = CreateFakeClient("EPI_BOT");
 		if (bot != 0) {
 			ChangeClientTeam(bot, 3);
+			
 			CreateTimer(0.1, Timer_Kick, bot);
 		}
 	}
