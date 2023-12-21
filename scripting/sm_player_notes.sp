@@ -5,7 +5,7 @@
 
 #define PLUGIN_VERSION "1.0"
 #define MAX_PLAYER_HISTORY 25
-#define MAX_NOTES_TO_SHOW 5
+#define MAX_NOTES_TO_SHOW 4
 #define DATABASE_CONFIG_NAME "stats"
 
 #include <sourcemod>
@@ -438,9 +438,8 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 				CPrintChatToAdmins("  {olive}%s: {default}%s", noteCreator, reason);
 			}
 		}
-		int remainingNotes = count - MAX_NOTES_TO_SHOW;
-		if(remainingNotes >= MAX_NOTES_TO_SHOW) {
-			CPrintChatToAdmins("  ... and {olive}%d more", remainingNotes);
+		if(count >= MAX_NOTES_TO_SHOW) {
+			CPrintChatToAdmins("  ... and {olive}%d more", count - MAX_NOTES_TO_SHOW);
 		}
 
 		if(actions > 0) {
@@ -536,7 +535,7 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 
 Action Timer_SlapPlayer(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
-	if(client > 0) {
+	if(client > 0 && IsClientInGame(client)) {
 		SlapPlayer(client, 0, true);
 	}
 	return Plugin_Handled;
