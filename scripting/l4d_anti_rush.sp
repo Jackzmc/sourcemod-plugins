@@ -686,7 +686,7 @@ Action TimerTest(Handle timer)
 		}
 	}
 
-	float flow;
+	float currentFlow;
 	int count, countflow, index;
 
 	// Get survivors flow distance
@@ -748,18 +748,17 @@ Action TimerTest(Handle timer)
 		}
 
 		// Get flow
-		flow = L4D2Direct_GetFlowDistance(client);
-		// Only get the highest flow
-		if(flow > g_fHighestFlow[client]) { 
-			g_fHighestFlow[client] = flow;
-		} else {
-			flow = g_fHighestFlow[client];
-		}
+		currentFlow = L4D2Direct_GetFlowDistance(client);
 
-		if( flow && flow != -9999.0 ) // Invalid flows
+
+		if( currentFlow && currentFlow != -9999.0 ) // Invalid flows
 		{
+			// Only get the highest flow
+			if(currentFlow > g_fHighestFlow[client]) {
+				g_fHighestFlow[client] = currentFlow;
+			}
 			countflow++;
-			index = aList.Push(flow);
+			index = aList.Push(currentFlow);
 			aList.Set(index, client, 1);
 		}
 		// Reset slowdown if players flow is invalid
@@ -800,13 +799,16 @@ Action TimerTest(Handle timer)
 				// Only check nearest half of survivor pack.
 				if( i < countflow / 2 )
 				{
-					flow = aList.Get(i, 0);
+					currentFlow = aList.Get(i, 0);
 
 					// Loop through from next survivor to mid-way through the pack.
 					for( int x = i + 1; x <= countflow / 2; x++ )
 					{
-						lastFlow = aList.Get(x, 0);
-						distance = flow - lastFlow;
+						// We instead use the highest flow for the other survivors, to prevent survivors going back from triggering antirush on a player
+						// The player we check uses their latest flow to prevent issues if they themselves glitched ahead in somecase then returned.
+						lastFlow = g_fHighestFlow[x];
+						if(lastFlow <= 0.0) continue;
+						distance = currentFlow - lastFlow;
 						if( g_bEventStarted ) distance -= g_fEventExtended;
 
 						// Warn ahead hint
@@ -842,9 +844,9 @@ Action TimerTest(Handle timer)
 							{
 								// Inhibit moving forward
 								// Only check > or < because when == the same flow distance, they're either already being slowed or running back, so we don't want to change/affect them within the same flow NavMesh.
-								if( flow > g_fLastFlow[client] )
+								if( currentFlow > g_fLastFlow[client] )
 								{
-									g_fLastFlow[client] = flow;
+									g_fLastFlow[client] = currentFlow;
 
 									if( g_iCvarType == 1 && g_bInhibit[client] == false )
 									{
@@ -870,10 +872,10 @@ Action TimerTest(Handle timer)
 										SDKHooks_TakeDamage(client, 0, 0, g_fCvarHealth);
 									}
 								}
-								else if( flow < g_fLastFlow[client] )
+								else if( currentFlow < g_fLastFlow[client] )
 								{
 									flowBack = true;
-									g_fLastFlow[client] = flow;
+									g_fLastFlow[client] = currentFlow;
 								}
 							}
 
@@ -925,13 +927,13 @@ Action TimerTest(Handle timer)
 					continue;
 				}
 
-				flow = aList.Get(i, 0);
+				currentFlow = aList.Get(i, 0);
 
 				// Loop through from next survivor to mid-way through the pack.
 				for( int x = i - 1; x < countflow; x++ )
 				{
-					lastFlow = aList.Get(x, 0);
-					distance = lastFlow - flow;
+					lastFlow = g_fHighestFlow[x];
+					distance = lastFlow - currentFlow;
 					if( g_bEventStarted ) distance -= g_fEventExtended;
 
 					// Warn behind hint
