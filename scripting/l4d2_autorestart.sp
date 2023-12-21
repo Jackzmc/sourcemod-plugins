@@ -36,7 +36,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_request_restart", Command_RequestRestart, ADMFLAG_GENERIC);
 	RegAdminCmd("sm_ar_status", Command_Status, ADMFLAG_GENERIC);
 
-	CreateTimer(600.0, Timer_Check, _, TIMER_REPEAT);
+	CreateTimer(780.0, Timer_Check, _, TIMER_REPEAT);
 }
 
 Action Command_Status(int client, int args) {
@@ -76,7 +76,7 @@ public Action Timer_Check(Handle h) {
 		pendingRestart = true;
 		cvar_hibernateWhenEmpty.BoolValue = false;
 		if(IsServerEmpty()) {
-			if(++triesEmpty > 4) {
+			if(++triesEmpty >= 4) {
 				LogAction(0, -1, "Server has passed max online time threshold and is empty after %d tries, restarting now", triesEmpty);
 				ServerCommand("quit");
 			}
