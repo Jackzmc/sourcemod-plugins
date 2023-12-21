@@ -281,7 +281,7 @@ Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& dam
 		if(GetClientTeam(attacker) != 2 || GetClientTeam(victim) != 2 || attacker == victim) 
 			return Plugin_Continue;
 		else if(IsFakeClient(attacker) && attacker != victim) {
-				// Ignore damage from fire/explosives caused by bots (players who left after causing fire)
+			// Ignore damage from fire/explosives caused by bots (players who left after causing fire)
 			if(damagetype & DMG_BURN && hFFAutoScaleActivateTypes.IntValue & view_as<int>(RffActType_MolotovDamage)) {
 				damage = 0.0;
 				return Plugin_Changed;
@@ -340,7 +340,7 @@ Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& dam
 		else if(pData[victim].underAttack) return Plugin_Continue;
 	
 		// Is damage not caused by fire or pipebombs?
-		bool isDamageDirect = (damagetype & DMG_BURN) == 0;
+		bool isDamageDirect = true; //(damagetype & DMG_BURN) == 0;
 
 		// Forgive player teamkill based on threshold, resetting accumlated damage
 		if(time - pData[attacker].lastFFTime > hForgivenessTime.IntValue) {
