@@ -12,6 +12,7 @@
 //#include <sdkhooks>
 #include <profiler>
 #include <json>
+#include <left4dhooks>
 #include <jutils>
 #include <entitylump>
 
@@ -52,8 +53,6 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_rcycle", Command_CycleRandom, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_expent", Command_ExportEnt, ADMFLAG_GENERIC);
 
-	HookEvent("round_start", Event_RoundStart);
-
 	cvarEnabled = CreateConVar("sm_randomizer_enabled", "0");
 
 	g_MapData.activeScenes = new ArrayList(sizeof(ActiveSceneData));
@@ -67,6 +66,11 @@ public void OnMapStart() {
 	GetCurrentMap(currentMap, sizeof(currentMap));
 }
 
+public void OnMapEnd() {
+	Cleanup();
+}
+
+bool hasRan;
 public void OnMapInit(const char[] map) {
 	if(cvarEnabled.BoolValue) {
 		if(LoadMapData(currentMap, FLAG_NONE) && g_MapData.lumpEdits.Length > 0) {
@@ -78,23 +82,15 @@ public void OnMapInit(const char[] map) {
 			}
 		}
 	}
+	hasRan = false;
 }
 
-void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
-	if(cvarEnabled.BoolValue) {
-		CreateTimer(10.0, Timer_LoadMap);
+public void OnClientPutInServer(int client) {
+	if(!hasRan) {
+		hasRan = true;
+		if(cvarEnabled.BoolValue)
+			RunMap(currentMap, FLAG_NONE);
 	}
-}
-
-Action Timer_LoadMap(Handle h) {
-	if(cvarEnabled.BoolValue) {
-		RunMap(currentMap, FLAG_NONE);
-	}
-	return Plugin_Handled;
-}
-
-public void OnMapEnd() {
-	Cleanup();
 }
 
 stock int GetLookingEntity(int client, TraceEntityFilter filter) {
