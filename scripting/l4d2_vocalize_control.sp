@@ -55,7 +55,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 
 public Action Cmd_VGag(int client, int args) {
     if(args < 1) {
-		ReplyToCommand(client, "Usage: sm_vgag <player>");
+		ReplyToCommand(client, "Usage: sm_vgag <player> - vocalize gag someone for yourself only");
 	} else {
 		char arg1[32];
 		GetCmdArg(1, arg1, sizeof(arg1));
@@ -79,10 +79,10 @@ public Action Cmd_VGag(int client, int args) {
             int playerIndex = gaggedPlayers[client].FindValue(target_list[i]);
             if(playerIndex > -1) {
                 gaggedPlayers[client].Erase(playerIndex);
-                ReplyToCommand(client, "Locally vocalize ungagged %N", target_list[i]);
+                ReplyToCommand(client, "Vocalize ungagged %N for yourself.", target_list[i]);
             }else{
                 gaggedPlayers[client].Push(target_list[i]);
-                ReplyToCommand(client, "Locally vocalize gagged %N", target_list[i]);
+                ReplyToCommand(client, "Vocalize gagged %N for yourself. Type command again to ungag.", target_list[i]);
             }
 		}
 	}
@@ -95,13 +95,12 @@ public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PL
 			for(int i = 0; i < numClients; i++) {
                 int client = clients[i];
                 if(gaggedPlayers[client].FindValue(entity) > -1) {
-					// Swap gagged player to end of list, then remove it (dec. numClients is effectively same)
+					// Swap gagged player to end of list, then reduce array count by one.
 					int swap = clients[numClients - 1];
 					clients[numClients - 1] = client;
 					clients[i] = swap;
 					numClients -= 1;
 					return Plugin_Handled;
-                    //Remove client from clients
                 }
             }
 		}
