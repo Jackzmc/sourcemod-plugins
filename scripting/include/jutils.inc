@@ -912,6 +912,7 @@ stock int GetSinglePlayer(int client, const char[] input, int flags = 0) {
 	return target_list[0];
 }
 
+#if defined _l4dh_included
 static int _glowColor[3] = { 255, 255, 255 };
 
 stock void GlowPoint(const float pos[3], float lifetime = 5.0) {
@@ -934,6 +935,7 @@ Action Timer_ClearGlow(Handle h, int ref) {
 	L4D2_RemoveEntityGlow(ref);
 	return Plugin_Handled;
 }
+#endif
 
 stock bool CompareVector(const float a[3], const float b[3], float delta) {
 	return a[0] < b[0] + delta && a[0] > b[0] - delta &&
@@ -950,6 +952,7 @@ stock void CalculateWorldPosition(int entity, float pos[3]) {
 	pos[1] = pos[1] + (mins[1] + maxs[1]) * 0.5;
 	pos[2] = pos[2] + (mins[2] + maxs[2]) * 0.5;
 }
+#if defined _l4dh_included
 /// Displays either: Username, Username (AFK), Username (Dead), Userame (AFK/Dead)
 stock void GetMenuDisplayName(int client, char[] display, int maxlen) {
 	int realPlayer = L4D_GetIdlePlayerOfBot(client);
@@ -965,6 +968,7 @@ stock void GetMenuDisplayName(int client, char[] display, int maxlen) {
 		GetClientName(client, display, maxlen);
 	}
 }
+#endif
 
 stock int MathMax(int a, int b) {
 	return a > b ? a : b;

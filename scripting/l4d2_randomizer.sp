@@ -12,7 +12,6 @@
 //#include <sdkhooks>
 #include <profiler>
 #include <json>
-#include <left4dhooks>
 #include <jutils>
 #include <entitylump>
 
