@@ -797,7 +797,7 @@ stock bool Filter_NoPlayers(int entity, int mask, int data) {
 }
 
 stock bool Filter_IgnorePlayerAndWall(int entity, int mask, int data) {
-	return entity > 0 && entity != data && EntRefToEntIndex(WallBuilder[data].entity) != entity;
+	return entity > MaxClients && entity != data && EntRefToEntIndex(WallBuilder[data].entity) != entity;
 }
 
 
