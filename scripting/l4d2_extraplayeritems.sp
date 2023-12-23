@@ -555,6 +555,7 @@ Action Command_EpiVal(int client, int args) {
 		PrintToConsole(client, "realSurvivorCount = %d", g_realSurvivorCount);
 		PrintToConsole(client, "restCount = %d", g_restCount);
 		PrintToConsole(client, "extraFinaleTankEnabled = %b", g_extraFinaleTankEnabled);
+		PrintToConsole(client, "g_areItemsPopulated = %b", g_areItemsPopulated);
 		ReplyToCommand(client, "Values printed to console");
 		return Plugin_Handled;
 	}
@@ -1187,10 +1188,11 @@ void IncreaseKits() {
 		PrintToServer("[EPI] Warn: No kit spawns (weapon_first_aid_kit_spawn) found");
 		return;
 	}
-
+	int count = 0;
 	while(g_extraKitsAmount > 0) {
 		GetEntPropVector(entity, Prop_Data, "m_vecOrigin", pos);
 		if(L4D_IsPositionInLastCheckpoint(pos)) {
+			count++;
 			// Give it a little chance to nudge itself
 			pos[2] += 0.3;
 			SpawnItem("first_aid_kit", pos);
@@ -1200,6 +1202,10 @@ void IncreaseKits() {
 		// Loop around
 		if(entity == INVALID_ENT_REFERENCE) {
 			entity = -1;
+			// If we did not find any suitable kits, stop here.
+			if(count == 0) {
+				break;
+			}
 		}
 	}
 }
@@ -1208,12 +1214,15 @@ void IncreaseFinaleKits() {
 	float pos[3];
 	int entity = -1;
 	int spawnCount = g_survivorCount - 4;
+	int count = 0;
+	PrintDebug(DEBUG_SPAWNLOGIC, "Spawning %d finale kits", spawnCount);
 	while(spawnCount > 0) {
 		GetEntPropVector(entity, Prop_Data, "m_vecOrigin", pos);
 		Address address = L4D_GetNearestNavArea(pos);
 		if(address != Address_Null) {
 			int attributes = L4D_GetNavArea_SpawnAttributes(address);
 			if(attributes & NAV_SPAWN_FINALE) {
+				count++;
 				pos[2] += 0.3;
 				SpawnItem("first_aid_kit", pos);
 				spawnCount--;
@@ -1223,6 +1232,10 @@ void IncreaseFinaleKits() {
 		// Loop around
 		if(entity == INVALID_ENT_REFERENCE) {
 			entity = -1;
+			// If we did not find any suitable kits, stop here.
+			if(count == 0) {
+				break;
+			}
 		}
 	}
 }

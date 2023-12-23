@@ -17,12 +17,19 @@
 
 #define _TURRET_PHASE_TICKS TURRET_NORMAL_PHASE_TICKS + TURRET_COMMON_PHASE_TICKS
 
-#define PLUGIN_VERSION "1.0"
+// Taken from l4d_machine, thanks
+#define SOUND_IMPACT_HIT		"physics/flesh/flesh_impact_bullet1.wav"  
+#define SOUND_IMPACT_MISS		"physics/concrete/concrete_impact_bullet1.wav"  
+#define SOUND_FIRE				"weapons/50cal/50cal_shoot.wav"  
+#define PARTICLE_WEAPON_TRACER  "weapon_tracers_50cal"
+
+#define PLUGIN_VERSION "2.0"
 
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
 #include <left4dhooks>
+#include <jutils>
 // #include <profiler>
 
 
@@ -35,11 +42,39 @@
 // #define SOUND_LASER_FIRE "level/puck_impact.wav"
 #include <gamemodes/ents>
 
+enum MountedGun {
+	MountedGun_Minigun,
+	MountedGun_50Cal
+}
+char MountedGunClassname[2][32] = { "prop_minigun_l4d1", "prop_minigun" };
+char MountedGunModel[2][64] = { "models/w_models/weapons/w_minigun.mdl", "models/w_models/weapons/50cal.mdl" };
+float MOUNTED_HEAT_MIN[2] = { 0.01, 0.0 };
+float MOUNTED_HEAT_INCREASE_RATE[2] = { 0.0003333333, 0.0075};
+float MOUNTED_DAMAGE[2] = { 10.0, 100.0 };
+float MOUNTED_FIRE_RATE[2] = { 0.0, 0.25 }; // Only can fire every value game ticks
+enum struct MountedTurret {
+	MountedGun type;
+	int entity;
+	float heat;
+	int target;
+	bool cooling;
+	float nextFire;
+	int poseParamYaw;
+	int poseParamPitch;
+	int poseController; //TODO: kill
+}
+#define MAX_MOUNTED_TURRETS 6
+MountedTurret MTurret[MAX_MOUNTED_TURRETS];
+int MTurretCount;
+#define HEAT_DECREASE_RATE 0.01
+
 int g_iLaserIndex;
 int g_iBeamSprite;
 int g_iHaloSprite;
+int g_iTracerIndex;
 
 int manualTargetter;
+int g_debugTracer;
 Handle thinkTimer;
 
 ConVar cv_autoBaseDamage;
@@ -51,6 +86,9 @@ int manualTarget = -1;
 #define MANUAL_TARGETNAME "turret_target_manual"
 
 ArrayList turretIds;
+Handle SDKCall_LookupPoseParameter;
+Handle SDKCall_LoadModel, SDKCall_DeleteModel;
+int Animating_StudioHdr;
 
 /* TODO: 
 Entity_ChangeOverTime`
@@ -91,6 +129,52 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
+	GameData gameData = LoadGameConfigFile("l4d2_turret");
+	if(!gameData) {
+		LogError("Missing gamedata l4d2_turret.txt, mounted turret disabled");
+	} else {
+		//  = 
+		StartPrepSDKCall(SDKCall_Entity); 
+		// CBaseAnimating::LookupPoseParameter(CStudioHdr*, char const*)
+		PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "CBaseAnimating::LookupPoseParameter"); 
+		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+		PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);  
+		PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain); 
+		SDKCall_LookupPoseParameter = EndPrepSDKCall();
+		if(SDKCall_LookupPoseParameter == null) {
+			SetFailState("Failed to load SDK call \"CBaseAnimating::LookupPoseParameter\". Update signature in \"plugin.turret\"");
+		}
+		
+		// Taken from https://github.com/Natanel-Shitrit/StudioHdr/blob/d95e93134729361e06a0381a163de8b0b5625bc4/include/studio_hdr.inc#L4722
+		// CStudioHdr *ModelSoundsCache_LoadModel( const char *filename )
+		StartPrepSDKCall(SDKCall_Static);
+		PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "ModelSoundsCache_LoadModel");
+		PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
+		PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+		if (!(SDKCall_LoadModel = EndPrepSDKCall())) {
+			SetFailState("Missing signature 'ModelSoundsCache_LoadModel'");
+		}
+		
+		// void ModelSoundsCache_FinishModel( CStudioHdr *hdr )
+		StartPrepSDKCall(SDKCall_Static);
+		PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "ModelSoundsCache_FinishModel");
+		PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+		if (!(SDKCall_DeleteModel = EndPrepSDKCall())) {
+			SetFailState("Missing signature 'ModelSoundsCache_FinishModel'");
+		}
+
+		// TODO: REMOVE
+		Animating_StudioHdr = gameData.GetOffset("CBaseAnimating::StudioHdr");
+		if(Animating_StudioHdr == -1)
+			SetFailState("Failed to get offset: \"CBaseAnimating::StudioHdr\""); 
+		int iOffset_hLightingOrigin = FindSendPropInfo("CBaseAnimating", "m_hLightingOrigin");
+		if (iOffset_hLightingOrigin < 1) 
+			SetFailState("Failed to find send prop: \"m_hLightingOrigin\"");
+		Animating_StudioHdr += iOffset_hLightingOrigin;
+
+		delete gameData;
+	}
+
 	turretIds = new ArrayList();
 
 	FindTurrets();
@@ -103,8 +187,10 @@ public void OnPluginStart() {
 
 	RegAdminCmd("sm_turret", Command_SpawnTurret, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_rmturrets", Command_RemoveTurrets, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_rmlaser", Command_RemoveLaserTurret, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_rmturret", Command_RemoveTurret, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_manturret", Command_ManualTarget, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_turret_debug", Command_Debug, ADMFLAG_CHEATS);
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
 			SDKHook(i, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
@@ -126,6 +212,7 @@ enum TurretState {
 TurretState turretState[2048];
 int turretActivatorParticle[2048];
 int entityActiveTurret[2048]; // mapping the turret thats active on victim. [victim] = turret
+int entityActiveMounted[2048];
 int turretActiveEntity[2048];
 int turretPhaseOffset[2048]; // slight of offset so they dont all enter the same phase at same time
 bool turretIsActiveLaser[2048];
@@ -135,18 +222,89 @@ float turretDamage[2048];
 int turretCount;
 
 void FindTurrets() {
-	int entity = INVALID_ENT_REFERENCE;
+	int entity = -1;
 	char targetname[32];
 	while ((entity = FindEntityByClassname(entity, "info_particle_system")) != INVALID_ENT_REFERENCE) {
 		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
 		if(StrEqual(targetname, "turret")) {
-			SetupTurret(entity);
-			PrintToServer("Found existing turret: %d", entity);
+			SetupLaserTurret(entity);
+			PrintToServer("Found existing laser turret: %d", entity);
 		}
+	}
+	entity = -1;
+	while ((entity = FindEntityByClassname(entity, "prop_minigun")) != INVALID_ENT_REFERENCE) {
+		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
+		if(StrContains(targetname, "turret_") > -1)
+			AddMountedGun(entity, MountedGun_50Cal);
+	}
+	entity = -1;
+	while ((entity = FindEntityByClassname(entity, "prop_minigun_l4d1")) != INVALID_ENT_REFERENCE) {
+		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
+		if(StrContains(targetname, "turret_") > -1)
+			AddMountedGun(entity, MountedGun_Minigun);
 	}
 }
 
-void SetupTurret(int turret, float time = 0.0) {
+int AddMountedGun(int entity, MountedGun type) {
+	MTurret[MTurretCount].entity = EntIndexToEntRef(entity);
+	MTurret[MTurretCount].type = type;
+	MTurret[MTurretCount].target = INVALID_ENT_REFERENCE;
+	MTurret[MTurretCount].heat = 0.0;
+	MTurret[MTurretCount].cooling = false;
+	MTurret[MTurretCount].nextFire = GetGameTime();
+
+	char buffer[64];
+	Format(buffer, sizeof(buffer), "turret_%d", entity);
+	SetEntPropString(entity, Prop_Data, "m_iName", buffer);
+
+	int poseCtrl = CreateEntityByName("point_posecontroller");
+	DispatchKeyValue(poseCtrl, "PropName", buffer);
+	Format(buffer, sizeof(buffer), "turret_%d_posectrl", entity);
+	DispatchKeyValue(poseCtrl, "targetname", buffer);
+	DispatchKeyValue(poseCtrl, "PoseParameterName", "MiniGun_Horizontal");
+	DispatchKeyValue(poseCtrl, "CycleFrequency", "0");
+	DispatchSpawn(poseCtrl);
+	SetParent(poseCtrl, entity);
+	MTurret[MTurretCount].poseController = EntIndexToEntRef(poseCtrl);
+
+	// TODO: do on start
+	// char buffer[PLATFORM_MAX_PATH];
+	// GetEntPropString(entity, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
+
+
+	// Address pStudioHdrClass = view_as<Address>(GetEntData(entity,  0x13E0));
+	// // Address pStudioHdrClass = //GetStudioHdr(buffer);
+	// PrintToServer("MG%d '%s' pStudioHdrClass=%d", MTurretCount, buffer, pStudioHdrClass);
+	// MTurret[MTurretCount].poseParamYaw = SDKCall(SDKCall_LookupPoseParameter, entity, pStudioHdrClass, "MiniGun_Horizontal");
+	// // MTurret[MTurretCount].poseParamPitch = SDKCall(SDKCall_LookupPoseParameter, entity, pStudioHdrClass, "MiniGun_Vertical");
+	PrintToServer("MG%d poseParamYaw=%d poseParamPitch=%d", MTurretCount, MTurret[MTurretCount].poseParamYaw, MTurret[MTurretCount].poseParamPitch);
+
+	MTurretCount++;
+	PrintToServer("Added mounted gun #%d (type=%d)", MTurretCount, type);
+	if(thinkTimer == null) {
+		PrintToServer("Created turret think timer");
+		thinkTimer = CreateTimer(0.1, Timer_Think, _, TIMER_REPEAT);
+	}
+	return MTurretCount;
+}
+
+void RemoveMounted(int index) {
+	// Shift everything from [index, MTurretCount] down
+	for(int i = index; i < MTurretCount; i++) {
+		if(!IsValidEntity(MTurret[i+1].entity)) {
+			break;
+		}
+		MTurret[i].entity = MTurret[i+1].entity;
+		MTurret[i].type = MTurret[i+1].type;
+		MTurret[i].target = MTurret[i+1].target;
+		MTurret[i].heat = MTurret[i+1].heat;
+		MTurret[i].cooling = MTurret[i+1].cooling;
+		MTurret[i].nextFire = MTurret[i+1].nextFire;
+	}
+	MTurretCount--;
+}
+
+void SetupLaserTurret(int turret, float time = 0.0) {
 	float pos[3];
 	GetEntPropVector(turret, Prop_Send, "m_vecOrigin", pos);
 	turretState[turret] = Turret_Disabled;
@@ -179,7 +337,7 @@ void DeactivateTurret(int turret) {
 
 int ClearTurrets(bool fullClear = true) {
 	turretIds.Clear();
-	int entity = INVALID_ENT_REFERENCE;
+	int entity = -1;
 	int count;
 	char targetname[32];
 	if(fullClear) {
@@ -198,28 +356,47 @@ int ClearTurrets(bool fullClear = true) {
 				AcceptEntityInput(entity, "Kill");
 			}
 		}
-		entity = INVALID_ENT_REFERENCE;
+		entity = -1;
+		while ((entity = FindEntityByClassname(entity, "prop_minigun*")) != INVALID_ENT_REFERENCE) {
+			GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
+			if(StrContains(targetname, "turret_") > -1) {
+				RemoveEntity(entity);
+				count++;
+			}
+		}
+		MTurretCount = 0;
 	}
+	entity = -1;
 	while ((entity = FindEntityByClassname(entity, "env_laser")) != INVALID_ENT_REFERENCE) {
 		if(turretIsActiveLaser[entity]) {
 			AcceptEntityInput(entity, "TurnOff");
 			AcceptEntityInput(entity, "Kill");
 		}
 	}
-	entity = INVALID_ENT_REFERENCE;
+	entity = -1;
+	while ((entity = FindEntityByClassname(entity, "point_posecontroller")) != INVALID_ENT_REFERENCE) {
+		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
+		if(StrContains(targetname, "turret_") > -1) {
+			RemoveEntity(entity);
+		}
+	}
+	
+	entity = -1;
 	while ((entity = FindEntityByClassname(entity, "info_target")) != INVALID_ENT_REFERENCE) {
 		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
 		if(StrContains(targetname, "turret_target_") > -1 || StrEqual(targetname, MANUAL_TARGETNAME)) {
-			AcceptEntityInput(entity, "Kill");
+			RemoveEntity(entity);
 		}
 	}
 
+
 	for(int i = 1; i < 2048; i++) {
 		entityActiveTurret[i] = 0;
+		entityActiveMounted[i] = 0;
 		pendingDeletion[i] = false;
 	}
 	turretCount = 0;
-	if(IsValidHandle(thinkTimer)) {
+	if(thinkTimer != null) {
 		delete thinkTimer;
 	}
 	return count;
@@ -261,6 +438,8 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 	}
 	entityActiveTurret[index] = 0;
 	entityActiveTurret[client] = 0;
+	entityActiveMounted[index] = 0;
+	entityActiveMounted[client] = 0;
 }
 
 public void OnEntityDestroyed(int entity) {
@@ -271,17 +450,52 @@ public void OnEntityDestroyed(int entity) {
 			DeactivateTurret(turret);
 		}
 		entityActiveTurret[entity] = 0;
+		entityActiveMounted[entity] = 0;
 	}
 }
 
 
 public Action Command_SpawnTurret(int client, int args) {
+	if(args == 0) {
+		ReplyToCommand(client, "Usage: /mkturret <laser/minigun/50cal>");
+		return Plugin_Handled;
+	}
+	char arg[16];
+	GetCmdArg(1, arg, sizeof(arg));
+
 	float pos[3];
 	GetClientEyePosition(client, pos);
+	float ang[3];
+	GetClientEyeAngles(client, ang);
+	ang[0] = 0.0;
+	ang[2] = 0.0;
 	// pos[2] += 10.0;
-	int base = CreateParticleNamed(ENT_PORTAL_NAME, PARTICLE_ELMOS, pos, NULL_VECTOR);
-	SetupTurret(base, TURRET_ACTIVATION_TIME);
-	ReplyToCommand(client, "New turret (%d) will activate in %.0f seconds", base, TURRET_ACTIVATION_TIME);
+	if(StrEqual(arg, "laser")) {
+		int base = CreateParticleNamed(ENT_PORTAL_NAME, PARTICLE_ELMOS, pos, NULL_VECTOR);
+		SetupLaserTurret(base, TURRET_ACTIVATION_TIME);
+		ReplyToCommand(client, "New laser turret (%d) will activate in %.0f seconds", base, TURRET_ACTIVATION_TIME);
+	} else {
+		GetCursorLocation(client, pos);
+		MountedGun type = MountedGun_Minigun;
+		if(StrEqual(arg, "minigun")) {
+			type = MountedGun_Minigun;
+		} else if(StrEqual(arg, "50cal", false)) {
+			type = MountedGun_50Cal;
+		} else {
+			ReplyToCommand(client, "Unknown turret type. Usage: /mkturret <laser/minigun/50cal>");
+			return Plugin_Handled;
+		}
+		// TODO: create minigun
+		int gun = CreateEntityByName(MountedGunClassname[type]);
+		DispatchKeyValue(gun, "targetname", "turret");
+		DispatchKeyValue(gun, "model", MountedGunModel[type]);
+		TeleportEntity(gun, pos, ang, NULL_VECTOR);
+		DispatchSpawn(gun);
+		AddMountedGun(gun, type);
+		ReplyToCommand(client, "New mounted gun spawned.");
+		return Plugin_Handled;
+	}
+
 	return Plugin_Handled;
 }
 
@@ -310,25 +524,23 @@ public Action Command_ManualTarget(int client, int args) {
 	return Plugin_Handled;
 }
 
-public Action Command_RemoveTurrets(int client, int args) {
-	int count = ClearTurrets();
-	/*int entity = INVALID_ENT_REFERENCE;
-	char targetname[32];
-	int count;
-	while ((entity = FindEntityByClassname(entity, "info_particle_system")) != INVALID_ENT_REFERENCE) {
-		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
-		if(StrEqual(targetname, ENT_PORTAL_NAME)) {
-			AcceptEntityInput(entity, "Kill");
-			count++;
-		} else if(StrEqual(targetname, "turret_activate")) {
-			AcceptEntityInput(entity, "Kill");
-		}
-	}*/
+Action Command_RemoveTurrets(int client, int args) {
+	int count = ClearTurrets(true);
 	ReplyToCommand(client, "Removed %d turrets", count);
 	return Plugin_Handled;
 }
 
-public Action Command_RemoveTurret(int client, int args) {
+Action Command_Debug(int client, int args) {
+	if(g_debugTracer == client) {
+		g_debugTracer = 0;
+		ReplyToCommand(client, "Debug mode off");
+	} else {
+		g_debugTracer = client;
+		ReplyToCommand(client, "Debug mode on");
+	}
+}
+
+Action Command_RemoveLaserTurret(int client, int args) {
 	if(turretIds.Length == 0) {
 		ReplyToCommand(client, "No turrets to remove");
 	} else {
@@ -338,73 +550,225 @@ public Action Command_RemoveTurret(int client, int args) {
 	return Plugin_Handled;
 }
 
+Action Command_RemoveTurret(int client, int args) {
+	int target = GetClientAimTarget(client, false);
+	if(target >= MaxClients) {
+		int targetRef = EntIndexToEntRef(target);
+		for(int i = 0; i < MTurretCount; i++) {
+			if(MTurret[i].entity == targetRef) {
+				RemoveMounted(i);
+				ReplyToCommand(client, "Removed mounted turret #%d", i);
+				return Plugin_Handled;
+			}
+		}
+		ReplyToCommand(client, "Not a valid turret");
+	} else {
+		ReplyToCommand(client, "You are not looking at a turret");
+	}
+	return Plugin_Handled;
+}
+
+
+bool IsTargetValid(int targetRef) {
+	if(!IsValidEntity(targetRef)) return false;
+	return GetEntProp(targetRef, Prop_Data, "m_iHealth") > 0;
+}
+
+void GetAngles(const float pos[3], const float endPos[3], float angles[3]) {
+	float result[3];
+	MakeVectorFromPoints(endPos, pos, result);
+	GetVectorAngles(result, angles);
+	if(angles[0] >= 270){
+		angles[0] -= 270;
+		angles[0] = (90-angles[0]);
+	}else{
+		if(angles[0] <= 90){
+			angles[0] *= -1;
+		}
+	}
+	angles[1] -= 180;
+}
+
+void ShowTracer(float pos[3], float endPos[3]) {  
+	TE_SetupParticle(g_iTracerIndex, pos, endPos);
+	TE_SendToAll();
+}
+
+Address GetStudioHdr(const char[] model) {
+	if (!model[0]) {
+		LogError("empty model path");
+	}
+	// Create a new CStudioHdr variable based on the model path.
+	Address CStudioHdr = SDKCall(SDKCall_LoadModel, model);
+	if (!CStudioHdr) {
+		return Address_Null;
+	}
+	// Load 'studiohdr_t *m_pStudioHdr' from 'CStudioHdr' pointer. (can be treated as if it was a studiohdr_t **)
+	Address m_pStudioHdr = view_as<Address>(LoadFromAddress(CStudioHdr, NumberType_Int32));
+	// Delete the CStudioHdr variable to not leak memory.
+	SDKCall(SDKCall_DeleteModel, CStudioHdr);
+	return m_pStudioHdr;
+}
+
+void SetPoseParameter(int entity, int iParameter, float flStart, float flEnd, float flValue)    {
+	float ctlValue = (flValue - flStart) / (flEnd - flStart);
+	if (ctlValue < 0) ctlValue = 0.0;
+	if (ctlValue > 1) ctlValue = 1.0;
+	
+	SetEntPropFloat(entity, Prop_Send, "m_flPoseParameter", ctlValue, iParameter);
+}
+
+
+void SetPoseControllerParameter(int entity, const char[] parameter, float flStart, float flEnd, float flValue)    {
+	float ctlValue = (flValue - flStart) / (flEnd - flStart);
+	if (ctlValue < 0) ctlValue = 0.0;
+	if (ctlValue > 1) ctlValue = 1.0;
+	
+	SetVariantString(parameter);
+	AcceptEntityInput(entity, "SetPoseParameterName");
+	SetVariantFloat(ctlValue);
+	AcceptEntityInput(entity, "SetPoseValue");
+	PrintToServer("SetPoseControllerParameter: ent=%d param=%s value=%f", entity, parameter, ctlValue);
+}
+
+
 public Action Timer_Think(Handle h) {
 	if( manualTargetter > 0) return Plugin_Continue;
 	// Probably better to just store from CreateParticle
 	static int entity; 
-	entity = INVALID_ENT_REFERENCE;
+	entity = -1;
 	// static char targetname[32];
-	static float pos[3];
+	static float pos[3], targetPos[3], angles[3], turretAngles[3];
 	static int count, target, tick;
+	for(int i = 0; i < MTurretCount; i++) {
+		GetEntPropVector(MTurret[i].entity, Prop_Send, "m_vecOrigin", pos);
+		GetEntPropVector(MTurret[i].entity, Prop_Send, "m_angRotation", turretAngles);
+		if(!IsTargetValid(MTurret[i].target)) {
+			MTurret[i].target = FindNearestVisibleEntity("infected", pos, TURRET_MAX_RANGE_INFECTED_OPTIMIZED, MTurret[i].entity);
+		}
 
-	while ((entity = FindEntityByClassname(entity, "info_particle_system")) != INVALID_ENT_REFERENCE) {
-		// GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
-		// if(StrEqual(targetname, ENT_PORTAL_NAME)) {
-		if(view_as<int>(turretState[entity]) > 0) {
-			GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
-			if(turretState[entity] == Turret_Active) {
-				// Keep targetting if can view
-				target = EntRefToEntIndex(turretActiveEntity[entity]);
-				if(target > 0 && IsValidEntity(target)) {
-					if(target <= MaxClients) {
-						if(IsPlayerAlive(target) && GetEntProp(target, Prop_Data, "m_bClientSideRagdoll") == 0 && CanSeeEntity(pos, target)) {
+		if(MTurret[i].target > 0 && !MTurret[i].cooling) {
+			// Map to a bogus value:
+			entityActiveMounted[MTurret[i].target] = i;
+			MTurret[i].heat += MOUNTED_HEAT_INCREASE_RATE[MTurret[i].type];
+			// PrintToServer("mg%d warming - heat:%f min:%f", i, MTurret[i].heat, MOUNTED_HEAT_MIN[MTurret[i].type]);
+			if(MTurret[i].heat >= 1.0) {
+				MTurret[i].heat = 1.0;
+				MTurret[i].cooling = true;
+				SetEntProp(MTurret[i].entity, Prop_Send, "m_firing", 0);
+				SetEntProp(MTurret[i].entity, Prop_Send, "m_overheated", 1);
+			}
+			else if(MTurret[i].heat >= MOUNTED_HEAT_MIN[MTurret[i].type] && GetGameTime() >= MTurret[i].nextFire) {
+				// Can fire now
+				SetEntProp(MTurret[i].entity, Prop_Send, "m_firing", 1);
+				// TODO: look at
+				if(MTurret[i].type == MountedGun_50Cal)
+					EmitSoundToAll(SOUND_FIRE, 0,  SNDCHAN_WEAPON, SNDLEVEL_NORMAL, SND_NOFLAGS, 1.0, SNDPITCH_NORMAL, -1, pos, NULL_VECTOR, true, 0.0);
+				GetEntPropVector(MTurret[i].target, Prop_Send, "m_vecOrigin", targetPos);
+				targetPos[2] += 40.0; // hit infected better
+				GetAngles(pos, targetPos, angles);
+				float angle = 0.5 + (angles[1] - turretAngles[1]) / FLOAT_PI;
+				SetPoseControllerParameter(MTurret[i].poseController, "MiniGun_Vertical", -90.0, 90.0, angle);
+				angle = 0.5 + (angles[0] - turretAngles[0]) / FLOAT_PI;
+				SetPoseControllerParameter(MTurret[i].poseController, "MiniGun_Horizontal", -90.0, 90.0, angle);
+				// SetPoseParameter(MTurret[i].entity, 0, -90.0, 90.0, angles[0]);
+				// SetPoseParameter(MTurret[i].entity, 1, -90.0, 90.0, angles[1]);
+				TR_TraceRay(pos, targetPos, 0, RayType_EndPoint);
+				if(TR_DidHit()) {
+					// Obstacle
+					TR_GetEndPosition(targetPos);
+					EmitSoundToAll(SOUND_IMPACT_MISS, 0, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_NOFLAGS, 1.0, SNDPITCH_NORMAL, -1, targetPos, NULL_VECTOR, true, 0.0);
+				} else {
+					EmitSoundToAll(SOUND_IMPACT_HIT, 0, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_NOFLAGS, 1.0, SNDPITCH_NORMAL, -1, targetPos, NULL_VECTOR, true, 0.0);
+					// TODO: improve damage
+					SDKHooks_TakeDamage(MTurret[i].target, MTurret[i].entity, MTurret[i].entity, MOUNTED_DAMAGE[MTurret[i].type], DMG_BLAST);
+				}
+				TE_SetupTracerSound(pos, targetPos);
+				TE_SendToAll();
+				// Get the end of the barrel
+				GetHorizontalPositionFromOrigin(pos, turretAngles, 10.0, pos);
+				pos[2] += 45.0;
+				ShowTracer(pos, targetPos);
+				TE_SetupMuzzleFlash(pos, turretAngles, 1.0, 1);
+				TE_SendToAll();
+				// For now, make 50 cal swap target (for commons)
+				if(MTurret[i].type == MountedGun_50Cal) {
+					MTurret[i].target = INVALID_ENT_REFERENCE;
+				}
+				MTurret[i].nextFire = GetGameTime() + MOUNTED_FIRE_RATE[MTurret[i].type];
+			}
+		} else {
+			MTurret[i].heat -= HEAT_DECREASE_RATE;
+			SetEntProp(MTurret[i].entity, Prop_Send, "m_firing", 0);
+			if(MTurret[i].heat < 0.0) {
+				MTurret[i].heat = 0.0;
+				MTurret[i].cooling = false;
+				SetEntProp(MTurret[i].entity, Prop_Send, "m_overheated", 0);
+			}
+		}
+		SetEntPropFloat(MTurret[i].entity, Prop_Send, "m_heat", MTurret[i].heat);
+	}
+	if(turretCount > 0) {
+		entity = -1;
+		while ((entity = FindEntityByClassname(entity, "info_particle_system")) != INVALID_ENT_REFERENCE) {
+			// GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
+			// if(StrEqual(targetname, ENT_PORTAL_NAME)) {
+			if(view_as<int>(turretState[entity]) > 0) {
+				GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
+				if(turretState[entity] == Turret_Active) {
+					// Keep targetting if can view
+					target = EntRefToEntIndex(turretActiveEntity[entity]);
+					if(target > 0 && IsValidEntity(target)) {
+						if(target <= MaxClients) {
+							if(IsPlayerAlive(target) && GetEntProp(target, Prop_Data, "m_bClientSideRagdoll") == 0 && CanSeeEntity(pos, target)) {
+								FireTurretAuto(pos, target, turretDamage[entity]);
+								continue;
+							}
+						} else if(CanSeeEntity(pos, target)) {
 							FireTurretAuto(pos, target, turretDamage[entity]);
 							continue;
 						}
-					} else if(CanSeeEntity(pos, target)) {
-						FireTurretAuto(pos, target, turretDamage[entity]);
-						continue;
 					}
+					DeactivateTurret(entity);
 				}
-				DeactivateTurret(entity);
-			}
-			// Skip activation if a survivor is too close
-			if(FindNearestClient(TEAM_SURVIVORS, pos, TURRET_MAX_RANGE_HUMANS_OPTIMIZED) > 0) {
-				continue;
-			}
+				// Skip activation if a survivor is too close
+				if(FindNearestClient(TEAM_SURVIVORS, pos, TURRET_MAX_RANGE_HUMANS_OPTIMIZED) > 0) {
+					continue;
+				}
 
-			bool inNormalPhase = ((tick + turretPhaseOffset[entity]) % _TURRET_PHASE_TICKS) <= TURRET_NORMAL_PHASE_TICKS;
+				bool inNormalPhase = ((tick + turretPhaseOffset[entity]) % _TURRET_PHASE_TICKS) <= TURRET_NORMAL_PHASE_TICKS;
 
-			// Find a target, in this order: Tank Rock -> Specials -> Infected
-			float damage = cv_autoBaseDamage.FloatValue;
-			target = -1;
-			if(inNormalPhase) {
-				target = FindNearestVisibleEntity("tank_rock", pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED, entity);
+				// Find a target, in this order: Tank Rock -> Specials -> Infected
+				float damage = cv_autoBaseDamage.FloatValue;
+				target = -1;
+				if(inNormalPhase) {
+					target = FindNearestVisibleEntity("tank_rock", pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED, entity);
+					if(target > 0) {
+						CreateTimer(1.2, Timer_KillRock, EntIndexToEntRef(target));
+						damage = 1000.0;
+					}
+					if(target <= 0) target = FindNearestVisibleClient(TEAM_SPECIALS, pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED);
+				}
+				if(target <= 0) target = FindNearestVisibleEntity("infected", pos, TURRET_MAX_RANGE_INFECTED_OPTIMIZED, entity); 
 				if(target > 0) {
-					CreateTimer(1.2, Timer_KillRock, EntIndexToEntRef(target));
-					damage = 1000.0;
+					turretDamage[entity] = damage;
+					entityActiveTurret[target] = entity;
+					turretActiveEntity[entity] = EntIndexToEntRef(target);
+					turretActivatorParticle[entity] = EntIndexToEntRef(CreateParticleNamed("turret_activate", PARTICLE_TES1, pos, NULL_VECTOR));
+					// AcceptEntityInput(turretActivatorParticle[entity], "Start");
+					FireTurretAuto(pos, target, turretDamage[entity]);
+					turretState[entity] = Turret_Active;
 				}
-				if(target <= 0) target = FindNearestVisibleClient(TEAM_SPECIALS, pos, TURRET_MAX_RANGE_SPECIALS_OPTIMIZED);
-			}
-			if(target <= 0) target = FindNearestVisibleEntity("infected", pos, TURRET_MAX_RANGE_INFECTED_OPTIMIZED, entity); 
-			if(target > 0) {
-				turretDamage[entity] = damage;
-				entityActiveTurret[target] = entity;
-				turretActiveEntity[entity] = EntIndexToEntRef(target);
-				turretActivatorParticle[entity] = EntIndexToEntRef(CreateParticleNamed("turret_activate", PARTICLE_TES1, pos, NULL_VECTOR));
-				// AcceptEntityInput(turretActivatorParticle[entity], "Start");
-				FireTurretAuto(pos, target, turretDamage[entity]);
-				turretState[entity] = Turret_Active;
-			}
-			// Optimization incase there's multiple info_particle_system
-			if(++count > turretCount) {
-				count = 0;
-				break;
+				// Optimization incase there's multiple info_particle_system
+				if(++count > turretCount) {
+					count = 0;
+					break;
+				}
 			}
 		}
-	}
-	if(++tick >= _TURRET_PHASE_TICKS) {
-		tick = 0;
+		if(++tick >= _TURRET_PHASE_TICKS) {
+			tick = 0;
+		}
 	}
 	return Plugin_Continue;
 }
@@ -552,27 +916,47 @@ stock int FindNearestVisibleClient(int team, const float origin[3], float maxRan
 	return client;
 }
 
-stock int FindNearestVisibleEntity(const char[] classname, const float origin[3], float maxRange = 0.0, int turretIndex) {
-	int entity = INVALID_ENT_REFERENCE;
+stock int FindNearVisibleEntityCone(const char[] classname, const float origin[3], const float angles[3], float maxAngles, float maxRange, int ignoreEntity) {
+	int entity = -1;
 	static float pos[3];
 	while ((entity = FindEntityByClassname(entity, classname)) != INVALID_ENT_REFERENCE) {
 		// Skip entity, it's already being targetted
-		if(entityActiveTurret[entity] > 0) continue;
-		bool ragdoll = GetEntProp(entity, Prop_Data, "m_bClientSideRagdoll") == 1;
-		if(ragdoll) continue;
-		// if(GetEntProp(entity, Prop_Send, "m_iHealth") <= 0) continue;
+		if(entityActiveTurret[entity] > 0 || entityActiveMounted[entity] > 0) continue;
+		bool ragdolled = GetEntProp(entity, Prop_Data, "m_bClientSideRagdoll") == 1;
+		if(ragdolled) continue;
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
 		if(maxRange > 0.0 && GetVectorDistance(origin, pos, true) > maxRange) continue;
 		pos[2] += 40.0;
-		if(CanSeePoint(origin, pos)) {
+		// TODO: fail if the computed angles to reach 'pos' are > angles + maxAngles
+		if(CanSeePoint(origin, pos, ignoreEntity)) {
 			return entity;
 		}
+		return entity;
 	}
 	return -1;
 }
 
-stock bool CanSeePoint(const float origin[3], const float point[3]) {
-	TR_TraceRay(origin, point, MASK_SHOT, RayType_EndPoint);
+stock int FindNearestVisibleEntity(const char[] classname, const float origin[3], float maxRange = 0.0, int ignoreEntity = 0) {
+	int entity = -1;
+	static float pos[3];
+	while ((entity = FindEntityByClassname(entity, classname)) != INVALID_ENT_REFERENCE) {
+		// Skip entity, it's already being targetted
+		if(entityActiveTurret[entity] > 0 || entityActiveMounted[entity] > 0) continue;
+		bool ragdolled = GetEntProp(entity, Prop_Data, "m_bClientSideRagdoll") == 1;
+		if(ragdolled) continue;
+		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
+		if(maxRange > 0.0 && GetVectorDistance(origin, pos, true) > maxRange) continue;
+		pos[2] += 40.0;
+		if(CanSeePoint(origin, pos, ignoreEntity)) {
+			return entity;
+		}
+		return entity;
+	}
+	return -1;
+}
+
+stock bool CanSeePoint(const float origin[3], const float point[3], int ignoreEntity = 0) {
+	TR_TraceRayFilter(origin, point, MASK_SHOT, RayType_EndPoint, Filter_CanSeeEntity, ignoreEntity);
 	
 	return !TR_DidHit(); // Can see point if no collisions
 }
@@ -589,13 +973,23 @@ bool Filter_CanSeeEntity(int entity, int contentsMask, int data) {
 	return entity != data;
 }
 
+bool Filter_IgnoreEntityWorld(int entity, int contentsMask, int data) {
+	return entity != data && entity != 0;
+}
+
 
 public void OnMapStart() {
 	PrecacheParticle(PARTICLE_ELMOS);
 	PrecacheParticle(PARTICLE_TES1);
+	g_iTracerIndex = GetParticleIndex(PARTICLE_WEAPON_TRACER);
 	g_iBeamSprite = PrecacheModel("sprites/laser.vmt", true);
 	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt", true);
 	PrecacheSound(SOUND_LASER_FIRE);
+	PrecacheSound(SOUND_FIRE);
+	PrecacheSound(SOUND_IMPACT_HIT);	
+	PrecacheSound(SOUND_IMPACT_MISS);
+	PrecacheModel(MountedGunModel[0]);
+	PrecacheModel(MountedGunModel[1]);
 	if(g_iLaserIndex == 0) {
 		LogError("g_iLaserIndex failed");
 	}
@@ -637,12 +1031,6 @@ stock int CreateParticleNamed(const char[] targetname, const char[] sParticle, c
 	}
 	return -1;
 }
-
-stock void SetParent(int child, int parent) {
-	SetVariantString("!activator");
-	AcceptEntityInput(child, "SetParent", parent);
-}
-
 /*#define MAX_IGNORE_TRACE 2
 static char IGNORE_TRACE[MAX_IGNORE_TRACE][] = {
 	"env_physics_blocker",
@@ -684,10 +1072,36 @@ bool Filter_ManualTargetSights(int entity, int contentsMask, int data) {
 	return true;
 }
 
+float HULL_DEBUG_MIN[3] = { -50.0, -50.0, -20.0 };
+float HULL_DEBUG_MAX[3] = { 50.0, 50.0, 20.0 };
 
-
+bool DebugEnumerator(int entity, int data) { 
+	if(entity == 0 || entity == data) return false;
+	GlowEntity(entity, 3.0);
+	return false;
+}
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
+	if(client == g_debugTracer) {
+		float pos[3];
+		float ang[3];
+		GetClientEyePosition(client, pos);
+		GetClientEyeAngles(client, ang);
+		TR_EnumerateEntitiesSphere(pos, 100.0, PARTITION_NON_STATIC_EDICTS, DebugEnumerator, client);
+		// TR_TraceHullFilter(pos, ang, HULL_DEBUG_MIN, HULL_DEBUG_MAX, MASK_SOLID, Filter_IgnoreEntityWorld, client);
+		// if(TR_DidHit()) {
+		// 	TR_GetEndPosition(pos);
+
+		// 	// TODO: use enumerator
+		// 	int ent = TR_GetEntityIndex();
+		// 	PrintCenterText(client, "HIT %d - %.0f %.0f %.0f", ent, pos[0], pos[1], pos[2]);
+		// 	if(ent > 0) {
+		// 		GlowEntity(ent, 3.0);
+		// 	}
+		// } else {
+		// 	PrintCenterText(client, "MISS");
+		// }
+	}
 	if(client == manualTargetter && turretCount > 0 && tickcount % 3 == 0) {
 		static float pos[3], aimPos[3], orgPos[3];
 		GetClientEyePosition(client, orgPos);

@@ -17,8 +17,14 @@ enum struct HatPreset {
 	ArrayList locations;
 
 	int Spawn() {
-		PrecacheModel(this.model);
+		if(!PrecacheModel(this.model)) {
+			LogError("[Hats] Failed to precache preset model: \"%s\"", this.model);
+		}
 		int entity = CreateEntityByName(this.type);
+		if(entity == -1) {
+			LogError("[Hats] Failed to spawn hat for type %s: \"%s\"", this.type, this.model);
+		}
+		DispatchKeyValue(entity, "solid", "6");
 		DispatchKeyValue(entity, "model", this.model);
 		if(HasEntProp(entity, Prop_Send, "m_flModelScale"))
 			SetEntPropFloat(entity, Prop_Send, "m_flModelScale", this.size);
@@ -29,8 +35,8 @@ enum struct HatPreset {
 	}
 
 	int Apply(int client) {
-		int entity = this.Spawn();
 		float offset[3], angles[3];
+		int entity = this.Spawn(offset);
 		EquipHat(client, entity, this.type, HAT_PRESET);
 		this.GetLocation(client, offset, angles);
 		hatData[client].offset = offset;

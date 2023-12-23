@@ -216,6 +216,38 @@ stock int SpawnSurvivor(const float vPos[3], const float vAng[3], const char[] m
 	CreateTimer(6.0, spawn_minigun ? Timer_MoveMinigun : Timer_Move, bot_user_id);
 	return bot_client_id;
 }
+//Taken from https://forums.alliedmods.net/showthread.php?p=1741099
+stock bool SpawnMinigun(const float vPos[3], const float vAng[3]) {
+	float vDir[3], newPos[3];
+	GetAngleVectors(vAng, vDir, NULL_VECTOR, NULL_VECTOR);
+	vDir[0] = vPos[0] + (vDir[0] * 50);
+	vDir[1] = vPos[1] + (vDir[1] * 50);
+	vDir[2] = vPos[2] + 20.0;
+	newPos = vDir;
+	newPos[2] -= 40.0;
+
+	Handle trace = TR_TraceRayFilterEx(vDir, newPos, MASK_SHOT, RayType_EndPoint, TraceFilter);
+	if(TR_DidHit(trace)) {
+		TR_GetEndPosition(vDir, trace);
+
+		int minigun = CreateEntityByName("prop_mounted_machine_gun");
+		minigun = EntIndexToEntRef(minigun);
+		SetEntityModel(minigun, MODEL_MINIGUN);
+		DispatchKeyValue(minigun, "targetname", "louis_holdout");
+		DispatchKeyValueFloat(minigun, "MaxPitch", 360.00);
+		DispatchKeyValueFloat(minigun, "MinPitch", -360.00);
+		DispatchKeyValueFloat(minigun, "MaxYaw", 90.00);
+		newPos[2] += 0.1;
+		TeleportEntity(minigun, vDir, vAng, NULL_VECTOR);
+		DispatchSpawn(minigun);
+		delete trace;
+		return true;
+	}else{
+		LogError("Spawn minigun trace failure");
+		delete trace;
+		return false;
+	}
+}
 void AvoidCharacter(int type, bool avoid) {
 	for( int i = 1; i <= MaxClients; i++ )
 	{

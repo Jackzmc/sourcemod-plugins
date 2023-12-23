@@ -454,13 +454,11 @@ Action Timer_DirectorWitch(Handle h) {
 void DirectorSpawn(specialType special, int player = -1) {
 	if(player <= 0)
 		player = GetSuitableVictim();
-	// PrintDebug(DEBUG_SPAWNLOGIC, "Director: spawning %s(%d) around %N (cnt=%d,lim=%d)", SPECIAL_IDS[view_as<int>(special)], special, player, g_spawnCount[view_as<int>(special)], g_spawnLimit[view_as<int>(special)]);
 	if(special != Special_Witch && special != Special_Tank) {
 		// Bypass director
 		int bot = CreateFakeClient("EPI_BOT");
 		if (bot != 0) {
 			ChangeClientTeam(bot, 3);
-			
 			CreateTimer(0.1, Timer_Kick, bot);
 		}
 	}
