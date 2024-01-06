@@ -16,6 +16,7 @@ static float EMPTY_ANG[3] = { 0.0, 0.0, 0.0 };
 #include <gamemodes/ents>
 #include <smlib/effects>
 #include <multicolors>
+#include <adminmenu>
 
 
 bool tempGod[MAXPLAYERS+1];
@@ -35,10 +36,12 @@ ConVar cvar_sm_hats_rainbow_speed;
 ConVar cvar_sm_hats_blacklist_enabled;
 ConVar cvar_sm_hats_max_distance;
 
+TopMenu g_topMenu;
 
 #include <hats/walls.sp>
 #include <hats/hats.sp>
 #include <hats/hat_presets.sp>
+#include <hats/props.sp>
 
 public Plugin myinfo = 
 {
@@ -72,7 +75,6 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_mkwall", Command_MakeWall, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_walls", Command_ManageWalls, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_wall", Command_ManageWalls, ADMFLAG_CHEATS);
-	RegAdminCmd("sm_edit", Command_ManageWalls, ADMFLAG_CHEATS);
 	RegConsoleCmd("sm_hatp", Command_DoAHatPreset);
 
 	cvar_sm_hats_blacklist_enabled = CreateConVar("sm_hats_blacklist_enabled", "1", "Is the prop blacklist enabled", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -106,6 +108,11 @@ public void OnPluginStart() {
 	LoadPresets();
 }
 
+public void OnLibraryRemoved(const char[] name) {
+  if (StrEqual(name, "adminmenu", false)) {
+		g_topMenu = null;
+   } 
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -36,7 +36,7 @@ enum struct HatPreset {
 
 	int Apply(int client) {
 		float offset[3], angles[3];
-		int entity = this.Spawn(offset);
+		int entity = this.Spawn();
 		EquipHat(client, entity, this.type, HAT_PRESET);
 		this.GetLocation(client, offset, angles);
 		hatData[client].offset = offset;
