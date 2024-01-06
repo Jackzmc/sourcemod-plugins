@@ -71,20 +71,21 @@ public Action VoteStart(int client, const char[] command, int argc) {
 
 			if(strlen(option) > 1) { //empty userid/console can't call votes
 				int target = GetClientOfUserId(StringToInt(option));
-				if(target <= 0 || target >= MaxClients || !IsClientConnected(target)) return Plugin_Continue; //invalid, pass it through
-				if(client <= 0 || client >= MaxClients || !IsClientConnected(client)) return Plugin_Continue; //invalid, pass it through
-				AdminId callerAdmin = GetUserAdmin(client);
+				if(target <= 0 || target >= MaxClients || !IsClientInGame(target)) return Plugin_Continue; //invalid, pass it through
 				AdminId targetAdmin = GetUserAdmin(target);
+				bool isCallerAdmin = GetUserFlagBits(client) != 0;
+				bool isTargetAdmin = GetUserFlagBits(target) != 0;
+				PrintToServer("Caller Admin: %b | Target admin: %b", isCallerAdmin, isTargetAdmin);
 				//Only run if vote is against an admin
-				if(targetAdmin != INVALID_ADMIN_ID) { 
+				if(isTargetAdmin) { 
 					for(int i = 1; i <= MaxClients; i++) {
-						if(target != i && IsClientConnected(i) && IsClientInGame(i) && GetUserAdmin(i) != INVALID_ADMIN_ID) {
+						if(target != i && IsClientInGame(i) && GetUserAdmin(i) != INVALID_ADMIN_ID) {
 							PrintToChat(i, "%N attempted to vote-kick admin %N", client, target);
 						}
 					}
 					// Kick player if they are not an admin and just recently joined.
 					// Else, just tell the target
-					if(callerAdmin == INVALID_ADMIN_ID && GetTime() - iJoinTime[client] <= ANTI_ADMIN_KICK_MIN_TIME) {
+					if(!isCallerAdmin && GetTime() - iJoinTime[client] <= ANTI_ADMIN_KICK_MIN_TIME) {
 						if(GetClientTeam(target) >= 2) {
 							KickClient(client, "No.");
 							PrintToChat(target, "%N has attempted to vote kick you and was kicked.", client);
@@ -100,7 +101,7 @@ public Action VoteStart(int client, const char[] command, int argc) {
 					PrintToServer("debug: admin immunity is %d. username: %s", targetAdmin.ImmunityLevel, option);
 					PrintToServer("ADMIN VOTE KICK BLOCKED | Target=%N | Caller=%N", target, client);
 					return Plugin_Handled;
-				} else if(callerAdmin != INVALID_ADMIN_ID) {
+				} else if(isCallerAdmin) {
 					PrintToServer("Vote kick by admin, instantly passing");
 					for(int i = 1; i <= MaxClients; i++) {
 						if(IsClientConnected(i) && !IsFakeClient(i) && GetClientTeam(i) == GetClientTeam(target)) {
