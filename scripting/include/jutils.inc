@@ -329,6 +329,25 @@ stock int GetPrimaryAmmo(int client) {
 	else
 		return -1;
 }
+stock int GetSecondaryAmmo(int client, int weapon) {
+	int activeWpn = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+	if(activeWpn == weapon) {
+		int offset = GetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType");
+		return GetEntProp(client, Prop_Send, "m_iAmmo", _, offset); 
+	} else {
+		return GetEntProp(activeWpn, Prop_Send, "m_iExtraPrimaryAmmo");
+	}
+} 
+
+stock void SetSecondaryAmmo(int client, int weapon, int ammo) {
+	int activeWpn = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+	if(activeWpn == weapon) {
+		int offset = GetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType");
+		SetEntProp(client, Prop_Send, "m_iAmmo", ammo, _, offset); 
+	} else {
+		SetEntProp(activeWpn, Prop_Send, "m_iExtraPrimaryAmmo", ammo);
+	}
+}
 stock void CheatCommand(int client, const char[] command, const char[] argument1, const char[] argument2) {
 	int userFlags = GetUserFlagBits(client);
 	SetUserFlagBits(client, ADMFLAG_ROOT);
