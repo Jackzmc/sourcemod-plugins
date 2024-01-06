@@ -22,17 +22,6 @@ char PRECACHE_SOUNDS[PRECACHE_SOUNDS_COUNT][] = {
 #include <multicolors>
 #include "l4d_survivor_identity_fix.inc"
 
-char ReserveLevels[4][] = {
-	"Public", "Watch", "Admin-Only", "Private"
-};
-enum ReserveMode {
-	Reserve_None = 0,
-	Reserve_Watch,
-	Reserve_AdminOnly,
-	Reserve_Private
-}
-
-
 char MODELS[8][] = {
 	"models/survivors/survivor_gambler.mdl",
 	"models/survivors/survivor_producer.mdl",
@@ -58,7 +47,6 @@ enum L4DModelId {
 static ArrayList LasersUsed;
 static ConVar hLaserNotice, hFinaleTimer, hFFNotice, hPingDropThres, hForceSurvivorSet, hPlayerLimit, hSVMaxPlayers, hHideMotd, hGamemode;
 static int iFinaleStartTime, botDropMeleeWeapon[MAXPLAYERS+1], iHighPingCount[MAXPLAYERS+1];
-ReserveMode reserveMode;
 static bool isHighPingIdle[MAXPLAYERS+1], isL4D1Survivors;
 static Handle hGoAwayFromKeyboard;
 static StringMap SteamIDs;
@@ -114,7 +102,6 @@ public void OnPluginStart() {
 		hSVMaxPlayers.IntValue = hPlayerLimit.IntValue;
 	}
 
-
 	hFFNotice.AddChangeHook(CVC_FFNotice);
 	if(hFFNotice.IntValue > 0) {
 		HookEvent("player_hurt", Event_PlayerHurt);
@@ -160,9 +147,6 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_playsound", Command_PlaySound, ADMFLAG_KICK, "Plays a gamesound for player");
 	RegAdminCmd("sm_stopsound", Command_StopSound, ADMFLAG_GENERIC, "Stops the last played gamesound for player");
 	RegAdminCmd("sm_swap", Command_SwapPlayer, ADMFLAG_KICK, "Swarms two player's locations");
-	RegAdminCmd("sm_perm", Command_SetServerPermissions, ADMFLAG_KICK, "Sets the server's permissions.");
-	RegAdminCmd("sm_perms", Command_SetServerPermissions, ADMFLAG_KICK, "Sets the server's permissions.");
-	RegAdminCmd("sm_permissions", Command_SetServerPermissions, ADMFLAG_KICK, "Sets the server's permissions.");
 	RegConsoleCmd("sm_pmodels", Command_ListClientModels, "Lists all player's models");
 	RegAdminCmd("sm_skipoutro", Command_SkipOutro, ADMFLAG_KICK, "Skips the outro");
 
@@ -178,82 +162,6 @@ void Event_PlayerLimitChange(ConVar cvar, const char[] oldValue, const char[] ne
 		hSVMaxPlayers.IntValue = cvar.IntValue;
 	}
 }
-
-
-public void OnClientConnected(int client) {
-	if(!IsFakeClient(client) && reserveMode == Reserve_Watch) {
-		PrintChatToAdmins("%N is connecting", client);
-	}
-}
-
-// Returns -1 if not allowed, or their previous index
-int GetAllowedPlayerIndex(const char[] authid2) {
-	int index;
-	return SteamIDs.GetValue(authid2, index) ? index : -1;
-}
-
-
-public void OnClientPostAdminCheck(int client) {
-	if(!IsFakeClient(client)) {
-		if(reserveMode == Reserve_AdminOnly && GetUserAdmin(client) == INVALID_ADMIN_ID) {
-			char auth[32];
-			GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
-			if(GetAllowedPlayerIndex(auth) == -1) {
-				KickClient(client, "Sorry, server is reserved");
-				return;
-			}
-		}
-	}
-}
-
-public void OnClientAuthorized(int client, const char[] auth) {
-	if(IsFakeClient(client)) return;
-	if(reserveMode == Reserve_Private) {
-		if(GetAllowedPlayerIndex(auth) == -1) {
-			KickClient(client, "Sorry, server is reserved");
-		}
-	}
-	// Don't insert id here if admin only, let admin check do that
-	if(reserveMode != Reserve_AdminOnly) {
-		SteamIDs.SetValue(auth, client);
-	}
-}
-
-Action Command_SetServerPermissions(int client, int args) {
-	if(args > 0) {
-		char arg1[32];
-		GetCmdArg(1, arg1, sizeof(arg1));
-		if(StrEqual(arg1, "public", false)) {
-			reserveMode = Reserve_None;
-		} else if(StrContains(arg1, "noti", false) > -1 || StrContains(arg1, "watch", false) > -1) {
-			reserveMode = Reserve_Watch;
-		} else if(StrContains(arg1, "admin", false) > -1) {
-			reserveMode = Reserve_AdminOnly;
-			for(int i = 1; i <= MaxClients; i++) {
-				if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
-					GetClientAuthId(i, AuthId_Steam2, arg1, sizeof(arg1));
-					SteamIDs.SetValue(arg1, i);
-				}
-			}
-		} else if(StrEqual(arg1, "private", false)) {
-			reserveMode = Reserve_Private;
-			for(int i = 1; i <= MaxClients; i++) {
-				if(IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
-					GetClientAuthId(i, AuthId_Steam2, arg1, sizeof(arg1));
-					SteamIDs.SetValue(arg1, i);
-				}
-			}
-		} else {
-			ReplyToCommand(client, "Usage: sm_reserve [public/notify/admin/private] or no arguments to view current reservation.");
-			return Plugin_Handled;
-		}
-		PrintChatToAdmins("Server access changed to %s", ReserveLevels[reserveMode]);
-	} else {
-		ReplyToCommand(client, "Server access level is currently %s", ReserveLevels[reserveMode]);
-	}
-	return Plugin_Handled;
-}
-
 
 Action Timer_CheckPlayerPings(Handle timer) {
 	if(StrEqual(gamemode, "hideandseek")) return Plugin_Continue;

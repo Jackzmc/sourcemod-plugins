@@ -145,19 +145,19 @@ void OnPortalTouch(const char[] output, int caller, int activator, float delay) 
 	#endif
 }
 
-stock int StartPropCreate(const char[] entClass, const char[] model, const float pos[3], const float ang[3]) {
+stock int StartPropCreate(const char[] entClass, const char[] model, const float pos[3], const float ang[3] = NULL_VECTOR, const float vel[3] = NULL_VECTOR) {
 	int entity = CreateEntityByName(entClass);
 	if(entity == -1) return -1;
 	DispatchKeyValue(entity, "model", model);
 	DispatchKeyValue(entity, "solid", "6");
 	DispatchKeyValue(entity, "targetname", ENT_PROP_NAME);
 	DispatchKeyValue(entity, "disableshadows", "1");
-	TeleportEntity(entity, pos, ang, NULL_VECTOR);
+	TeleportEntity(entity, pos, ang, vel);
 	return entity;
 }
 
-stock int CreateProp(const char[] entClass, const char[] model, const float pos[3], const float ang[3]) {
-	int entity = StartPropCreate(entClass, model, pos, ang);
+stock int CreateProp(const char[] entClass, const char[] model, const float pos[3], const float ang[3] = NULL_VECTOR, const float vel[3] = NULL_VECTOR) {
+	int entity = StartPropCreate(entClass, model, pos, ang, vel);
 	if(DispatchSpawn(entity)) {
 		#if defined DEBUG_LOG_MAPSTART
 		PrintToServer("spawn prop %.1f %.1f %.1f model %s", pos[0], pos[1], pos[2], model[7]);

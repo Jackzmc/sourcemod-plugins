@@ -140,7 +140,7 @@ float g_fBenchAvg;
 float g_iBenchTicks;
 #endif
 
-#define CVAR_FLAGS			FCVAR_NOTIFY
+#define CVAR_FLAGS			FCVAR_NONE
 #define MINIMUM_RANGE		1500.0			// Minimum range for last and lead cvars.
 #define EVENTS_CONFIG		"data/l4d_anti_rush.cfg"
 

@@ -106,7 +106,7 @@ void Director_OnMapEnd() {
 }
 
 void Cvar_SpecialSpawningChange(ConVar convar, const char[] oldValue, const char[] newValue) {
-	if(convar.IntValue & 2 && IsEPIActive()) {
+	if(convar.IntValue & 2) {
 		if(witchSpawnTimer == null)
 			witchSpawnTimer = CreateTimer(DIRECTOR_WITCH_CHECK_TIME, Timer_DirectorWitch, _, TIMER_REPEAT);
 	} else {
@@ -165,6 +165,8 @@ void OnTankBotSpawn(int client) {
 		if(g_finaleStage == Stage_Active) {
 			// 1st tank spawned
 			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: [FINALE] 1st tank spawned");
+			int health = CalculateExtraTankHealth(client);
+			SetEntProp(client, Prop_Send, "m_iHealth", health);
 			g_finaleStage = Stage_FirstTankSpawned;
 			return;
 		} else if(g_realSurvivorCount < 6 && g_finaleStage == Stage_FirstTankSpawned) {
@@ -173,6 +175,8 @@ void OnTankBotSpawn(int client) {
 			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
 			// Pass it 0, which doesnt make it a split tank, has default health
 			CreateTimer(duration, Timer_SpawnSplitTank, 0);
+			int health = CalculateExtraTankHealth(client);
+			SetEntProp(client, Prop_Send, "m_iHealth", health);
 			g_finaleStage = Stage_SecondTankSpawned;
 			return;
 		}
@@ -186,9 +190,7 @@ void OnTankBotSpawn(int client) {
 	}
 	// This should not run on active finales (different than finale maps, such as swamp fever's, where finale isnt full map)
 	// Normal tank (not stage 2 / not secondary tank) spawned. Set its health and spawn split tank
-	int health = GetEntProp(client, Prop_Send, "m_iHealth");
-	float additionalHealth = float(g_survivorCount - 4) * cvEPITankHealth.FloatValue;
-	health += RoundFloat(additionalHealth);
+	int health = CalculateExtraTankHealth(client);
 
 	/* Split tank can only spawn if: 
 		(1) not finale
@@ -207,7 +209,13 @@ void OnTankBotSpawn(int client) {
 		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: Setting tank health to %d", health);
 		SetEntProp(client, Prop_Send, "m_iHealth", health);
 	}
-	
+}
+
+int CalculateExtraTankHealth(int client) {
+	int health = GetEntProp(client, Prop_Send, "m_iHealth");
+	float additionalHealth = float(g_survivorCount - 4) * cvEPITankHealth.FloatValue;
+	health += RoundFloat(additionalHealth);
+	return health;
 }
 
 Action Timer_SpawnSplitTank(Handle h, int health) {
@@ -283,6 +291,9 @@ void InitExtraWitches() {
 
 void Director_PrintDebug(int client) {
 	PrintToConsole(client, "State: %s(%d)", DIRECTOR_STATE[g_lastState], g_lastState);
+	float eCount = float(g_survivorCount - 3);
+	float chance = (eCount - float(g_infectedCount)) / eCount;
+	PrintToConsole(client, "Player Scale Chance: %f%%", chance * 100.0);
 	PrintToConsole(client, "Map Bounds: [%f, %f]", FLOW_CUTOFF, L4D2Direct_GetMapMaxFlowDistance() - (FLOW_CUTOFF*2.0));
 	PrintToConsole(client, "Total Witches Spawned: %d | Target: %d", g_spawnCount[Special_Witch], g_extraWitchCount);
 	for(int i = 0; i < g_extraWitchCount && i < DIRECTOR_WITCH_MAX_WITCHES; i++) {
@@ -435,6 +446,7 @@ Action Timer_Director(Handle h) {
 
 Action Timer_DirectorWitch(Handle h) {
 	// TODO: instead of +1, do it when director spawned a witch
+	if(!IsEPIActive()) return Plugin_Continue;
 	if(g_spawnCount[Special_Witch] < g_extraWitchCount + 1) { //&& time - g_lastSpawnTimes.witch > DIRECTOR_WITCH_MIN_TIME
  		for(int i = 0; i <= g_extraWitchCount; i++) {
 			if(g_extraWitchFlowPositions[i] > 0.0 && g_highestFlowAchieved >= g_extraWitchFlowPositions[i]) {
@@ -443,11 +455,12 @@ Action Timer_DirectorWitch(Handle h) {
 				int target = L4D_GetHighestFlowSurvivor();
 				if(!target) return Plugin_Continue;
 				DirectorSpawn(Special_Witch, target);
-				break;
+				return Plugin_Continue;
 			}
 		}
 	}
-	return Plugin_Continue;
+	witchSpawnTimer = null;
+	return Plugin_Stop;
 }
 
 // UTIL functions

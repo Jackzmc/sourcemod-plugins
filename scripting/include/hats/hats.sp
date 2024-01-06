@@ -377,7 +377,10 @@ Action Command_DoAHat(int client, int args) {
 			PrintToConsole(client, "[Hats] Selected a child entity, selecting parent (child %d -> parent %d)", entity, parent);
 			entity = parent;
 		} else if(entity <= MaxClients) { // Checks for hatting a player entity
-			if(GetClientTeam(entity) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
+			if(IsFakeClient(entity)) {
+				PrintToChat(client, "[Hats] Cannot hat bots");
+				return Plugin_Handled;
+			} else if(GetClientTeam(entity) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
 				PrintToChat(client, "[Hats] Cannot make enemy a hat... it's dangerous");
 				return Plugin_Handled;
 			} else if(entity == EntRefToEntIndex(WallBuilder[client].entity)) {

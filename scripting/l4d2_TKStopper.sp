@@ -340,7 +340,7 @@ Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& dam
 		else if(pData[victim].underAttack) return Plugin_Continue;
 	
 		// Is damage not caused by fire or pipebombs?
-		bool isDamageDirect = true; //(damagetype & DMG_BURN) == 0;
+		bool isDamageDirect = (~damagetype & DMG_BURN) != 0;
 
 		// Forgive player teamkill based on threshold, resetting accumlated damage
 		if(time - pData[attacker].lastFFTime > hForgivenessTime.IntValue) {
@@ -587,10 +587,10 @@ Action Command_IgnorePlayer(int client, int args) {
 		if (flags & Immune_TK) {
 			if (pData[target].immunityFlags & Immune_TK) {
 				LogAction(client, target, "\"%L\" re-enabled teamkiller detection for \"%L\"",  client, target);
-				CShowActivity2(client, "[FTT] ", "{yellow}%N has re-enabled teamkiller detection for {olive}%N", client, target);
+				CShowActivity2(client, "[FTT] ", "{yellow}%N{default} has re-enabled teamkiller detection for {olive}%N", client, target);
 			} else {
 				LogAction(client, target, "\"%L\" ignored teamkiller detection for \"%L\"",  client, target);
-				CShowActivity2(client, "[FTT] ", "{yellow}%N has ignored teamkiller detection for {olive}%N", client, target);
+				CShowActivity2(client, "[FTT] ", "{yellow}%N{default} has ignored teamkiller detection for {olive}%N", client, target);
 			}
 			pData[target].immunityFlags ^= Immune_TK;
 		} 
@@ -598,9 +598,10 @@ Action Command_IgnorePlayer(int client, int args) {
 		if (flags & Immune_RFF) {
 			if (pData[target].immunityFlags & Immune_RFF) {
 				LogAction(client, target, "\"%L\" re-enabled auto reverse friendly-fire for \"%L\"",  client, target);
+				CShowActivity2(client, "[FTT] ", "{yellow}%N{default} has enabled auto reverse friendly-fire for {olive}%N", client, target);
 			} else {
 				LogAction(client, target, "\"%L\" disabled auto reverse friendly-fire for \"%L\"",  client, target);
-				CShowActivity2(client, "[FTT] ", "{yellow}%N has disabled auto reverse friendly-fire for {olive}%N", client, target);
+				CShowActivity2(client, "[FTT] ", "{yellow}%N{default} has disabled auto reverse friendly-fire for {olive}%N", client, target);
 				pData[target].autoRFFScaleFactor = 0.0;
 			}
 			pData[target].immunityFlags ^= Immune_RFF;

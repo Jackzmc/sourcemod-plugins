@@ -305,7 +305,7 @@ public void OnPluginStart() {
 	hEPIHudState 			 = CreateConVar("epi_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 3.0);
 	hExtraFinaleTank 		 = CreateConVar("epi_extra_tanks", "3", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 3.0);
 	hExtraTankThreshold 	 = CreateConVar("epi_extra_tanks_min_players", "6", "The minimum number of players for extra tanks to spawn. When disabled, normal 5+ tank health applies", FCVAR_NONE, true, 0.0);
-	hSplitTankChance 		 = CreateConVar("epi_splittank_chance", "0.75", "The % chance of a split tank occurring in non-finales", FCVAR_NONE, true, 0.0, true, 1.0);
+	hSplitTankChance 		 = CreateConVar("epi_splittank_chance", "0.65", "The % chance of a split tank occurring in non-finales", FCVAR_NONE, true, 0.0, true, 1.0);
 	cvDropDisconnectTime     = CreateConVar("epi_disconnect_time", "120.0", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
 	cvFFDecreaseRate         = CreateConVar("epi_ff_decrease_rate", "0.3", "The friendly fire factor is subtracted from the formula (playerCount-4) * this rate. Effectively reduces ff penalty when more players. 0.0 to subtract none", FCVAR_NONE, true, 0.0);
 	cvEPIHudFlags 			 = CreateConVar("epi_hud_flags", "3", "Add together.\n1 = Scrolling hud, 2 = Show ping", FCVAR_NONE, true, 0.0);
@@ -1181,20 +1181,36 @@ int SpawnItem(const char[] itemName, float pos[3], float ang[3] = NULL_VECTOR) {
 	return spawner;
 }
 
-void IncreaseKits() {
+void IncreaseKits(bool inFinale) {
 	float pos[3];
 	int entity = FindEntityByClassname(-1, "weapon_first_aid_kit_spawn");
 	if(entity == INVALID_ENT_REFERENCE) {
-		PrintToServer("[EPI] Warn: No kit spawns (weapon_first_aid_kit_spawn) found");
+		PrintToServer("[EPI] Warn: No kit spawns (weapon_first_aid_kit_spawn) found (inFinale=%b)", inFinale);
 		return;
 	}
 	int count = 0;
 	while(g_extraKitsAmount > 0) {
 		GetEntPropVector(entity, Prop_Data, "m_vecOrigin", pos);
-		if(L4D_IsPositionInLastCheckpoint(pos)) {
+		bool result = false;
+		if(inFinale) {
+			// Finale
+			Address address = L4D_GetNearestNavArea(pos);
+			if(address != Address_Null) {
+				int attributes = L4D_GetNavArea_SpawnAttributes(address);
+				if(attributes & NAV_SPAWN_FINALE) {
+					result = true;
+				}
+			}
+		} else {
+			// Checkpoint
+			result = L4D_IsPositionInLastCheckpoint(pos);
+		}
+		if(result) {
 			count++;
 			// Give it a little chance to nudge itself
-			pos[2] += 0.3;
+			pos[0] += GetRandomFloat(-8.0, 8.0);
+			pos[1] += GetRandomFloat(-8.0, 8.0);
+			pos[2] += 0.4;
 			SpawnItem("first_aid_kit", pos);
 			g_extraKitsAmount--;
 		}
@@ -1204,41 +1220,13 @@ void IncreaseKits() {
 			entity = -1;
 			// If we did not find any suitable kits, stop here.
 			if(count == 0) {
+				PrintToServer("[EPI] Warn: No valid kit spawns (weapon_first_aid_kit_spawn) found (inFinale=%b)", inFinale);
 				break;
 			}
 		}
 	}
 }
 
-void IncreaseFinaleKits() { 
-	float pos[3];
-	int entity = -1;
-	int spawnCount = g_survivorCount - 4;
-	int count = 0;
-	PrintDebug(DEBUG_SPAWNLOGIC, "Spawning %d finale kits", spawnCount);
-	while(spawnCount > 0) {
-		GetEntPropVector(entity, Prop_Data, "m_vecOrigin", pos);
-		Address address = L4D_GetNearestNavArea(pos);
-		if(address != Address_Null) {
-			int attributes = L4D_GetNavArea_SpawnAttributes(address);
-			if(attributes & NAV_SPAWN_FINALE) {
-				count++;
-				pos[2] += 0.3;
-				SpawnItem("first_aid_kit", pos);
-				spawnCount--;
-			}
-		}
-		entity = FindEntityByClassname(entity, "weapon_first_aid_kit_spawn");
-		// Loop around
-		if(entity == INVALID_ENT_REFERENCE) {
-			entity = -1;
-			// If we did not find any suitable kits, stop here.
-			if(count == 0) {
-				break;
-			}
-		}
-	}
-}
 
 char NAV_SPAWN_NAMES[32][] = {
 	"EMPTY",
@@ -1303,7 +1291,7 @@ public void OnMapStart() {
 	}
 
 	if(L4D_IsMissionFinalMap()) {
-		IncreaseFinaleKits();
+		IncreaseKits(true);
 		// Disable tank split on hard rain finale
 		g_extraFinaleTankEnabled = true;
 		if(StrEqual(map, "c4m5_milltown_escape")) {
@@ -1394,7 +1382,7 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 		UpdateSurvivorCount();
 		if(IsEPIActive()) {
 			SetExtraKits(g_survivorCount);
-			IncreaseKits();
+			IncreaseKits(false);
 			PrintToServer("[EPI] Player entered saferoom. Extra Kits: %d", g_extraKitsAmount);
 		}
 	}
