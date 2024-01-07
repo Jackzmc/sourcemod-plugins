@@ -22,8 +22,10 @@ StringMap g_steamIds;
 ConVar cv_cheatsMode;
 ConVar cv_reserveMode;
 ConVar cv_reserveMessage; char g_reserveMessage[64];
+ConVar cv_sm_cheats;
 
 bool g_ignoreModeChange;
+ReserveMode g_previousMode;
 
 public Plugin myinfo = 
 {
@@ -51,11 +53,13 @@ public void OnPluginStart() {
 
 	cv_reserveMode = CreateConVar("sm_perms_reserve_mode", "0", "The current reservation mode. \n 0 = None (public)\n 1 = Watch\n 2 = Admin Only\n 3 = Private", FCVAR_DONTRECORD, true, 0.0, true, float(RESERVE_LEVELS));
 	cv_reserveMode.AddChangeHook(OnReserveModeChanged);
-	
-	cv_cheatsMode = CreateConVar("sm_perms_cheats_mode", "0", "When cheats are turned on, which reservation should be set?.\n 0 = None (public)\n 1 = Watch\n 2 = Admin Only\n 3 = Private", FCVAR_NONE, true, 0.0, true, float(RESERVE_LEVELS - 1));
 
-	ConVar sv_cheats = FindConVar("sv_cheats");
-	sv_cheats.AddChangeHook(OnCheatsChanged);
+	cv_sm_cheats = CreateConVar("sm_cheats", "0", "Is sm cheats enabled?", FCVAR_NONE, true, 0.0, true, 1.0); 
+	cv_sm_cheats.AddChangeHook(OnCheatsChanged);
+	
+	cv_cheatsMode = CreateConVar("sm_perms_cheats_mode", "2", "When cheats are turned on, which reservation should be set?.\n 0 = None (public)\n 1 = Watch\n 2 = Admin Only\n 3 = Private", FCVAR_NONE, true, 0.0, true, float(RESERVE_LEVELS - 1));
+
+	// cv_cheats = FindConVar("sv_cheats");
 
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 
@@ -67,10 +71,16 @@ public void OnPluginStart() {
 }
 
 void OnCheatsChanged(ConVar cvar, const char[] oldValue, const char[] newValue) {
+	if(g_ignoreModeChange) {
+		g_ignoreModeChange = false;
+		return;
+	}
 	if(cvar.IntValue > 0) {
-		ReserveMode mode = GetReserveMode();
-		if(mode == Reserve_None || mode == Reserve_Watch)
+		g_previousMode = GetReserveMode();
+		if(g_previousMode == Reserve_None || g_previousMode == Reserve_Watch)
 			SetReserveMode(view_as<ReserveMode>(cv_cheatsMode.IntValue), "cheats activated");
+	} else {
+		SetReserveMode(g_previousMode);
 	}
 }
 
@@ -81,6 +91,17 @@ void OnReserveModeChanged(ConVar cvar, const char[] oldValue, const char[] newVa
 	}
 	if(cvar.IntValue >= 0 && cvar.IntValue < RESERVE_LEVELS) {
 		PrintChatToAdmins("Server access changed to %s", ReserveLevels[cvar.IntValue]);
+		PrintToServer("Server access changed to %s", ReserveLevels[cvar.IntValue]);
+		ReserveMode mode = view_as<ReserveMode>(cvar.IntValue);
+		char buffer[32];
+		if(mode == Reserve_AdminOnly || mode == Reserve_Private) {
+			for(int i = 1; i <= MaxClients; i++) {
+				if(IsClientInGame(i) && !IsFakeClient(i)) {
+					GetClientAuthId(i, AuthId_Steam2, buffer, sizeof(buffer));
+					g_steamIds.SetValue(buffer, i);
+				}
+			}
+		}
 	} else {
 		// cvar.SetString(oldValue);
 	}
@@ -102,6 +123,8 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 		if(GetClientCount(false) == 0) {
 			// Clear when last player disconnected
 			SetReserveMode(Reserve_None);
+			g_ignoreModeChange = true;
+			cv_sm_cheats.IntValue = 0;
 		}
 	}
 }
@@ -111,6 +134,7 @@ public void OnClientPostAdminCheck(int client) {
 		if(GetReserveMode() == Reserve_AdminOnly && GetUserAdmin(client) == INVALID_ADMIN_ID) {
 			char auth[32];
 			GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
+			// Check if they are whitelisted:
 			if(!g_steamIds.ContainsKey(auth)) {
 				KickClient(client, "Sorry, server is reserved");
 				return;
@@ -143,19 +167,7 @@ Action Command_SetServerPermissions(int client, int args) {
 			SetReserveMode(Reserve_Watch);
 		} else if(StrContains(arg1, "admin", false) > -1) {
 			SetReserveMode(Reserve_AdminOnly);
-			for(int i = 1; i <= MaxClients; i++) {
-				if(IsClientInGame(i) && !IsFakeClient(i)) {
-					GetClientAuthId(i, AuthId_Steam2, arg1, sizeof(arg1));
-					g_steamIds.SetValue(arg1, i);
-				}
-			}
 		} else if(StrEqual(arg1, "private", false)) {
-			for(int i = 1; i <= MaxClients; i++) {
-				if(IsClientInGame(i) && !IsFakeClient(i)) {
-					GetClientAuthId(i, AuthId_Steam2, arg1, sizeof(arg1));
-					g_steamIds.SetValue(arg1, i);
-				}
-			}
 			SetReserveMode(Reserve_Private);
 		} else {
 			ReplyToCommand(client, "Usage: sm_reserve [public/notify/admin/private] or no arguments to view current reservation.");
@@ -182,6 +194,7 @@ void SetReserveMode(ReserveMode mode, const char[] reason = "") {
 		// Print custom message if a reason is passed:
 		g_ignoreModeChange = true;
 		PrintChatToAdmins("Server access changed to %s (%s)", ReserveLevels[mode], reason);
+		PrintToServer("Server access changed to %s (%s)", ReserveLevels[mode], reason);
 	}
 	cv_reserveMode.IntValue = view_as<int>(mode);
 }
