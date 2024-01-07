@@ -5,12 +5,43 @@ int GLOW_WHITE[4] = { 255, 255, 255, 255 };
 int GLOW_GREEN[4] = { 3, 252, 53 };
 float ORIGIN_SIZE[3] = { 2.0, 2.0, 2.0 };
 
-enum wallMode {
+enum editMode {
 	INACTIVE = 0,
 	MOVE_ORIGIN,
 	SCALE,
-	FREELOOK
+	COLOR,
+	FREELOOK,
 }
+char MODE_NAME[5][] = {
+	"Error",
+	"Move & Rotate",
+	"Scale",
+	"Color",
+	"Freelook"
+}
+
+enum editFlag {
+	Edit_None,
+	Edit_Copy = 1,
+	Edit_Preview = 2,
+	Edit_WallCreator = 4
+}
+
+enum buildType {
+	Build_Solid,
+	Build_Physics,
+	Build_NonSolid,
+}
+
+enum CompleteType {
+	Complete_WallSuccess,
+	Complete_WallError,
+	Complete_PropSpawned,
+	Complete_PropError,
+	Complete_EditSuccess
+}
+
+char COLOR_INDEX[4] = "RGBA";
 
 ArrayList createdWalls;
 
@@ -19,25 +50,35 @@ enum struct WallBuilderData {
 	float mins[3];
 	float angles[3];
 	float size[3];
-	wallMode mode;
+	int color[4];
+	int colorIndex;
 	int axis;
 	int snapAngle;
 	int moveSpeed;
 	float moveDistance;
 	int entity;
-	bool canScale;
 	bool hasCollision;
-	bool isCopy;
+
+	editMode mode;
+	buildType buildType;
+	editFlag flags;
 
 	void Reset(bool initial = false) {
+		// Clear previews
+		if(this.entity != INVALID_ENT_REFERENCE && this.flags & Edit_Preview) {
+			if(IsValidEntity(this.entity))
+				RemoveEntity(this.entity);
+		}
 		this.entity = INVALID_ENT_REFERENCE;
-		this.isCopy = false;
 		this.size[0] = this.size[1] = this.size[2] = 5.0;
 		this.angles[0] = this.angles[1] = this.angles[2] = 0.0;
+		this.color[0] = this.color[1] = this.color[2] = this.color[3] = 255;
+		this.colorIndex = 0;
 		this.axis = 1;
-		this.canScale = true;
 		this.moveDistance = 200.0;
 		this.hasCollision = true;
+		this.flags = Edit_None;
+		this.buildType = Build_Solid;
 		this.CalculateMins();
 		this.SetMode(INACTIVE);
 		if(initial) {
@@ -53,18 +94,27 @@ enum struct WallBuilderData {
 	}
 
 	void Draw(int color[4], float lifetime, float amplitude = 0.1) {
-		if(!this.canScale && this.entity != INVALID_ENT_REFERENCE) {
-			TeleportEntity(this.entity, this.origin, this.angles, NULL_VECTOR);
-		} else {
+		if(this.flags & Edit_WallCreator || this.entity == INVALID_ENT_REFERENCE) {
 			Effect_DrawBeamBoxRotatableToAll(this.origin, this.mins, this.size, this.angles, g_iLaserIndex, 0, 0, 30, lifetime, 0.4, 0.4, 0, amplitude, color, 0);
+		} else {
+			TeleportEntity(this.entity, this.origin, this.angles, NULL_VECTOR);
 		}
 		Effect_DrawAxisOfRotationToAll(this.origin, this.angles, ORIGIN_SIZE, g_iLaserIndex, 0, 0, 30, 0.2, 0.1, 0.1, 0, 0.0, 0);
+	}
+
+	void UpdateEntity() {
+		int alpha = this.color[3];
+		// Keep previews transparent
+		if(this.flags & Edit_Preview) {
+			alpha = 200;
+		}
+		SetEntityRenderColor(this.entity, this.color[0], this.color[1], this.color[2], alpha);
 	}
 
 	bool CheckEntity(int client) {
 		if(this.entity != INVALID_ENT_REFERENCE) {
 			if(!IsValidEntity(this.entity)) {
-				PrintToChat(client, "\x04[Hats]\x01 Entity has vanished, editing cancelled.");
+				PrintToChat(client, "\x04[Editor]\x01 Entity has vanished, editing cancelled.");
 				this.Reset();
 				return false;
 			}
@@ -76,7 +126,7 @@ enum struct WallBuilderData {
 		return this.mode != INACTIVE;
 	}
 
-	void SetMode(wallMode mode) {
+	void SetMode(editMode mode) {
 		this.mode = mode;
 	}
 
@@ -91,34 +141,36 @@ enum struct WallBuilderData {
 			// - SCALE
 			// - FREECAM
 			case MOVE_ORIGIN: {
-				if(this.canScale) {
+				if(this.flags & Edit_WallCreator) {
 					this.mode = SCALE;
-					PrintToChat(client, "\x04[Hats]\x01 Mode: \x05Scale\x01 (Press \x04RELOAD\x01 to change mode)");
+				} else if(this.flags & Edit_Preview) {
+					this.mode = COLOR;
 				} else {
 					this.mode = FREELOOK;
-					PrintToChat(client, "\x04[Hats]\x01 Mode: \x05Freelook\x01 (Press \x04RELOAD\x01 to change mode)");
 				}
 			}
 			case SCALE: {
 				this.mode = FREELOOK;
-				PrintToChat(client, "\x04[Hats]\x01 Mode: \x05Freelook\x01 (Press \x04RELOAD\x01 to change mode)");
+			}
+			case COLOR: {
+				this.mode = FREELOOK;
 			}
 			case FREELOOK: {
 				this.mode = MOVE_ORIGIN;
-				PrintToChat(client, "\x04[Hats]\x01 Mode: \x05Move & Rotate\x01 (Press \x04RELOAD\x01 to change mode)");
 				// PrintToChat(client, "Hold \x04USE (E)\x01 to rotate, \x04WALK (SHIFT)\x01 to change speed");
 			}
 		}
+		PrintToChat(client, "\x04[Editor]\x01 Mode: \x05%s\x01 (Press \x04RELOAD\x01 to change mode)", MODE_NAME[this.mode]);
 		cmdThrottle[client] = tick;
 	}
 
 	void ToggleCollision(int client, float tick) {
-		if(tick - cmdThrottle[client] <= 0.15) return;
+		if(tick - cmdThrottle[client] <= 0.25) return;
 		this.hasCollision = !this.hasCollision
 		if(this.hasCollision)
-			PrintToChat(client, "\x04[Hats]\x01 Collision: \x05ON\x01");
+			PrintToChat(client, "\x04[Editor]\x01 Collision: \x05ON\x01");
 		else
-			PrintToChat(client, "\x04[Hats]\x01 Collision: \x04OFF\x01");
+			PrintToChat(client, "\x04[Editor]\x01 Collision: \x04OFF\x01");
 		cmdThrottle[client] = tick;
 	}
 
@@ -126,13 +178,13 @@ enum struct WallBuilderData {
 		if(tick - cmdThrottle[client] <= 0.15) return;
 		if(this.axis == 0) {
 			this.axis = 1;
-			PrintToChat(client, "\x04[Hats]\x01 Rotate Axis: \x05HEADING (Y)\x01");
+			PrintToChat(client, "\x04[Editor]\x01 Rotate Axis: \x05HEADING (Y)\x01");
 		} else if(this.axis == 1) {
 			this.axis = 2;
-			PrintToChat(client, "\x04[Hats]\x01 Rotate Axis: \x05PITCH (X)\x01");
+			PrintToChat(client, "\x04[Editor]\x01 Rotate Axis: \x05PITCH (X)\x01");
 		} else {
 			this.axis = 0;
-			PrintToChat(client, "\x04[Hats]\x01 Rotate Axis: \x05ROLL (Z)\x01");
+			PrintToChat(client, "\x04[Editor]\x01 Rotate Axis: \x05ROLL (Z)\x01");
 		}
 		cmdThrottle[client] = tick;
 	}
@@ -152,9 +204,9 @@ enum struct WallBuilderData {
 		this.angles[2] = SnapTo(this.angles[2], float(this.snapAngle));
 
 		if(this.snapAngle == 1)
-			PrintToChat(client, "\x04[Hats]\x01 Rotate Snap Degrees: \x04(OFF)\x01", this.snapAngle);
+			PrintToChat(client, "\x04[Editor]\x01 Rotate Snap Degrees: \x04(OFF)\x01", this.snapAngle);
 		else
-			PrintToChat(client, "\x04[Hats]\x01 Rotate Snap Degrees: \x05%d\x01", this.snapAngle);
+			PrintToChat(client, "\x04[Editor]\x01 Rotate Snap Degrees: \x05%d\x01", this.snapAngle);
 		cmdThrottle[client] = tick;
 	}
 
@@ -162,21 +214,50 @@ enum struct WallBuilderData {
 		if(tick - cmdThrottle[client] <= 0.25) return;
 		this.moveSpeed++;
 		if(this.moveSpeed > 10) this.moveSpeed = 1;
-		PrintToChat(client, "\x04[Hats]\x01 Scale Speed: \x05%d\x01", this.moveSpeed);
-		// if(this.movetype == 0) {
-		// 	this.movetype = 1;
-		// 	PrintToChat(client, "\x04[SM]\x01 Move Type: \x05HEADING (Y)\x01");
-		// } else {
-		// 	this.movetype = 0;
-		// 	PrintToChat(client, "\x04[SM]\x01 Rotate Axis: \x05PITCH (X)\x01");
-		// }
+		PrintToChat(client, "\x04[Editor]\x01 Scale Speed: \x05%d\x01", this.moveSpeed);
 		cmdThrottle[client] = tick;
 	}
 
-	int Build() {
-		if(!this.canScale) {
+	void CycleBuildType(int client) {
+		// No tick needed, is handled externally
+		if(this.buildType == Build_Physics) {
+			this.buildType = Build_Solid;
+			PrintToChat(client, "\x04[Editor]\x01 Spawn as: \x05Solid\x01");
+		} else if(this.buildType == Build_Solid) {
+			this.buildType = Build_Physics;
+			PrintToChat(client, "\x04[Editor]\x01 Spawn as: \x05Physics\x01");
+		} else {
+			this.buildType = Build_NonSolid;
+			PrintToChat(client, "\x04[Editor]\x01 Spawn as: \x05Non Solid\x01");
+		}
+	}
+
+	void CycleColorComponent(int client, float tick) {
+		if(tick - cmdThrottle[client] <= 0.25) return;
+		this.colorIndex++;
+		if(this.colorIndex > 3) this.colorIndex = 0;
+		PrintToChat(client, "\x04[Editor]\x01 Color Component: \x05%c\x01", COLOR_INDEX[this.colorIndex]);
+		cmdThrottle[client] = tick;
+	}
+
+
+	CompleteType Create(int& entity) {
+		if(this.flags & Edit_WallCreator) {
+			return this._FinishWall(entity) ? Complete_WallSuccess : Complete_WallError;
+		} else if(this.flags & Edit_Preview) {
+			return this._FinishPreview(entity) ? Complete_PropSpawned : Complete_PropError;
+		} else {
+			// Is edit, do nothing, just reset
 			this.Reset();
-			return -3;
+			entity = 0;
+			return Complete_EditSuccess;
+		}
+	}
+
+	bool _FinishWall(int& id) {
+		if(~this.flags & Edit_WallCreator) {
+			this.Reset();
+			return false;
 		}
 		// Don't need to build a new one if we editing:
 		int blocker = this.entity;
@@ -186,7 +267,7 @@ enum struct WallBuilderData {
 			isEdit = true;
 		}
 		blocker = CreateEntityByName("func_brush");
-		if(blocker == -1) return -1;
+		if(blocker == -1) return false;
 		DispatchKeyValueVector(blocker, "mins", this.mins);
 		DispatchKeyValueVector(blocker, "maxs", this.size);
 		DispatchKeyValueVector(blocker, "boxmins", this.mins);
@@ -203,7 +284,7 @@ enum struct WallBuilderData {
 		DispatchKeyValue(blocker, "targetname", name);
 		// DispatchKeyValue(blocker, "excludednpc", "player");
 		TeleportEntity(blocker, this.origin, this.angles, NULL_VECTOR);
-		if(!DispatchSpawn(blocker)) return -1;
+		if(!DispatchSpawn(blocker)) return false;
 		SetEntPropVector(blocker, Prop_Send, "m_vecMins", this.mins);
 		SetEntPropVector(blocker, Prop_Send, "m_vecMaxs", this.size);
 		SetEntProp(blocker, Prop_Send, "m_nSolidType", 2);
@@ -215,7 +296,42 @@ enum struct WallBuilderData {
 
 		this.Draw(GLOW_GREEN, 5.0, 1.0);
 		this.Reset();
-		return isEdit ? -2 : createdWalls.Push(EntIndexToEntRef(blocker));
+		if(!isEdit) {
+			id = createdWalls.Push(EntIndexToEntRef(blocker));
+		}
+		return true;
+	}
+
+	bool _FinishPreview(int& entity) {
+		entity = -1;
+		if(this.buildType == Build_Physics)
+			entity = CreateEntityByName("prop_physics");
+		else
+			entity = CreateEntityByName("prop_dynamic");
+		if(entity == -1) return false;
+
+		char model[128];
+		GetEntPropString(this.entity, Prop_Data, "m_ModelName", model, sizeof(model));
+		DispatchKeyValue(entity, "model", model);
+		DispatchKeyValue(entity, "targetname", "prop_preview");
+		if(this.buildType == Build_NonSolid)
+			DispatchKeyValue(entity, "solid", "0");
+		else
+			DispatchKeyValue(entity, "solid", "6");
+		TeleportEntity(entity, this.origin, this.angles, NULL_VECTOR);
+		if(!DispatchSpawn(entity)) {
+			return false;
+		}
+		SetEntityRenderColor(entity, this.color[0], this.color[1], this.color[2], this.color[3]);
+		SetEntityRenderColor(this.entity, 255, 128, 255, 200); // reset ghost
+		GlowEntity(entity, 1.4)
+
+		if(this.mode == FREELOOK)
+			this.SetMode(MOVE_ORIGIN);
+		
+
+		// Don't kill preview until cancel
+		return true;
 	}
 
 	int Copy() {
@@ -239,11 +355,38 @@ enum struct WallBuilderData {
 		// SetEntProp(entity, Prop_Send, "m_nSolidType", 6);
 		TeleportEntity(entity, this.origin, this.angles, NULL_VECTOR);
 		this.entity = entity;
-		this.isCopy = true;
+		this.flags |= Edit_Copy;
 		return entity;
 	}
 
-	void Import(int entity, bool makeCopy = false, wallMode mode = SCALE) {
+	void StartWall() {
+		this.Reset();
+		this.flags |= Edit_WallCreator;
+	}
+
+	bool PreviewModel(const char[] model) {
+		// If last entity was preview, kill it
+		PrecacheModel(model);
+		this.Reset();
+		int entity = CreateEntityByName("prop_dynamic");
+		if(entity == -1) return false;
+		DispatchKeyValue(entity, "model", model);
+		DispatchKeyValue(entity, "targetname", "prop_preview");
+		DispatchKeyValue(entity, "solid", "0");
+		DispatchKeyValue(entity, "rendercolor", "255 128 255");
+		DispatchKeyValue(entity, "renderamt", "200");
+		DispatchKeyValue(entity, "rendermode", "1");
+		if(!DispatchSpawn(entity)) {
+			return false;
+		}
+		this.entity = entity;
+		this.flags |= (Edit_Copy | Edit_Preview);
+		this.SetMode(MOVE_ORIGIN);
+		// Seems some entities fail here:
+		return IsValidEntity(entity);
+	}
+
+	void Import(int entity, bool makeCopy = false, editMode mode = SCALE) {
 		this.Reset();
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", this.origin);
 		GetEntPropVector(entity, Prop_Send, "m_angRotation", this.angles);
@@ -257,12 +400,64 @@ enum struct WallBuilderData {
 
 	void Cancel() {
 		// Delete any copies:
-		if(this.isCopy) {
+		if(this.flags & Edit_Copy || this.flags & Edit_Preview) {
 			RemoveEntity(this.entity);
 		}
 		this.SetMode(INACTIVE);
 	}
+
+	// void OpenSettings(int client) {
+	// 	Menu menu = new Menu(SettingsHandler);
+	// 	menu.AddItem("color", "Change Color");
+	// 	menu.AddItem("type", "Change Spawn Type");
+	// 	// if(this.flags & Edit_Scale)
+	// 	menu.ExitButton = true;
+	// 	// Only show back if we are for a preview
+	// 	menu.ExitBackButton = (this.flags & Edit_Preview) != 0;
+	// 	menu.Display(client, MENU_TIME_FOREVER);
+	// }
 }
+
+WallBuilderData WallBuilder[MAXPLAYERS+1];
+
+// int SettingsHandler(Menu menu, MenuAction action, int client, int param2) {
+// 	if (action == MenuAction_Select) {
+// 		char info[8];
+// 		menu.GetItem(param2, info, sizeof(info));
+// 		if(StrEqual(info, "color")) {
+// 			Menu newMenu = new Menu(ColorHandler);
+// 			newMenu.AddItem()
+// 		} else if(StrEqual(info, "type")) {
+
+// 		} else {
+// 			CPrintToChat(client, "\x04[Editor]\x01 Error: Unknown setting \x05%s", info);
+// 		}
+		
+// 		// Re-open category list when done editing setting
+// 		if(WallBuilder[client].flags & Edit_Preview) {
+// 			ShowItemMenu(client, g_lastCategoryIndex[client]);
+// 		}
+// 	} else if(action == MenuAction_Cancel) {
+// 		if(WallBuilder[client].flags & Edit_Preview) {
+// 			ShowItemMenu(client, g_lastCategoryIndex[client]);
+// 		}	
+// 	} else if (action == MenuAction_End)	
+// 		delete menu;
+// 	return 0;
+// }
+
+// int ColorHandler(Menu menu, MenuAction action, int client, int param2) {
+// 	if (action == MenuAction_Select) {
+// 		char info[8];
+		
+// 	} else if(action == MenuAction_Cancel) {
+// 		if(WallBuilder[client].flags & Edit_Preview) {
+// 			ShowItemMenu(client, g_lastCategoryIndex[client]);
+// 		}	
+// 	} else if (action == MenuAction_End)	
+// 		delete menu;
+// 	return 0;
+// }
 
 Action OnWallClicked(int entity, int activator, int caller, UseType type, float value) {
 	int wallId = FindWallId(entity);
@@ -275,15 +470,14 @@ Action OnWallClicked(int entity, int activator, int caller, UseType type, float 
 	return Plugin_Continue;
 }
 
-WallBuilderData WallBuilder[MAXPLAYERS+1];
 
 
 // TODO: Stacker, copy tool, new command?
 public Action Command_MakeWall(int client, int args) {
 	if(WallBuilder[client].IsActive()) {
-		ReplyToCommand(client, "\x04[Hats]\x01 You are currently editing an entity. Finish editing your current entity with with \x05/edit done\x01 or cancel with \x04/edit cancel\x01");
+		ReplyToCommand(client, "\x04[Editor]\x01 You are currently editing an entity. Finish editing your current entity with with \x05/edit done\x01 or cancel with \x04/edit cancel\x01");
 	} else {
-		WallBuilder[client].Reset();
+		WallBuilder[client].StartWall();
 		if(args > 0) {
 			// Get values for X, Y and Z axis (defaulting to 1.0):
 			char arg2[8];
@@ -311,15 +505,15 @@ public Action Command_MakeWall(int client, int args) {
 
 		WallBuilder[client].SetMode(SCALE);
 		GetCursorLimited(client, 100.0, WallBuilder[client].origin, Filter_IgnorePlayer);
-		PrintToChat(client, "\x04[Hats]\x01 New Wall Started. End with \x05/wall build\x01 or \x04/wall cancel\x01");
-		PrintToChat(client, "\x04[Hats]\x01 Mode: \x05Scale\x01");
+		PrintToChat(client, "\x04[Editor]\x01 New Wall Started. End with \x05/wall build\x01 or \x04/wall cancel\x01");
+		PrintToChat(client, "\x04[Editor]\x01 Mode: \x05Scale\x01");
 	}
 	return Plugin_Handled;
 }
 
 public Action Command_ManageWalls(int client, int args) {
 	if(args == 0) {
-		PrintToChat(client, "\x04[Hats]\x01 Created Walls: \x05%d\x01", createdWalls.Length);
+		PrintToChat(client, "\x04[Editor]\x01 Created Walls: \x05%d\x01", createdWalls.Length);
 		for(int i = 1; i <= createdWalls.Length; i++) {
 			GlowWall(i, GLOW_WHITE, 20.0);
 		}
@@ -332,22 +526,36 @@ public Action Command_ManageWalls(int client, int args) {
 		// Remove frozen flag from user, as some modes use this
 		int flags = GetEntityFlags(client) & ~FL_FROZEN;
 		SetEntityFlags(client, flags);
-
-		int id = WallBuilder[client].Build();
-		if(id == -1) {
-			PrintToChat(client, "\x04[Hats]\x01 Wall Creation: \x04Error\x01");
-		} else if(id == -2) {
-			PrintToChat(client, "\x04[Hats]\x01 Wall Edit: \x04Complete\x01");
-		} else if(id == -3) {
-			PrintToChat(client, "\x04[Hats]\x01 Entity Edit: \x04Complete\x01");
-		} else {
-			PrintToChat(client, "\x04[Hats]\x01 Wall Creation: \x05Wall #%d Created\x01", id + 1);
+		
+		int entity;
+		CompleteType result = WallBuilder[client].Create(entity);
+		switch(result) {
+			case Complete_WallSuccess: {
+				if(entity > 0)
+					PrintToChat(client, "\x04[Editor]\x01 Wall Creation: \x05Wall #%d Created\x01", entity + 1);
+				else
+					PrintToChat(client, "\x04[Editor]\x01 Wall Edit: \x04Complete\x01");
+			}
+			case Complete_PropSpawned: 
+				PrintToChat(client, "\x04[Editor]\x01 Prop Spawned: \x04%d\x01", entity);
+			
+			case Complete_EditSuccess: 
+				PrintToChat(client, "\x04[Editor]\x01 Entity Edited: \x04%d\x01", entity);
+			
+			default:
+				PrintToChat(client, "\x04[Editor]\x01 Unknown result");
 		}
 	} else if(StrEqual(arg1, "cancel")) {
 		int flags = GetEntityFlags(client) & ~FL_FROZEN;
 		SetEntityFlags(client, flags);
 		WallBuilder[client].Cancel();
-		PrintToChat(client, "\x04[Hats]\x01 Wall Creation: \x04Cancelled\x01");
+		if(WallBuilder[client].flags & Edit_Preview)
+			PrintToChat(client, "\x04[Editor]\x01 Prop Spawer: \x04Done\x01");
+		else if(WallBuilder[client].flags & Edit_WallCreator) {
+			PrintToChat(client, "\x04[Editor]\x01 Wall Creation: \x04Cancelled\x01");
+		} else {
+			PrintToChat(client, "\x04[Editor]\x01 Entity Edit: \x04Cancelled\x01");
+		}
 	} else if(StrEqual(arg1, "export")) {
 		// TODO: support exp #id
 		float origin[3], angles[3], size[3];
@@ -372,29 +580,29 @@ public Action Command_ManageWalls(int client, int args) {
 		if(WallBuilder[client].IsActive() && args == 1) {
 			int entity = WallBuilder[client].entity;
 			if(IsValidEntity(entity)) {
-				PrintToChat(client, "\x04[Hats]\x01 You are not editing any existing entity, use \x05/wall cancel\x01 to stop or \x05/wall delete <id/all>");
+				PrintToChat(client, "\x04[Editor]\x01 You are not editing any existing entity, use \x05/wall cancel\x01 to stop or \x05/wall delete <id/all>");
 			} else if(entity > MaxClients) {
 				RemoveEntity(entity);
 				WallBuilder[client].Reset();
-				PrintToChat(client, "\x04[Hats]\x01 Deleted current entity");
+				PrintToChat(client, "\x04[Editor]\x01 Deleted current entity");
 			} else {
-				PrintToChat(client, "\x04[Hats]\x01 Cannot delete player entities.");
+				PrintToChat(client, "\x04[Editor]\x01 Cannot delete player entities.");
 			}
 		} else if(StrEqual(arg2, "all")) {
 			int walls = createdWalls.Length;
 			for(int i = 1; i <= createdWalls.Length; i++) {
 				DeleteWall(i);
 			}
-			PrintToChat(client, "\x04[Hats]\x01 Deleted \x05%d\x01 Walls", walls);
+			PrintToChat(client, "\x04[Editor]\x01 Deleted \x05%d\x01 Walls", walls);
 		} else {
 			int id = GetWallId(client, arg2);
 			if(id > -1) {
 				DeleteWall(id);
-				PrintToChat(client, "\x04[Hats]\x01 Deleted Wall: \x05#%d\x01", id);
+				PrintToChat(client, "\x04[Editor]\x01 Deleted Wall: \x05#%d\x01", id);
 			}
 		}
 	} else if(StrEqual(arg1, "create")) {
-		ReplyToCommand(client, "\x04[Hats]\x01 Syntax: /mkwall [size x] [size y] [size z]");
+		ReplyToCommand(client, "\x04[Editor]\x01 Syntax: /mkwall [size x] [size y] [size z]");
 	} else if(StrEqual(arg1, "toggle")) {
 		if(StrEqual(arg2, "all")) {
 			int walls = createdWalls.Length;
@@ -403,20 +611,20 @@ public Action Command_ManageWalls(int client, int args) {
 				AcceptEntityInput(entity, "Toggle");
 				GlowWall(i, GLOW_BLUE);
 			}
-			PrintToChat(client, "\x04[Hats]\x01 Toggled \x05%d\x01 walls", walls);
+			PrintToChat(client, "\x04[Editor]\x01 Toggled \x05%d\x01 walls", walls);
 		} else {
 			int id = GetWallId(client, arg2);
 			if(id > -1) {
 				int entity = GetWallEntity(id);
 				AcceptEntityInput(entity, "Toggle");
 				GlowWall(id, GLOW_BLUE);
-				PrintToChat(client, "\x04[Hats]\x01 Toggled Wall: \x05#%d\x01", id);
+				PrintToChat(client, "\x04[Editor]\x01 Toggled Wall: \x05#%d\x01", id);
 			}
 		}
 	} else if(StrEqual(arg1, "filter")) {
 		if(args < 3) {
-			ReplyToCommand(client, "\x04[Hats]\x01 Syntax: \x05/walls filter <id/all> <filter type>\x04");
-			ReplyToCommand(client, "\x04[Hats]\x01 Valid filters: \x05player");
+			ReplyToCommand(client, "\x04[Editor]\x01 Syntax: \x05/walls filter <id/all> <filter type>\x04");
+			ReplyToCommand(client, "\x04[Editor]\x01 Valid filters: \x05player");
 			return Plugin_Handled;
 		}
 
@@ -430,13 +638,13 @@ public Action Command_ManageWalls(int client, int args) {
 				int entity = GetWallEntity(i);
 				AcceptEntityInput(entity, "SetExcluded");
 			}
-			PrintToChat(client, "\x04[Hats]\x01 Set %d walls' filter to \x05%s\x01", walls, arg3);
+			PrintToChat(client, "\x04[Editor]\x01 Set %d walls' filter to \x05%s\x01", walls, arg3);
 		} else {
 			int id = GetWallId(client, arg2);
 			if(id > -1) {
 				int entity = GetWallEntity(id);
 				AcceptEntityInput(entity, "SetExcluded");
-				PrintToChat(client, "\x04[Hats]\x01 Set wall #%d filter to \x05%s\x01", id, arg3);
+				PrintToChat(client, "\x04[Editor]\x01 Set wall #%d filter to \x05%s\x01", id, arg3);
 			}
 		}
 	} else if(StrEqual(arg1, "edit")) {
@@ -444,31 +652,30 @@ public Action Command_ManageWalls(int client, int args) {
 		if(id > -1) {
 			int entity = GetWallEntity(id);
 			WallBuilder[client].Import(entity);
-			PrintToChat(client, "\x04[Hats]\x01 Editing wall \x05%d\x01. End with \x05/wall done\x01 or \x04/wall cancel\x01", id);
-			PrintToChat(client, "\x04[Hats]\x01 Mode: \x05Scale\x01");
+			PrintToChat(client, "\x04[Editor]\x01 Editing wall \x05%d\x01. End with \x05/wall done\x01 or \x04/wall cancel\x01", id);
+			PrintToChat(client, "\x04[Editor]\x01 Mode: \x05Scale\x01");
 		}
 	} else if(StrEqual(arg1, "edite") || (arg1[0] == 'c' && arg1[1] == 'u')) {
 		int index = GetLookingEntity(client, Filter_ValidHats); //GetClientAimTarget(client, false);
 		if(index > 0) {
 			WallBuilder[client].Import(index, false, MOVE_ORIGIN);
-			WallBuilder[client].canScale = false;	
 			char classname[32];
 			char targetname[32];
 			GetEntityClassname(index, classname, sizeof(classname));
 			GetEntPropString(index, Prop_Data, "m_target", targetname, sizeof(targetname));
-			PrintToChat(client, "\x04[Hats]\x01 Editing entity \x05%d (%s) [%s]\x01. End with \x05/wall done\x01", index, classname, targetname);
-			PrintToChat(client, "\x04[Hats]\x01 Mode: \x05Move & Rotate\x01");
+			PrintToChat(client, "\x04[Editor]\x01 Editing entity \x05%d (%s) [%s]\x01. End with \x05/wall done\x01", index, classname, targetname);
+			PrintToChat(client, "\x04[Editor]\x01 Mode: \x05Move & Rotate\x01");
 		} else {
-			ReplyToCommand(client, "\x04[Hats]\x01 Invalid or non existent entity");
+			ReplyToCommand(client, "\x04[Editor]\x01 Invalid or non existent entity");
 		}
 	} else if(StrEqual(arg1, "copy")) {
 		if(WallBuilder[client].IsActive()) {
 			int oldEntity = WallBuilder[client].entity;
 			if(oldEntity == INVALID_ENT_REFERENCE) {
-				PrintToChat(client, "\x04[Hats]\x01 Finish editing your wall first: \x05/wall done\x01 or \x04/wall cancel\x01");
+				PrintToChat(client, "\x04[Editor]\x01 Finish editing your wall first: \x05/wall done\x01 or \x04/wall cancel\x01");
 			} else { 
 				int entity = WallBuilder[client].Copy();
-				PrintToChat(client, "\x04[Hats]\x01 Editing copy \x05%d\x01 of entity \x05%d\x01. End with \x05/edit done\x01 or \x04/edit cancel\x01", entity, oldEntity);
+				PrintToChat(client, "\x04[Editor]\x01 Editing copy \x05%d\x01 of entity \x05%d\x01. End with \x05/edit done\x01 or \x04/edit cancel\x01", entity, oldEntity);
 			}
 		} else {
 			int id = GetWallId(client, arg2);
@@ -476,8 +683,8 @@ public Action Command_ManageWalls(int client, int args) {
 				int entity = GetWallEntity(id);
 				WallBuilder[client].Import(entity, true);
 				GetCursorLimited(client, 100.0, WallBuilder[client].origin, Filter_IgnorePlayer);
-				PrintToChat(client, "\x04[Hats]\x01 Editing copy of wall \x05%d\x01. End with \x05/wall build\x01 or \x04/wall cancel\x01", id);
-				PrintToChat(client, "\x04[Hats]\x01 Mode: \x05Scale\x01");
+				PrintToChat(client, "\x04[Editor]\x01 Editing copy of wall \x05%d\x01. End with \x05/wall build\x01 or \x04/wall cancel\x01", id);
+				PrintToChat(client, "\x04[Editor]\x01 Mode: \x05Scale\x01");
 			}
 		}
 	} else if(StrEqual(arg1, "list")) {
@@ -486,7 +693,7 @@ public Action Command_ManageWalls(int client, int args) {
 			ReplyToCommand(client, "Wall #%d - EntIndex: %d", i, EntRefToEntIndex(entity));
 		}
 	} else {
-		ReplyToCommand(client, "\x04[Hats]\x01 See console for list of commands");
+		ReplyToCommand(client, "\x04[Editor]\x01 See console for list of commands");
 		GetCmdArg(0, arg1, sizeof(arg1));
 		PrintToConsole(client, "%s done / build - Finishes editing, creates wall if making wall", arg1);
 		PrintToConsole(client, "%s cancel - Cancels editing (for entity edits is same as done)", arg1);
@@ -506,13 +713,13 @@ int GetWallId(int client, const char[] arg) {
 	if(StringToIntEx(arg, id) > 0 && id > 0 && id <= createdWalls.Length) {
 		int entity = GetWallEntity(id);
 		if(!IsValidEntity(entity)) {
-			ReplyToCommand(client, "\x04[Hats]\x01 The wall with specified id no longer exists.");
+			ReplyToCommand(client, "\x04[Editor]\x01 The wall with specified id no longer exists.");
 			createdWalls.Erase(id - 1);
 			return -2;
 		}
 		return id;
 	} else {
-		ReplyToCommand(client, "\x04[Hats]\x01 Invalid wall id, must be between 0 - %d", createdWalls.Length - 1 );
+		ReplyToCommand(client, "\x04[Editor]\x01 Invalid wall id, must be between 0 - %d", createdWalls.Length - 1 );
 		return -1;
 	}
 }
@@ -567,7 +774,7 @@ void DeleteWall(int id) {
 	BuildPath(Path_SM, sPath, sizeof(sPath), "data/exports/%s.cfg", currentMap);
 	File file = OpenFile(sPath, "w");
 	if(file == null) {
-		PrintToServer("[Hats] Export: Cannot open \"%s\", cant write", sPath);
+		PrintToServer("[Editor] Export: Cannot open \"%s\", cant write", sPath);
 	}
 
 	PrintWriteLine(client, file, "{");
@@ -601,58 +808,3 @@ void PrintWriteLine(int client, File file, const char[] format, any ...) {
 		file.WriteLine(line);
 	PrintToChat(client, line);
 }
-
-enum struct WallModelSizeEntry {
-	char name[32];
-	char model[64]; 
-}
-enum struct WallModelEntry {
-	char name[32];
-	
-	WallModelSizeEntry size1;
-	WallModelSizeEntry size2;
-	WallModelSizeEntry size3;
-}
-ArrayList wallModels;
-
-void LoadModels() {
-	if(wallModels != null) delete wallModels;
-	wallModels = new ArrayList(sizeof(WallModelEntry));
-	KeyValues kv = new KeyValues("WallData");
-
-	char sPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sPath, sizeof(sPath), "data/walls_data.cfg");
-
-	if(!FileExists(sPath) || !kv.ImportFromFile(sPath)) {
-		delete kv;
-		PrintToServer("[FTT] Could not load phrase list from data/walls_data.cfg");
-		return;
-	}
-	// TODO: implement models to spawn
-	// char name[32];
-	// Go through all the words:
-	// kv.GotoFirstSubKey();
-	// int i = 0;
-	// char buffer[4];
-	// do {
-	// 	kv.GetSectionName(name, sizeof(name));
-	// 	for(;;) {
-	// 		IntToString(++i, buffer, sizeof(buffer));
-	// 		kv.GetString(buffer, phrase, MAX_PHRASE_LENGTH, "_null");
-	// 		if(strcmp(phrase, "_null") == 0) break;
-	// 		phrases.PushString(phrase);
-	// 	}
-	// 	i = 0;
-	// 	if(StrEqual(word, "_full message phrases")) {
-	// 		fullMessagePhraseList = phrases.Clone();
-	// 		continue;
-	// 	}
-	// 	#if defined DEBUG_PHRASE_LOAD
-	// 		PrintToServer("Loaded %d phrases for word \"%s\"", phrases.Length, word);
-	// 	#endif
-	// 	REPLACEMENT_PHRASES.SetValue(word, phrases.Clone(), true);
-	// } while (kv.GotoNextKey(false));
-
-	delete kv;
-}
-	   

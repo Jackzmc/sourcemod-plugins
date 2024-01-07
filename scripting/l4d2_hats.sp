@@ -38,6 +38,13 @@ ConVar cvar_sm_hats_max_distance;
 
 TopMenu g_topMenu;
 
+int g_lastCategoryIndex[MAXPLAYERS+1];
+int g_lastItemIndex[MAXPLAYERS+1];
+int g_lastShowedHint[MAXPLAYERS+1];
+bool g_isSearchActive[MAXPLAYERS+1];
+
+char g_currentMap[64];
+
 #include <hats/walls.sp>
 #include <hats/hats.sp>
 #include <hats/hat_presets.sp>
@@ -62,6 +69,7 @@ public void OnPluginStart() {
 	}
 
 	createdWalls = new ArrayList();
+	g_spawnedItems = new ArrayList(2);
 	
 	LoadTranslations("common.phrases");
 	HookEvent("player_entered_checkpoint", OnEnterSaferoom);
@@ -75,6 +83,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_mkwall", Command_MakeWall, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_walls", Command_ManageWalls, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_wall", Command_ManageWalls, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_prop", Command_Props, ADMFLAG_CHEATS);
 	RegConsoleCmd("sm_hatp", Command_DoAHatPreset);
 
 	cvar_sm_hats_blacklist_enabled = CreateConVar("sm_hats_blacklist_enabled", "1", "Is the prop blacklist enabled", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -106,6 +115,11 @@ public void OnPluginStart() {
 	}
 
 	LoadPresets();
+
+	TopMenu topMenu;
+	if (LibraryExists("adminmenu") && ((topMenu = GetAdminTopMenu()) != null)) {
+		OnAdminMenuReady(topMenu);
+	}
 }
 
 public void OnLibraryRemoved(const char[] name) {
@@ -115,23 +129,6 @@ public void OnLibraryRemoved(const char[] name) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-
-public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
-	int client = GetClientOfUserId(event.GetInt("userid"));
-	// Check if an item picked up a user's hat and do nothing... 
-	// for(int slot = 0; slot <= 5; slot++) {
-	// 	int wpn = GetPlayerWeaponSlot(client, slot);
-	// 	for(int i = 1; i <= MaxClients; i++) {
-	// 		if(i != client && IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i)) {
-	// 			int hat = GetHat(i);
-	// 			if(hat == wpn) {
-	// 				break;
-	// 			}
-	// 		}
-	// 	}
-	// }
-}
-
 
 public void OnEnterSaferoom(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
@@ -172,12 +169,6 @@ Action Timer_PlaceHat(Handle h, int userid) {
 	return Plugin_Handled;
 }
 
-Action Timer_Kill(Handle h, int entity) {
-	if(IsValidEntity(entity))
-		RemoveEntity(entity);
-	return Plugin_Handled;
-}
-
 // Tries to find a valid location at user's cursor, avoiding placing into solid walls (such as invisible walls) or objects
 stock bool GetSmartCursorLocation(int client, float outPos[3]) {
 	float start[3], angle[3], ceilPos[3], wallPos[3], normal[3];
@@ -199,7 +190,7 @@ stock bool GetSmartCursorLocation(int client, float outPos[3]) {
 			bool ceilCollided = TR_DidHit();
 			bool ceilOK = !TR_AllSolid();
 			TR_GetEndPosition(ceilPos);
-			float distCeil = GetVectorDistance(outPos, ceilPos, true);
+			// float distCeil = GetVectorDistance(outPos, ceilPos, true);
 
 			// Find a suitable position backwards
 			angle[0] = 70.0;
@@ -334,7 +325,7 @@ void CheckKill(int ref, int client) {
 Action Timer_PropYeetEnd(Handle h, DataPack pack) {
 	pack.Reset();
 	int realEnt = EntRefToEntIndex(pack.ReadCell());
-	int visibleEnt = EntRefToEntIndex(pack.ReadCell());
+	// int visibleEnt = EntRefToEntIndex(pack.ReadCell());
 	// if(IsValidEntity(visibleEnt)) {
 	// 	float pos[3], ang[3];
 	// 	GetEntPropVector(visibleEnt, Prop_Send, "m_vecOrigin", pos);
@@ -488,7 +479,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				ClearParent(entity);
 
 				// If hat is not a player, we teleport them to the void (0, 0, 0)
-				// Otherwise, we just simply dismount the player while hatter is on ladder
+				// Ostherwise, we just simply dismount the player while hatter is on ladder
 				if(entity >= MaxClients)
 					TeleportEntity(entity, EMPTY_ANG, NULL_VECTOR, NULL_VECTOR);
 				if(visibleEntity > 0) {
@@ -584,30 +575,35 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		bool allowMove = true;
 		switch(WallBuilder[client].mode) {
 			case MOVE_ORIGIN: {
+				
 				SetWeaponDelay(client, 0.5);
 
 				bool isRotate;
 				int flags = GetEntityFlags(client);
-				if(buttons & IN_USE) {
-					PrintCenterText(client, "%.1f %.1f %.1f", WallBuilder[client].angles[0], WallBuilder[client].angles[1], WallBuilder[client].angles[2]);
-					isRotate = true;
-					SetEntityFlags(client, flags |= FL_FROZEN);
-					if(buttons & IN_ATTACK) WallBuilder[client].CycleAxis(client, tick);
-					else if(buttons & IN_ATTACK2) WallBuilder[client].CycleSnapAngle(client, tick);
-					
-					// Rotation control:
-					if(tick - cmdThrottle[client] > 0.20) {
-						if(WallBuilder[client].axis == 0) {
-							if(mouse[1] > 10) WallBuilder[client].angles[0] += WallBuilder[client].snapAngle;
-							else if(mouse[1] < -10) WallBuilder[client].angles[0] -= WallBuilder[client].snapAngle;
-						} else if(WallBuilder[client].axis  == 1) {
-							if(mouse[0] > 10) WallBuilder[client].angles[1] += WallBuilder[client].snapAngle;
-							else if(mouse[0] < -10) WallBuilder[client].angles[1] -= WallBuilder[client].snapAngle;
-						} else {
-							if(mouse[1] > 10) WallBuilder[client].angles[2] += WallBuilder[client].snapAngle;
-							else if(mouse[1] < -10) WallBuilder[client].angles[2] -= WallBuilder[client].snapAngle;
+				if(buttons & IN_USE && ~buttons & IN_ZOOM) {
+					if(buttons & IN_SPEED) {
+						WallBuilder[client].ToggleCollision(client, tick);
+					} else {
+						PrintCenterText(client, "%.1f %.1f %.1f", WallBuilder[client].angles[0], WallBuilder[client].angles[1], WallBuilder[client].angles[2]);
+						isRotate = true;
+						SetEntityFlags(client, flags |= FL_FROZEN);
+						if(buttons & IN_ATTACK) WallBuilder[client].CycleAxis(client, tick);
+						else if(buttons & IN_ATTACK2) WallBuilder[client].CycleSnapAngle(client, tick);
+						
+						// Rotation control:
+						if(tick - cmdThrottle[client] > 0.20) {
+							if(WallBuilder[client].axis == 0) {
+								if(mouse[1] > 10) WallBuilder[client].angles[0] += WallBuilder[client].snapAngle;
+								else if(mouse[1] < -10) WallBuilder[client].angles[0] -= WallBuilder[client].snapAngle;
+							} else if(WallBuilder[client].axis  == 1) {
+								if(mouse[0] > 10) WallBuilder[client].angles[1] += WallBuilder[client].snapAngle;
+								else if(mouse[0] < -10) WallBuilder[client].angles[1] -= WallBuilder[client].snapAngle;
+							} else {
+								if(mouse[1] > 10) WallBuilder[client].angles[2] += WallBuilder[client].snapAngle;
+								else if(mouse[1] < -10) WallBuilder[client].angles[2] -= WallBuilder[client].snapAngle;
+							}
+							cmdThrottle[client] = tick;
 						}
-						cmdThrottle[client] = tick;
 					}
 				} else {
 					// Move position
@@ -619,9 +615,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				if(!isRotate && flags & FL_FROZEN) {
 					flags = flags & ~FL_FROZEN;
 					SetEntityFlags(client, flags);
-				}
-				if(buttons & IN_SPEED) {
-					WallBuilder[client].ToggleCollision(client, tick);
 				}
 
 				GetCursorLimited2(client, WallBuilder[client].moveDistance, WallBuilder[client].origin, Filter_IgnorePlayerAndWall, WallBuilder[client].hasCollision);
@@ -659,10 +652,44 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 					WallBuilder[client].CalculateMins();
 				}
 			}
+			case COLOR: {
+				SetWeaponDelay(client, 0.5);
+				PrintCenterText(client, "%d %d %d %d", WallBuilder[client].color[0], WallBuilder[client].color[1], WallBuilder[client].color[2], WallBuilder[client].color[3]);
+				if(buttons & IN_USE) {
+					WallBuilder[client].CycleColorComponent(client, tick);
+				} else if(buttons & IN_ATTACK) {
+					WallBuilder[client].color[WallBuilder[client].colorIndex]--;
+					if(WallBuilder[client].color[WallBuilder[client].colorIndex] < 0) {
+						WallBuilder[client].color[WallBuilder[client].colorIndex] = 0;
+					}
+					WallBuilder[client].UpdateEntity();
+					allowMove = false;
+				} else if(buttons & IN_ATTACK2) {
+					WallBuilder[client].color[WallBuilder[client].colorIndex]++;
+					if(WallBuilder[client].color[WallBuilder[client].colorIndex] > 255) {
+						WallBuilder[client].color[WallBuilder[client].colorIndex] = 255;
+					}
+					WallBuilder[client].UpdateEntity();
+					allowMove = false;
+				}
+			}
 		}
 
-		switch(buttons) {
-			case IN_RELOAD: WallBuilder[client].CycleMode(client, tick); // R: Cycle forward
+		if(buttons & IN_RELOAD)
+		 	WallBuilder[client].CycleMode(client, tick); // R: Cycle forward
+		else if(WallBuilder[client].flags & Edit_Preview && tick - cmdThrottle[client] >= 0.25 && buttons & IN_ZOOM) {
+			if(buttons & IN_SPEED) {
+				int entity;
+				WallBuilder[client].Create(entity);
+				int index = g_spawnedItems.Push(EntIndexToEntRef(entity));
+				g_spawnedItems.Set(index, GetClientUserId(client), 1);
+			} else if(buttons & IN_DUCK) {
+				WallBuilder[client].CycleBuildType(client);
+			} else {
+				WallBuilder[client].Cancel();
+				CPrintToChat(client, "\x04[Editor]\x01 Cancelled.");
+			}
+			cmdThrottle[client] = tick;
 		}
 
 		WallBuilder[client].Draw(BUILDER_COLOR, 0.1, 0.1);
@@ -723,6 +750,10 @@ public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast
 public void OnClientDisconnect(int client) {
 	tempGod[client] = false;
 	WallBuilder[client].Reset();
+	g_isSearchActive[client] = false;
+	g_lastCategoryIndex[client] = 0;
+	g_lastItemIndex[client] = 0;
+	g_lastShowedHint[client] = 0;
 	hatData[client].yeetGroundTimer = null;
 	ClearHat(client, true);
 }
@@ -747,12 +778,14 @@ public void OnMapStart() {
 		cmdThrottle[i] = 0.0;
 		tempGod[i] = false;
 	}
+	GetCurrentMap(g_currentMap, sizeof(g_currentMap));
 	NavAreas = GetSpawnLocations();
 }
 
 
 public void OnMapEnd() {
 	delete NavAreas;
+	g_spawnedItems.Clear();
 	for(int i = 1; i <= createdWalls.Length; i++) {
 		if(hatData[i].yeetGroundTimer != null) { 
 			delete hatData[i].yeetGroundTimer;
@@ -762,6 +795,8 @@ public void OnMapEnd() {
 	}
 	createdWalls.Clear();
 	ClearHats();
+	UnloadCategories();
+	UnloadSave();
 }
 public void OnPluginEnd() {
 	ClearHats();
@@ -771,6 +806,14 @@ public void OnPluginEnd() {
 			SetEntityFlags(i, flags);
 		}
 	}
+	if(g_spawnedItems != null) {
+		for(int i = 0; i < g_spawnedItems.Length; i++) {
+			int ref = g_spawnedItems.Get(i);
+			RemoveEntity(ref);
+		}
+		delete g_spawnedItems;
+	}
+	TriggerInput("prop_preview", "Kill");
 }
 
 public bool TraceEntityFilterPlayer(int entity, int contentsMask, any data) {
@@ -779,7 +822,6 @@ public bool TraceEntityFilterPlayer(int entity, int contentsMask, any data) {
 	}
 	return entity != data;
 }  
-
 
 int GetLookingEntity(int client, TraceEntityFilter filter) {
 	static float pos[3], ang[3];
@@ -844,7 +886,16 @@ bool CheckBlacklist(int entity) {
 
 ////////////////////////////////
 
-
+stock void TriggerInput(const char[] targetName, const char[] input) {
+	int entity = -1;
+	char _targetName[32];
+	while((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_REFERENCE) {
+		GetEntPropString(entity, Prop_Data, "m_iName", _targetName, sizeof(_targetName));
+		if(StrEqual(_targetName, targetName)) {
+			AcceptEntityInput(entity, input);
+		}
+	}
+}
 
 
 stock bool FindGround(const float start[3], float end[3]) {

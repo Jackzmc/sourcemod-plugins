@@ -328,7 +328,6 @@ Action Command_DoAHat(int client, int args) {
 			// Use the new wall editor
 			WallBuilder[client].Reset();
 			WallBuilder[client].entity = EntIndexToEntRef(entity);
-			WallBuilder[client].canScale = false;	
 			WallBuilder[client].SetMode(MOVE_ORIGIN);
 			PrintToChat(client, "\x04[Hats] \x01Beta Prop Mover active for \x04%d", entity);
 		} else {
@@ -353,7 +352,7 @@ Action Command_DoAHat(int client, int args) {
 		} else if(entity == EntRefToEntIndex(WallBuilder[client].entity)) {
 			// Prevent making an entity you editing a hat
 			return Plugin_Handled;
-		} else if(cvar_sm_hats_max_distance.FloatValue > 0.0 && entity >= MaxClients) {
+		} else if(!isForced && cvar_sm_hats_max_distance.FloatValue > 0.0 && entity >= MaxClients) {
 			float posP[3], posE[3];
 			GetClientEyePosition(client, posP);
 			GetEntPropVector(entity, Prop_Data, "m_vecOrigin", posE);
@@ -377,8 +376,8 @@ Action Command_DoAHat(int client, int args) {
 			PrintToConsole(client, "[Hats] Selected a child entity, selecting parent (child %d -> parent %d)", entity, parent);
 			entity = parent;
 		} else if(entity <= MaxClients) { // Checks for hatting a player entity
-			if(IsFakeClient(entity)) {
-				PrintToChat(client, "[Hats] Cannot hat bots");
+			if(IsFakeClient(entity) && L4D_GetIdlePlayerOfBot(entity) != -1) {
+				PrintToChat(client, "[Hats] Cannot hat idle bots");
 				return Plugin_Handled;
 			} else if(GetClientTeam(entity) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
 				PrintToChat(client, "[Hats] Cannot make enemy a hat... it's dangerous");
@@ -537,7 +536,7 @@ int HatConsentHandler(Menu menu, MenuAction action, int target, int param2) {
 }
 
 bool IsHatsEnabled(int client) {
-    return (cvar_sm_hats_enabled.IntValue == 1 && GetUserAdmin(client) != INVALID_ADMIN_ID) || cvar_sm_hats_enabled.IntValue == 2
+	return (cvar_sm_hats_enabled.IntValue == 1 && GetUserAdmin(client) != INVALID_ADMIN_ID) || cvar_sm_hats_enabled.IntValue == 2
 }
 
 void ClearHats() {
