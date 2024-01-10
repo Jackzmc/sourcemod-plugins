@@ -326,9 +326,9 @@ Action Command_DoAHat(int client, int args) {
 			}
 		} else if(arg[0] == 'd') {
 			// Use the new wall editor
-			WallBuilder[client].Reset();
-			WallBuilder[client].entity = EntIndexToEntRef(entity);
-			WallBuilder[client].SetMode(MOVE_ORIGIN);
+			Editor[client].Reset();
+			Editor[client].entity = EntIndexToEntRef(entity);
+			Editor[client].SetMode(MOVE_ORIGIN);
 			PrintToChat(client, "\x04[Hats] \x01Beta Prop Mover active for \x04%d", entity);
 		} else {
 			PrintToChat(client, "[Hats] Restored hat to its original position.");
@@ -349,7 +349,7 @@ Action Command_DoAHat(int client, int args) {
 		if(entity <= 0) {
 			PrintCenterText(client, "[Hats] No entity found");
 			return Plugin_Handled;
-		} else if(entity == EntRefToEntIndex(WallBuilder[client].entity)) {
+		} else if(entity == EntRefToEntIndex(Editor[client].entity)) {
 			// Prevent making an entity you editing a hat
 			return Plugin_Handled;
 		} else if(!isForced && cvar_sm_hats_max_distance.FloatValue > 0.0 && entity >= MaxClients) {
@@ -382,7 +382,7 @@ Action Command_DoAHat(int client, int args) {
 			} else if(GetClientTeam(entity) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
 				PrintToChat(client, "[Hats] Cannot make enemy a hat... it's dangerous");
 				return Plugin_Handled;
-			} else if(entity == EntRefToEntIndex(WallBuilder[client].entity)) {
+			} else if(entity == EntRefToEntIndex(Editor[client].entity)) {
 				// Old check left in in case you hatting child entity
 				PrintToChat(client, "[Hats] You are currently editing this entity");
 				return Plugin_Handled;
@@ -569,7 +569,7 @@ void ClearHat(int i, bool restore = false) {
 	// if(HasEntProp(entity, Prop_Send, "m_flModelScale"))
 		// SetEntPropFloat(entity, Prop_Send, "m_flModelScale", 1.0);
 	SetEntProp(modifyEntity, Prop_Send, "m_CollisionGroup", hatData[i].collisionGroup);
-	SetEntProp(modifyEntity, Prop_Send, "m_nSolidType", hatData[i].solidType);
+	// SetEntProp(modifyEntity, Prop_Send, "m_nSolidType", hatData[i].solidType);
 	SetEntProp(modifyEntity, Prop_Send, "movetype", hatData[i].moveType);
 
 	hatData[i].entity = INVALID_ENT_REFERENCE;
@@ -667,7 +667,7 @@ bool CanHatBePlaced(int client, const float pos[3]) {
 			int spawnFlags = L4D_GetNavArea_SpawnAttributes(nav) ;
 			if(spawnFlags & NAV_SPAWN_CHECKPOINT) {
 				PrintToServer("\"%L\" tried to place hat in saferoom, denied.", client);
-				PrintToChat(client, "[Hats] Hats are not allowed in saferoom and has been returned.");
+				PrintToChat(client, "[Hats] Hat is not allowed in saferoom and has been returned.");
 				return false;
 			}
 		}
@@ -834,7 +834,7 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 		L4D2_SetEntityGlow(modifyEntity, L4D2Glow_Constant, 0, 0, color, false);
 		#endif
 
-		SetEntProp(modifyEntity, Prop_Send, "m_nSolidType", 0);
+		// SetEntProp(modifyEntity, Prop_Send, "m_nSolidType", 0);
 		SetEntProp(modifyEntity, Prop_Send, "m_CollisionGroup", 1);
 		SetEntProp(modifyEntity, Prop_Send, "movetype", MOVETYPE_NONE);
 	}

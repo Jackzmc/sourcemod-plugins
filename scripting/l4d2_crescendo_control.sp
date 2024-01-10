@@ -298,7 +298,7 @@ public Action L4D2_CGasCan_EventKilled(int gascan, int &inflictor, int &attacker
 		float activatorFlow = L4D2Direct_GetFlowDistance(attacker);
 		GroupResult result;
 		PrintToConsoleAll("[CC] Gascan Shot by %N", attacker);
-		ComputeGroups(result, activatorFlow);
+		// ComputeGroups(result, activatorFlow);
 
 		AdminId admin = GetUserAdmin(attacker);
 		if(admin != INVALID_ADMIN_ID && admin.HasFlag(Admin_Custom1)) {

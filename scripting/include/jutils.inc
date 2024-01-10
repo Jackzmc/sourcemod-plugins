@@ -915,7 +915,8 @@ stock void GlowPoint(const float pos[3], float lifetime = 5.0) {
 
 stock void GlowEntity(int entity, float lifetime = 10.0, int glowColor[3] = _glowColor) {
 	L4D2_SetEntityGlow(entity, L4D2Glow_Constant, 10000, 0, glowColor, false);
-	CreateTimer(lifetime, Timer_ClearGlow, EntIndexToEntRef(entity));
+	if(lifetime > 0.0)
+		CreateTimer(lifetime, Timer_ClearGlow, EntIndexToEntRef(entity));
 }
 
 Action Timer_ClearGlow(Handle h, int ref) {

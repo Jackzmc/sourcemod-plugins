@@ -1,6 +1,7 @@
 int BUILDER_COLOR[4] = { 0, 255, 0, 235 };
 int GLOW_BLUE[4] = { 3, 148, 252 };
-int GLOW_RED[4] = { 255, 0, 0, 235 };
+int GLOW_RED_ALPHA[4] = { 255, 0, 0, 235 };
+int GLOW_RED[3] = { 255, 0, 0};
 int GLOW_WHITE[4] = { 255, 255, 255, 255 };
 int GLOW_GREEN[4] = { 3, 252, 53 };
 float ORIGIN_SIZE[3] = { 2.0, 2.0, 2.0 };
@@ -46,9 +47,14 @@ char COLOR_INDEX[4] = "RGBA";
 ArrayList createdWalls;
 
 enum struct WallBuilderData {
+	char classname[32];
+	char data[32];
+
 	float origin[3];
-	float mins[3];
+	float prevOrigin[3];
 	float angles[3];
+	float prevAngles[3];
+	float mins[3];
 	float size[3];
 	int color[4];
 	int colorIndex;
@@ -58,6 +64,7 @@ enum struct WallBuilderData {
 	float moveDistance;
 	int entity;
 	bool hasCollision;
+	bool hasCollisionRotate; 
 
 	editMode mode;
 	buildType buildType;
@@ -70,6 +77,7 @@ enum struct WallBuilderData {
 				RemoveEntity(this.entity);
 		}
 		this.entity = INVALID_ENT_REFERENCE;
+		this.data[0] = '\0';
 		this.size[0] = this.size[1] = this.size[2] = 5.0;
 		this.angles[0] = this.angles[1] = this.angles[2] = 0.0;
 		this.color[0] = this.color[1] = this.color[2] = this.color[3] = 255;
@@ -77,8 +85,10 @@ enum struct WallBuilderData {
 		this.axis = 1;
 		this.moveDistance = 200.0;
 		this.hasCollision = true;
+		this.hasCollisionRotate = false;
 		this.flags = Edit_None;
 		this.buildType = Build_Solid;
+		this.classname[0] = '\0';
 		this.CalculateMins();
 		this.SetMode(INACTIVE);
 		if(initial) {
@@ -130,6 +140,10 @@ enum struct WallBuilderData {
 		this.mode = mode;
 	}
 
+	void SetData(const char[] data) {
+		strcopy(this.data, sizeof(this.data), data);
+	}
+
 	void CycleMode(int client, float tick) {
 		if(tick - cmdThrottle[client] <= 0.25) return;
 		int flags = GetEntityFlags(client) & ~FL_FROZEN;
@@ -157,7 +171,6 @@ enum struct WallBuilderData {
 			}
 			case FREELOOK: {
 				this.mode = MOVE_ORIGIN;
-				// PrintToChat(client, "Hold \x04USE (E)\x01 to rotate, \x04WALK (SHIFT)\x01 to change speed");
 			}
 		}
 		PrintToChat(client, "\x04[Editor]\x01 Mode: \x05%s\x01 (Press \x04RELOAD\x01 to change mode)", MODE_NAME[this.mode]);
@@ -171,6 +184,16 @@ enum struct WallBuilderData {
 			PrintToChat(client, "\x04[Editor]\x01 Collision: \x05ON\x01");
 		else
 			PrintToChat(client, "\x04[Editor]\x01 Collision: \x04OFF\x01");
+		cmdThrottle[client] = tick;
+	}
+
+	void ToggleCollisionRotate(int client, float tick) {
+		if(tick - cmdThrottle[client] <= 0.25) return;
+		this.hasCollisionRotate = !this.hasCollisionRotate
+		if(this.hasCollisionRotate)
+			PrintToChat(client, "\x04[Editor]\x01 Rotate with Collision: \x05ON\x01");
+		else
+			PrintToChat(client, "\x04[Editor]\x01 Rotate with Collision: \x04OFF\x01");
 		cmdThrottle[client] = tick;
 	}
 
@@ -199,9 +222,9 @@ enum struct WallBuilderData {
 			case 90: this.snapAngle = 1;
 		}
 
-		this.angles[0] = SnapTo(this.angles[0], float(this.snapAngle));
-		this.angles[1] = SnapTo(this.angles[1], float(this.snapAngle));
-		this.angles[2] = SnapTo(this.angles[2], float(this.snapAngle));
+		// this.angles[0] = SnapTo(this.angles[0], float(this.snapAngle));
+		// this.angles[1] = SnapTo(this.angles[1], float(this.snapAngle));
+		// this.angles[2] = SnapTo(this.angles[2], float(this.snapAngle));
 
 		if(this.snapAngle == 1)
 			PrintToChat(client, "\x04[Editor]\x01 Rotate Snap Degrees: \x04(OFF)\x01", this.snapAngle);
@@ -220,7 +243,9 @@ enum struct WallBuilderData {
 
 	void CycleBuildType(int client) {
 		// No tick needed, is handled externally
-		if(this.buildType == Build_Physics) {
+		if(this.classname[0] != '\0') {
+			PrintToChat(client, "\x04[Editor]\x01 Spawn as: \x05%s\x01 (fixed)", this.classname);
+		} else if(this.buildType == Build_Physics) {
 			this.buildType = Build_Solid;
 			PrintToChat(client, "\x04[Editor]\x01 Spawn as: \x05Solid\x01");
 		} else if(this.buildType == Build_Solid) {
@@ -302,22 +327,46 @@ enum struct WallBuilderData {
 		return true;
 	}
 
-	bool _FinishPreview(int& entity) {
-		entity = -1;
-		if(this.buildType == Build_Physics)
+	int _CreateWeapon() {
+		int entity = -1;
+		if(StrEqual(this.classname, "weapon_melee")) {
+			entity = CreateEntityByName("weapon_melee");
+			DispatchKeyValue(entity, "melee_weapon", this.data);
+		} else {
+			entity = CreateEntityByName(this.data);
+			DispatchKeyValue(entity, "spawnflags", "8");
+		}
+		return entity;
+	}
+
+	int _CreateRegular() {
+		int entity = -1;
+		if(this.classname[0] != '\0') {
+			entity = CreateEntityByName(this.classname);
+		} else if(this.buildType == Build_Physics)
 			entity = CreateEntityByName("prop_physics");
 		else
-			entity = CreateEntityByName("prop_dynamic");
+			entity = CreateEntityByName("prop_dynamic_override");
 		if(entity == -1) return false;
 
 		char model[128];
 		GetEntPropString(this.entity, Prop_Data, "m_ModelName", model, sizeof(model));
 		DispatchKeyValue(entity, "model", model);
-		DispatchKeyValue(entity, "targetname", "prop_preview");
 		if(this.buildType == Build_NonSolid)
 			DispatchKeyValue(entity, "solid", "0");
 		else
 			DispatchKeyValue(entity, "solid", "6");
+		return entity;
+	}
+
+	bool _FinishPreview(int& entity) {
+		if(StrContains(this.classname, "weapon") > -1) {
+			entity = this._CreateWeapon();
+		} else {
+			entity = this._CreateRegular();
+		}
+		
+		DispatchKeyValue(entity, "targetname", "propspawner_prop");
 		TeleportEntity(entity, this.origin, this.angles, NULL_VECTOR);
 		if(!DispatchSpawn(entity)) {
 			return false;
@@ -351,8 +400,6 @@ enum struct WallBuilderData {
 		DispatchKeyValue(entity, "solid", "6");
 
 		DispatchSpawn(entity);
-		// SetEntProp(entity, Prop_Send, "m_CollisionGroup", 1);
-		// SetEntProp(entity, Prop_Send, "m_nSolidType", 6);
 		TeleportEntity(entity, this.origin, this.angles, NULL_VECTOR);
 		this.entity = entity;
 		this.flags |= Edit_Copy;
@@ -364,12 +411,62 @@ enum struct WallBuilderData {
 		this.flags |= Edit_WallCreator;
 	}
 
-	bool PreviewModel(const char[] model) {
-		// If last entity was preview, kill it
-		PrecacheModel(model);
+	bool PreviewWeapon(const char[] classname) {
+		return false;
+		int entity;
+		// Melee weapons don't have weapon_ prefix
 		this.Reset();
-		int entity = CreateEntityByName("prop_dynamic");
-		if(entity == -1) return false;
+		this.SetData(classname);
+		if(StrContains(classname, "weapon_") == -1) {
+			// no weapon_ prefix, its a melee
+			PrintToServer("Spawning weapon_melee: %s", classname);
+			entity = CreateEntityByName("weapon_melee");
+			if(entity == -1) return false;
+			DispatchKeyValue(entity, "melee_weapon", classname);
+			strcopy(this.classname, sizeof(this.classname), "weapon_melee");
+		} else {
+			PrintToServer("Spawning normal weapon: %s", classname);
+			entity = CreateEntityByName(classname);
+			if(entity == -1) return false;
+			DispatchKeyValue(entity, "spawnflags", "8");
+			strcopy(this.classname, sizeof(this.classname), "weapon");
+		}
+		DispatchKeyValue(entity, "targetname", "prop_preview");
+		DispatchKeyValue(entity, "rendercolor", "255 128 255");
+		DispatchKeyValue(entity, "renderamt", "200");
+		DispatchKeyValue(entity, "rendermode", "1");
+		if(!DispatchSpawn(entity)) {
+			PrintToServer("Failed to spawn");
+			return false;
+		}
+		this.entity = entity;
+		this.flags |= (Edit_Copy | Edit_Preview);
+		this.SetMode(MOVE_ORIGIN);
+		// Seems some entities fail here:
+		return IsValidEntity(entity);
+	}
+
+	bool PreviewModel(const char[] model, const char[] classname = "") {
+		// Check for an invalid model
+		if(StrEqual(classname, "_weapon") || StrEqual(classname, "_melee")) {
+			return this.PreviewWeapon(model);
+		}
+		if(PrecacheModel(model) == 0) { 
+			PrintToServer("Invalid model: %s", model);
+			return false;
+		}
+		this.Reset();
+		int entity = CreateEntityByName("prop_door_rotating");
+		if(classname[0] == '\0') {
+			entity = CreateEntityByName("prop_dynamic_override");
+		} else {
+			strcopy(this.classname, sizeof(this.classname), classname);
+			entity = CreateEntityByName(classname);
+		}
+		if(entity == -1) {
+			PrintToServer("Invalid classname: %s", classname);
+			return false;
+		}
 		DispatchKeyValue(entity, "model", model);
 		DispatchKeyValue(entity, "targetname", "prop_preview");
 		DispatchKeyValue(entity, "solid", "0");
@@ -377,6 +474,7 @@ enum struct WallBuilderData {
 		DispatchKeyValue(entity, "renderamt", "200");
 		DispatchKeyValue(entity, "rendermode", "1");
 		if(!DispatchSpawn(entity)) {
+			PrintToServer("Failed to spawn");
 			return false;
 		}
 		this.entity = entity;
@@ -390,6 +488,8 @@ enum struct WallBuilderData {
 		this.Reset();
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", this.origin);
 		GetEntPropVector(entity, Prop_Send, "m_angRotation", this.angles);
+		this.prevOrigin = this.origin;
+		this.prevAngles = this.angles;
 		GetEntPropVector(entity, Prop_Send, "m_vecMins", this.mins);
 		GetEntPropVector(entity, Prop_Send, "m_vecMaxs", this.size);
 		if(!makeCopy) {
@@ -402,62 +502,15 @@ enum struct WallBuilderData {
 		// Delete any copies:
 		if(this.flags & Edit_Copy || this.flags & Edit_Preview) {
 			RemoveEntity(this.entity);
+		} else if(~this.flags & Edit_WallCreator) {
+			// Is an edit of a prop
+			TeleportEntity(this.entity, this.prevOrigin, this.prevAngles, NULL_VECTOR);
 		}
 		this.SetMode(INACTIVE);
 	}
-
-	// void OpenSettings(int client) {
-	// 	Menu menu = new Menu(SettingsHandler);
-	// 	menu.AddItem("color", "Change Color");
-	// 	menu.AddItem("type", "Change Spawn Type");
-	// 	// if(this.flags & Edit_Scale)
-	// 	menu.ExitButton = true;
-	// 	// Only show back if we are for a preview
-	// 	menu.ExitBackButton = (this.flags & Edit_Preview) != 0;
-	// 	menu.Display(client, MENU_TIME_FOREVER);
-	// }
 }
 
-WallBuilderData WallBuilder[MAXPLAYERS+1];
-
-// int SettingsHandler(Menu menu, MenuAction action, int client, int param2) {
-// 	if (action == MenuAction_Select) {
-// 		char info[8];
-// 		menu.GetItem(param2, info, sizeof(info));
-// 		if(StrEqual(info, "color")) {
-// 			Menu newMenu = new Menu(ColorHandler);
-// 			newMenu.AddItem()
-// 		} else if(StrEqual(info, "type")) {
-
-// 		} else {
-// 			CPrintToChat(client, "\x04[Editor]\x01 Error: Unknown setting \x05%s", info);
-// 		}
-		
-// 		// Re-open category list when done editing setting
-// 		if(WallBuilder[client].flags & Edit_Preview) {
-// 			ShowItemMenu(client, g_lastCategoryIndex[client]);
-// 		}
-// 	} else if(action == MenuAction_Cancel) {
-// 		if(WallBuilder[client].flags & Edit_Preview) {
-// 			ShowItemMenu(client, g_lastCategoryIndex[client]);
-// 		}	
-// 	} else if (action == MenuAction_End)	
-// 		delete menu;
-// 	return 0;
-// }
-
-// int ColorHandler(Menu menu, MenuAction action, int client, int param2) {
-// 	if (action == MenuAction_Select) {
-// 		char info[8];
-		
-// 	} else if(action == MenuAction_Cancel) {
-// 		if(WallBuilder[client].flags & Edit_Preview) {
-// 			ShowItemMenu(client, g_lastCategoryIndex[client]);
-// 		}	
-// 	} else if (action == MenuAction_End)	
-// 		delete menu;
-// 	return 0;
-// }
+WallBuilderData Editor[MAXPLAYERS+1];
 
 Action OnWallClicked(int entity, int activator, int caller, UseType type, float value) {
 	int wallId = FindWallId(entity);
@@ -474,10 +527,10 @@ Action OnWallClicked(int entity, int activator, int caller, UseType type, float 
 
 // TODO: Stacker, copy tool, new command?
 public Action Command_MakeWall(int client, int args) {
-	if(WallBuilder[client].IsActive()) {
+	if(Editor[client].IsActive()) {
 		ReplyToCommand(client, "\x04[Editor]\x01 You are currently editing an entity. Finish editing your current entity with with \x05/edit done\x01 or cancel with \x04/edit cancel\x01");
 	} else {
-		WallBuilder[client].StartWall();
+		Editor[client].StartWall();
 		if(args > 0) {
 			// Get values for X, Y and Z axis (defaulting to 1.0):
 			char arg2[8];
@@ -487,7 +540,7 @@ public Action Command_MakeWall(int client, int args) {
 				if(StringToFloatEx(arg2, value) == 0) {
 					value = 1.0;
 				}
-				WallBuilder[client].size[i] = value;
+				Editor[client].size[i] = value;
 			}
 
 			float rot[3];
@@ -495,23 +548,24 @@ public Action Command_MakeWall(int client, int args) {
 			// Flip X and Y depending on rotation
 			// TODO: Validate
 			if(rot[2] > 45 && rot[2] < 135 || rot[2] > -135 && rot[2] < -45) {
-				float temp = WallBuilder[client].size[0];
-				WallBuilder[client].size[0] = WallBuilder[client].size[1];
-				WallBuilder[client].size[1] = temp;
+				float temp = Editor[client].size[0];
+				Editor[client].size[0] = Editor[client].size[1];
+				Editor[client].size[1] = temp;
 			}
 			
-			WallBuilder[client].CalculateMins();
+			Editor[client].CalculateMins();
 		}
 
-		WallBuilder[client].SetMode(SCALE);
-		GetCursorLimited(client, 100.0, WallBuilder[client].origin, Filter_IgnorePlayer);
+		Editor[client].SetMode(SCALE);
+		GetCursorLimited(client, 100.0, Editor[client].origin, Filter_IgnorePlayer);
 		PrintToChat(client, "\x04[Editor]\x01 New Wall Started. End with \x05/wall build\x01 or \x04/wall cancel\x01");
 		PrintToChat(client, "\x04[Editor]\x01 Mode: \x05Scale\x01");
 	}
 	return Plugin_Handled;
 }
 
-public Action Command_ManageWalls(int client, int args) {
+// TODO: move wall ids to own subcommand 
+Action Command_Editor(int client, int args) {
 	if(args == 0) {
 		PrintToChat(client, "\x04[Editor]\x01 Created Walls: \x05%d\x01", createdWalls.Length);
 		for(int i = 1; i <= createdWalls.Length; i++) {
@@ -528,7 +582,7 @@ public Action Command_ManageWalls(int client, int args) {
 		SetEntityFlags(client, flags);
 		
 		int entity;
-		CompleteType result = WallBuilder[client].Create(entity);
+		CompleteType result = Editor[client].Create(entity);
 		switch(result) {
 			case Complete_WallSuccess: {
 				if(entity > 0)
@@ -548,10 +602,10 @@ public Action Command_ManageWalls(int client, int args) {
 	} else if(StrEqual(arg1, "cancel")) {
 		int flags = GetEntityFlags(client) & ~FL_FROZEN;
 		SetEntityFlags(client, flags);
-		WallBuilder[client].Cancel();
-		if(WallBuilder[client].flags & Edit_Preview)
-			PrintToChat(client, "\x04[Editor]\x01 Prop Spawer: \x04Done\x01");
-		else if(WallBuilder[client].flags & Edit_WallCreator) {
+		Editor[client].Cancel();
+		if(Editor[client].flags & Edit_Preview)
+			PrintToChat(client, "\x04[Editor]\x01 Prop Spawer: \x04Cancelled\x01");
+		else if(Editor[client].flags & Edit_WallCreator) {
 			PrintToChat(client, "\x04[Editor]\x01 Wall Creation: \x04Cancelled\x01");
 		} else {
 			PrintToChat(client, "\x04[Editor]\x01 Entity Edit: \x04Cancelled\x01");
@@ -559,11 +613,11 @@ public Action Command_ManageWalls(int client, int args) {
 	} else if(StrEqual(arg1, "export")) {
 		// TODO: support exp #id
 		float origin[3], angles[3], size[3];
-		if(WallBuilder[client].IsActive()) {
-			origin = WallBuilder[client].origin;
-			angles = WallBuilder[client].angles;
-			size = WallBuilder[client].size;
-			Export(client, arg2, WallBuilder[client].entity, origin, angles, size);
+		if(Editor[client].IsActive()) {
+			origin = Editor[client].origin;
+			angles = Editor[client].angles;
+			size = Editor[client].size;
+			Export(client, arg2, Editor[client].entity, origin, angles, size);
 		} else {
 			int id = GetWallId(client, arg2);
 			if(id == -1) return Plugin_Handled;
@@ -574,16 +628,14 @@ public Action Command_ManageWalls(int client, int args) {
 			GetEntPropVector(entity, Prop_Send, "m_vecMaxs", size);
 			Export(client, arg2, entity, origin, angles, size);
 		}
-
-
 	} else if(StrEqual(arg1, "delete")) {
-		if(WallBuilder[client].IsActive() && args == 1) {
-			int entity = WallBuilder[client].entity;
+		if(Editor[client].IsActive() && args == 1) {
+			int entity = Editor[client].entity;
 			if(IsValidEntity(entity)) {
 				PrintToChat(client, "\x04[Editor]\x01 You are not editing any existing entity, use \x05/wall cancel\x01 to stop or \x05/wall delete <id/all>");
 			} else if(entity > MaxClients) {
 				RemoveEntity(entity);
-				WallBuilder[client].Reset();
+				Editor[client].Reset();
 				PrintToChat(client, "\x04[Editor]\x01 Deleted current entity");
 			} else {
 				PrintToChat(client, "\x04[Editor]\x01 Cannot delete player entities.");
@@ -651,14 +703,14 @@ public Action Command_ManageWalls(int client, int args) {
 		int id = GetWallId(client, arg2);
 		if(id > -1) {
 			int entity = GetWallEntity(id);
-			WallBuilder[client].Import(entity);
+			Editor[client].Import(entity);
 			PrintToChat(client, "\x04[Editor]\x01 Editing wall \x05%d\x01. End with \x05/wall done\x01 or \x04/wall cancel\x01", id);
 			PrintToChat(client, "\x04[Editor]\x01 Mode: \x05Scale\x01");
 		}
 	} else if(StrEqual(arg1, "edite") || (arg1[0] == 'c' && arg1[1] == 'u')) {
 		int index = GetLookingEntity(client, Filter_ValidHats); //GetClientAimTarget(client, false);
 		if(index > 0) {
-			WallBuilder[client].Import(index, false, MOVE_ORIGIN);
+			Editor[client].Import(index, false, MOVE_ORIGIN);
 			char classname[32];
 			char targetname[32];
 			GetEntityClassname(index, classname, sizeof(classname));
@@ -669,20 +721,20 @@ public Action Command_ManageWalls(int client, int args) {
 			ReplyToCommand(client, "\x04[Editor]\x01 Invalid or non existent entity");
 		}
 	} else if(StrEqual(arg1, "copy")) {
-		if(WallBuilder[client].IsActive()) {
-			int oldEntity = WallBuilder[client].entity;
+		if(Editor[client].IsActive()) {
+			int oldEntity = Editor[client].entity;
 			if(oldEntity == INVALID_ENT_REFERENCE) {
 				PrintToChat(client, "\x04[Editor]\x01 Finish editing your wall first: \x05/wall done\x01 or \x04/wall cancel\x01");
 			} else { 
-				int entity = WallBuilder[client].Copy();
+				int entity = Editor[client].Copy();
 				PrintToChat(client, "\x04[Editor]\x01 Editing copy \x05%d\x01 of entity \x05%d\x01. End with \x05/edit done\x01 or \x04/edit cancel\x01", entity, oldEntity);
 			}
 		} else {
 			int id = GetWallId(client, arg2);
 			if(id > -1) {
 				int entity = GetWallEntity(id);
-				WallBuilder[client].Import(entity, true);
-				GetCursorLimited(client, 100.0, WallBuilder[client].origin, Filter_IgnorePlayer);
+				Editor[client].Import(entity, true);
+				GetCursorLimited(client, 100.0, Editor[client].origin, Filter_IgnorePlayer);
 				PrintToChat(client, "\x04[Editor]\x01 Editing copy of wall \x05%d\x01. End with \x05/wall build\x01 or \x04/wall cancel\x01", id);
 				PrintToChat(client, "\x04[Editor]\x01 Mode: \x05Scale\x01");
 			}
@@ -756,7 +808,7 @@ void GlowWall(int id, int glowColor[4], float lifetime = 5.0) {
 }
 
 void DeleteWall(int id) {
-	GlowWall(id, GLOW_RED);
+	GlowWall(id, GLOW_RED_ALPHA);
 	int ref = GetWallEntity(id);
 	if(IsValidEntity(ref)) {
 		RemoveEntity(ref);

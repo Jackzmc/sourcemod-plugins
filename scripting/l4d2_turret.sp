@@ -263,6 +263,7 @@ int AddMountedGun(int entity, MountedGun type) {
 	DispatchKeyValue(poseCtrl, "targetname", buffer);
 	DispatchKeyValue(poseCtrl, "PoseParameterName", "MiniGun_Horizontal");
 	DispatchKeyValue(poseCtrl, "CycleFrequency", "0");
+	DispatchKeyValue(poseCtrl, "FModRate", "0");
 	DispatchSpawn(poseCtrl);
 	SetParent(poseCtrl, entity);
 	MTurret[MTurretCount].poseController = EntIndexToEntRef(poseCtrl);
@@ -669,9 +670,14 @@ public Action Timer_Think(Handle h) {
 				targetPos[2] += 40.0; // hit infected better
 				GetAngles(pos, targetPos, angles);
 				float angle = 0.5 + (angles[1] - turretAngles[1]) / FLOAT_PI;
-				SetPoseControllerParameter(MTurret[i].poseController, "MiniGun_Vertical", -90.0, 90.0, angle);
-				angle = 0.5 + (angles[0] - turretAngles[0]) / FLOAT_PI;
-				SetPoseControllerParameter(MTurret[i].poseController, "MiniGun_Horizontal", -90.0, 90.0, angle);
+				SetVariantString("Minigun_Horizontal");
+				AcceptEntityInput(MTurret[i].poseController, "SetPoseParameterName");
+				SetVariantFloat(angle);
+				AcceptEntityInput(MTurret[i].poseController, "SetPoseValue");
+				PrintToConsoleAll("angle:%f", angle);
+				// SetPoseControllerParameter(MTurret[i].poseController, "MiniGun_Vertical", -90.0, 90.0, angle);
+				// angle = 0.5 + (angles[0] - turretAngles[0]) / FLOAT_PI;
+				// SetPoseControllerParameter(MTurret[i].poseController, "MiniGun_Horizontal", -90.0, 90.0, angle);
 				// SetPoseParameter(MTurret[i].entity, 0, -90.0, 90.0, angles[0]);
 				// SetPoseParameter(MTurret[i].entity, 1, -90.0, 90.0, angles[1]);
 				TR_TraceRay(pos, targetPos, 0, RayType_EndPoint);

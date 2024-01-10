@@ -1397,12 +1397,7 @@ void SetExtraKits(int playerCount) {
 	if(GetRandomFloat() < 0.3 && averageTeamHP <= 80.0) ++extraPlayers;
 
 
-	//If hAddExtraKits TRUE: Append to previous, FALSE: Overwrite
-	if(hAddExtraKits.BoolValue) 
-		g_extraKitsAmount += extraPlayers;
-	else
-		g_extraKitsAmount = extraPlayers;
-		
+	g_extraKitsAmount += extraPlayers;
 	g_extraKitsStart = g_extraKitsAmount;
 }
 

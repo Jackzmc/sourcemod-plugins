@@ -38,20 +38,16 @@ ConVar cvar_sm_hats_max_distance;
 
 TopMenu g_topMenu;
 
-int g_lastCategoryIndex[MAXPLAYERS+1];
-int g_lastItemIndex[MAXPLAYERS+1];
-int g_lastShowedHint[MAXPLAYERS+1];
-bool g_isSearchActive[MAXPLAYERS+1];
-
 char g_currentMap[64];
 
-#include <hats/walls.sp>
+//int g_markedMode
+
+#include <hats/editor.sp>
 #include <hats/hats.sp>
 #include <hats/hat_presets.sp>
-#include <hats/props.sp>
+#include <hats/props/base.sp>
 
-public Plugin myinfo = 
-{
+public Plugin myinfo = {
 	name =  "L4D2 Hats", 
 	author = "jackzmc", 
 	description = "", 
@@ -81,8 +77,8 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_hat", Command_DoAHat, "Hats");
 	RegAdminCmd("sm_hatf", Command_DoAHat, ADMFLAG_ROOT, "Hats");
 	RegAdminCmd("sm_mkwall", Command_MakeWall, ADMFLAG_CHEATS);
-	RegAdminCmd("sm_walls", Command_ManageWalls, ADMFLAG_CHEATS);
-	RegAdminCmd("sm_wall", Command_ManageWalls, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_edit", Command_Editor, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_wall", Command_Editor, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_prop", Command_Props, ADMFLAG_CHEATS);
 	RegConsoleCmd("sm_hatp", Command_DoAHatPreset);
 
@@ -110,7 +106,7 @@ public void OnPluginStart() {
 	}
 
 	for(int i = 1; i <= MaxClients; i++) {
-		WallBuilder[i].Reset(true);
+		Editor[i].Reset(true);
 		hatData[i].yeetGroundTimer = null;
 	}
 
@@ -133,7 +129,7 @@ public void OnLibraryRemoved(const char[] name) {
 public void OnEnterSaferoom(Event event, const char[] name, bool dontBroadcast) {
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
-	if(client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2) {
+	if(client > 0 && client <= MaxClients && IsValidClient(client) && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
 		inSaferoom[client] = true;
 		if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_NoSaferoomHats)) {
 			if(HasHat(client) && !HasFlag(client, HAT_PRESET)) {
@@ -464,6 +460,7 @@ void ChooseRandomPosition(float pos[3], int ignoreClient = 0) {
 	}
 }
 
+bool g_inRotate[MAXPLAYERS+1];
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	float tick = GetGameTime();
 	//////////////////////////////
@@ -567,13 +564,52 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	//////////////////////////////
 	// OnPlayerRunCmd :: ENTITY EDITOR
 	/////////////////////////////
-	if(WallBuilder[client].IsActive() && WallBuilder[client].CheckEntity(client)) { 
+	if(g_pendingSaveClient == client) {
+		if(buttons & IN_ZOOM) {
+			ClearSavePreview();
+			if(buttons & IN_SPEED) {
+				LoadSave(g_pendingSaveName, false);
+			}
+		}
+	} else if(g_PropData[client].markedProps != null) {
+		SetWeaponDelay(client, 0.5);
+		if(tick - cmdThrottle[client] >= 0.20) {
+			if(buttons & IN_ATTACK) {
+				int entity = GetLookingEntity(client, Filter_ValidHats);
+				if(entity > 0) {
+					g_PropData[client].markedProps.Push(EntIndexToEntRef(entity));
+					GlowEntity(entity, 0.0, GLOW_RED);
+				} else {
+					PrintHintText(client, "No entity found");
+				}
+			} else if(buttons & IN_ATTACK2) {
+				int entity = GetLookingEntity(client, Filter_ValidHats);
+				if(entity > 0) {
+					int ref = EntIndexToEntRef(entity);
+					int index = g_PropData[client].markedProps.FindValue(ref);
+					if(index > -1) {
+						g_PropData[client].markedProps.Erase(index);
+						L4D2_RemoveEntityGlow(entity);
+					}
+				}
+			} else if(buttons & IN_USE) {
+				if(buttons & IN_SPEED) {
+					//Delete
+					EndDeleteTool(client, true);
+				} else if(buttons & IN_DUCK) {
+					//Cancel
+					EndDeleteTool(client, false);
+				}
+			}
+			cmdThrottle[client] = tick;
+		}
+	} else if(Editor[client].IsActive() && Editor[client].CheckEntity(client)) { 
 		if(buttons & IN_USE && buttons & IN_RELOAD) {
 			ClientCommand(client, "sm_wall done");
 			return Plugin_Handled;
 		}
 		bool allowMove = true;
-		switch(WallBuilder[client].mode) {
+		switch(Editor[client].mode) {
 			case MOVE_ORIGIN: {
 				
 				SetWeaponDelay(client, 0.5);
@@ -581,34 +617,42 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				bool isRotate;
 				int flags = GetEntityFlags(client);
 				if(buttons & IN_USE && ~buttons & IN_ZOOM) {
+					if(!g_inRotate[client]) {
+						g_inRotate[client] = true;
+					}
 					if(buttons & IN_SPEED) {
-						WallBuilder[client].ToggleCollision(client, tick);
+						Editor[client].ToggleCollision(client, tick);
+					} else if(buttons & IN_DUCK) {
+						Editor[client].ToggleCollisionRotate(client, tick);
 					} else {
-						PrintCenterText(client, "%.1f %.1f %.1f", WallBuilder[client].angles[0], WallBuilder[client].angles[1], WallBuilder[client].angles[2]);
+						// PrintCenterText(client, "%.1f %.1f %.1f", Editor[client].angles[0], Editor[client].angles[1], Editor[client].angles[2]);
 						isRotate = true;
 						SetEntityFlags(client, flags |= FL_FROZEN);
-						if(buttons & IN_ATTACK) WallBuilder[client].CycleAxis(client, tick);
-						else if(buttons & IN_ATTACK2) WallBuilder[client].CycleSnapAngle(client, tick);
+						if(buttons & IN_ATTACK) Editor[client].CycleAxis(client, tick);
+						else if(buttons & IN_ATTACK2) Editor[client].CycleSnapAngle(client, tick);
 						
 						// Rotation control:
 						if(tick - cmdThrottle[client] > 0.20) {
-							if(WallBuilder[client].axis == 0) {
-								if(mouse[1] > 10) WallBuilder[client].angles[0] += WallBuilder[client].snapAngle;
-								else if(mouse[1] < -10) WallBuilder[client].angles[0] -= WallBuilder[client].snapAngle;
-							} else if(WallBuilder[client].axis  == 1) {
-								if(mouse[0] > 10) WallBuilder[client].angles[1] += WallBuilder[client].snapAngle;
-								else if(mouse[0] < -10) WallBuilder[client].angles[1] -= WallBuilder[client].snapAngle;
+							// Turn off rotate when player wants rotate
+							Editor[client].hasCollisionRotate = false;
+							if(Editor[client].axis == 3) {
+								if(mouse[1] > 10) Editor[client].angles[2] += Editor[client].snapAngle;
+								else if(mouse[1] < -10) Editor[client].angles[2] -= Editor[client].snapAngle;
 							} else {
-								if(mouse[1] > 10) WallBuilder[client].angles[2] += WallBuilder[client].snapAngle;
-								else if(mouse[1] < -10) WallBuilder[client].angles[2] -= WallBuilder[client].snapAngle;
+								if(mouse[0] > 10) Editor[client].angles[Editor[client].axis] += Editor[client].snapAngle;
+								else if(mouse[0] < -10) Editor[client].angles[Editor[client].axis] -= Editor[client].snapAngle;
+								
 							}
 							cmdThrottle[client] = tick;
 						}
 					}
 				} else {
+					if(g_inRotate[client]) {
+						g_inRotate[client] = false;
+					}
 					// Move position
-					if(buttons & IN_ATTACK) WallBuilder[client].moveDistance++;
-					else if(buttons & IN_ATTACK2) WallBuilder[client].moveDistance--;
+					if(buttons & IN_ATTACK) Editor[client].moveDistance++;
+					else if(buttons & IN_ATTACK2) Editor[client].moveDistance--;
 				}
 
 				// Clear IN_FROZEN when no longer rotate
@@ -616,8 +660,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 					flags = flags & ~FL_FROZEN;
 					SetEntityFlags(client, flags);
 				}
-
-				GetCursorLimited2(client, WallBuilder[client].moveDistance, WallBuilder[client].origin, Filter_IgnorePlayerAndWall, WallBuilder[client].hasCollision);
+				GetEditorPosition(client, Filter_IgnorePlayerAndWall);
 			}
 			case SCALE: {
 				SetWeaponDelay(client, 0.5);
@@ -625,74 +668,77 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				bool sizeChanged = false;
 				switch(buttons) {
 					case IN_MOVELEFT: {
-						WallBuilder[client].size[0] -=WallBuilder[client].moveSpeed; 
-						if(WallBuilder[client].size[0] <= 0.0) WallBuilder[client].size[0] = 0.0;
+						Editor[client].size[0] -=Editor[client].moveSpeed; 
+						if(Editor[client].size[0] <= 0.0) Editor[client].size[0] = 0.0;
 						sizeChanged = true;
 					} case IN_MOVERIGHT: {
-						WallBuilder[client].size[0] += WallBuilder[client].moveSpeed;
+						Editor[client].size[0] += Editor[client].moveSpeed;
 						sizeChanged = true;
 					} case IN_FORWARD: {
-						WallBuilder[client].size[1]+= WallBuilder[client].moveSpeed;
+						Editor[client].size[1]+= Editor[client].moveSpeed;
 						sizeChanged = true;
 					} case IN_BACK: {
-						WallBuilder[client].size[1] -= WallBuilder[client].moveSpeed;
-						if(WallBuilder[client].size[1] <= 0.0) WallBuilder[client].size[1] = 0.0;
+						Editor[client].size[1] -= Editor[client].moveSpeed;
+						if(Editor[client].size[1] <= 0.0) Editor[client].size[1] = 0.0;
 						sizeChanged = true;
 					} case IN_JUMP: {
-						WallBuilder[client].size[2] += WallBuilder[client].moveSpeed;
+						Editor[client].size[2] += Editor[client].moveSpeed;
 						sizeChanged = true;
 					} case IN_DUCK: { 
-						if(WallBuilder[client].size[2] <= 0.0) WallBuilder[client].size[2] = 0.0;
-						WallBuilder[client].size[2] -= WallBuilder[client].moveSpeed;
+						if(Editor[client].size[2] <= 0.0) Editor[client].size[2] = 0.0;
+						Editor[client].size[2] -= Editor[client].moveSpeed;
 						sizeChanged = true;
 					}
-					case IN_USE: WallBuilder[client].CycleSpeed(client, tick);
+					case IN_USE: Editor[client].CycleSpeed(client, tick);
 				}
 				if(sizeChanged) {
-					WallBuilder[client].CalculateMins();
+					Editor[client].CalculateMins();
 				}
 			}
 			case COLOR: {
 				SetWeaponDelay(client, 0.5);
-				PrintCenterText(client, "%d %d %d %d", WallBuilder[client].color[0], WallBuilder[client].color[1], WallBuilder[client].color[2], WallBuilder[client].color[3]);
+				PrintCenterText(client, "%d %d %d %d", Editor[client].color[0], Editor[client].color[1], Editor[client].color[2], Editor[client].color[3]);
 				if(buttons & IN_USE) {
-					WallBuilder[client].CycleColorComponent(client, tick);
+					Editor[client].CycleColorComponent(client, tick);
 				} else if(buttons & IN_ATTACK) {
-					WallBuilder[client].color[WallBuilder[client].colorIndex]--;
-					if(WallBuilder[client].color[WallBuilder[client].colorIndex] < 0) {
-						WallBuilder[client].color[WallBuilder[client].colorIndex] = 0;
+					Editor[client].color[Editor[client].colorIndex]--;
+					if(Editor[client].color[Editor[client].colorIndex] < 0) {
+						Editor[client].color[Editor[client].colorIndex] = 0;
 					}
-					WallBuilder[client].UpdateEntity();
+					Editor[client].UpdateEntity();
 					allowMove = false;
 				} else if(buttons & IN_ATTACK2) {
-					WallBuilder[client].color[WallBuilder[client].colorIndex]++;
-					if(WallBuilder[client].color[WallBuilder[client].colorIndex] > 255) {
-						WallBuilder[client].color[WallBuilder[client].colorIndex] = 255;
+					Editor[client].color[Editor[client].colorIndex]++;
+					if(Editor[client].color[Editor[client].colorIndex] > 255) {
+						Editor[client].color[Editor[client].colorIndex] = 255;
 					}
-					WallBuilder[client].UpdateEntity();
+					Editor[client].UpdateEntity();
 					allowMove = false;
 				}
 			}
 		}
 
 		if(buttons & IN_RELOAD)
-		 	WallBuilder[client].CycleMode(client, tick); // R: Cycle forward
-		else if(WallBuilder[client].flags & Edit_Preview && tick - cmdThrottle[client] >= 0.25 && buttons & IN_ZOOM) {
+		 	Editor[client].CycleMode(client, tick); // R: Cycle forward
+		else if(Editor[client].flags & Edit_Preview && tick - cmdThrottle[client] >= 0.25 && buttons & IN_ZOOM) {
+			buttons &= ~IN_ZOOM;
 			if(buttons & IN_SPEED) {
 				int entity;
-				WallBuilder[client].Create(entity);
-				int index = g_spawnedItems.Push(EntIndexToEntRef(entity));
-				g_spawnedItems.Set(index, GetClientUserId(client), 1);
+				Editor[client].Create(entity);
+				AddSpawnedItem(entity, client);
+				char model[128];
+				GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
+				AddRecent(model, Editor[client].data);
 			} else if(buttons & IN_DUCK) {
-				WallBuilder[client].CycleBuildType(client);
+				Editor[client].CycleBuildType(client);
 			} else {
-				WallBuilder[client].Cancel();
+				Editor[client].Cancel();
 				CPrintToChat(client, "\x04[Editor]\x01 Cancelled.");
 			}
 			cmdThrottle[client] = tick;
 		}
 
-		WallBuilder[client].Draw(BUILDER_COLOR, 0.1, 0.1);
+		Editor[client].Draw(BUILDER_COLOR, 0.1, 0.1);
 
 		return allowMove ? Plugin_Continue : Plugin_Handled;
 	}
@@ -749,12 +795,13 @@ public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast
 
 public void OnClientDisconnect(int client) {
 	tempGod[client] = false;
-	WallBuilder[client].Reset();
-	g_isSearchActive[client] = false;
-	g_lastCategoryIndex[client] = 0;
-	g_lastItemIndex[client] = 0;
-	g_lastShowedHint[client] = 0;
+	Editor[client].Reset();
+	g_PropData[client].Reset();
 	hatData[client].yeetGroundTimer = null;
+	if(g_pendingSaveClient == client) {
+		g_pendingSaveClient = 0;
+		ClearSavePreview();
+	}
 	ClearHat(client, true);
 }
 
@@ -797,6 +844,7 @@ public void OnMapEnd() {
 	ClearHats();
 	UnloadCategories();
 	UnloadSave();
+	SaveRecents();
 }
 public void OnPluginEnd() {
 	ClearHats();
@@ -807,10 +855,10 @@ public void OnPluginEnd() {
 		}
 	}
 	if(g_spawnedItems != null) {
-		for(int i = 0; i < g_spawnedItems.Length; i++) {
-			int ref = g_spawnedItems.Get(i);
-			RemoveEntity(ref);
-		}
+		// for(int i = 0; i < g_spawnedItems.Length; i++) {
+		// 	int ref = g_spawnedItems.Get(i);
+		// 	RemoveEntity(ref);
+		// }
 		delete g_spawnedItems;
 	}
 	TriggerInput("prop_preview", "Kill");
@@ -846,7 +894,13 @@ stock bool Filter_NoPlayers(int entity, int mask, int data) {
 }
 
 stock bool Filter_IgnorePlayerAndWall(int entity, int mask, int data) {
-	return entity > MaxClients && entity != data && EntRefToEntIndex(WallBuilder[data].entity) != entity;
+	if(entity > MaxClients && entity != data && EntRefToEntIndex(Editor[data].entity) != entity) {
+		static char classname[16];
+		GetEntityClassname(entity, classname, sizeof(classname));
+		// Ignore infected
+		return !StrEqual(classname, "infected");
+	}
+	return false;
 }
 
 
@@ -943,21 +997,27 @@ stock float SnapTo(const float value, const float degree) {
 	return float(RoundFloat(value / degree)) * degree;
 }
 
-// Gets a position from where the cursor is upto distance away (basically <= distance, going against walls)
-stock bool GetCursorLimited2(int client, float distance, float endPos[3], TraceEntityFilter filter, bool doCollide = true) { 
+stock bool GetEditorPosition(int client, TraceEntityFilter filter) {
 	if (client > 0 && client <= MaxClients && IsClientInGame(client)) {
 		float clientEye[3], clientAngle[3], direction[3];
 		GetClientEyePosition(client, clientEye);
 		GetClientEyeAngles(client, clientAngle);
 
 		GetAngleVectors(clientAngle, direction, NULL_VECTOR, NULL_VECTOR);
-		ScaleVector(direction, distance);
-		AddVectors(clientEye, direction, endPos);
+		ScaleVector(direction, Editor[client].moveDistance);
+		AddVectors(clientEye, direction, Editor[client].origin);
 
-		if(doCollide) {
-			TR_TraceRayFilter(clientEye, endPos, MASK_OPAQUE, RayType_EndPoint, filter, client);
+		if(Editor[client].hasCollision) {
+			TR_TraceRayFilter(clientEye, Editor[client].origin, MASK_OPAQUE, RayType_EndPoint, filter, client);
 			if (TR_DidHit(INVALID_HANDLE)) {
-				TR_GetEndPosition(endPos);
+				TR_GetEndPosition(Editor[client].origin);
+				GetEntPropVector(Editor[client].entity, Prop_Send, "m_vecMins", direction);
+				Editor[client].origin[2] -= direction[2];
+				if(Editor[client].hasCollisionRotate) {
+					TR_GetPlaneNormal(INVALID_HANDLE, Editor[client].angles);
+					GetVectorAngles(Editor[client].angles, Editor[client].angles);
+					Editor[client].angles[0] += 90.0;
+				}
 			}
 		}
 
