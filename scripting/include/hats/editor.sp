@@ -412,7 +412,6 @@ enum struct WallBuilderData {
 	}
 
 	bool PreviewWeapon(const char[] classname) {
-		return false;
 		int entity;
 		// Melee weapons don't have weapon_ prefix
 		this.Reset();
@@ -435,6 +434,7 @@ enum struct WallBuilderData {
 		DispatchKeyValue(entity, "rendercolor", "255 128 255");
 		DispatchKeyValue(entity, "renderamt", "200");
 		DispatchKeyValue(entity, "rendermode", "1");
+		TeleportEntity(entity, this.origin, NULL_VECTOR, NULL_VECTOR);
 		if(!DispatchSpawn(entity)) {
 			PrintToServer("Failed to spawn");
 			return false;
@@ -446,8 +446,10 @@ enum struct WallBuilderData {
 		return IsValidEntity(entity);
 	}
 
-	bool PreviewModel(const char[] model, const char[] classname = "") {
+	bool PreviewModel(int client, const char[] model, const char[] classname = "") {
 		// Check for an invalid model
+		// this.origin is not cleared by this.Reset();
+		GetClientAbsOrigin(client, this.origin);
 		if(StrEqual(classname, "_weapon") || StrEqual(classname, "_melee")) {
 			return this.PreviewWeapon(model);
 		}
@@ -473,6 +475,7 @@ enum struct WallBuilderData {
 		DispatchKeyValue(entity, "rendercolor", "255 128 255");
 		DispatchKeyValue(entity, "renderamt", "200");
 		DispatchKeyValue(entity, "rendermode", "1");
+		TeleportEntity(entity, this.origin, NULL_VECTOR, NULL_VECTOR);
 		if(!DispatchSpawn(entity)) {
 			PrintToServer("Failed to spawn");
 			return false;
