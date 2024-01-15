@@ -22,7 +22,6 @@ enum struct PlayerPropData {
 	// When did the user last interact with prop spawner? (Shows hints after long inactivity)
 	int lastActiveTime;
 	char classnameOverride[32];
-
 	ChatPrompt chatPrompt;
 	ArrayList markedProps;
 

@@ -1,0 +1,31 @@
+"Games"
+{
+	"left4dead2"
+	{
+        "Offsets"
+        {
+           "CBaseAnimating::StudioHdr"
+			{
+				"linux"		"68"
+			} 
+        }
+		"Signatures"
+		{
+			"CBaseAnimating::LookupPoseParameter"
+			{
+				"library"	"server"
+				"linux" "@_ZN14CBaseAnimating19LookupPoseParameterEP10CStudioHdrPKc"
+			}
+            "ModelSoundsCache_LoadModel"
+            {
+				"library"	"server"
+                "linux" "@_Z26ModelSoundsCache_LoadModelPKc"
+            }
+            "ModelSoundsCache_FinishModel"
+            {
+				"library"	"server"
+                "linux" "@_Z28ModelSoundsCache_FinishModelP10CStudioHdr"
+            }
+		}
+	}
+}
