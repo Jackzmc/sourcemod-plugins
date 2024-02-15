@@ -1,5 +1,5 @@
 /**
-* Copyright (C) 2023  LuxLuma
+* Copyright (C) 2024 LuxLuma
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 #endif
 #define _lux_library_included
 
+#pragma newdecls required
+
 #include <sourcemod>
 #include <sdktools>
 
@@ -27,7 +29,7 @@
 #tryinclude <left4dhooks_silver>
 #tryinclude <left4dhooks_stocks>
 
-#define LUX_LIBRARY_VERSION "0.5.7"
+#define LUX_LIBRARY_VERSION "0.5.8"
 
 #define GIMMEDATA "lux_library"
 
@@ -384,6 +386,9 @@ stock float Terror_GetAdrenalineTime(int iClient)
 	{
 		timerAddress = FindSendPropInfo("CTerrorPlayer", "m_bAdrenalineActive") - 12;
 	}
+	
+	if(GetEntProp(iClient, Prop_Send, "m_bAdrenalineActive", 1) < 1)
+		return -1.0;
 	
 	//timerAddress + 8 = TimeStamp
 	float flGameTime = GetGameTime();
@@ -1431,10 +1436,10 @@ stock void EmitMixedAmbientSound(int client, const char[] sample,
 	
 	if(flDistMulti > 1.0)
 	{
-		newPitch = FloatToInt(newPitch / (flDistMulti > 2.0 ? 2.0 : flDistMulti));
+		newPitch = RoundToNearest(newPitch / (flDistMulti > 2.0 ? 2.0 : flDistMulti));
 	}
 	
-	DistLevelBoost = FloatToInt((flDistPercent * exponent) * levelBoost);
+	DistLevelBoost = RoundToNearest((flDistPercent * exponent) * levelBoost);
 	if(DistLevelBoost > levelBoost)
 		DistLevelBoost = levelBoost;
 	
@@ -1515,19 +1520,14 @@ stock void EmitMixedAmbientSound_FallBack(int client, const char[] sample,
 	newPitch = pitch;
 	if(flDistMulti > 1.0)
 	{
-		newPitch = FloatToInt(newPitch / (flDistMulti > 2.0 ? 2.0 : flDistMulti));
+		newPitch = RoundToNearest(newPitch / (flDistMulti > 2.0 ? 2.0 : flDistMulti));
 	}
 	
-	DistLevelBoost = FloatToInt((flDistPercent * exponent) * levelBoost);
+	DistLevelBoost = RoundToNearest((flDistPercent * exponent) * levelBoost);
 	if(DistLevelBoost > levelBoost)
 		DistLevelBoost = levelBoost;
 	
 	EmitSoundToClient(client, sample, entity, sndChannel, level + DistLevelBoost, _, _, newPitch, _, origin);
-}
-
-int FloatToInt(float val)
-{
-	return RoundFloat(val);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
