@@ -65,6 +65,7 @@ public void OnPluginStart()
 	cvar_gamemode.GetString(gamemode, sizeof(gamemode));
 
 	HookEvent("game_init", Event_GameStart);
+	HookEvent("game_end", Event_GameEnd);
 	HookEvent("heal_success", Event_HealStop);
 	HookEvent("heal_interrupted", Event_HealStop);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
@@ -110,6 +111,9 @@ void TryStartTimer(bool fast = true) {
 
 void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
 	campaignStartTime = GetTime();
+}
+void Event_GameEnd(Event event, const char[] name, bool dontBroadcast) {
+	campaignStartTime = 0;
 }
 
 void Event_HealStart(Event event, const char[] name, bool dontBroadcast) {
@@ -232,7 +236,7 @@ void Callback_PostStatus(HTTPResponse response, any value, const char[] error) {
 		if(cvar_debug.BoolValue) {
 			char buffer[64];
 			JSONObject json = view_as<JSONObject>(response.Data);
-			if(false && json.GetString("error", buffer, sizeof(buffer))) {
+			if(json.GetString("error", buffer, sizeof(buffer))) {
 				PrintToServer("[AdminPanel] Got %d response from server: \"%s\"", view_as<int>(response.Status), buffer);
 				json.GetString("message", buffer, sizeof(buffer));
 				PrintToServer("[AdminPanel] Error message: \"%s\"", buffer);
@@ -240,7 +244,7 @@ void Callback_PostStatus(HTTPResponse response, any value, const char[] error) {
 				PrintToServer("[AdminPanel] Got %d response from server: <unknown json>\n%s", view_as<int>(response.Status), error);
 			}
 		}
-		if(response.Status == HTTPStatus_Unauthorized || response.Status == HTTPStatus_Forbidden) {
+		if(view_as<int>(response.Status) == 0 || response.Status == HTTPStatus_Unauthorized || response.Status == HTTPStatus_Forbidden) {
 			PrintToServer("[AdminPanel] API Key seems to be invalid, killing timer.");
 			if(updateTimer != null)
 				delete updateTimer;
@@ -254,7 +258,6 @@ JSONObject GetObject() {
 	obj.SetString("map", currentMap);
 	obj.SetString("gamemode", gamemode);
 	obj.SetInt("startTime", uptime);
-	obj.SetInt("commonsCount", L4D_GetCommonsCount());
 	obj.SetFloat("fps", 1.0 / GetGameFrameTime());
 	AddFinaleInfo(obj);
 	JSONArray players = GetPlayers();
