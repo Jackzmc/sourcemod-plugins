@@ -6,7 +6,7 @@
 #define DIRECTOR_WITCH_MAX_WITCHES 5 // The maximum amount of extra witches to spawn 
 #define DIRECTOR_WITCH_ROLLS 3 // The number of dice rolls, increase if you want to increase freq
 #define DIRECTOR_MIN_SPAWN_TIME 13.0 // Possibly randomized, per-special
-#define DIRECTOR_SPAWN_CHANCE 0.04 // The raw chance of a spawn 
+#define DIRECTOR_SPAWN_CHANCE 0.038 // The raw chance of a spawn 
 #define DIRECTOR_CHANGE_LIMIT_CHANCE 0.05 // The chance that the maximum amount per-special is changed
 #define DIRECTOR_SPECIAL_TANK_CHANCE 0.05 // The chance that specials can spawn when a tank is active
 #define DIRECTOR_STRESS_CUTOFF 0.75 // The minimum chance a random cut off stress value is chosen [this, 1.0]

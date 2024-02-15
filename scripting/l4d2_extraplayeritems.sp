@@ -34,6 +34,7 @@
 
 #define EXTRA_TANK_MIN_SEC 2.0
 #define EXTRA_TANK_MAX_SEC 16.0
+#define MAX_RANDOM_SPAWNS 12
 #define DATE_FORMAT "%F at %I:%M %p"
 
 
@@ -83,7 +84,7 @@ public Plugin myinfo =
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
-ConVar hExtraItemBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags, cvEPISpecialSpawning, cvEPIGamemodes, hGamemode, cvEPITankHealth, cvEPIEnabledMode;
+ConVar hExtraItemBasePercentage, hExtraSpawnBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags, cvEPISpecialSpawning, cvEPIGamemodes, hGamemode, cvEPITankHealth, cvEPIEnabledMode;
 ConVar g_ffFactorCvar, hExtraTankThreshold;
 int g_extraKitsAmount, g_extraKitsStart, g_saferoomDoorEnt, g_prevPlayerCount;
 bool g_forcedSurvivorCount;
@@ -296,7 +297,8 @@ public void OnPluginStart() {
 
 
 
-	hExtraItemBasePercentage = CreateConVar("epi_item_chance", "0.056", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
+	hExtraItemBasePercentage  = CreateConVar("epi_item_chance", "0.034", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
+	hExtraSpawnBasePercentage = CreateConVar("epi_spawn_chance", "0.01", "The base chance (multiplied by player count) of an extra item spawner being created.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hAddExtraKits 			 = CreateConVar("epi_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits\n1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
 	hUpdateMinPlayers		 = CreateConVar("epi_updateminplayers", "1", "Should the plugin update abm\'s cvar min_players convar to the player count?\n 0 -> NO\n1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
 	hMinPlayersSaferoomDoor  = CreateConVar("epi_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -338,12 +340,13 @@ public void OnPluginStart() {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
 				if(GetClientTeam(i) == 2) {
-					SaveInventory(i, true);
+					SaveInventory(i);
 				}
 				playerData[i].Setup(i);
 				SDKHook(i, SDKHook_WeaponEquip, Event_Pickup);
 			}
 		}
+		g_currentChapter = L4D_GetCurrentChapter();
 		TryStartHud();
 	}
 
@@ -404,8 +407,9 @@ public void OnClientDisconnect(int client) {
 		playerData[client].state = State_Empty;
 		
 	if(!IsFakeClient(client) && IsClientInGame(client) && GetClientTeam(client) == 2)
-		SaveInventory(client, true);
+		SaveInventory(client);
 	g_isSpeaking[client] = false;
+	g_saveTimer[client] = null;
 }
 
 public void OnPluginEnd() {
@@ -599,6 +603,10 @@ Action Command_Trigger(int client, int args) {
 		g_areItemsPopulated = false;
 		PopulateItems();
 		ReplyToCommand(client, "Items populated.");
+	} else if(StrEqual(arg, "kits")) {
+		g_extraKitsAmount = 4;
+		IncreaseKits(L4D_IsMissionFinalMap());
+		ReplyToCommand(client, "Kits spawned. Finale: %b", L4D_IsMissionFinalMap());
 	} else if(StrEqual(arg, "addbot")) {
 		if(GetFeatureStatus(FeatureType_Native, "NextBotCreatePlayerBotSurvivorBot") != FeatureStatus_Available){
 			ReplyToCommand(client, "Unsupported.");
@@ -625,7 +633,7 @@ Action Command_SaveInventory(int client, int args) {
 		ReplyToCommand(client, "No player found");
 		return Plugin_Handled;
 	}
-	SaveInventory(player, true);
+	SaveInventory(player);
 	ReplyToCommand(client, "Saved inventory for %N", player);
 	return Plugin_Handled;
 }
@@ -789,8 +797,8 @@ Action Command_DebugStats(int client, int args) {
 /// EVENTS
 ////////////////////////////////////
 void OnTakeDamageAlivePost(int victim, int attacker, int inflictor, float damage, int damagetype) {
-	if(GetClientTeam(victim) == 2 && !IsFakeClient(victim))
-		SaveInventory(victim);
+	if(victim <= MaxClients && attacker <= MaxClients && attacker > 0 && GetClientTeam(victim) == 2 && !IsFakeClient(victim))
+		QueueSaveInventory(attacker);
 }
 void Event_PlayerToIdle(Event event, const char[] name, bool dontBroadcast) {
 	int bot = GetClientOfUserId(event.GetInt("bot"));
@@ -987,7 +995,7 @@ void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
 		UpdatePlayerInventory(client);
-		SaveInventory(client);
+		QueueSaveInventory(client);
 	}
 
 }
@@ -1191,38 +1199,39 @@ void IncreaseKits(bool inFinale) {
 	int count = 0;
 	while(g_extraKitsAmount > 0) {
 		GetEntPropVector(entity, Prop_Data, "m_vecOrigin", pos);
-		bool result = false;
+		bool isValidKit = false;
 		if(inFinale) {
-			// Finale
 			Address address = L4D_GetNearestNavArea(pos);
 			if(address != Address_Null) {
 				int attributes = L4D_GetNavArea_SpawnAttributes(address);
 				if(attributes & NAV_SPAWN_FINALE) {
-					result = true;
+					isValidKit = true;
 				}
 			}
 		} else {
 			// Checkpoint
-			result = L4D_IsPositionInLastCheckpoint(pos);
+			isValidKit = L4D_IsPositionInLastCheckpoint(pos);
 		}
-		if(result) {
+
+		if(isValidKit) {
 			count++;
 			// Give it a little chance to nudge itself
 			pos[0] += GetRandomFloat(-8.0, 8.0);
 			pos[1] += GetRandomFloat(-8.0, 8.0);
-			pos[2] += 0.4;
+			pos[2] += 0.8;
 			SpawnItem("first_aid_kit", pos);
 			g_extraKitsAmount--;
 		}
+
 		entity = FindEntityByClassname(entity, "weapon_first_aid_kit_spawn");
 		// Loop around
 		if(entity == INVALID_ENT_REFERENCE) {
-			entity = -1;
 			// If we did not find any suitable kits, stop here.
 			if(count == 0) {
 				PrintToServer("[EPI] Warn: No valid kit spawns (weapon_first_aid_kit_spawn) found (inFinale=%b)", inFinale);
 				break;
 			}
+			entity = FindEntityByClassname(-1, "weapon_first_aid_kit_spawn");
 		}
 	}
 }
@@ -1291,7 +1300,6 @@ public void OnMapStart() {
 	}
 
 	if(L4D_IsMissionFinalMap()) {
-		IncreaseKits(true);
 		// Disable tank split on hard rain finale
 		g_extraFinaleTankEnabled = true;
 		if(StrEqual(map, "c4m5_milltown_escape")) {
@@ -1335,6 +1343,120 @@ public void OnMapStart() {
 		g_isLateLoaded = false;
 	}
 }
+
+enum WallCheck {
+	Wall_North,
+	Wall_East,
+	Wall_South,
+	Wall_West
+}
+/// TODO: confirm this is correct
+float WALL_ANG[4][3] = {
+	{0.0,0.0,0.0},
+	{0.0,90.0,0.0},
+	{0.0,180.0,0.0},
+	{0.0,270.0,0.0},
+};
+
+float WALL_CHECK_SIZE_MIN[3] = { -20.0, -5.0, -10.0 };
+float WALL_CHECK_SIZE_MAX[3] = { 20.0, 5.0, 10.0 };
+bool IsWallNearby(const float pos[3], WallCheck wall, float maxDistance = 80.0) {
+	float endPos[3];
+	GetHorizontalPositionFromOrigin(pos, WALL_ANG[wall], maxDistance, endPos);
+	TR_TraceHull(pos, endPos, WALL_CHECK_SIZE_MIN, WALL_CHECK_SIZE_MAX, MASK_SOLID_BRUSHONLY);
+	return TR_DidHit();
+}
+
+void PopulateItemSpawns() {
+	ArrayList navs = new ArrayList();
+	L4D_GetAllNavAreas(navs);
+	navs.Sort(Sort_Random, Sort_Integer);
+	float pos[3];
+	float percentage = hExtraSpawnBasePercentage.FloatValue * (g_survivorCount - 4);
+	PrintToServer("[EPI] Populating extra item spawns based on player count (%d-4) | Percentage %.2f%%", g_survivorCount, percentage * 100);
+	int tier;
+	// On first chapter, 10% chance to give tier 2
+	if(g_currentChapter == 1) tier = GetRandomFloat() < 0.15 ? 1 : 0;
+	else tier = DiceRoll(0, 3, 2, BIAS_LEFT);
+	int count;
+	for(int i = 0; i < navs.Length; i++) {
+		Address nav = navs.Get(i);
+		int spawnFlags = L4D_GetNavArea_SpawnAttributes(nav);
+		int baseFlags = L4D_GetNavArea_AttributeFlags(nav);
+		if(!(baseFlags & (NAV_BASE_FLOW_BLOCKED)) &&
+			!(spawnFlags & NAV_SPAWN_ESCAPE_ROUTE|NAV_SPAWN_DESTROYED_DOOR|NAV_SPAWN_CHECKPOINT|NAV_SPAWN_NO_MOBS|NAV_SPAWN_STOP_SCAN)) 
+		{
+			L4D_FindRandomSpot(view_as<int>(nav), pos);
+			bool north = IsWallNearby(pos, Wall_North);
+			bool east = IsWallNearby(pos, Wall_East);
+			bool south = IsWallNearby(pos, Wall_South);
+			bool west = IsWallNearby(pos, Wall_West);
+			// TODO: collision check (windows like c1m1)
+			int wallCount = 0;
+			if(north) wallCount++;
+			if(east) wallCount++;
+			if(south) wallCount++;
+			if(west) wallCount++;
+			if(wallCount >= 2) {
+				if(GetURandomFloat() < percentage) {
+					int wpn;
+					pos[2] += 7.0;
+					if(GetURandomFloat() > 0.30) {
+						wpn = CreateWeaponSpawn(pos, "", tier);
+					} else {
+						wpn = CreateRandomMeleeSpawn(pos);
+					}
+					if(wpn == -1) continue;
+					if(++count > MAX_RANDOM_SPAWNS) break;
+				}
+			}
+		}
+	}
+	PrintToServer("[EPI] Spawned %d/%d new item spawns (tier=%d)", count, MAX_RANDOM_SPAWNS, tier);
+	delete navs;
+}
+
+char WEAPON_SPAWN_CLASSNAMES[32][] = {
+"weapon_pistol_magnum_spawn","weapon_smg_spawn","weapon_smg_silenced_spawn","weapon_pumpshotgun_spawn","weapon_shotgun_chrome_spawn","weapon_pipe_bomb_spawn","weapon_upgradepack_incendiary_spawn","weapon_upgradepack_explosive_spawn","weapon_adrenaline_spawn","weapon_smg_mp5_spawn","weapon_defibrillator_spawn","weapon_propanetank_spawn","weapon_oxygentank_spawn","weapon_chainsaw_spawn","weapon_gascan_spawn","weapon_ammo_spawn","weapon_sniper_scout_spawn","weapon_hunting_rifle_spawn","weapon_pain_pills_spawn","weapon_rifle_spawn","weapon_rifle_desert_spawn","weapon_sniper_military_spawn","weapon_autoshotgun_spawn","weapon_shotgun_spas_spawn","weapon_first_aid_kit_spawn","weapon_molotov_spawn","weapon_vomitjar_spawn","weapon_rifle_ak47_spawn","weapon_rifle_sg552_spawn","weapon_grenade_launcher_spawn","weapon_sniper_awp_spawn","weapon_rifle_m60_spawn"
+};
+int TIER_MAXES[] = { 10, 18, 28, 31 };
+
+/**
+ * Creates a weapon_*_spawn at position, with a random orientation. If classname not provided, it will be randomly selected
+ * @param classname the full classname of weapon to spawn
+ * @return returns -1 on error, or entity index
+ */
+int CreateWeaponSpawn(const float pos[3], const char[] classname = "", int tier = 0) {
+	int entity;
+	if(classname[0] == '\0') {
+		int index = GetRandomInt(0, TIER_MAXES[tier]);
+		entity = CreateEntityByName(WEAPON_SPAWN_CLASSNAMES[index]);
+	} else {
+		entity = CreateEntityByName(classname);
+	}
+	if(entity == -1) return -1;
+	DispatchKeyValueInt(entity, "spawn_without_director", 0);
+	DispatchKeyValueInt(entity, "spawnflags", 1);
+	DispatchKeyValueInt(entity, "count", 1);
+	float ang[3];
+	ang[1] = GetRandomFloat(0.0, 360.0);
+	TeleportEntity(entity, pos, ang, NULL_VECTOR);
+	if(!DispatchSpawn(entity)) return -1;
+	return entity;
+}
+
+int CreateRandomMeleeSpawn(const float pos[3], const char[] choices = "any") {
+	int entity = CreateEntityByName("weapon_melee_spawn");
+	if(entity == -1) return -1;
+	DispatchKeyValue(entity, "melee_weapon", choices);
+	DispatchKeyValueInt(entity, "spawnflags", 1);
+	float ang[3];
+	ang[1] = GetRandomFloat(0.0, 360.0);
+	TeleportEntity(entity, pos, ang, NULL_VECTOR);
+	if(!DispatchSpawn(entity)) return -1;
+	return entity;
+}
+
 
 public void OnConfigsExecuted() {
 	if(hUpdateMinPlayers.BoolValue && hMinPlayers != null) {
@@ -1654,6 +1776,10 @@ void PopulateItems() {
 
 	g_areItemsPopulated = true;
 
+	if(L4D_IsMissionFinalMap(true)) {
+		IncreaseKits(true);
+	}
+
 	//Generic Logic
 	float percentage = hExtraItemBasePercentage.FloatValue * (g_survivorCount - 4);
 	PrintToServer("[EPI] Populating extra items based on player count (%d-4) | Percentage %.2f%%", g_survivorCount, percentage * 100);
@@ -1665,12 +1791,15 @@ void PopulateItems() {
 		if(IsValidEntity(i)) {
 			GetEntityClassname(i, classname, sizeof(classname));
 			if(StrContains(classname, "_spawn", true) > -1 
-				&& StrContains(classname, "zombie", true) == -1
+				&& StrContains(classname, "zombie", true) == -1 // not zombie or scavenge
 				&& StrContains(classname, "scavenge", true) == -1
 				&& HasEntProp(i, Prop_Data, "m_itemCount")
 			) {
 				int count = GetEntProp(i, Prop_Data, "m_itemCount");
-				if(count > 0 && GetURandomFloat() < percentage) {
+				if(count == 4) {
+					// Some item spawns are only for 4 players, so here we set to # of players:
+					SetEntProp(i, Prop_Data, "m_itemCount", g_survivorCount);
+				} else if(count > 0 && GetURandomFloat() < percentage) {
 					SetEntProp(i, Prop_Data, "m_itemCount", ++count);
 					++affected;
 				}
@@ -1679,6 +1808,7 @@ void PopulateItems() {
 	}
 	PrintDebug(DEBUG_SPAWNLOGIC, "Incremented counts for %d items", affected);
 
+	PopulateItemSpawns();
 	PopulateCabinets();
 }
 
@@ -1771,28 +1901,25 @@ void UpdatePlayerInventory(int client) {
 	}
 }
 
-Action Timer_SaveInventory(Handle h, int userid) {
-	int client = GetClientOfUserId(userid);
-	if(client > 0) {
+Action Timer_SaveInventory(Handle h, int client) {
+	if(IsValidClient(client)) {
 		// Force save to bypass our timeout
-		SaveInventory(client, true);
+		SaveInventory(client);
 	}
+	g_saveTimer[client] = null;
 	return Plugin_Stop;
 }
-
-void SaveInventory(int client, bool force = false) {
+void QueueSaveInventory(int client) {
 	int time = GetTime();
-	if(!force) {
-		if(time - playerData[client].joinTime < MIN_JOIN_TIME) return;
-		// Queue their inventory to be saved after a timeout.
-		// Any time a save happens between prev save and timeout will delay the timeout.
-		// This should ensure that the saved inventory is most of the time up-to-date
-		if(g_saveTimer[client] != null)
-			delete g_saveTimer[client];
-		g_saveTimer[client] = CreateTimer(INV_SAVE_TIME, Timer_SaveInventory, GetClientUserId(client));
-	} else {
-		g_saveTimer[client] = null;
+	if(time - playerData[client].joinTime < MIN_JOIN_TIME) return;
+	if(g_saveTimer[client] != null) {
+		delete g_saveTimer[client];
 	}
+	g_saveTimer[client] = CreateTimer(INV_SAVE_TIME, Timer_SaveInventory, client);
+}
+void SaveInventory(int client) {
+	if(!IsClientInGame(client) || GetClientTeam(client) != 2) return;
+	int time = GetTime();
 	PlayerInventory inventory;
 	inventory.timestamp = time;
 	inventory.isAlive = IsPlayerAlive(client);
