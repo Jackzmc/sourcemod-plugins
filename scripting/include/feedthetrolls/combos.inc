@@ -11,10 +11,10 @@ enum struct TrollCombo {
     ArrayList trolls;
 
     void AddTroll(const char[] name, int flags = 0, trollModifier mod = TrollMod_Invalid) {
-        int id = GetTrollID(name);
-        if(mod == TrollMod_Invalid) mod = Trolls[id].GetDefaultMod();
+        Troll instance = Troll.FromName(name);
+        if(mod == TrollMod_Invalid) mod = instance.GetDefaultMod();
         SpecifiedTroll troll;
-        troll.id = id;
+        troll.id = instance.Id;
         troll.mod = mod;
         troll.flags = flags;
         this.trolls.PushArray(troll, sizeof(troll));
@@ -24,7 +24,7 @@ enum struct TrollCombo {
         for(int i = 0; i < this.trolls.Length; i++) {
             SpecifiedTroll troll;
             this.trolls.GetArray(i, troll, sizeof(troll));
-            Trolls[troll.id].Activate(target, client, troll.mod, troll.flags);
+            Troll(troll.id).Activate(target, client, troll.mod, troll.flags);
         }
     }
 }

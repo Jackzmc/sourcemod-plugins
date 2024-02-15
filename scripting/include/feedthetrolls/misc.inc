@@ -4,13 +4,13 @@
 
 void ActivateAutoPunish(int client) {
 	if(hAutoPunish.IntValue & 2 == 2) 
-		ApplyTroll(client, "Special Magnet", 0, TrollMod_Constant);
+		Troll.FromName("Special Magnet").Activate(0, client, TrollMod_Constant);
 	if(hAutoPunish.IntValue & 1 == 1) 
-		ApplyTroll(client, "Tank Magnet", 0, TrollMod_Constant);
+		Troll.FromName("Tank Magnet").Activate(0, client, TrollMod_Constant);
 	if(hAutoPunish.IntValue & 8 == 8)
-		ApplyTroll(client, "Vomit Player", 0, TrollMod_Instant);
+		Troll.FromName("Vomit Player").Activate(0, client, TrollMod_Instant);
 	else if(hAutoPunish.IntValue & 4 == 4) 
-		ApplyTroll(client, "Swarm", 0, TrollMod_Instant);
+		Troll.FromName("Swarm").Activate(0, client, TrollMod_Instant);
 	if(hAutoPunishExpire.IntValue > 0) {
 		CreateTimer(60.0 * hAutoPunishExpire.FloatValue, Timer_ResetAutoPunish, GetClientOfUserId(client));
 	}
@@ -82,7 +82,7 @@ stock bool IsPlayerIncapped(int client) {
 #define MAX_TYPOS_LENGTH 16
 StringMap TYPOS_DICT;
 void LoadTypos() {
-	TYPOS_DICT.Clear();
+	TYPOS_DICT = new StringMap();
 	char sPath[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, sPath, sizeof(sPath), "data/ftt_typos.txt");
 
@@ -100,10 +100,72 @@ void LoadTypos() {
 	char buffer[140], key[32];
 	while(file.ReadLine(buffer, sizeof(buffer))) {
 		int index = SplitString(buffer, " ", key, sizeof(key));
-		TYPOS_DICT.SetString(key, buffer[index]);
+		AddTypo(key, buffer[index]);
 	}
 
-	file.Close();
+	delete file;
+}
+
+ArrayList SplitStringList(const char[] message, char separator, int wordSize = 64) {
+	ArrayList words = new ArrayList(ByteCountToCells(wordSize));
+	char[] word = new char[wordSize];
+	int len = strlen(message);
+	int prevIndex;
+	for(int i = 0; i < len; i++) {
+		if(message[i] == separator) {
+			// Only copy the length of the string. The len includes space, which is used as null term
+			int wordLen = (i - prevIndex);
+			if(wordSize < wordLen) wordLen = wordSize;
+			strcopy(word, wordLen, message[prevIndex]);
+			words.PushString(word);
+			prevIndex = i;
+		}
+	}
+	// End of string, copy the remainder
+	strcopy(word, len, message[prevIndex]);
+	words.PushString(word);
+	return words;
+}
+void ReplaceWithTypos(const char[] message, char[] output, int maxlen) {
+	ArrayList words = SplitStringList(message, ' ');
+	message[0] = '\0';
+	char word[64];
+	ArrayList replaceList;
+	for(int i = 0; i < words.Length; i++) {
+		words.GetString(i, word, sizeof(word));
+		if(TYPOS_DICT.GetValue(word, replaceList)) {
+			int index = GetRandomInt(0, replaceList.Length - 1);
+			replaceList.GetString(index, word, sizeof(word));
+			if(i == 0)
+				Format(output, maxlen, "%s", word);
+			else
+				Format(output, maxlen, "%s %s", message, word);
+		}
+	}
+	delete words;
+}
+
+void AddTypo(const char[] src, const char[] typo, bool save = false) {
+	ArrayList list;
+	TYPOS_DICT.GetValue(src, list);
+	if(list == null) {
+		list = new ArrayList(ByteCountToCells(MAX_TYPOS_LENGTH));
+	}
+	list.PushString(typo);
+	TYPOS_DICT.SetValue(src, list);
+	if(save) {
+		char sPath[PLATFORM_MAX_PATH];
+		BuildPath(Path_SM, sPath, sizeof(sPath), "data/ftt_typos.txt");
+		File file = OpenFile(sPath, "a", false, NULL_STRING);
+		if(file == null) {
+			PrintToServer("[FTT] Cannot open for saving: data/ftt_typos.txt");
+			return;
+		}
+		file.Seek(SEEK_END, 0);
+		file.WriteLine("%s %s", src, typo);
+		file.Flush();
+		delete file;
+	}
 }
 
 #define MAX_PHRASES_PER_WORD 8
@@ -577,4 +639,25 @@ void SetSlot(int client, int slot) {
 	static char slotStr[8];
 	Format(slotStr, sizeof(slotStr), "slot%d", slot);
 	ClientCommand(client, slotStr);
+}
+
+void RewindPlayer(int client) {
+	float curFlow = L4D2Direct_GetFlowDistance(client);
+	ArrayList navs = new ArrayList(); 
+	L4D_GetAllNavAreas(navs);
+	navs.Sort(Sort_Random, Sort_Integer);
+	float minFlow = curFlow - 300.0;
+	float maxFlow = curFlow - 150.0;
+	// This finds the first nav area in range, usually closer
+	for(int i = 0; i < navs.Length; i++) {
+		float flow = L4D2Direct_GetTerrorNavAreaFlow(navs.Get(i));
+		if(flow >= minFlow && flow <= maxFlow) {
+			float pos[3];
+			L4D_FindRandomSpot(navs.Get(i), pos);
+			TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
+			L4D_WarpToValidPositionIfStuck(client);
+			break;
+		}
+	}
+	delete navs;
 }

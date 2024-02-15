@@ -22,13 +22,13 @@ public void OnMapStart() {
 
 	g_spSpawnQueue.Clear();
 	spIsActive = false;
-	//CreateTimer(30.0, Timer_AutoPunishCheck, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
+
 public void OnClientPutInServer(int client) {
 	pdata[client].pendingTrollBan = 0;
 	pdata[client].shootAtTarget = 0;
 	fAntiRushFrequencyCounter[client] = 0.0;
-	if(IsTrollActive(client, "Voice Mute"))
+	if(t_voiceMute.IsActive(client))
 		BaseComm_SetClientMute(client, true);
 	SDKHook(client, SDKHook_OnTakeDamage, Event_TakeDamage);
 	SDKHook(client, SDKHook_OnTakeDamageAlive, NerfGun_OnTakeDamage);
@@ -63,7 +63,7 @@ void OnCarHitByTank(const char[] output, int caller, int activator, float delay)
 }
 
 void EntityCreateCallback(int entity) {
-	if(!HasEntProp(entity, Prop_Send, "m_hOwnerEntity") || !IsValidEntity(entity)) return;
+	if(!IsValidEntity(entity) || !HasEntProp(entity, Prop_Send, "m_hOwnerEntity")) return;
 	static char class[16];
 
 	static int badThrowID;
@@ -126,9 +126,8 @@ enum ProjectileMagnetType {
 	ProjType_Cars = 4,
 }
 
-
-
-public void Event_DoorToggle(Event event, const char[] name, bool dontBroadcast) {
+void Event_DoorToggle(Event event, const char[] name, bool dontBroadcast) {
+	// TODO: hook OnOpen entity output?
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && Trolls[t_slipperyShoesIndex].IsActive(client) && Trolls[t_slipperyShoesIndex].activeFlagClients[client] & 2) { 
 		L4D_StaggerPlayer(client, client, NULL_VECTOR);
@@ -185,13 +184,24 @@ Action Timer_CheckSpecial(Handle h, int specialID) {
  	}
 	return Plugin_Handled;
 }
-public void Frame_Boom(int special) {
+void Frame_Boom(int special) {
 	SDKHooks_TakeDamage(special, special, special, 1000.0);
 }
-public void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0)
 		ResetClient(client, true);
+}
+void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0) {
+		for(int i = 0 ; i < MAX_TROLLS; i++) {
+			Trolls[i].activeFlagClients[client] = 0;
+			if(Trolls[i].timerHandles[client] != null) {
+				delete Trolls[i].timerHandles[client];
+			}
+		}
+	}
 }
 
 public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
@@ -216,7 +226,7 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 }
 public Action Event_WeaponReload(int weapon) {
 	int client = GetEntPropEnt(weapon, Prop_Send, "m_hOwner");
-	if(client > 0 &&  IsTrollActive(client, "Gun Jam")) {
+	if(client > 0 && t_gunJam.IsActive(client)) {
 		if(GetRandomFloat() < 0.10) { //10% chance gun jams
 			return Plugin_Stop;
 		}
@@ -385,7 +395,8 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	return Plugin_Continue;
 }
 
-bool WillMagnetRun(const Troll troll, int i) {
+// TODO: migrate to Troll
+bool WillMagnetRun(const TrollData troll, int i) {
 	// In the case none of the flags are set, return true (100% chance)
 	// Some systems may give magnet w/  no flags
 	if(troll.activeFlagClients[i] == 0) return true;
@@ -451,7 +462,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		}
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
-	} else if(IsTrollActive(client, "Reversed")) {
+	} else if(Troll.FromName("Reversed").IsActive(client)) {
 		int length = strlen(sArgs);
 		char[] message = new char[length+1];
 		int j = 0;
@@ -462,7 +473,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		CPrintToChatAll("{blue}%N {default}:  %s", client, message);
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
-	}else if(IsTrollActive(client, "iCantSpellNoMore")) {
+	}else if(Troll.FromName("iCantSpellNoMore").IsActive(client)) {
 		int type = GetRandomInt(1, 14 + 3);
 		char letterSrc, replaceChar;
 		switch(type) {
@@ -585,18 +596,21 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		PrintToServer("%N: %s", client, sArgs);
 		return Plugin_Handled;
 	} else if(Trolls[typooId].IsActive(client)) {
-		char strings[32][MAX_TYPOS_LENGTH];
-		int words = ExplodeString(sArgs, " ", strings, 32, MAX_TYPOS_LENGTH);
-		// Replace all typos
-		static char typoReplacement[32];
-		for(int i = 0; i < words; i++) {
-			if(TYPOS_DICT.GetString(strings[i], typoReplacement, sizeof(typoReplacement))) {
-				strcopy(strings[i], MAX_TYPOS_LENGTH, typoReplacement);
-			}
-		}
-		int length = MAX_TYPOS_LENGTH * words;
-		char[] message = new char[length];
-		ImplodeStrings(strings, 32, " ", message, length);
+		int len = strlen(sArgs) + 40;
+		char[] message = new char[len];
+		ReplaceWithTypos(sArgs, message, len);
+		// char strings[32][MAX_TYPOS_LENGTH];
+		// int words = ExplodeString(sArgs, " ", strings, 32, MAX_TYPOS_LENGTH);
+		// // Replace all typos
+		// static char typoReplacement[32];
+		// for(int i = 0; i < words; i++) {
+		// 	if(TYPOS_DICT.GetString(strings[i], typoReplacement, sizeof(typoReplacement))) {
+		// 		strcopy(strings[i], MAX_TYPOS_LENGTH, typoReplacement);
+		// 	}
+		// }
+		// int length = MAX_TYPOS_LENGTH * words;
+		// char[] message = new char[length];
+		// ImplodeStrings(strings, 32, " ", message, length);
 
 		CPrintToChatAll("{blue}%N {default}:  %s", client, message);
 		PrintToServer("%N: %s", client, sArgs);
@@ -636,7 +650,7 @@ public Action Event_ItemPickup(int client, int weapon) {
 		} else if(flags & 32 && GetEntityClassname(weapon, wpnName, sizeof(wpnName))  && StrEqual(wpnName, "weapon_gascan")) {
 			return Plugin_Handled;
 		}
-	} else if(Trolls[UziRulesIndex].IsActive(client) || IsTrollActive(client, "Primary Disable")) {
+	} else if(Trolls[UziRulesIndex].IsActive(client) || Troll.FromName("Primary Disable").IsActive(client)) {
 		GetEdictClassname(weapon, wpnName, sizeof(wpnName));
 		if(strcmp(wpnName[7], "rifle") >= 0
 			|| strcmp(wpnName[7], "smg") >= 0 
@@ -664,7 +678,7 @@ public Action Event_ItemPickup(int client, int weapon) {
 					SetCommandFlags("give", flags);
 					return Plugin_Stop;
 				}
-			} else if(IsTrollActive(client, "Primary Disable")) {
+			} else if(Troll.FromName("Primary Disable").IsActive(client)) {
 				return Plugin_Stop;
 			}
 		}
@@ -793,9 +807,9 @@ Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage
 			if(isSameTeam && Trolls[t_reverseFFIndex].IsActive(attacker)) {
 				// Should this be applied? (as in no FF granted)
 				bool disableFF = false;
-				if(damagetype == DMG_BURN) {
+				if(damagetype & DMG_BURN) {
 					disableFF = Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 32 != 0;
-				} else if(damagetype == DMG_BLAST) {
+				} else if(damagetype & DMG_BLAST) {
 					disableFF = Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 64 != 0;
 				} else {
 					// Does not run if DMG_BURN or DMG_BLAST
@@ -932,11 +946,13 @@ public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PL
 			if(Trolls[honkID].IsActive(entity)) {
 				if(Trolls[honkID].activeFlagClients[entity] & 1)
 					strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
-				else if(Trolls[honkID].activeFlagClients[entity] & 2)
+				else if(Trolls[honkID].activeFlagClients[entity] & 2) {
 					strcopy(sample, sizeof(sample), "custom/meow1.mp3");
-				else if(Trolls[honkID].activeFlagClients[entity] & 4)
+					volume += 0.2;
+				} else if(Trolls[honkID].activeFlagClients[entity] & 4) {
 					strcopy(sample, sizeof(sample), "custom/woof1.mp3");
-				else
+					volume += 0.6;
+				} else
 					return Plugin_Continue;
 				return Plugin_Changed;
 			} else if(Trolls[vocalGagID].IsActive(entity)) {
@@ -1050,14 +1066,9 @@ public void L4D2_CInsectSwarm_CanHarm_Post(int acid, int spitter, int entity) {
 
 public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(Trolls[t_stickyGooIndex].IsActive(client)) {
-		int flags = Trolls[t_stickyGooIndex].activeFlagClients[client];
-		float movement = 0.0;
-		if(flags & 1) movement = 0.9;
-		else if(flags & 2) movement = 0.8;
-		else if(flags & 4) movement = 0.7;
-		else if(flags & 8) movement = 0.5;
-		else if(flags & 16) movement = 0.3;
+	if(t_stickyGoo.IsActive(client)) {
+		float movement;
+		t_stickyGoo.GetPromptDataFloat(client, 0, movement);
 		SetEntPropFloat(client, Prop_Send, "m_flLaggedMovementValue", movement);
 		pdata[client].lastInSpitTime = GetGameTime();
 		if(~pdata[client].flags & view_as<int>(Flag_HasSpitTimer)) {
@@ -1065,22 +1076,18 @@ public void Event_EnteredSpit(Event event, const char[] name, bool dontBroadcast
 			pdata[client].flags |= view_as<int>(Flag_HasSpitTimer);
 		}
 	}
-
 }
 
 public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
 	//Player replaced their idle bot
 	int client = GetClientOfUserId(event.GetInt("player"));
 	if(client > 0) {
-		bool debug_hadTroll = false;
 		for(int i = 1; i <= MAX_TROLLS; i++) {
-			if(Trolls[i].IsActive(client) && Trolls[i].HasMod(TrollMod_Constant)) { //Add activeFlagClients >= 0 check possibly?
-				ApplyAffect(client, Trolls[i], -1, TrollMod_Constant, Trolls[i].activeFlagClients[client]);
-				debug_hadTroll = true;
+			Troll troll = Troll(i);
+			if(troll.IsActive(client) && troll.HasMod(TrollMod_Constant)) { //Add activeFlagClients >= 0 check possibly?
+				ApplyAffect(client, troll, -1, TrollMod_Constant, troll.GetFlags(client));
 			}
 		}
-		if(debug_hadTroll) 
-			PrintToServer("[FTT] Re-applied trolls for was-idle player %N", client);
 	}
 }
 

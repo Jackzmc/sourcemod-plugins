@@ -130,9 +130,12 @@ Action Command_InstaSpecialFace(int client, int args) {
 
 
 Action Command_WitchAttack(int client, int args) {
-	if(args < 1) {
+	if(!g_actionsAvailable) {
+		ReplyToCommand(client, "Unavailable: Missing \"actions\"");
+		return Plugin_Handled;
+	} else if(args < 1) {
 		ReplyToCommand(client, "Usage: sm_witch_attack <user> [# of witches or 0 for all]");
-	}else{
+	} else{
 		char arg1[32];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		char target_name[MAX_TARGET_LENGTH];
@@ -377,6 +380,7 @@ public Action Command_ListTheTrolls(int client, int args) {
 			return Plugin_Handled;
 		}
 		
+		char buffer[50];
 		for(int p = 0; p < target_count; p++) {
 			int target = target_list[p];
 			if(IsPlayerAlive(target))
@@ -388,25 +392,18 @@ public Action Command_ListTheTrolls(int client, int args) {
 				int player = GetRealClient(target);
 				if(player != -1) target = player;
 			}
-
-			for(int j = 1; j <= MAX_TROLLS; j++) {
-				if(Trolls[j].hidden) continue;
-				if(trollIds[j][0] != '\0' && IsTrollActive(target, trollIds[j])) {
-					if(Trolls[j].activeFlagClients[target] > 0) {
-						static char list[MAX_TROLL_FLAG_LENGTH*8]; //May in future need to up magic number 8 (supports 8 active flags )
-						static char buffer[MAX_TROLL_FLAG_LENGTH];
-						for(int i = 0; i < Trolls[j].flagNames.Length; i++) {
-							int a = (1 << i);
-							if(Trolls[j].activeFlagClients[target] & a) {
-								Trolls[j].flagNames.GetString(i, buffer, sizeof(buffer));
-								Format(list, sizeof(list), "%s%s;", list, buffer);
-							} else {
-								Trolls[j].flagNames.GetString(i, buffer, sizeof(buffer));
-							}
-						}
-						ReplyToCommand(client, "\"%s\" Flags: %s", trollIds[j], list);
+			
+			for(int j = 1; j < MAX_TROLLS; j++) {
+				Troll troll = Troll(j);
+				if(troll.Hidden) continue;
+				if(troll.IsActive(target)) {
+					int flags = troll.GetFlags(target);
+					if(flags > 0) {
+						buffer[0] = '\0';
+						troll.GetFlagNames(target, flags, buffer, sizeof(buffer));
+						ReplyToCommand(client, "\"%s\" Flags: %s", Trolls[troll.Id].name, buffer);
 					} else
-						ReplyToCommand(client, trollIds[j]);
+						ReplyToCommand(client, "%s", Trolls[troll.Id].name);
 				}
 			}
 		}
@@ -424,8 +421,9 @@ public Action Command_ListTheTrolls(int client, int args) {
 			}
 			int modeCount = 0;
 			for(int j = 1; j <= MAX_TROLLS; j++) {
-				if(trollIds[j][0] != '\0' && IsTrollActive(i, trollIds[j])) {
-					if(Trolls[j].activeFlagClients[i] > 0)
+				Troll troll = Troll(j);
+				if(troll.IsActive(i)) {
+					if(troll.GetFlags(i) > 0)
 						Format(modeListArr[modeCount], MAX_TROLL_NAME_LENGTH, "%s(%d)", trollIds[j], Trolls[j].activeFlagClients[i]);
 					else
 						strcopy(modeListArr[modeCount], MAX_TROLL_NAME_LENGTH, trollIds[j]);
@@ -729,7 +727,7 @@ Action Command_SetReverseFF(int client, int args) {
 		}
 
 	}
-	ApplyTroll(target, "Reverse FF", client, TrollMod_Constant, flag);
+	ApplyTroll(target, Troll.FromName("Reverse FF"), client, TrollMod_Constant, flag);
 	return Plugin_Handled;
 }
 
@@ -749,7 +747,7 @@ Action Command_SetMagnetShortcut(int client, int args) {
 }
 Action Command_CarSplat(int client, int args) {
 	if(args < 1) {
-		ReplyToCommand(client, "Usage: sm_magnet <target> [top/front/back]");
+		ReplyToCommand(client, "Usage: sm_carsplat <target> [top/front/back]");
 		return Plugin_Handled;
 	}
 	char arg[32];
@@ -779,9 +777,21 @@ Action Command_CarSplat(int client, int args) {
 		LogAction(client, target, "spawned car on/in %s of \"%L\"", arg, target);
 		ShowActivity(client, "spawned car (%s) of %N", arg, target);
 	} else {
-		Troll troll;
-		GetTroll("Car Splat", troll);
+		Troll troll = Troll.FromName("Car Splat");
 		ShowSelectFlagMenu(client, GetClientUserId(target), view_as<int>(TrollMod_Instant), troll);
+	}
+	return Plugin_Handled;
+}
+
+Action Command_AddTypo(int client, int args) {
+	if(args == 2) {
+		char src[32], replacement[32];
+		GetCmdArg(1, src, sizeof(src));
+		GetCmdArg(2, replacement, sizeof(replacement));
+		AddTypo(src, replacement, true);
+		ShowActivity(client, "added typo \"%s\" -> \"%s\"", src, replacement);
+	} else {
+		ReplyToCommand(client, "Syntax: /typo <source> <typo>");
 	}
 	return Plugin_Handled;
 }

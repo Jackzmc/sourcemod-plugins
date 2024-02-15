@@ -1,10 +1,7 @@
 
 Action Timer_ThrowTimer(Handle timer, int client) {
-	if(!IsClientInGame(client)) {
-		Trolls[t_throwItAllIndex].timerHandles[client] = null;
-		return Plugin_Stop;
-	}
-	ThrowAllItems(client);
+	if(IsClientInGame(client))
+		ThrowAllItems(client);
 	return Plugin_Continue;
 }
 int instantCommonRef[MAXPLAYERS+1];
@@ -481,4 +478,11 @@ Action Timer_RestoreHud(Handle h, int userid) {
 		SetEntProp(client, Prop_Send, "m_iHideHUD", 0);
 	}
 	return Plugin_Handled;
+}
+Action Timer_RandomRewind(Handle h, int client) {
+	if(IsClientInGame(client) && GetURandomFloat() > 0.3) {
+		RewindPlayer(client);
+	}
+	return Plugin_Handled;
+
 }

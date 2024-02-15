@@ -10,13 +10,16 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
-#include <jutils>
 #include <left4dhooks>
+#include <jutils>
+#undef REQUIRE_PLUGIN
 #tryinclude <sceneprocessor>
+#undef REQUIRE_PLUGIN
 #tryinclude <actions>
 #include <basecomm>
 #include <ftt>
 #include <multicolors>
+#undef REQUIRE_PLUGIN
 #tryinclude <l4d_anti_rush>
 
 public Plugin myinfo = 
@@ -32,7 +35,20 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("ApplyTroll", Native_ApplyTroll);
 	return APLRes_Success;
 }
-
+public void OnLibraryAdded(const char[] name) {
+	if(StrEqual(name, "actionslib")) {
+		g_actionsAvailable = true;
+	}
+}
+public void OnLibraryRemoved(const char[] name) {
+	if(StrEqual(name, "actionslib")) {
+		g_actionsAvailable = false;
+	}
+}
+public void OnAllPluginsLoaded() {
+    g_actionsAvailable = LibraryExists("actionslib");
+}
+ 
 
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
@@ -47,7 +63,6 @@ public void OnPluginStart() {
 
 	// Load core things (trolls & phrases):
 	REPLACEMENT_PHRASES = new StringMap();
-	TYPOS_DICT = new StringMap();
 	LoadPhrases();
 	LoadTypos();
 	SetupTrolls();
@@ -102,9 +117,11 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_rff", Command_SetReverseFF, ADMFLAG_KICK, "Set reverse FF on player");
 	RegAdminCmd("sm_magnet", Command_SetMagnetShortcut, ADMFLAG_KICK, "");
 	RegAdminCmd("sm_csplat", Command_CarSplat, ADMFLAG_KICK, "");
+	RegAdminCmd("sm_typo", Command_AddTypo, ADMFLAG_GENERIC);
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
+	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_death", Event_PlayerDeath);
 	HookEvent("triggered_car_alarm", Event_CarAlarm);
 	HookEvent("witch_harasser_set", Event_WitchVictimSet);
@@ -198,6 +215,7 @@ bool IsPlayerFarDistance(int client, float distance) {
 	return client == farthestClient && difference > distance;
 }
 
+#if defined _actions_included
 BehaviorAction CreateWitchAttackAction(int target = 0) {
 	BehaviorAction action = ActionsManager.Allocate(18556);    
 	SDKCall(g_hWitchAttack, action, target);
@@ -211,6 +229,7 @@ Action OnWitchActionUpdate(BehaviorAction action, int actor, float interval, Act
 	result.SetReason("FTT");
 	return Plugin_Handled;
 } 
+#endif
 
 void HideHUD(int victim, float timeout = 0.0) {
 	SetEntProp(victim, Prop_Send, "m_iHideHUD", 64);

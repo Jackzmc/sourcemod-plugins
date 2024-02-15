@@ -4,8 +4,10 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 55
+    #define MAX_TROLLS 56
 #endif
+
+Troll t_metaReverse;
 
 enum trollModifier {
     TrollMod_Invalid = 0,
@@ -20,6 +22,10 @@ enum TrollEffectResponse {
 	TE_Menu // Switching menus / etc, don't continue menu
 }
 
+typedef ActivateFunction = function void (Troll troll, int activator, int victim, int flags, trollModifier mod);
+typedef ResetFunction = function void (Troll troll, int activator, int victim);
+typedef PromptActivateFunction = function TrollEffectResponse (Troll troll, int activator, int victim, any data, int flags, trollModifier mod);
+
 StringMap trollKV;
 char trollIds[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
 char DEFAULT_FLAG_PROMPT_MULTIPLE[] = "Enable options (Multiple)";
@@ -27,7 +33,6 @@ char DEFAULT_FLAG_PROMPT[] = "Select an option";
 bool SilentMenuSelected[MAXPLAYERS+1];
 
 static int g_trollAddPromptIndex;
-ArrayList gRandomClients;
 
 char SPECIAL_NAMES[][] = {
 	"Smoker", "Boomer", "Hunter", "Spitter", "Jockey", "Charger", "Witch", "Tank"
@@ -35,10 +40,16 @@ char SPECIAL_NAMES[][] = {
 
 enum struct TrollFlagPrompt {
     char promptText[MAX_TROLL_FLAG_LENGTH];
+    // enabled flags
     int flags;
+    // default values
     int defaults;
+    // is multiple flags selectable?
     bool multiselect;
+    // flags that need to be active to show this prompt
     int requireFlags;
+
+    PrivateForward activateFn;
 
     void GetPromptText(char[] prompt, int maxlength) {
         if(this.promptText[0] != '\0') {
@@ -51,19 +62,12 @@ enum struct TrollFlagPrompt {
     }
 }
 
-
-// Very hacky but map a power (say 16, 32) to the index in a list
-// Used to get the name of a flag (flag #16 for example) in ArrayList<string> of flag names
-int GetIndexFromPower(int powerOfTwo) {
-    for(int i = 0; i < 16; i++) {
-        if(1 << i == powerOfTwo) {
-            return i;
-        }
-    }
-    return -1;
+enum struct TrollOptionData {
+    char name[MAX_TROLL_FLAG_LENGTH];
+    int data; // can also be float
 }
 
-enum struct Troll {
+enum struct TrollData {
     int id; // The id or the index into the global Trolls[] array
     int categoryID; // The category this troll belongs in
 
@@ -71,11 +75,15 @@ enum struct Troll {
     char description[128];
     bool hidden;
 
+    PrivateForward activateFn;
+    PrivateForward resetFn;
+
     int mods; // Combination of valid modifiers. Only two are ever supported
 
     // Flags
     int activeFlagClients[MAXPLAYERS+1];
     ArrayList flagNames;
+    ArrayList promptOptions;
     ArrayList flagPrompts;
 
     // Custom timer
@@ -83,140 +91,6 @@ enum struct Troll {
     Handle timerHandles[MAXPLAYERS+1];
     float timerInterval;
     int timerRequiredFlags;
-
-    void SetTimer(float interval, Timer timer, int requiredFlags = 0) {
-        this.timerInterval = interval;
-        this.timerFunction = timer;
-        this.timerRequiredFlags = requiredFlags;
-        for(int i = 0; i <= MAXPLAYERS; i++) {
-            this.timerHandles[i] = null;
-        }
-    }
-
-    bool HasMod(trollModifier mod) {
-        return ((this.mods >> (view_as<int>(mod)) - 1) & 1) == 1;
-    }
-
-    // Gets the default modifier to use
-    trollModifier GetDefaultMod() {
-        // If the flags is equal to the 2^n flag, then it must be the only flag:
-        if(this.mods == view_as<int>(TrollMod_Instant)) return TrollMod_Instant;
-        else if(this.mods == view_as<int>(TrollMod_Constant)) return TrollMod_Constant;
-        else return TrollMod_Invalid;
-    }
-
-/////// FLAGS
-
-    bool GetFlagName(int index, char[] buffer, int maxlength) {
-        if(this.flagNames == null || index >= this.flagNames.Length) return false;
-        this.flagNames.GetString(index, buffer, maxlength);
-        return true;
-    }
-
-    bool GetFlagNames(int client, char[] output, int maxlength) {
-        if(this.flagNames == null) return false;
-        char buffer[16];
-        for(int i = 0; i < this.flagNames.Length; i++) {
-            int value = 1 << i;
-            // If client has this flag:
-            if(this.activeFlagClients[client] & value) {
-                this.flagNames.GetString(i, buffer, sizeof(buffer));
-                Format(output, maxlength, "%s%s,", output, buffer);
-            }
-        }
-        return true;
-    }
-
-    int AddCustomFlagPrompt(const char[] promptText, bool multiselect = false, int requireFlags = 0) {
-        TrollFlagPrompt prompt;
-        prompt.multiselect = multiselect;
-        prompt.requireFlags = requireFlags;
-        strcopy(prompt.promptText, MAX_TROLL_FLAG_LENGTH, promptText);
-        int index = this.flagPrompts.PushArray(prompt);
-        g_trollAddPromptIndex = index;
-        return index;
-    }
-
-    int AddFlagPrompt(bool multiselect = false, int requireFlags = 0) {
-        //g_trollAddPromptIndex
-        TrollFlagPrompt prompt;
-        prompt.multiselect = multiselect;
-        prompt.requireFlags = requireFlags;
-        int index = this.flagPrompts.PushArray(prompt);
-        g_trollAddPromptIndex = index;
-        return index;
-    }
-
-    int AddFlag(const char[] name, bool defaultOn) {
-        if(this.flagNames == null) {
-            this.flagNames = new ArrayList(MAX_TROLL_FLAG_LENGTH);
-        }
-
-        // Check if flag already added
-        int flagIndex = this.GetFlagIndex(name);
-        if(flagIndex == -1) flagIndex = this.flagNames.PushString(name);
-        
-        // Grab the prompt
-        static TrollFlagPrompt prompt;
-        // TODO: CHECK IF MISSING PROMPT
-        if(g_trollAddPromptIndex >= this.flagPrompts.Length) {
-            ThrowError("No prompt added for troll \"%s\", for flag \"%s\"", this.id, name);
-        }
-        this.flagPrompts.GetArray(g_trollAddPromptIndex, prompt);
-
-
-        prompt.flags |= (1 << flagIndex);
-
-        if(defaultOn) {
-            // If out of bounds, set to default -1 -> pick global prompt
-            if(this.flagPrompts.Length == 0) {
-                ThrowError("Troll \"%s\" does not have any flag prompts, thus a default value cannot be set. (flag=\"%s\")", this.name, name);
-                return -1;
-            }
-            if(!prompt.multiselect && prompt.defaults > 0) {
-                ThrowError("Flag \"%s\" cannot be set as default flag in single select mode, as one has already been set for prompt %d", name, g_trollAddPromptIndex);
-                return -1;
-            }
-            prompt.defaults |= (1 << flagIndex);
-        }
-        this.flagPrompts.SetArray(g_trollAddPromptIndex, prompt); //May not be required
-        return flagIndex;
-    }
-
-    int GetFlagIndex(const char[] flagName) {
-        static char comprFlag[MAX_TROLL_FLAG_LENGTH]; 
-        for(int i = 0; i < this.flagNames.Length; i++) {
-            this.flagNames.GetString(i, comprFlag, sizeof(comprFlag));
-            if(StrEqual(comprFlag, flagName)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    bool HasFlags() {
-        return this.flagNames != null && this.flagNames.Length > 0 && this.flagPrompts.Length > 0;
-    }
-
-    int GetFlagCount() {
-        return this.flagNames != null ? this.flagNames.Length : 0;
-    }
-
-    int GetClientFlags(int client) {
-        return this.activeFlagClients[client];
-    }
-    void GetFlagPrompt(int index, TrollFlagPrompt prompt) {
-        this.flagPrompts.GetArray(index, prompt);
-    }
-
-/////// TROLL ACTIVATION
-
-    TrollEffectResponse Activate(int client, int activator, trollModifier modifier = TrollMod_Invalid, int flags = 0, bool silent = false) {
-        if(modifier == TrollMod_Invalid) modifier = this.GetDefaultMod();
-        // Sadly, unable to pass in <this> to ApplyTroll, so it has to do unnecessary lookup via string
-        return ApplyTroll(client, this.name, activator, modifier, flags, silent);
-    }
-
 
     void Toggle(int client, int flags) {
         if(this.IsActive(client)) {
@@ -245,25 +119,22 @@ enum struct Troll {
             PrintToServer("FTT Debug: Disabling timer for %N", client);
             delete this.timerHandles[client];
         }
+        if(this.resetFn != null) {
+            Call_StartForward(this.resetFn);
+            Call_PushCell(0);
+            Call_PushCell(client);
+            Call_PushCell(0);
+            Call_Finish();
+        }
     }
 
     bool IsActive(int client) {
         return this.activeFlagClients[client] != -1;
     }
 
-    int GetRandomClient(int start = 0) {
-        gRandomClients.Clear();
-        for(int i = start + 1; i <= MaxClients; i++) {
-            if(this.activeFlagClients[i] != -1) {
-                gRandomClients.Push(i);
-            }
-        }
-        if(gRandomClients.Length == 0) return -1;
-        return GetRandomInt(0, gRandomClients.Length);
-    }
 }
 
-Troll Trolls[MAX_TROLLS+1];
+TrollData Trolls[MAX_TROLLS+1];
 
 ArrayList categories;
 static int categoryID = -1;
@@ -271,10 +142,11 @@ static int categoryID = -1;
 void ResetClient(int victim, bool wipe = true) {
     if(victim == 0 || !IsClientConnected(victim)) return;
     if(wipe) {
-        for(int i = 0; i <= MAX_TROLLS; i++) {
-            Trolls[i].Disable(victim);
+        for(int i = 1; i <= MAX_TROLLS; i++) {
+            Troll(i).Reset(victim);
         }
     }
+    // TODO: move to reset functions!!
     noRushingUsSpeed[victim] = 1.0;
     BaseComm_SetClientMute(victim, false);
     SetEntityGravity(victim, 1.0);
@@ -286,42 +158,312 @@ void ResetClient(int victim, bool wipe = true) {
         SDKUnhook(wpn, SDKHook_Reload, Event_WeaponReload);
 }
 
-int SetupTroll(const char[] name, const char description[128], int mods) {
-    static int i = 0;
-    if(mods == 0) {
-        ThrowError("Troll \"%s\" has no modifiers defined.", name);
-        return -1;
-    } else if(i == MAX_TROLLS + 1) {
-        ThrowError("Maximum number of trolls (%d) reached. Up MAX_TROLLS value.", MAX_TROLLS);
-        return -1;
+// TrollInstance of TrollData
+methodmap Troll {
+    public Troll(int index) {
+        return view_as<Troll>(index);
     }
-    g_trollAddPromptIndex = 0;
-    Trolls[i].id = i;
-    strcopy(Trolls[i].name, MAX_TROLL_NAME_LENGTH, name);
-    strcopy(Trolls[i].description, 128, description);
-    Trolls[i].categoryID = categoryID;
-    Trolls[i].mods = mods;
-    Trolls[i].flagPrompts = new ArrayList(sizeof(TrollFlagPrompt));
 
-    strcopy(trollIds[i], MAX_TROLL_NAME_LENGTH, name); 
-    trollKV.SetValue(name, i);
-    return i++;
+    public static Troll FromName(const char[] name) {
+        int i = GetTrollID(name);
+        if(i == -1)
+            LogError("Unknown troll \"%s\"", name);
+        return view_as<Troll>(i);
+    }
+    property bool Hidden {
+        public get() { return Trolls[this.Id].hidden; }
+    }
+    property int CategoryId {
+        public get() { return Trolls[this.Id].categoryID; }
+    }
+    property int PromptCount {
+        public get() { return Trolls[this.Id].flagPrompts.Length; }
+    }
+    property int TotalOptionsCount {
+        public get() { 
+            return Trolls[this.Id].promptOptions == null ? -1 : Trolls[this.Id].promptOptions.Length; 
+        }
+    }
+    property bool HasTimer {
+        public get() { return Trolls[this.Id].timerInterval > 0.0; }
+    }
+    property int Id {
+        public get() { return view_as<int>(this); }
+    }
+    property bool HasOptions {
+        public get() { return this.TotalOptionsCount > 0; }
+    }
+
+    public bool IsActive(int client) {
+        return Trolls[this.Id].activeFlagClients[client] != -1;
+    }
+
+    public bool HasFlag(int client, int flag) {
+        return Trolls[this.Id].activeFlagClients[client] & flag != 0;
+    }
+
+    public int GetFlags(int client) {
+        return Trolls[this.Id].activeFlagClients[client]
+    }
+
+    public bool HasMod(trollModifier mod) {
+        return Trolls[this.Id].mods & view_as<int>(mod) != 0;
+    }
+
+    public void GetName(char[] output, int maxlen) {
+        strcopy(output, maxlen, Trolls[this.Id].name);
+    }
+
+    public TrollEffectResponse Activate(int activator, int victim, trollModifier modifier = TrollMod_Invalid, int flags = 0, bool silent = false) {
+        PrintToServer("Activate: act:%d vic:%d", activator, victim);
+        if(modifier == TrollMod_Invalid) modifier = this.GetDefaultMod();
+        return ApplyTroll(victim, this, activator, modifier, flags, silent);
+    }
+    public void Reset(int victim) {
+        Trolls[this.Id].activeFlagClients[victim] = -1;
+        if(Trolls[this.Id].resetFn != null) {
+            Call_StartForward(Trolls[this.Id].resetFn);
+            Call_PushCell(this);
+            Call_PushCell(0);
+            Call_PushCell(victim);
+            Call_PushCell(0);
+            Call_Finish();
+        }
+    }
+
+    public bool GetOptionData(int optionIndex, TrollOptionData data) {
+        if(optionIndex < 0 || optionIndex >= Trolls[this.Id].promptOptions.Length) return false;
+        Trolls[this.Id].promptOptions.GetArray(optionIndex, data);
+        return true;
+    }
+
+    /// If prompt is NOT multiselect, returns the selected value from the option's data property
+    public bool GetPromptDataInt(int client, int promptIndex, int &out) {
+        if(promptIndex < 0 || promptIndex >= Trolls[this.Id].flagPrompts.Length) {
+            ThrowError(".GetPromptData called with invalid prompt index (%d, max %d) on troll #%d", promptIndex, Trolls[this.Id].flagPrompts.Length, this.Id);
+        }
+        TrollFlagPrompt prompt;
+        Trolls[this.Id].flagPrompts.GetArray(promptIndex, prompt);
+        if(prompt.multiselect) {
+            ThrowError(".GetPromptData: attempted to receive data for a multiselect prompt. Operation unspported. promptIndex:%d troll:%d", promptIndex, this.Id);
+        }
+        TrollOptionData option;
+        int flags = this.GetFlags(client);
+        for(int i = 0; i < Trolls[this.Id].promptOptions.Length; i++) {
+            int bit = 1 << i;
+            // If prompt has flag AND flag is active:
+            if(prompt.flags & bit && flags & bit) {
+                Trolls[this.Id].promptOptions.GetArray(i, option);
+                out = option.data;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public bool GetPromptDataFloat(int client, int promptIndex, float &out) {
+        int value;
+        if(this.GetPromptDataInt(client, promptIndex, value)) {
+            // We just retagged it as int, but it's float data
+            out = view_as<float>(value);
+            return true;
+        }
+        return false;
+    }
+
+    public bool GetPrompt(int promptIndex, TrollFlagPrompt prompt) {
+        if(promptIndex < 0 || promptIndex >= Trolls[this.Id].flagPrompts.Length) return false;
+        Trolls[this.Id].flagPrompts.GetArray(promptIndex, prompt);
+        return true;
+    }
+
+    public void GetOptionName(int optionIndex, char[] output, int maxlen) {
+        TrollOptionData option;
+        this.GetOptionData(optionIndex, option);
+        strcopy(output, maxlen, option.name);
+    }
+
+    public bool GetFlagNames(int client, int flags = -1, char[] output, int maxlength) {
+        if(this.TotalOptionsCount == 0) return false;
+        char buffer[32];
+        if(flags == -1) flags = Trolls[this.Id].activeFlagClients[client];
+        int count;
+        for(int i = 0; i < this.TotalOptionsCount; i++) {
+            int bit = 1 << i;
+            // If client has this flag:
+            if(flags & bit) {
+                this.GetOptionName(i, buffer, sizeof(buffer));
+                if(count == 0)
+                    Format(output, maxlength, "%s", buffer);
+                else
+                    Format(output, maxlength, "%s,%s", output, buffer);
+                count++;
+            }
+        }
+        return true;
+    }
+
+    /// Gets the default modifier to use
+    public trollModifier GetDefaultMod() {
+        // If the flags is equal to the 2^n flag, then it must be the only flag:
+        if(Trolls[this.Id].mods == view_as<int>(TrollMod_Instant)) return TrollMod_Instant;
+        else if(Trolls[this.Id].mods == view_as<int>(TrollMod_Constant)) return TrollMod_Constant;
+        else return TrollMod_Invalid;
+    }
 }
 
-// Gets the Troll enum struct via name
-// Returns index of troll enum
-int GetTroll(const char[] name, Troll troll) {
-    static int i = 0;
-    if(trollKV.GetValue(name, i)) {
-        troll = Trolls[i];
-        return i;
+int g_iTrollIndex;
+methodmap TrollBuilder {
+    public TrollBuilder(const char[] name, const char description[128], int mods) {
+        if(mods == 0) {
+            ThrowError("Troll \"%s\" has no modifiers defined.", name);
+        } else if(g_iTrollIndex == MAX_TROLLS + 1) {
+            ThrowError("Maximum number of trolls (%d) reached. Up MAX_TROLLS value.", MAX_TROLLS);
+        }
+        int i = g_iTrollIndex;
+        g_iTrollIndex++;
+        g_trollAddPromptIndex = 0;
+        Trolls[i].id = i;
+        strcopy(Trolls[i].name, MAX_TROLL_NAME_LENGTH, name);
+        strcopy(Trolls[i].description, 128, description);
+        Trolls[i].categoryID = categoryID;
+        Trolls[i].mods = mods;
+        Trolls[i].flagPrompts = new ArrayList(sizeof(TrollFlagPrompt));
+
+        char buffer[MAX_TROLL_NAME_LENGTH];
+        strcopy(buffer, sizeof(buffer), name); 
+        StringToLower(buffer);
+        trollKV.SetValue(buffer, i);
+        return view_as<TrollBuilder>(i);
     }
-    ThrowError("GetTroll: Troll was not found \"%s\"", name);
-    return -1;
+
+    property int Id {
+        public get() { return view_as<int>(this); }
+    }
+
+    public TrollBuilder Hide() {
+        Trolls[this.Id].hidden = true;
+    }
+
+    public TrollBuilder SetDescription(const char description[128]) {
+        strcopy(Trolls[this.Id].description, 128, description);
+    }
+
+    public TrollBuilder SetTimer(float interval, Timer timer, int requiredFlags = 0) {
+        Trolls[this.Id].timerInterval = interval;
+        Trolls[this.Id].timerFunction = timer;
+        Trolls[this.Id].timerRequiredFlags = requiredFlags;
+        for(int i = 0; i <= MAXPLAYERS; i++) {
+            Trolls[this.Id].timerHandles[i] = null;
+        }
+        return this;
+    }
+
+    public TrollBuilder AddPrompt(const char[] customPrompt = "", int requiredFlags = 0) {
+        this._AddPrompt(false, requiredFlags, customPrompt);
+        return this;
+    }
+
+    public TrollBuilder AddPromptMulti(const char[] customPrompt = "", int requiredFlags = 0) {
+        this._AddPrompt(true, requiredFlags, customPrompt);
+        return this;
+    }
+
+    // Adds event handle for when an option for a non-multi prompt is selected. If current prompt is multi, will error
+    public TrollBuilder OnPromptActivate(PromptActivateFunction fn) {
+        TrollFlagPrompt prompt;
+        Trolls[this.Id].flagPrompts.GetArray(g_trollAddPromptIndex, prompt);
+        if(prompt.multiselect) ThrowError("Current prompt is multiselect");
+        if(prompt.activateFn == null) prompt.activateFn = new PrivateForward(ET_Single, Param_Cell, Param_Cell, Param_Cell, Param_Any, Param_Cell, Param_Cell);
+        prompt.activateFn.AddFunction(INVALID_HANDLE, fn);
+
+        Trolls[this.Id].flagPrompts.SetArray(g_trollAddPromptIndex, prompt);
+        return this;
+    }
+
+    public void _AddPrompt(bool multiselect, int requiredFlags = 0, const char[] customPrompt) {
+        TrollFlagPrompt prompt;
+        prompt.multiselect = multiselect;
+        prompt.requireFlags = requiredFlags;
+        if(customPrompt[0] != '\0')
+            strcopy(prompt.promptText, MAX_TROLL_FLAG_LENGTH, customPrompt);
+        int index = Trolls[this.Id].flagPrompts.PushArray(prompt);
+        g_trollAddPromptIndex = index;
+    }
+
+    public TrollBuilder AddOption(const char[] name, bool defaultOn = false) {
+        this._AddOption(name, defaultOn);
+        return this;
+    }
+
+    public TrollBuilder AddOptionInt(const char[] name, bool defaultOn = false, int data) {
+        this._AddOption(name, defaultOn, data);
+        return this;
+    }
+    public TrollBuilder AddOptionFloat(const char[] name, bool defaultOn = false, float data) {
+        // This is intentional - we do not want to convert float -> int, just change type
+        this._AddOption(name, defaultOn, view_as<int>(data));
+        return this;
+    }
+
+    public void _AddOption(const char[] name, bool defaultOn = false, int data = 0) {
+        if(Trolls[this.Id].promptOptions == null) {
+            Trolls[this.Id].promptOptions = new ArrayList(sizeof(TrollOptionData));
+        }
+        TrollOptionData option;
+        strcopy(option.name, MAX_TROLL_FLAG_LENGTH, name);
+        option.data = data;
+        int optionIndex = Trolls[this.Id].promptOptions.PushArray(option);
+
+        // Add option to current prompt
+        TrollFlagPrompt prompt;
+        if(g_trollAddPromptIndex >= Trolls[this.Id].flagPrompts.Length) {
+            ThrowError("No prompt added for troll \"%s\", for flag \"%s\"", this.Id, name);
+        }
+        Trolls[this.Id].flagPrompts.GetArray(g_trollAddPromptIndex, prompt);
+        prompt.flags |= ( 1 << optionIndex );
+        if(defaultOn) {
+            // If out of bounds, set to default -1 -> pick global prompt
+            if(Trolls[this.Id].flagPrompts.Length == 0) {
+                ThrowError("Troll \"%s\" does not have any flag prompts, thus a default value cannot be set. (flag=\"%s\")", Trolls[this.Id].name, name);
+            } else if(!prompt.multiselect && prompt.defaults > 0) {
+                ThrowError("Flag \"%s\" cannot be set as default flag in single select mode, as one has already been set for prompt %d", name, g_trollAddPromptIndex);
+            }
+            prompt.defaults |= (1 << optionIndex);
+        }
+        // Save changes to prompt
+        Trolls[this.Id].flagPrompts.SetArray(g_trollAddPromptIndex, prompt); 
+
+    }
+
+    public TrollBuilder SetActivationFunction(ActivateFunction fn) {
+        if(Trolls[this.Id].activateFn == null) {
+            Trolls[this.Id].activateFn = new PrivateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
+        }
+        Trolls[this.Id].activateFn.AddFunction(INVALID_HANDLE, fn);
+        return this;
+    }
+
+    public TrollBuilder SetResetFunction(ResetFunction fn) {
+        if(Trolls[this.Id].resetFn == null) {
+            Trolls[this.Id].resetFn = new PrivateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
+        }
+        Trolls[this.Id].resetFn.AddFunction(INVALID_HANDLE, fn);
+        return this;
+    }
+
+    public Troll Build() {
+        return Troll(this.Id);
+    }
+
 }
+
 int GetTrollID(const char[] name) {
     static int i = 0;
-    if(trollKV.GetValue(name, i)) {
+    char buffer[MAX_TROLL_NAME_LENGTH];
+    strcopy(buffer, sizeof(buffer), name);
+    StringToLower(buffer);
+    if(trollKV.GetValue(buffer, i)) {
         return i;
     }
     PrintToServer("GetTrollID: Troll was not found \"%s\"", name);
@@ -334,11 +476,6 @@ bool IsAnyTrollActive(int victim) {
     }
     return false;
 }
-// Gets the Troll enum struct via key index
-// Returns index of troll enum
-void GetTrollByKeyIndex(int index, Troll troll) {
-    troll = Trolls[index];
-}
 
 void SetTrollFlags(int client, const char[] name, int flags = -1) {
     int index = GetTrollID(name);
@@ -349,19 +486,15 @@ void SetTrollFlags(int client, const char[] name, int flags = -1) {
 }
 
 
-TrollEffectResponse ApplyTroll(int victim, const char[] name, int activator, trollModifier modifier, int flags = 0, bool silent = false) {
-    static Troll troll;
-    int trollIndex = GetTroll(name, troll);
-    if(trollIndex == -1) {
-        ReplyToCommand(activator, "Unknown troll \"%s\"", name);
-        PrintToServer("[FTT] %N attempted to apply unknown troll: %s", activator, name);
-        return TE_Error;
-    }
+TrollEffectResponse ApplyTroll(int victim, Troll troll, int activator, trollModifier modifier, int flags = 0, bool silent = false) {
+    char name[MAX_TROLL_NAME_LENGTH];
+    troll.GetName(name, sizeof(name));
+    int trollIndex = troll.Id;
 
-    bool isActive = Trolls[trollIndex].activeFlagClients[victim] > -1;
+    bool isActive = troll.IsActive(victim);
 
     // Clear troll specific timer:
-    if(Trolls[trollIndex].timerInterval > 0.0) {
+    if(troll.HasTimer) {
         if(!isActive) {
             if(modifier & TrollMod_Constant && (Trolls[trollIndex].timerRequiredFlags == 0 || Trolls[trollIndex].timerRequiredFlags & flags)) {
                 Trolls[trollIndex].timerHandles[victim] = CreateTimer(Trolls[trollIndex].timerInterval, Trolls[trollIndex].timerFunction, victim, TIMER_REPEAT);
@@ -374,14 +507,10 @@ TrollEffectResponse ApplyTroll(int victim, const char[] name, int activator, tro
 
     if(!silent && SilentMenuSelected[activator]) silent = true;
 
-    static int MetaInverseTrollID;
-    if(!MetaInverseTrollID) MetaInverseTrollID = GetTrollID("Meta: Inverse");
-
-    if(activator > 0 && Trolls[MetaInverseTrollID].IsActive(activator)) {
-        float max = 1.0;
-        if(Trolls[MetaInverseTrollID].activeFlagClients[activator] & 2) max = 0.5;
-        else if(Trolls[MetaInverseTrollID].activeFlagClients[activator] & 4) max = 0.1;
-        if(GetURandomFloat() <= max) {
+    if(activator > 0 && t_metaReverse.IsActive(activator)) {
+        float chance;
+        t_metaReverse.GetPromptDataFloat(activator, 0, chance);
+        if(GetURandomFloat() <= chance) {
             victim = activator;
         }
     }
@@ -391,9 +520,9 @@ TrollEffectResponse ApplyTroll(int victim, const char[] name, int activator, tro
         int player = GetSpectatorClient(victim);
         if(player > 0) {
             // If there is an idle player, apply troll to them
-            ApplyTroll(player, name, activator, modifier, flags, silent);
+            ApplyTroll(player, troll, activator, modifier, flags, silent);
             // And continue IF there is TrollMod_PlayerOnly mod
-            if(troll.mods & view_as<int>(TrollMod_PlayerOnly)) return TE_Success;
+            if(troll.HasMod(TrollMod_PlayerOnly)) return TE_Success;
             // Don't want to show two logs, so just ignore the bot
             silent = true;
         }
@@ -409,61 +538,75 @@ TrollEffectResponse ApplyTroll(int victim, const char[] name, int activator, tro
     TrollEffectResponse response = ApplyAffect(victim, troll, activator, modifier, flags);
     if(response != TE_Success) return response; // Let the menu handler deal with checking
 
+    // Invoke Callbacks:
+    if(!isActive) {
+        Troll instance = Troll(trollIndex);
+        if(Trolls[trollIndex].activateFn != null) {
+            Call_StartForward(Trolls[trollIndex].activateFn);
+            Call_PushCell(instance);
+            Call_PushCell(activator);
+            Call_PushCell(victim);
+            Call_PushCell(flags);
+            Call_PushCell(modifier);
+            Call_Finish();
+        }
+
+        // Call the corresponding prompt callback if applicable
+        TrollFlagPrompt prompt;
+        for(int i = 0; i < Trolls[trollIndex].flagPrompts.Length; i++) {
+            Trolls[trollIndex].flagPrompts.GetArray(i, prompt);
+            if(!prompt.multiselect && prompt.activateFn != null) {
+                int value;
+                instance.GetPromptDataInt(victim, i, value);
+                for(int j = 0; j < Trolls[trollIndex].promptOptions.Length; i++) {
+                    int bit = 1 << j;
+                    if(flags & bit && prompt.flags & bit) {
+                        Call_StartForward(prompt.activateFn);
+                        Call_PushCell(instance);
+                        Call_PushCell(activator);
+                        Call_PushCell(victim);
+                        Call_PushCell(value);
+                        Call_PushCell(flags);
+                        Call_PushCell(modifier);
+                        response = view_as<TrollEffectResponse>(Call_Finish());
+                        if(response != TE_Success) return response; // Let the menu handler deal with checking
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+
+    } else if(isActive && Trolls[trollIndex].resetFn != null) {
+        Call_StartForward(Trolls[trollIndex].resetFn);
+        Call_PushCell(Troll(trollIndex));
+        Call_PushCell(activator);
+        Call_PushCell(victim);
+        Call_PushCell(modifier);
+        Call_Finish();
+    }
+    
     // Log all actions, indicating if constant or single-fire, and if any flags
     if(!silent) {
         if(isActive) {
-            CShowActivityEx(activator, "[FTT] ", "deactivated {yellow}%s{default} on %N. ", troll.name, victim);
-            LogAction(activator, victim, "\"%L\" deactivated \"%s\" on \"%L\"", activator, troll.name, victim);
+            CShowActivityEx(activator, "[FTT] ", "deactivated {yellow}%s{default} on %N. ", name, victim);
+            LogAction(activator, victim, "\"%L\" deactivated \"%s\" on \"%L\"", activator, name, victim);
         } else {
-            char flagName[MAX_TROLL_FLAG_LENGTH];
-            // strcopy(flagName, sizeof(flagName), troll.name)
-            // Call_StartForward(g_TrollAppliedForward);
-            // Call_PushCell(victim);
-            // Call_PushString(flagName);
-            // Call_PushCell(flags);
-            // Call_PushCell(activator);
-            // Call_Finish();
-            if(flags > 0) {
-                troll.GetFlagNames(victim, flagName, sizeof(flagName));
-                // Checks if there is not more than one flag set on the bitfield
-                // if(flags & flags - 1 == 0 && flags & flags + 1 == 0) {
-                //     // Get the flag name if there is only one flag set
-                //     troll.GetFlagName(GetIndexFromPower(flags), flagName, sizeof(flagName));
-                // } else {
-                //     Format(flagName, sizeof(flagName), "%d", flags);
-                // }
+            char flagName[50];
+            if(flags > 0 && troll.GetFlagNames(victim, flags, flagName, sizeof(flagName))) {
                 Format(flagName, sizeof(flagName), " (\x04%s|%d\x01)", flagName, flags);
-                // CFormatColor(flagName, sizeof(flagName));
             }
-
             if(modifier & TrollMod_Constant) {
-                CShowActivityEx(activator, "[FTT] ", "activated constant {yellow}%s{default}%s for %N. ", troll.name, flagName, victim);
+                CShowActivityEx(activator, "[FTT] ", "activated constant {yellow}%s{default}%s for %N. ", name, flagName, victim);
             } else {
-                CShowActivityEx(activator, "[FTT] ", "activated {yellow}%s{default}%s for %N. ", troll.name, flagName, victim);
+                CShowActivityEx(activator, "[FTT] ", "activated {yellow}%s{default}%s for %N. ", name, flagName, victim);
             }
-            LogAction(activator, victim, "\"%L\" activated \"%s\" (%d) for \"%L\"", activator, troll.name, flags, victim);
+            LogAction(activator, victim, "\"%L\" activated \"%s\" (%d) for \"%L\"", activator, name, flags, victim);
         }
     } else {
-        CReplyToCommand(activator, "[FTT] Applied silently {yellow}\"%s\"{default} on %N with flags=%d", troll.name, victim, flags);
+        CReplyToCommand(activator, "[FTT] Applied silently {yellow}\"%s\"{default} on %N with flags=%d", name, victim, flags);
     }
     return TE_Success;
-}
-
-bool IsTrollActive(int client, const char[] troll) {
-    if(troll[0] == '\0') {
-        ThrowError("Troll name is empty");
-        return false;
-    }
-    static int i = 0;
-    if(trollKV.GetValue(troll, i)) {
-        return Trolls[i].activeFlagClients[client] != -1;
-    }
-    ThrowError("Troll \"%s\" does not exist", troll);
-    return false; //errors instead but compiler no like
-}
-
-bool IsTrollActiveByRawID(int client, int id) {
-    return Trolls[id].activeFlagClients[client] != -1;
 }
 
 
@@ -496,12 +639,8 @@ public int Native_ApplyTroll(Handle plugin, int numParams) {
     int flags = GetNativeCell(4);
     int activator = GetNativeCell(5);
 
-    int index = GetTrollID(name);
-    if(index > 0) {
-        Trolls[index].Activate(victim, activator, modifier, flags, GetNativeCell(6));
-    } else {
-        ThrowNativeError(SP_ERROR_NATIVE, "Could not find troll with name \"%s\"", name);
-    }
+    Troll troll = Troll.FromName(name);
+    troll.Activate(victim, activator, modifier, flags, GetNativeCell(6));
     return 0;
 }
  

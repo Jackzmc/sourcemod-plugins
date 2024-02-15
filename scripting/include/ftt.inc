@@ -11,6 +11,8 @@ enum L4D2Infected
 	L4D2Infected_Tank = 8
 };
 
+bool g_actionsAvailable;
+
 GlobalForward g_PlayerMarkedForward;
 GlobalForward g_TrollAppliedForward;
 Handle g_hWitchAttack;
