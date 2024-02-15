@@ -11,8 +11,11 @@
 #include <sourcemod>
 #include <sdktools>
 #include <multicolors>
+#include <jutils>
 // Addons:
+#undef REQUIRE_PLUGIN
 #tryinclude <feedthetrolls>
+#undef REQUIRE_PLUGIN
 #tryinclude <tkstopper>
 
 public Plugin myinfo = 
@@ -47,8 +50,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart() {
 	if(!SQL_CheckConfig(DATABASE_CONFIG_NAME)) {
 		SetFailState("No database entry for %s; no database to connect to.", DATABASE_CONFIG_NAME);
-	}
-	if(!ConnectDB()) {
+	} else if(!ConnectDB()) {
 		SetFailState("Failed to connect to database.");
 	}
 
@@ -239,17 +241,18 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		if(StrEqual(sArgs, "cancel", false)) {
 			PrintToChat(client, "Note cancelled.");
 		} else {
-			int size = strlen(sArgs) + 1;
+			int size = 2 * strlen(sArgs) + 1;
 			char[] sArgsTrimmed = new char[size];
-			strcopy(sArgsTrimmed, size, sArgs);
+			DB.Escape(sArgs, sArgsTrimmed, size);
 			TrimString(sArgsTrimmed);
 			char buffer[32];
 			GetClientAuthId(client, AuthId_Steam2, buffer, sizeof(buffer));
+			// TODO: escape content
 			DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", menuNoteTarget, buffer, sArgsTrimmed);
 			DB.Query(DB_AddNote, query);
 			LogAction(client, -1, "\"%L\" added note for \"%s\" (%s): \"%s\"", client, menuNoteTargetName, menuNoteTarget, sArgsTrimmed);
 			Format(buffer, sizeof(buffer), "%N: ", client);
-			CShowActivity2(client, buffer, "added a note for {green}%s: {default}\"%s\"", menuNoteTargetName, sArgsTrimmed);
+			CShowActivity2(client, buffer, "added a note for {green}%s: {default}\"%s\"", menuNoteTargetName, sArgs);
 		}
 		return Plugin_Stop;
 	}
@@ -307,7 +310,10 @@ public Action Command_AddNote(int client, int args) {
 		char authMarker[32];
 		if(client > 0)
 			GetClientAuthId(client, AuthId_Steam2, authMarker, sizeof(authMarker));
-		DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", auth, authMarker, reason);
+		int size = 2 * strlen(reason) + 1;
+		char[] content = new char[size];
+		DB.Escape(reason, content, size);
+		DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", auth, authMarker, content);
 		DB.Query(DB_AddNote, query);
 		LogAction(client, target_list[0], "\"%L\" added note for \"%L\": \"%s\"", client, target_list[0], reason);
 		CShowActivity(client, "added a note for {green}%N: {default}\"%s\"", target_list[0], reason);
@@ -362,7 +368,6 @@ bool ConnectDB() {
 	} else {
 		PrintToServer("Connected to database %s", DATABASE_CONFIG_NAME);
 		SQL_LockDatabase(DB);
-		SQL_FastQuery(DB, "SET NAMES \"UTF8mb4\"");  
 		SQL_UnlockDatabase(DB);
 		DB.SetCharset("utf8mb4");
 		return true;
@@ -438,8 +443,9 @@ public void DB_FindNotes(Database db, DBResultSet results, const char[] error, a
 				CPrintChatToAdmins("  {olive}%s: {default}%s", noteCreator, reason);
 			}
 		}
-		if(count >= MAX_NOTES_TO_SHOW) {
-			CPrintChatToAdmins("  ... and {olive}%d more", count - MAX_NOTES_TO_SHOW);
+		int remaining = count - MAX_NOTES_TO_SHOW;
+		if(remaining > 0) {
+			CPrintChatToAdmins("  ... and {olive}%d more", remaining);
 		}
 
 		if(actions > 0) {
@@ -496,10 +502,15 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 	LogAction(-1, target, "activating automatic action on \"%L\": @%s.%s.%s", target, action, key, value);
 	if(StrContains(action, "fta") > -1) {
 		#if defined _ftt_included_
+			if(GetFeatureStatus(FeatureType_Native, "ApplyTroll") != FeatureStatus_Available) {
+				PrintToServer("[PlayerNotes] Warn: Action \"%s\" for %N has missing plugin: Feed The Trolls", action, target);
+			} 
 			// Replace under scores with spaces
 			char newKey[32];
 			strcopy(newKey, sizeof(newKey), key);
+			StringToLower(newKey);
 			ReplaceString(newKey, sizeof(newKey), "_", " ", true);
+			
 			int flags = StringToInt(value);
 			
 			
@@ -511,7 +522,9 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 		#endif
 	} else if(strncmp(action, "ignore", 6) == 0) {
 		#if defined _tkstopper_included_
-			if(StrEqual(key, "rff")) {
+			if(GetFeatureStatus(FeatureType_Native, "SetImmunity") != FeatureStatus_Available) {
+				PrintToServer("[PlayerNotes] Warn: Action \"%s\" for %N has missing plugin: TKStopper", action, target);
+			} else if(StrEqual(key, "rff")) {
 				SetImmunity(target, TKImmune_ReverseFriendlyFire, true);
 			} else if(StrEqual(key, "tk")) {
 				SetImmunity(target, TKImmune_Teamkill, true);
@@ -525,6 +538,12 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 	} else if(strncmp(action, "slap", 4) == 0) {
 		float delay = StringToFloat(key);
 		CreateTimer(delay, Timer_SlapPlayer, targetUserId);
+	} else if(strncmp(action, "mark", 4) == 0) {
+		if(StrEqual(key, "troll")) {
+
+		} else {
+
+		}
 	} else {
 		PrintToServer("[PlayerNotes] Warn: Action (\"%s\") for %N is not valid", action, target);
 		return false;
@@ -579,34 +598,6 @@ public void DB_AddNote(Database db, DBResultSet results, const char[] error, any
 	}
 }
 
-stock void PrintChatToAdmins(const char[] format, any ...) {
-	char buffer[254];
-	VFormat(buffer, sizeof(buffer), format, 2);
-	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i)) {
-			AdminId admin = GetUserAdmin(i);
-			if(admin != INVALID_ADMIN_ID) {
-				PrintToChat(i, "%s", buffer);
-			}
-		}
-	}
-	PrintToServer("%s", buffer);
-}
-
-stock void CPrintChatToAdmins(const char[] format, any ...) {
-	char buffer[254];
-	VFormat(buffer, sizeof(buffer), format, 2);
-	for(int i = 1; i < MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i)) {
-			AdminId admin = GetUserAdmin(i);
-			if(admin != INVALID_ADMIN_ID) {
-				CPrintToChat(i, "%s", buffer);
-			}
-		}
-	}
-	CPrintToServer("%s", buffer);
-}
-
 any Native_AddNoteIdentity(Handle plugin, int numParams) {
 	char noteCreator[32];
 	char noteTarget[32];
@@ -623,6 +614,9 @@ any Native_AddNoteIdentity(Handle plugin, int numParams) {
 void AddNoteIdentity(const char noteCreator[32], const char noteTarget[32], const char[] message) {
 	// messaege length + steamids (32 + 32 + null term)
 	// char[] query = new char[strlen(message) + 65];
-	DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", noteTarget, noteCreator, message);
+	int size = 2 * strlen(message) + 1;
+	char[] content = new char[size];
+	DB.Escape(message, content, size);
+	DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", noteTarget, noteCreator, content);
 	DB.Query(DB_AddNote, query);
 }
