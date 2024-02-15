@@ -9,7 +9,9 @@ Action Command_Props(int client, int args) {
 		PrintToConsole(client, "edit <last/#index>");
 		PrintToConsole(client, "del <last/#index/tool>");
 		PrintToConsole(client, "add <cursor/tool>");
+		PrintToConsole(client, "favorite - favorites active editor entity");
 		PrintToConsole(client, "controls - list all the controls");
+		PrintToConsole(client, "reload - reload prop list");
 	} else if(StrEqual(arg, "list")) {
 		char arg2[16];
 		GetCmdArg(2, arg2, sizeof(arg2));
@@ -20,7 +22,6 @@ Action Command_Props(int client, int args) {
 			PrintToChat(client, "\x04[Editor]\x01 Please specify: \x05classname, index, owner. ");
 			return Plugin_Handled;
 		}
-		int userid = GetClientUserId(client);
 		float pos[3], propPos[3], dist;
 		GetAbsOrigin(client, pos);
 		for(int i = 0; i < g_spawnedItems.Length; i++) {
@@ -94,8 +95,22 @@ Action Command_Props(int client, int args) {
 		} else {
 			PrintToChat(client, "\x04[Editor]\x01 Invalid index, out of bounds. Enter a value between [0, %d]", g_spawnedItems.Length - 1);
 		}
-	} else if(StrEqual("controls")) {
+	} else if(StrEqual(arg, "controls")) {
 		PrintToChat(client, "View controls at https://admin.jackz.me/docs/props");
+	} else if(StrEqual(arg, "favorite")) {
+		if(g_db == null) {
+			PrintToChat(client, "\x04[Editor]\x01 Cannot connect to database.");
+		} else if(Editor[client].IsActive()) {
+			char model[128];
+			GetEntPropString(Editor[client].entity, Prop_Data, "m_ModelName", model, sizeof(model));
+			ToggleFavorite(client, model, Editor[client].data);
+		} else {
+			PrintToChat(client, "\x04[Editor]\x01 Edit a prop to use this command.");
+		}
+	} else if(StrEqual(arg, "reload")) {
+		PrintHintText(client, "Reloading categories...");
+		UnloadCategories();
+		LoadCategories();	
 	} else {
 		PrintToChat(client, "\x05Not implemented");
 	}

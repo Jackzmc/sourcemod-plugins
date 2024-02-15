@@ -45,7 +45,7 @@ int Spawn_RootHandler(Menu menu, MenuAction action, int client, int param2) {
 			case 'f': Spawn_ShowFavorites(client);
 			case 'r': Spawn_ShowRecents(client);
 			case 's': Spawn_ShowSearch(client);
-			case 'n': ShowCategoryList(client);
+			case 'n': ShowCategoryList(client, ROOT_CATEGORY); 
 		}
 		// TODO: handle back (to top menu)
 	} else if (action == MenuAction_Cancel) {
@@ -94,22 +94,6 @@ void AdminMenu_SaveLoad(TopMenu topmenu, TopMenuAction action, TopMenuObject obj
 	}
 }
 
-int SpawnCategoryHandler(Menu menu, MenuAction action, int client, int param2) {
-	if (action == MenuAction_Select) {
-		char info[8];
-		menu.GetItem(param2, info, sizeof(info));
-		int index = StringToInt(info);
-		// Use g_categories, but if this is nested, then when a nested is selected, we need to use that list
-		ShowItemMenu(client, index);
-	} else if (action == MenuAction_Cancel) {
-		if(param2 == MenuCancel_ExitBack) {
-			ShowSpawnRoot(client);
-		} 
-	} else if (action == MenuAction_End)	
-		delete menu;
-	return 0;
-}
-
 int SaveLoadHandler(Menu menu, MenuAction action, int client, int param2) {
 	if (action == MenuAction_Select) {
 		char saveName[64];
@@ -124,9 +108,13 @@ int SaveLoadHandler(Menu menu, MenuAction action, int client, int param2) {
 			}
 		} else if(LoadSave(saveName, true)) {
 			strcopy(g_pendingSaveName, sizeof(g_pendingSaveName), saveName); 
-			g_pendingSaveClient = client;
-			PrintToChat(client, "\x04[Editor]\x01 Previewing save \x05%s", saveName);
-			PrintToChat(client, "\x04[Editor]\x01 Press \x05Shift + Middle Mouse\x01 to spawn, \x05Middle Mouse\x01 to cancel");
+			if(g_pendingSaveClient != 0 && g_pendingSaveClient != client) {
+				PrintToChat(client, "\x04[Editor]\x01 Another user is currently loading a save.");
+			} else {
+				g_pendingSaveClient = client;
+				PrintToChat(client, "\x04[Editor]\x01 Previewing save \x05%s", saveName);
+				PrintToChat(client, "\x04[Editor]\x01 Press \x05Shift + Middle Mouse\x01 to spawn, \x05Middle Mouse\x01 to cancel");
+			}
 		} else {
 			PrintToChat(client, "\x04[Editor]\x01 Could not load save file.");
 		}
@@ -158,7 +146,7 @@ int DeleteHandler(Menu menu, MenuAction action, int client, int param2) {
 				EndDeleteTool(client, false);
 			} else {
 				g_PropData[client].markedProps = new ArrayList();
-				PrintToChat(client, "\x04[Editor]\x01 Delete tool active. Press \x05E (Interact)\x01 to mark props.");
+				PrintToChat(client, "\x04[Editor]\x01 Delete tool active. Press \x05Left Mouse\x01 to mark props, \x05Right Mouse\x01 to undo. SHIFT+USE to spawn, CTRL+USE to cancel");
 			}
 			ShowDeleteList(client);
 		} else {
@@ -182,6 +170,47 @@ int DeleteHandler(Menu menu, MenuAction action, int client, int param2) {
 	return 0;
 }
 
+int SpawnCategoryHandler(Menu menu, MenuAction action, int client, int param2) {
+	if (action == MenuAction_Select) {
+		char info[8];
+		menu.GetItem(param2, info, sizeof(info));
+		int index = StringToInt(info);
+		// Reset item index when selecting new category
+		if(g_PropData[client].lastCategoryIndex != index) {
+			g_PropData[client].lastCategoryIndex = index;
+			g_PropData[client].lastItemIndex = 0;
+		}
+		CategoryData category;
+		g_PropData[client].PeekCategory(category); // Just need to get the category.items[index], don't want to pop
+		category.items.GetArray(index, category);
+		if(category.items == null) {
+			LogError("Category %s has null items array (index=%d)", category.name, index);
+		} else if(category.hasItems) {
+			ShowCategoryItemMenu(client, category);
+		} else {
+			// Reset the category index for nested
+			g_PropData[client].lastCategoryIndex = 0;
+			// Make the list now be the selected category's list.
+			ShowCategoryList(client, category);
+		}
+	} else if (action == MenuAction_Cancel) {
+		if(param2 == MenuCancel_ExitBack) {
+			CategoryData category;
+			// Double pop
+			if(g_PropData[client].PopCategory(category) && g_PropData[client].PopCategory(category)) {
+				// Use the last category (go back one)
+				ShowCategoryList(client, category);
+			} else {
+				ShowSpawnRoot(client);
+			}
+		} else {
+			g_PropData[client].CleanupBuffers();
+		}
+	} else if (action == MenuAction_End)	
+		delete menu;
+	return 0;
+}
+
 int SpawnItemHandler(Menu menu, MenuAction action, int client, int param2) {
 	if (action == MenuAction_Select) {
 		char info[132];
@@ -192,21 +221,28 @@ int SpawnItemHandler(Menu menu, MenuAction action, int client, int param2) {
 		nameIndex += SplitString(info[nameIndex], "|", model, sizeof(model));
 		g_PropData[client].lastItemIndex = StringToInt(index);
 		if(Editor[client].PreviewModel(model, g_PropData[client].classnameOverride)) {
-			Editor[client].SetData(info[nameIndex]);
+			Editor[client].SetName(info[nameIndex]);
 			PrintHintText(client, "%s\n%s", info[nameIndex], model);
 			ShowHint(client);
 		} else {
 			PrintToChat(client, "\x04[Editor]\x01 Error spawning preview \x01(%s)", model);
 		}
-		
-		ShowItemMenuAny(client, null); // Use last menu
-		// ShowItemMenu(client, g_PropData[client].lastCategoryIndex);
+		// Use same item menu again:
+		ShowItemMenu(client);
 	} else if(action == MenuAction_Cancel) {
+		g_PropData[client].ClearItemBuffer();
 		if(param2 == MenuCancel_ExitBack) {
-			ShowCategoryList(client, g_PropData[client].listBuffer);
+			CategoryData category;
+			if(g_PropData[client].PopCategory(category)) {
+				// Use the last category (go back one)
+				ShowCategoryList(client, category);
+			} else {
+				// If there is no categories, it means we are in a temp menu (search / recents / favorites)
+				ShowSpawnRoot(client);
+			}
+		} else {
+			g_PropData[client].CleanupBuffers();
 		}
-		g_PropData[client].CleanupBuffer();
-		
 	} else if (action == MenuAction_End) {
 		delete menu;
 	}

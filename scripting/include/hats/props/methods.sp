@@ -37,8 +37,11 @@ bool LoadSave(const char[] save, bool asPreview = false) {
 		if(data.type == Build_Physics)
 			entity = CreateEntityByName("prop_physics");
 		else
-			entity = CreateEntityByName("prop_dynamic");
-		if(entity == -1) continue;
+			entity = CreateEntityByName("prop_dynamic_override");
+		if(entity == -1) {
+			PrintToServer("[Editor] LoadSave(\"%s\", %b): failed to create %s", save, asPreview, buffer);
+			continue;
+		}
 		PrecacheModel(data.model);
 		DispatchKeyValue(entity, "model", data.model);
 		DispatchKeyValue(entity, "targetname", "saved_prop");
@@ -49,19 +52,19 @@ bool LoadSave(const char[] save, bool asPreview = false) {
 			DispatchKeyValue(entity, "solid", data.type == Build_NonSolid ? "0" : "6");
 		}
 		TeleportEntity(entity, data.origin, data.angles, NULL_VECTOR);
-		if(!DispatchSpawn(entity)) continue;
+		if(!DispatchSpawn(entity)) {
+			PrintToServer("[Editor] LoadSave(\"%s\", %b): failed to spawn %s", save, asPreview, buffer);
+			continue;
+		}
 		int alpha = asPreview ? 200 : data.color[3];
 		SetEntityRenderColor(entity, data.color[0], data.color[1], data.color[2], alpha);
 
 		if(asPreview)
-			g_savedItems.Push(EntIndexToEntRef(entity));
+			g_previewItems.Push(EntIndexToEntRef(entity));
 		else
 			AddSpawnedItem(entity);
 	}
 	delete file;
-	if(asPreview) {
-		delete g_previewItems;
-	}
 	return true;
 }
 
@@ -118,12 +121,12 @@ void UnloadSave() {
 }
 
 public void LoadCategories() {
-	if(g_categories != null) return;
-	g_categories = new ArrayList(sizeof(CategoryData));
+	if(ROOT_CATEGORY.items != null) return;
+	ROOT_CATEGORY.items = new ArrayList(sizeof(CategoryData));
 	char path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "data/prop_spawner/models");
-	LoadFolder(g_categories, path);
-	g_categories.SortCustom(SortCategories);
+	LoadFolder(ROOT_CATEGORY.items, path);
+	ROOT_CATEGORY.items.SortCustom(SortCategories);
 }
 int SortCategories(int index1, int index2, ArrayList array, Handle hndl) {
 	CategoryData cat1;
@@ -133,9 +136,9 @@ int SortCategories(int index1, int index2, ArrayList array, Handle hndl) {
 	return strcmp(cat1.name, cat2.name);
 }
 public void UnloadCategories() {
-	if(g_categories == null) return;
-	_UnloadCategories(g_categories);
-	delete g_categories;
+	if(ROOT_CATEGORY.items == null) return;
+	_UnloadCategories(ROOT_CATEGORY.items);
+	delete ROOT_CATEGORY.items;
 }
 void _UnloadCategories(ArrayList list) {
 	CategoryData cat;
@@ -164,7 +167,7 @@ void LoadFolder(ArrayList parent, const char[] rootPath) {
 			// TODO: support subcategory
 			if(buffer[0] == '.') continue;
 			CategoryData data;
-			Format(data.name, sizeof(data.name), "%s>>", buffer);
+			Format(data.name, sizeof(data.name), "%s", buffer);
 			data.items = new ArrayList(sizeof(CategoryData));
 
 			Format(buffer, sizeof(buffer), "%s/%s", rootPath, buffer);
@@ -194,7 +197,7 @@ void LoadProps(ArrayList parent, const char[] filePath) {
 	}
 	ReplaceString(buffer, sizeof(buffer), "\n", "");
 	ReplaceString(buffer, sizeof(buffer), "\r", "");
-	Format(category.name, sizeof(category.name), "%s>", buffer);
+	Format(category.name, sizeof(category.name), "%s", buffer);
 	while(file.ReadLine(buffer, sizeof(buffer))) {
 		if(buffer[0] == '#') continue;
 		ReplaceString(buffer, sizeof(buffer), "\n", "");
@@ -246,7 +249,6 @@ bool SaveRecents() {
 	return true;
 }
 bool LoadRecents() {
-	return false;
 	if(g_recentItems != null) delete g_recentItems;
 	char path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "data/prop_spawner/recents_cache.csv");
@@ -335,7 +337,9 @@ void DoSearch(int client, const char[] query) {
 	if(results.Length == 0) {
 		CPrintToChat(client, "\x04[Editor]\x01 No results found. :(");
 	} else {
-		ShowItemMenuAny(client, results, "", true);
+		char title[64];
+		Format(title, sizeof(title), "Results for \"%s\"", query);
+		ShowTempItemMenu(client, results, title);
 	}
 }
 // Gets the index of the spawned item, starting at index. negative to go from back
@@ -363,7 +367,7 @@ ArrayList SearchItems(const char[] query) {
 	// We have to put it into SearchData enum struct, then convert it back to ItemResult
 	LoadCategories();
 	ArrayList results = new ArrayList(sizeof(SearchData));
-	_searchCategory(results, g_categories, query);
+	_searchCategory(results, ROOT_CATEGORY.items, query);
 	results.SortCustom(SortSearch);
 	ArrayList items = new ArrayList(sizeof(ItemData));
 	ItemData item; 
@@ -404,6 +408,7 @@ void _searchCategory(ArrayList results, ArrayList categories, const char[] query
 bool _searchItems(ArrayList results, ArrayList items, const char[] query) {
 	ItemData item;
 	SearchData search;
+	if(items == null) return false;
 	for(int i = 0; i < items.Length; i++) {
 		items.GetArray(i, item);
 		int searchIndex = StrContains(item.name, query, false);
@@ -470,6 +475,7 @@ int DeleteAll(int onlyPlayer = 0) {
 		if(IsValidEntity(ref)) {
 			RemoveEntity(ref);
 		}
+		// TODO: erasing while removing
 		g_spawnedItems.Erase(i);
 		count++;
 	}
@@ -485,5 +491,17 @@ void ShowHint(int client) {
 	PrintToChat(client, "\x05R: \x01Change Mode");
 	PrintToChat(client, "\x05Middle Click: \x01Cancel Placement  \x05Shift + Middle Click: \x01Place  \x05Ctrl + Middle Click: \x01Change Type");
 	PrintToChat(client, "\x05E: \x01Rotate (hold, use mouse)  \x05Left Click: \x01Change Axis  \x05Right Click: \x01Snap Angle");
+	PrintToChat(client, "Type \x05/prop favorite\x01 to (un)favorite.");
 	PrintToChat(client, "More information & cheatsheat: \x05%s", "https://admin.jackz.me/docs/props");
+}
+
+void ToggleFavorite(int client, const char[] model, const char[] name = "") {
+	char query[256];
+	GetClientAuthId(client, AuthId_Steam2, query, sizeof(query));
+	DataPack pack;
+	pack.WriteCell(GetClientUserId(client));
+	pack.WriteString(model);
+	pack.WriteString(name);
+	g_db.Format(query, sizeof(query), "SELECT name FROM editor_favorites WHERE steamid = '%s' AND model = '%s'", query, model);
+	g_db.Query(DB_ToggleFavoriteCallback, query, pack);
 }

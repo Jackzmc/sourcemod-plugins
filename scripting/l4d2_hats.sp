@@ -48,7 +48,7 @@ char g_currentMap[64];
 #include <hats/props/base.sp>
 
 public Plugin myinfo = {
-	name =  "L4D2 Hats", 
+	name =  "L4D2 Hats & Editor", 
 	author = "jackzmc", 
 	description = "", 
 	version = PLUGIN_VERSION, 
@@ -66,6 +66,7 @@ public void OnPluginStart() {
 
 	createdWalls = new ArrayList();
 	g_spawnedItems = new ArrayList(2);
+	ROOT_CATEGORY.name = "Categories";
 	
 	LoadTranslations("common.phrases");
 	HookEvent("player_entered_checkpoint", OnEnterSaferoom);
@@ -88,6 +89,13 @@ public void OnPluginStart() {
 	cvar_sm_hats_flags = CreateConVar("sm_hats_features", "153", "Toggle certain features. Add bits together\n1 = Player Hats\n2 = Respect Admin Immunity\n4 = Create a fake hat for hat wearer to view instead, and for yeeting\n8 = No saferoom hats\n16 = Player hatting requires victim consent\n32 = Infected Hats\n64 = Reverse hats\n128 = Delete Thrown Hats", FCVAR_CHEAT, true, 0.0);
 	cvar_sm_hats_rainbow_speed = CreateConVar("sm_hats_rainbow_speed", "1", "Speed of rainbow", FCVAR_NONE, true, 0.0);
 	cvar_sm_hats_max_distance = CreateConVar("sm_hats_distance", "240", "The max distance away you can hat something. 0 = disable", FCVAR_NONE, true, 0.0);
+
+	if(SQL_CheckConfig(DATABASE_CONFIG_NAME)) {
+		if(!ConnectDB()) {
+			LogError("Failed to connect to database.");
+		}
+	}
+	
 
 	noHatVictimCookie = new Cookie("hats_no_target", "Disables other players from making you their hat", CookieAccess_Public);
 	noHatVictimCookie.SetPrefabMenu(CookieMenu_OnOff_Int, "Disable player hats for self", OnLocalPlayerHatCookieSelect);
@@ -158,7 +166,7 @@ Action Timer_PlaceHat(Handle h, int userid) {
 	if(client > 0 && HasHat(client)) {
 		GetClientAbsOrigin(client, hatData[client].orgPos);
 		GetClientEyeAngles(client, hatData[client].orgAng);
-		GetHorizontalPositionFromOrigin(hatData[client].orgPos, hatData[client].orgAng, 40.0, hatData[client].orgPos);
+		// GetHorizontalPositionFromOrigin(hatData[client].orgPos, hatData[client].orgAng, 40.0, hatData[client].orgPos);
 		hatData[client].orgAng[0] = 0.0;
 		PrintToChat(client, "[Hats] Hat has been placed down");
 		ClearHat(client, true);
@@ -467,6 +475,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	//////////////////////////////
 	// OnPlayerRunCmd :: HATS
 	/////////////////////////////
+	int oldButtons = GetEntProp(client, Prop_Data, "m_nOldButtons");
 	if(IsHatsEnabled(client)) {
 		int entity = GetHat(client);
 		int visibleEntity = EntRefToEntIndex(hatData[client].visibleEntity);
@@ -569,6 +578,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		if(buttons & IN_ZOOM) {
 			ClearSavePreview();
 			if(buttons & IN_SPEED) {
+				PrintToChat(client, "\x04[Editor]\x01 Loaded save \x05%s", g_pendingSaveName);
 				LoadSave(g_pendingSaveName, false);
 			}
 		}
@@ -612,7 +622,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		bool allowMove = true;
 		switch(Editor[client].mode) {
 			case MOVE_ORIGIN: {
-				
 				SetWeaponDelay(client, 0.5);
 
 				bool isRotate;
@@ -621,22 +630,27 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 					if(!g_inRotate[client]) {
 						g_inRotate[client] = true;
 					}
-					if(buttons & IN_SPEED) {
+					if(buttons & IN_JUMP) {
+						buttons = buttons & ~IN_JUMP;
+						Editor[client].CycleStacker(tick);
+					} if(buttons & IN_SPEED) {
 						Editor[client].ToggleCollision(tick);
+						return Plugin_Handled; 
 					} else if(buttons & IN_DUCK) {
 						Editor[client].ToggleCollisionRotate(tick);
+						return Plugin_Handled; 
 					} else {
-						// PrintCenterText(client, "%.1f %.1f %.1f", Editor[client].angles[0], Editor[client].angles[1], Editor[client].angles[2]);
+						PrintCenterText(client, "%.1f %.1f %.1f", Editor[client].angles[0], Editor[client].angles[1], Editor[client].angles[2]);
 						isRotate = true;
 						SetEntityFlags(client, flags |= FL_FROZEN);
 						if(buttons & IN_ATTACK) Editor[client].CycleAxis(tick);
 						else if(buttons & IN_ATTACK2) Editor[client].CycleSnapAngle(tick);
 						
 						// Rotation control:
-						if(tick - cmdThrottle[client] > 0.20) {
-							// Turn off rotate when player wants rotate
-							Editor[client].hasCollisionRotate = false;
-							if(Editor[client].axis == 3) {
+						// Turn off rotate when player wants rotate
+						Editor[client].hasCollisionRotate = false;
+						if(tick - cmdThrottle[client] > 0.1) {
+							if(Editor[client].axis == 2) {
 								if(mouse[1] > 10) Editor[client].angles[2] += Editor[client].snapAngle;
 								else if(mouse[1] < -10) Editor[client].angles[2] -= Editor[client].snapAngle;
 							} else {
@@ -652,8 +666,9 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 						g_inRotate[client] = false;
 					}
 					// Move position
-					if(buttons & IN_ATTACK) Editor[client].moveDistance++;
-					else if(buttons & IN_ATTACK2) Editor[client].moveDistance--;
+					float moveAmount = (buttons & IN_SPEED) ? 2.0 : 1.0;
+					if(buttons & IN_ATTACK) Editor[client].moveDistance += moveAmount;
+					else if(buttons & IN_ATTACK2) Editor[client].moveDistance -= moveAmount;
 				}
 
 				// Clear IN_FROZEN when no longer rotate
@@ -661,12 +676,12 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 					flags = flags & ~FL_FROZEN;
 					SetEntityFlags(client, flags);
 				}
-				CalculateEditorPosition(client, Filter_IgnorePlayerAndWall);
+				if(Editor[client].stackerDirection == Stack_Off)
+					CalculateEditorPosition(client, Filter_IgnorePlayerAndWall);
 			}
 			case SCALE: {
 				SetWeaponDelay(client, 0.5);
 				allowMove = false;
-				bool sizeChanged = false;
 				if(buttons & IN_USE) {
 					Editor[client].CycleSpeed(tick);
 				} else {
@@ -702,10 +717,9 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				}
 			}
 		}
-
-		if(tick - cmdThrottle[client] >= 0.25) {
+		if(tick - cmdThrottle[client] > 0.13) {
 			if(buttons & IN_RELOAD)
-		 		Editor[client].CycleMode(); // R: Cycle forward
+				Editor[client].CycleMode(); // R: Cycle forward
 			else if(buttons & IN_ZOOM) {
 				buttons &= ~IN_ZOOM;
 
@@ -722,7 +736,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		}
 
 		Editor[client].Draw(BUILDER_COLOR, 0.1, 0.1);
-
 		return allowMove ? Plugin_Continue : Plugin_Handled;
 	}
 
@@ -765,22 +778,37 @@ public Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float
 	return Plugin_Continue;
 }
 
-public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(client > 0 && !HasHat(client) && !IsFakeClient(client)) {
-		hatPresetCookie.Get(client, ActivePreset[client], 32);
-		if(ActivePreset[client][0] != '\0') {
-			RestoreActivePreset(client);
-			ReplyToCommand(client, "[Hats] Applied your hat preset! Clear it with /hatp");
+	if(client > 0) {
+		if(!HasHat(client) && !IsFakeClient(client)) {
+			hatPresetCookie.Get(client, ActivePreset[client], 32);
+			if(ActivePreset[client][0] != '\0') {
+				RestoreActivePreset(client);
+				ReplyToCommand(client, "[Hats] Applied your hat preset! Clear it with /hatp");
+			}
+		}
+		SDKHook(client, SDKHook_WeaponCanUse, OnWeaponUse);
+	}
+}
+
+Action OnWeaponUse(int client, int weapon) {
+	int ref = EntIndexToEntRef(weapon);
+	// Prevent picking up weapons that are previews
+	for(int i = 1; i <= MaxClients; i++) {
+		if(Editor[i].entity == ref && Editor[i].flags & Edit_Preview) {
+			return Plugin_Handled;
 		}
 	}
+	return Plugin_Continue;
 }
 
 public void OnClientDisconnect(int client) {
 	tempGod[client] = false;
 	Editor[client].Reset();
 	g_PropData[client].Reset();
-	hatData[client].yeetGroundTimer = null;
+	if(hatData[client].yeetGroundTimer != null)
+		delete hatData[client].yeetGroundTimer;
 	if(g_pendingSaveClient == client) {
 		g_pendingSaveClient = 0;
 		ClearSavePreview();
@@ -820,7 +848,6 @@ public void OnMapEnd() {
 		if(hatData[i].yeetGroundTimer != null) { 
 			delete hatData[i].yeetGroundTimer;
 		}
-		hatData[i].yeetGroundTimer = null;
 		DeleteWall(i);
 	}
 	createdWalls.Clear();

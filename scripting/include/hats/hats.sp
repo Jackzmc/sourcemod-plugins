@@ -27,15 +27,6 @@ enum struct HatInstance {
 	bool rainbowReverse;
 	char attachPoint[32];
 }
-enum struct PlayerHatData {
-	char activePresetName[32];
-	int lastRequestTime;
-
-	void Reset() {
-		this.activePresetName[0] = '\0';
-		this.lastRequestTime = 0;
-	}
-}
 enum hatFeatures {
 	HatConfig_None = 0,
 	HatConfig_PlayerHats = 1,
@@ -48,8 +39,7 @@ enum hatFeatures {
 	HatConfig_DeleteThrownHats = 128
 }
 char ActivePreset[MAXPLAYERS+1][32];
-int lastHatrequestTime[MAXPLAYERS+1];
-PlayerHatData g_hatData[MAXPLAYERS+1];
+int lastHatRequestTime[MAXPLAYERS+1];
 HatInstance hatData[MAXPLAYERS+1];
 StringMap g_HatPresets;
 
@@ -84,23 +74,11 @@ static char REVERSE_CLASSNAMES[MAX_REVERSE_CLASSNAMES][] = {
 	"func_movelinear"
 };
 
-Action Command_Hat(int client, int args) {
-	static char cmdName[8];
-	GetCmdArg(0, cmdName, sizeof(cmdName));
-	AdminId adminId = GetUserAdmin(client);
-	bool isForced = adminId != INVALID_ADMIN_ID && StrEqual(cmdName, "sm_hatf");
-
+Action Command_DoAHat(int client, int args) {
 	int hatter = GetHatter(client);
 	if(hatter > 0) {
 		ClearHat(hatter, HasFlag(hatter, HAT_REVERSED));
 		PrintToChat(hatter, "[Hats] %N has unhatted themselves", client);
-		return Plugin_Handled;
-	}
-	// if(g_Hat[client].Ha)
-}
-
-Action Command_DoAHat(int client, int args) {
-	if(UnhatSelf(client)) {
 		return Plugin_Handled;
 	}
 
@@ -391,7 +369,7 @@ Action Command_DoAHat(int client, int args) {
 			PrintToConsole(client, "[Hats] Selected a child entity, selecting parent (child %d -> parent %d)", entity, parent);
 			entity = parent;
 		} else if(entity <= MaxClients) { // Checks for hatting a player entity
-			if(IsFakeClient(entity) && L4D_GetIdlePlayerOfBot(entity) != -1) {
+			if(IsFakeClient(entity) && L4D_GetIdlePlayerOfBot(entity) > 0) {
 				PrintToChat(client, "[Hats] Cannot hat idle bots");
 				return Plugin_Handled;
 			} else if(GetClientTeam(entity) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
@@ -407,7 +385,7 @@ Action Command_DoAHat(int client, int args) {
 			} else if(!IsPlayerAlive(entity) || GetEntProp(entity, Prop_Send, "m_isHangingFromLedge") || L4D_IsPlayerCapped(entity)) {
 				PrintToChat(client, "[Hats] Player is either dead, hanging, or in the process of dying.");
 				return Plugin_Handled;
-			} else if(EntRefToEntIndex(hatData[entity].entity) == client) {
+			} else if(EntRefToEntIndex(hatData[entity].entity) == entity || EntRefToEntIndex(hatData[entity].entity) == client) {
 				PrintToChat(client, "[Hats] Woah you can't be making a black hole, jesus be careful.");
 				return Plugin_Handled;
 			} else if(~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_PlayerHats)) {
@@ -539,7 +517,10 @@ int HatConsentHandler(Menu menu, MenuAction action, int target, int param2) {
 			ReplyToCommand(target, "Player has disconnected");
 			return 0;
 		} else if(hatAction == 1) {
-			EquipHat(activator, target, "player", 0);
+			if(EntRefToEntIndex(hatData[target].entity) == activator )
+				PrintToChat(activator, "[Hats] Woah you can't be making a black hole, jesus be careful.");
+			else
+				EquipHat(activator, target, "player", 0);
 		} else {
 			ClientCommand(activator, "play player/orch_hit_csharp_short.wav");
 			PrintHintText(activator, "%N refused your request", target);

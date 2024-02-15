@@ -12,33 +12,14 @@ void ShowSpawnRoot(int client) {
 	menu.ExitButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
 }
-
-void Spawn_ShowFavorites(int client) {
-	PrintToChat(client, "In development");
-	return;
-	// Menu menu = new Menu(SpawnItemHandler);
-	// char model[128];
-	// for(int i = 0; i <= g_spawnedItems.Length; i++) {
-	// 	int ref = g_spawnedItems.Get(i);
-	// 	if(IsValidEntity(ref)) {
-	// 		GetEntPropString(ref, Prop_Data, "m_ModelName", model, sizeof(model));
-	// 		menu.AddItem(model, model);
-	// 	}
-	// }
-	// menu.ExitBackButton = true;
-	// menu.ExitButton = true;
-	// menu.Display(client, MENU_TIME_FOREVER);
-}
 void Spawn_ShowRecents(int client) {
-	CReplyToCommand(client, "\x04[Editor] \x01Disabled due to crash issues :D");
-	return;
 	if(g_recentItems == null) LoadRecents();
 	ArrayList items = GetRecentsItemList();
 	if(items.Length == 0) {
 		CReplyToCommand(client, "\x04[Editor] \x01No recent props spawned.");
 		return;
 	}
-	ShowItemMenuAny(client, items, "Recents", true);
+	ShowTempItemMenu(client, items, "Recents");
 }
 void Spawn_ShowSearch(int client) {
 	g_PropData[client].chatPrompt = Prompt_Search;
@@ -91,23 +72,25 @@ void ShowEditList(int client, int index = 0) {
 	// Add +2 to the index for the two "Delete ..." buttons
 	menu.DisplayAt(client, index, MENU_TIME_FOREVER);
 }
-void ShowCategoryList(int client, ArrayList categoryList = null) {
+void ShowCategoryList(int client, CategoryData category) {
 	LoadCategories();
-	Menu menu = new Menu(SpawnCategoryHandler);
-	menu.SetTitle("Choose a category");
-	CategoryData cat;
 	char info[4];
 	// No category list provided, use the global one.
-	PrintToServer("ShowCategoryList (root = %b)", categoryList == null);
-	if(categoryList == null) {
-		categoryList = g_categories;
-	}
-	g_PropData[client].SetList(categoryList, false);
-	for(int i = 0; i < categoryList.Length; i++) {
-		categoryList.GetArray(i, cat);
+	g_PropData[client].PushCategory(category);
+	Menu menu = new Menu(SpawnCategoryHandler);
+	char title[32];
+	g_PropData[client].GetCategoryTitle(title, sizeof(title));
+	menu.SetTitle(title);
+	CategoryData cat;
+	for(int i = 0; i < category.items.Length; i++) {
+		category.items.GetArray(i, cat);
 		Format(info, sizeof(info), "%d", i);
-		// TODO: maybe add > folder indicator
-		menu.AddItem(info, cat.name);
+		if(cat.hasItems)
+			menu.AddItem(info, cat.name);
+		else {
+			Format(title, sizeof(title), "[%s]", cat.name);
+			menu.AddItem(info, title);
+		}
 	}
 	menu.ExitBackButton = true;
 	menu.ExitButton = true;
@@ -115,14 +98,17 @@ void ShowCategoryList(int client, ArrayList categoryList = null) {
 	int index =  g_PropData[client].lastCategoryIndex / 7 * 7;
 	menu.DisplayAt(client, index, MENU_TIME_FOREVER);
 }
-void ShowItemMenuAny(int client, ArrayList items, const char[] title = "", bool clearArray = false, const char[] classnameOverride = "") {
+void _showItemMenu(int client, ArrayList items, const char[] title = "", bool clearArray = false, const char[] classnameOverride = "") {
 	if(items == null) {
-		items = g_PropData[client].listBuffer;
+		// Use previous list buffer
+		items = g_PropData[client].itemBuffer;
 		if(items == null) {
-			LogError("Items is null and listBuffer is null as well");
+			LogError("Previous list does not exist and no new list was provided ShowItemMenu(%N)", client);
 		}
 	} else {
-		g_PropData[client].SetList(items, clearArray);
+		// Populate the buffer with this list
+		g_PropData[client].SetItemBuffer(items, clearArray);
+		// Reset the index, so we start on the first item
 		g_PropData[client].lastItemIndex = 0;
 		strcopy(g_PropData[client].classnameOverride, 32, classnameOverride);
 	}
@@ -134,10 +120,10 @@ void ShowItemMenuAny(int client, ArrayList items, const char[] title = "", bool 
 	if(title[0] != '\0')
 		itemMenu.SetTitle(title);
 	ItemData item;
-	char info[128+64+8];
+	char info[8+128+64]; //i[8] + item.model[128] + item.name[64]
 	for(int i = 0; i < items.Length; i++) {
 		items.GetArray(i, item);
-		// Sadly need to duplicate item.name.
+		// Sadly need to duplicate item.name, for recents to work
 		Format(info, sizeof(info), "%d|%s|%s", i, item.model, item.name);
 		itemMenu.AddItem(info, item.name);
 	}
@@ -147,28 +133,52 @@ void ShowItemMenuAny(int client, ArrayList items, const char[] title = "", bool 
 	int index = (g_PropData[client].lastItemIndex / 7) * 7;
 	itemMenu.DisplayAt(client, index, MENU_TIME_FOREVER);
 }
+/**
+ * Show a list of a category's items to spawn to the client
+ *
+ * @param client               client to show menu to
+ * @param category 			   the category to show items of
+ */
+void ShowCategoryItemMenu(int client, CategoryData category) {
+	char title[32];
+	g_PropData[client].GetCategoryTitle(title, sizeof(title));
+	Format(title, sizeof(title), "%s>%s", title, category.name);
+	_showItemMenu(client, category.items, title, false, category.classnameOverride);
+}
+/**
+ * Show a list of items to spawn to the client
+ *
+ * @param client               client to show menu to
+ * @param items                A list of ItemData. Optional, null to reuse last list
+ * @param title                An optional title to show
+ * @param clearArray           Should the items array be destroyed when menu is closed?
+ * @param classnameOverride    Override the classname to spawn as
+ */
+void ShowItemMenu(int client, ArrayList items = null, const char[] title = "", const char[] classnameOverride = "") {
+	_showItemMenu(client, items, title, false, classnameOverride);
+}
+/**
+ * Show a list of items, deleting the arraylist on completion
+ * @param client               client to show menu to
+ * @param items                A list of ItemData
+ * @param title                An optional title to show
+ * @param classnameOverride    Override the classname to spawn as
+ */
+void ShowTempItemMenu(int client, ArrayList items, const char[] title = "", const char[] classnameOverride = "") {
+	if(items == null) {
+		LogError("ShowTempItemMenu: Given null item list");
+	}
+	_showItemMenu(client, items, title, true, classnameOverride);
+}
 
-// Calls ShowItemMenuAny with the correct category automatically
-bool ShowItemMenu(int client, int index) {
-	if(g_PropData[client].lastCategoryIndex != index) {
-		g_PropData[client].lastCategoryIndex = index;
-		g_PropData[client].lastItemIndex = 0; //Reset
+void Spawn_ShowFavorites(int client) {
+	if(g_db == null) {
+		PrintToChat(client, "\x04[Editor]\x01 Cannot connect to database.");
+		return;
 	}
-	CategoryData category;
-	// Use the list in the buffer
-	g_PropData[client].listBuffer.GetArray(index, category);
-	if(category.items == null) {
-		LogError("Category %s has null items array (index=%d)", category.name, index);
-	} else if(category.hasItems) {
-		PrintToServer("Selected category has item entries, showing item menu");
-		ShowItemMenuAny(client, category.items, category.name, false, category.classnameOverride);
-	} else {
-		PrintToServer("Selected category has nested categories, showing");
-		// Has nested categories
-		// Reset the category index for nested
-		g_PropData[client].lastCategoryIndex = 0;
-		g_PropData[client].SetList(category.items); 
-		ShowCategoryList(client, g_PropData[client].listBuffer);
-	}
-	return true;
+	PrintCenterText(client, "Loading favorites...\nPlease wait");
+	char query[256];
+	GetClientAuthId(client, AuthId_Steam2, query, sizeof(query));
+	g_db.Format(query, sizeof(query), "SELECT model, name FROM editor_favorites WHERE steamid = '%s' ORDER BY position DESC", query);
+	g_db.Query(DB_GetFavoritesCallback, query, GetClientUserId(client));
 }

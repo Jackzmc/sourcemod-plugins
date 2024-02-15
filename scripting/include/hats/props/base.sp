@@ -15,40 +15,84 @@ enum ChatPrompt {
 	Prompt_Save
 }
 enum struct PlayerPropData {
-	ArrayList listBuffer;
+	ArrayList categoryStack;
+	ArrayList itemBuffer;
 	bool clearListBuffer;
 	int lastCategoryIndex;
 	int lastItemIndex;
 	// When did the user last interact with prop spawner? (Shows hints after long inactivity)
 	int lastActiveTime;
-	char classnameOverride[32];
+	char classnameOverride[64];
 	ChatPrompt chatPrompt;
 	ArrayList markedProps;
 
 	// Called on PlayerDisconnect
 	void Reset() {
-		if(this.listBuffer != null) delete this.listBuffer;
 		if(this.markedProps != null) delete this.markedProps;
 		this.chatPrompt = Prompt_None;
 		this.clearListBuffer = false;
 		this.lastCategoryIndex = 0;
 		this.lastItemIndex = 0;
-		this.lastShowedHint = 0;
+		this.lastActiveTime = 0;
 		this.classnameOverride[0] = '\0';
+		this.CleanupBuffers();
 	}
 
 	// Sets the list buffer
-	void SetList(ArrayList list, bool cleanupAfterUse = false) {
-		this.listBuffer = list;
+	void SetItemBuffer(ArrayList list, bool cleanupAfterUse = false) {
+		// Cleanup previous buffer if exist
+		this.itemBuffer = list;
 		this.clearListBuffer = cleanupAfterUse;
+	}
+	void ClearItemBuffer() {
+		if(this.itemBuffer != null && this.clearListBuffer) {
+			PrintToServer("ClearItemBuffer(): arraylist deleted.");
+			delete this.itemBuffer;
+		}
+		this.clearListBuffer = false;
+	}
+
+	void PushCategory(CategoryData category) {
+		if(this.categoryStack == null) this.categoryStack = new ArrayList(sizeof(CategoryData));
+		this.categoryStack.PushArray(category);
+	}
+
+	bool PopCategory(CategoryData data) {
+		if(this.categoryStack == null || this.categoryStack.Length == 0) return false;
+		int index = this.categoryStack.Length - 1;
+		this.categoryStack.GetArray(index, data);
+		this.categoryStack.Erase(index);
+		return true;
+	}
+	bool PeekCategory(CategoryData data) {
+		if(this.categoryStack == null || this.categoryStack.Length == 0) return false;
+		int index = this.categoryStack.Length - 1;
+		this.categoryStack.GetArray(index, data);
+		return true;
+	}
+
+	void GetCategoryTitle(char[] title, int maxlen) {
+		CategoryData cat;
+		for(int i = 0; i < this.categoryStack.Length; i++) {
+			this.categoryStack.GetArray(i, cat);
+			if(i == 0)
+				Format(title, maxlen, "%s", cat.name);
+			else
+				Format(title, maxlen, "%s>[%s]", title, cat.name);
+		}
+	}
+
+	bool HasCategories() {
+		return this.categoryStack != null && this.categoryStack.Length > 0;
 	}
 
 	// Is currently only called on item/category handler cancel (to clear search/recents buffer)
-	void CleanupBuffer() {
-		if(this.listBuffer != null && this.clearListBuffer) {
-			delete this.listBuffer;
-			this.clearListBuffer = false;
+	void CleanupBuffers() {
+		this.ClearItemBuffer();
+		if(this.categoryStack != null) {
+			delete this.categoryStack;
 		}
+		this.clearListBuffer = false;
 	}
 }
 PlayerPropData g_PropData[MAXPLAYERS+1];
@@ -57,7 +101,7 @@ enum struct CategoryData {
 	// The display name of category
 	char name[64];
 	// If set, overwrites the classname it is spawned as
-	char classnameOverride[32];
+	char classnameOverride[64];
 	bool hasItems; // true: items is ArrayList<ItemData>, false: items is ArrayList<CategoryData>
 	ArrayList items;
 }
@@ -137,12 +181,12 @@ enum struct RecentEntry {
 	char name[64];
 	int count;
 }
-
-ArrayList g_categories; // ArrayList<CategoryData>
+CategoryData ROOT_CATEGORY;
 ArrayList g_spawnedItems; // ArrayList(block=2)<entRef, [creator]>
 ArrayList g_savedItems; // ArrayList<entRef>
 StringMap g_recentItems; // Key: model[128], value: RecentEntry
 
+#include <hats/props/db.sp>
 #include <hats/props/methods.sp>
 #include <hats/props/cmd.sp>
 #include <hats/props/menu_handlers.sp>

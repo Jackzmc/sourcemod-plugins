@@ -7,8 +7,8 @@ int GLOW_GREEN[4] = { 3, 252, 53 };
 float ORIGIN_SIZE[3] = { 2.0, 2.0, 2.0 };
 
 char ON_OFF_STRING[2][] = {
-	"\x05ON\x01",
-	"\x05OFF\x01"
+	"\x05OFF\x01",
+	"\x05ON\x01"
 }
 char COLOR_INDEX[4] = "RGBA";
 
@@ -48,13 +48,33 @@ enum CompleteType {
 	Complete_EditSuccess
 }
 
+enum StackerDirection {
+	Stack_Off,
+	Stack_Left,
+	Stack_Right,
+	Stack_Forward,
+	Stack_Backward,
+	Stack_Up,
+	Stack_Down
+}
+
+char STACK_DIRECTION_NAME[7][] = {
+	"\x05OFF",
+	"\x04Left",
+	"\x04Right",
+	"\x04Forward",
+	"\x04Backward",
+	"\x04Up",
+	"\x04Down",
+}
 
 ArrayList createdWalls;
 
 enum struct EditorData {
 	int client;
-	char classname[32];
+	char classname[64];
 	char data[32];
+	char name[32];
 
 	float origin[3];
 	float angles[3];
@@ -73,6 +93,7 @@ enum struct EditorData {
 	int entity;
 	bool hasCollision; /// possibly merge into .flags
 	bool hasCollisionRotate;  //^
+	StackerDirection stackerDirection;
 
 	editMode mode;
 	buildType buildType;
@@ -83,15 +104,16 @@ enum struct EditorData {
 		if(this.entity != INVALID_ENT_REFERENCE && this.flags & Edit_Preview && IsValidEntity(this.entity)) {
 			RemoveEntity(this.entity);
 		}
+		this.stackerDirection = Stack_Off;
 		this.entity = INVALID_ENT_REFERENCE;
 		this.data[0] = '\0';
+		this.name[0] = '\0';
 		this.size[0] = this.size[1] = this.size[2] = 5.0;
 		this.angles[0] = this.angles[1] = this.angles[2] = 0.0;
 		this.colorIndex = 0;
 		this.axis = 1;
 		this.moveDistance = 200.0;
 		this.flags = Edit_None;
-		this.buildType = Build_Solid;
 		this.classname[0] = '\0';
 		this.CalculateMins();
 		this.SetMode(INACTIVE);
@@ -102,6 +124,7 @@ enum struct EditorData {
 			this.snapAngle = 30;
 			this.hasCollision = true;
 			this.hasCollisionRotate = false;
+			this.buildType = Build_Solid;
 		}
 	}
 
@@ -152,6 +175,9 @@ enum struct EditorData {
 	void SetData(const char[] data) {
 		strcopy(this.data, sizeof(this.data), data);
 	}
+	void SetName(const char[] name) {
+		strcopy(this.name, sizeof(this.name), name);
+	}
 
 	void CycleMode() {
 		// Remove frozen state when cycling
@@ -184,6 +210,16 @@ enum struct EditorData {
 		PrintToChat(this.client, "\x04[Editor]\x01 Mode: \x05%s\x01 (Press \x04RELOAD\x01 to change)", MODE_NAME[this.mode]);
 	}
 
+	void CycleStacker(float tick) {
+		if(tick - cmdThrottle[this.client] <= 0.20) return;
+		int newDirection = view_as<int>(this.stackerDirection) + 1;
+		if(newDirection == view_as<int>(Stack_Down)) newDirection = 0;
+		this.stackerDirection = view_as<StackerDirection>(newDirection);
+		
+		PrintToChat(this.client, "\x04[Editor]\x01 Stacker: %s\x01", STACK_DIRECTION_NAME[this.stackerDirection]);
+		cmdThrottle[this.client] = tick;
+	}
+
 	void ToggleCollision(float tick) {
 		if(tick - cmdThrottle[this.client] <= 0.25) return;
 		this.hasCollision = !this.hasCollision
@@ -192,14 +228,14 @@ enum struct EditorData {
 	}
 
 	void ToggleCollisionRotate(float tick) {
-		if(tick - cmdThrottle[this.client] <= 0.25) return;
+		if(tick - cmdThrottle[this.client] <= 0.20) return;
 		this.hasCollisionRotate = !this.hasCollisionRotate
 		PrintToChat(this.client, "\x04[Editor]\x01 Rotate with Collision: %s", ON_OFF_STRING[view_as<int>(this.hasCollisionRotate)]);
 		cmdThrottle[this.client] = tick;
 	}
 
 	void CycleAxis(float tick) {
-		if(tick - cmdThrottle[this.client] <= 0.15) return;
+		if(tick - cmdThrottle[this.client] <= 0.1) return;
 		if(this.axis == 0) {
 			this.axis = 1;
 			PrintToChat(this.client, "\x04[Editor]\x01 Rotate Axis: \x05HEADING (Y)\x01");
@@ -214,7 +250,7 @@ enum struct EditorData {
 	}
 
 	void CycleSnapAngle(float tick) {
-		if(tick - cmdThrottle[this.client] <= 0.15) return;
+		if(tick - cmdThrottle[this.client] <= 0.1) return;
 		switch(this.snapAngle) {
 			case 1: this.snapAngle = 15;
 			case 15: this.snapAngle = 30;
@@ -352,15 +388,62 @@ enum struct EditorData {
 		return true;
 	}
 
+	bool _FinishPreview(int& entity) {
+		if(StrContains(this.classname, "weapon") > -1) {
+			entity = this._CreateWeapon();
+		} else {
+			entity = this._CreateProp();
+		}
+		
+		DispatchKeyValue(entity, "targetname", "propspawner_prop");
+		TeleportEntity(entity, this.origin, this.angles, NULL_VECTOR);
+		if(!DispatchSpawn(entity)) {
+			return false;
+		}
+		SetEntityRenderColor(entity, this.color[0], this.color[1], this.color[2], this.color[3]);
+		SetEntityRenderColor(this.entity, 255, 128, 255, 200); // reset ghost color
+		GlowEntity(entity, 1.1);
+
+		// Confusing when we resume into freelook, so reset
+		if(this.mode == FREELOOK)
+			this.SetMode(MOVE_ORIGIN);
+		
+		// Add to spawn list and add to recent list
+		AddSpawnedItem(entity, this.client);
+		char model[128];
+		GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
+		AddRecent(model, this.name);
+
+		// Get the new position for preview with regards to this.stackerDirection
+		if(this.stackerDirection != Stack_Off) {
+			float size[3];
+			GetEntityDimensions(this.entity, size);
+			float sign = 1.0;
+			if(this.stackerDirection == Stack_Left || this.stackerDirection == Stack_Right) {
+				if(this.stackerDirection == Stack_Left) sign = -1.0;
+				GetSidePositionFromOrigin(this.origin, this.angles, sign * size[1] * 0.90, this.origin);
+			} else if(this.stackerDirection == Stack_Forward || this.stackerDirection == Stack_Backward) {
+				if(this.stackerDirection == Stack_Backward) sign = -1.0;
+				GetHorizontalPositionFromOrigin(this.origin, this.angles, sign * size[0] * 0.90, this.origin);
+			} else {
+				if(this.stackerDirection == Stack_Down) sign = -1.0;
+				this.origin[2] += (size[2] * sign);
+			}
+		}
+
+		// Don't kill preview until cancel
+		return true;
+	}
+
 	int _CreateWeapon() {
 		int entity = -1;
-		if(StrEqual(this.classname, "weapon_melee")) {
-			entity = CreateEntityByName("weapon_melee_spawn");
+		entity = CreateEntityByName(this.classname);
+		if(entity == -1) return -1;
+		if(StrEqual(this.classname, "weapon_melee_spawn")) {
 			DispatchKeyValue(entity, "melee_weapon", this.data);
-		} else {
-			entity = CreateEntityByName(this.classname);
-			DispatchKeyValue(entity, "spawnflags", "8");
 		}
+		DispatchKeyValue(entity, "count", "1");
+		DispatchKeyValue(entity, "spawnflags", "10");
 		return entity;
 	}
 
@@ -384,34 +467,6 @@ enum struct EditorData {
 		return entity;
 	}
 
-	bool _FinishPreview(int& entity) {
-		if(StrContains(this.classname, "weapon") > -1) {
-			entity = this._CreateWeapon();
-		} else {
-			entity = this._CreateProp();
-		}
-		
-		DispatchKeyValue(entity, "targetname", "propspawner_prop");
-		TeleportEntity(entity, this.origin, this.angles, NULL_VECTOR);
-		if(!DispatchSpawn(entity)) {
-			return false;
-		}
-		SetEntityRenderColor(entity, this.color[0], this.color[1], this.color[2], this.color[3]);
-		SetEntityRenderColor(this.entity, 255, 128, 255, 200); // reset ghost color
-		GlowEntity(entity, 1.4);
-
-		if(this.mode == FREELOOK)
-			this.SetMode(MOVE_ORIGIN);
-		
-		AddSpawnedItem(entity, this.client);
-		char model[128];
-		GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
-		AddRecent(model, this.data);
-
-		// Don't kill preview until cancel
-		return true;
-	}
-
 	// Turns current entity into a copy (not for walls)
 	int Copy() {
 		if(this.entity == INVALID_ENT_REFERENCE) return -1;
@@ -430,6 +485,9 @@ enum struct EditorData {
 		DispatchKeyValue(entity, "solid", "6");
 
 		DispatchSpawn(entity);
+		if(StrEqual(this.classname, "prop_wall_breakable")) {
+			DispatchKeyValue(entity, "classname", "prop_door_rotating");
+		}
 		TeleportEntity(entity, this.origin, this.angles, NULL_VECTOR);
 		this.entity = entity;
 		this.flags |= Edit_Copy;
@@ -442,26 +500,26 @@ enum struct EditorData {
 		this.flags |= Edit_WallCreator;
 	}
 
-	bool PreviewWeapon(const char[] classname) {
+	bool PreviewWeapon(const char[] classname, const char[] data) {
 		int entity;
 		// Melee weapons don't have weapon_ prefix
 		this.Reset();
-		// TODO: prevent use of preview _spawn
-		if(StrContains(classname, "weapon_") == -1) {
+		// Rotate on it's side:
+		this.angles[2] = 90.0;
+		if(StrEqual(classname, "weapon_melee_spawn")) {
 			// no weapon_ prefix, its a melee
-			PrintToServer("Spawning weapon_melee: %s", classname);
-			entity = CreateEntityByName("weapon_melee");
-			if(entity == -1) return false;
-			DispatchKeyValue(entity, "melee_weapon", classname);
-			strcopy(this.classname, sizeof(this.classname), "weapon_melee");
-			this.SetData(classname);
-		} else {
-			PrintToServer("Spawning normal weapon: %s", classname);
 			entity = CreateEntityByName(classname);
 			if(entity == -1) return false;
-			DispatchKeyValue(entity, "spawnflags", "8");
-			Format(this.classname, sizeof(this.classname), "%s_spawn", classname);
+			DispatchKeyValue(entity, "melee_weapon", data);
+			this.SetData(data);
+			strcopy(this.classname, sizeof(this.classname), classname);
+		} else {
+			entity = CreateEntityByName(data);
+			if(entity == -1) return false;
+			strcopy(this.classname, sizeof(this.classname), data);
 		}
+		DispatchKeyValue(entity, "count", "1");
+		DispatchKeyValue(entity, "spawnflags", "10");
 		DispatchKeyValue(entity, "targetname", "prop_preview");
 		DispatchKeyValue(entity, "rendercolor", "255 128 255");
 		DispatchKeyValue(entity, "renderamt", "200");
@@ -481,9 +539,11 @@ enum struct EditorData {
 	bool PreviewModel(const char[] model, const char[] classname = "") {
 		// Check for an invalid model
 		// this.origin is not cleared by this.Reset();
+		this.Reset();
 		GetClientAbsOrigin(this.client, this.origin);
-		if(StrEqual(classname, "_weapon") || StrEqual(classname, "_melee")) {
-			return this.PreviewWeapon(model);
+		if(StrEqual(classname, "_weapon") || StrEqual(classname, "weapon_melee_spawn")) {
+			// Pass in melee ID as data:
+			return this.PreviewWeapon(classname, model);
 		}
 		if(PrecacheModel(model) == 0) { 
 			PrintToServer("Invalid model: %s", model);
@@ -549,7 +609,6 @@ enum struct EditorData {
 		CPrintToChat(this.client, "\x04[Editor]\x01 Cancelled.");
 	}
 }
-
 EditorData Editor[MAXPLAYERS+1];
 
 Action OnWallClicked(int entity, int activator, int caller, UseType type, float value) {
@@ -751,7 +810,7 @@ Action Command_Editor(int client, int args) {
 		int index = GetLookingEntity(client, Filter_ValidHats); //GetClientAimTarget(client, false);
 		if(index > 0) {
 			Editor[client].Import(index, false, MOVE_ORIGIN);
-			char classname[32];
+			char classname[64];
 			char targetname[32];
 			GetEntityClassname(index, classname, sizeof(classname));
 			GetEntPropString(index, Prop_Data, "m_target", targetname, sizeof(targetname));
