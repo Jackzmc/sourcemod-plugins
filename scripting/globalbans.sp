@@ -85,8 +85,6 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
             executor = "CONSOLE";
         }
 
-        char query[512];
-       
 
         // Setup expiration date
         char expiresDate[64];
@@ -96,11 +94,18 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
             Format(expiresDate, sizeof(expiresDate), "NULL");
         }
 
-        g_db.Format(query, sizeof(query), "INSERT INTO bans"
+        int size = 2*strlen(reason)+1;
+        char[] reasonEscaped = new char[size];
+        g_db.Escape(reason, reasonEscaped, size); 
+        
+        int querySize = 256+size;
+        char[] query = new char[querySize];
+
+        g_db.Format(query, querySize, "INSERT INTO bans"
             ..."(steamid, reason, expires, executor, flags, timestamp)"
             ..."VALUES ('%s', '%s', %s, '%s', %d, UNIX_TIMESTAMP())",
             identity,
-            reason,
+            reasonEscaped,
             expiresDate,
             executor,
             BANFLAG_NONE
@@ -111,7 +116,7 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
         IntToString(key, strKey, sizeof(strKey));
         pendingInsertQueries.SetString(strKey, query);
 
-        g_db.Format(query, sizeof(query), "SELECT `flags` FROM `bans` WHERE `expired` = 0 AND `steamid` LIKE 'STEAM_%%:%%:%s' OR ip = '%s'", identity[10], identity);
+        g_db.Format(query, querySize, "SELECT `flags` FROM `bans` WHERE `expired` = 0 AND `steamid` LIKE 'STEAM_%%:%%:%s' OR ip = '%s'", identity[10], identity);
         g_db.Query(DB_OnBanPreCheck, query, key);
         PrintToServer("Adding %s to OnBanClient queue. Key: %d", identity, key);
 
@@ -143,7 +148,6 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
     }
 
     GetClientIP(client, ip, sizeof(ip));
-    char query[512];
        
     char expiresDate[64];
     if(time > 0) {
@@ -152,12 +156,19 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
         Format(expiresDate, sizeof(expiresDate), "NULL");
     }
 
-    g_db.Format(query, sizeof(query), "INSERT INTO bans"
+    int size = 2*strlen(reason)+1;
+    char[] reasonEscaped = new char[size];
+    g_db.Escape(reason, reasonEscaped, size); 
+
+    int querySize = 256 + size;
+    char[] query = new char[querySize];
+
+    g_db.Format(query, querySize, "INSERT INTO bans"
         ..."(steamid, ip, reason, public_message, expires, executor, flags, timestamp)"
         ..."VALUES ('%s', '%s', '%s', '%s', %s, '%s', %d, UNIX_TIMESTAMP())",
         identity,
         ip,
-        reason,
+        reasonEscaped,
         kick_message,
         expiresDate,
         executor,
@@ -169,14 +180,12 @@ public Action OnBanClient(int client, int time, int flags, const char[] reason, 
     IntToString(key, strKey, sizeof(strKey));
     pendingInsertQueries.SetString(strKey, query);
 
-    g_db.Format(query, sizeof(query), "SELECT `flags` FROM `bans` WHERE `expired` = 0 AND `steamid` LIKE 'STEAM_%%:%%:%s' OR ip = '%s'", identity[10], identity);
+    g_db.Format(query, querySize, "SELECT `flags` FROM `bans` WHERE `expired` = 0 AND `steamid` LIKE 'STEAM_%%:%%:%s' OR ip = '%s'", identity[10], identity);
     g_db.Query(DB_OnBanPreCheck, query, key);
 
     PrintToServer("Adding %N to OnBanClient queue. Key: %d", client, key);
 
-    // TODO: REMOVE : FOR DEBUG
     return Plugin_Handled;
-    return Plugin_Continue;
 }
 
 
@@ -219,15 +228,16 @@ public void DB_OnBanPreCheck(Database db, DBResultSet results, const char[] erro
 
 public void DB_OnConnectCheck(Database db, DBResultSet results, const char[] error, int user) {
     int client = GetClientOfUserId(user);
+    if(client == 0) return;
     if(db == INVALID_HANDLE || results == null) {
         LogError("DB_OnConnectCheck returned error: %s", error);
-        if(client > 0 && hKickType.IntValue == 2) {
+        if(hKickType.IntValue == 2) {
             KickClient(client, "Could not authenticate at this time.");
             LogMessage("Could not connect to database to authorize user '%N' (#%d)", client, user);
         }
     } else {
         //No failure, check the data.
-        while(client > 0 && results.FetchRow()) { //Is there a ban found?
+        while(results.FetchRow()) { //Is there a ban found?
             static char reason[255], steamid[64], public_message[255];
             DBResult colResult;
 
