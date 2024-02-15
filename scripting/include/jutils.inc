@@ -22,6 +22,12 @@ stock void GetHorizontalPositionFromOrigin(const float pos[3], const float ang[3
 	finalPosition[1] = units * Sine(theta) + pos[1];
 	finalPosition[2] = pos[2];
 }
+stock void GetSidePositionFromOrigin(const float pos[3], const float ang[3], float units, float finalPosition[3]) {
+	float theta = DegToRad(ang[1] + 90.0);
+	finalPosition[0] = units * Cosine(theta) + pos[0];
+	finalPosition[1] = units * Sine(theta) + pos[1];
+	finalPosition[2] = pos[2];
+}
 stock void GetHorizontalPositionFromClient(int client, float units, float finalPosition[3]) {
 	float pos[3], ang[3];
 	GetClientEyeAngles(client, ang);
@@ -32,14 +38,16 @@ stock void GetHorizontalPositionFromClient(int client, float units, float finalP
 	pos[1] += units * Sine(theta); 
 	finalPosition = pos;
 }
-stock void GetOffsetPosition(float pos[3], const float ang[3], float forwardBack, float leftRight, float upDown) {
-	float theta = DegToRad(ang[1]);
-	pos[0] = forwardBack * Cosine(theta) + pos[0];
-	pos[1] = forwardBack * Sine(theta) + pos[1];
-	pos[2] = pos[2] + upDown;
+stock void GetEntityDimensions(int entity, float size[3]) {
+	float maxs[3], mins[3];
+	GetEntPropVector(entity, Prop_Data, "m_vecMins" , mins);
+	GetEntPropVector(entity, Prop_Data, "m_vecMaxs" , maxs);
+	size[0] = maxs[0] - mins[0];
+	size[1] = maxs[1] - mins[1];
+	size[2] = maxs[2] - mins[2];
 }
  // Gets velocity of an entity (ent) toward new origin with speed (fSpeed) - thanks Ryan
- stock bool GetVelocityToOrigin(int entity, const float destination[3], const float fSpeed, float outVelocity[3]) {
+stock bool GetVelocityToOrigin(int entity, const float destination[3], const float fSpeed, float outVelocity[3]) {
 	float srcOrigin[3];
 	GetEntPropVector(entity, Prop_Data, "m_vecVelocity", srcOrigin);
 	// Velocity = Distance / Time
@@ -651,6 +659,9 @@ stock void StringToUpper(char[] str) {
 
 stock int GetRealClient(int client) {
 	if(IsFakeClient(client)) {
+		char netclass[32];
+		GetEntityClassname(client, netclass, sizeof(netclass));
+		if(!StrEqual(netclass, "SurvivorBot", false)) return false;
 		int realPlayer = GetClientOfUserId(GetEntProp(client, Prop_Send, "m_humanSpectatorUserID"));
 		return realPlayer > 0 ? realPlayer : -1;
 	}else{

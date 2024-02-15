@@ -96,11 +96,7 @@ public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PL
                 int client = clients[i];
                 if(gaggedPlayers[client].FindValue(entity) > -1) {
 					// Swap gagged player to end of list, then reduce array count by one.
-					int swap = clients[numClients - 1];
-					clients[numClients - 1] = client;
-					clients[i] = swap;
-					numClients -= 1;
-					return Plugin_Handled;
+					clients[i] = 0;
                 }
             }
 		}

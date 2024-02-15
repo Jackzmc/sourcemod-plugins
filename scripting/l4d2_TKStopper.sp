@@ -355,7 +355,7 @@ Action Event_OnTakeDamage(int victim,  int& attacker, int& inflictor, float& dam
 		// Auto reverse ff logic
 		if(isDamageDirect) {
 			// Decrease the RFF scale based on how long since their last FF and an amount 
-			float minutesSinceiLastFFTime = (time - pData[attacker].lastFFTime) / 60.0;
+			float minutesSinceiLastFFTime = pData[attacker].lastFFTime > 0 ? ((time - pData[attacker].lastFFTime) / 60.0) : 0.1;
 			pData[attacker].autoRFFScaleFactor -= minutesSinceiLastFFTime * hFFAutoScaleForgivenessAmount.FloatValue;
 			if(pData[attacker].autoRFFScaleFactor < 0.0) {
 				pData[attacker].autoRFFScaleFactor = 0.0;

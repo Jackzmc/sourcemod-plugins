@@ -25,6 +25,7 @@
 #define NAME_SetModel "CBasePlayer::SetModel"
 #define SIG_SetModel_LINUX "@_ZN11CBasePlayer8SetModelEPKc"
 #define SIG_SetModel_WINDOWS "\\x55\\x8B\\x2A\\x8B\\x2A\\x2A\\x56\\x57\\x50\\x8B\\x2A\\xE8\\x2A\\x2A\\x2A\\x2A\\x8B\\x2A\\x2A\\x2A\\x2A\\x2A\\x8B\\x2A\\x8B\\x2A\\x2A\\x8B"
+
 #define SIG_L4D1SetModel_WINDOWS "\\x8B\\x2A\\x2A\\x2A\\x56\\x57\\x50\\x8B\\x2A\\xE8\\x2A\\x2A\\x2A\\x2A\\x8B\\x3D"
 
 char g_Models[MAXPLAYERS+1][128];
@@ -37,6 +38,7 @@ static ConVar hCookiesEnabled;
 static bool isLateLoad, cookieModelsSet, isL4D1Survivors;
 static int survivors;
 static bool IsTemporarilyL4D2[MAXPLAYERS];
+static int g_prevSurvivorIndex[MAXPLAYERS+1]; // prev survivor model to restore to + 1. 0 = inactive
 static char currentMap[16];
 Handle cookieModelTimer;
 
@@ -87,14 +89,14 @@ public void OnPluginStart()
 	CreateConVar("l4d_survivor_identity_fix_version", PLUGIN_VERSION, "Survivor Change Fix Version", FCVAR_SPONLY|FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	hCookiesEnabled = CreateConVar("l4d_survivor_identity_fix_cookies", "2.0", "0 -> Disable cookie preference, 1 -> Enable for 5+, 2 -> Enable for any amount");
 
-	HookEvent("player_bot_replace", Event_PlayerToBot, EventHookMode_Post);
-	HookEvent("bot_player_replace", Event_BotToPlayer, EventHookMode_Post);
+	HookEvent("player_bot_replace", Event_PlayerToBot);
+	HookEvent("bot_player_replace", Event_BotToPlayer);
 	HookEvent("game_newmap", Event_NewGame);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("finale_start", Event_FinaleStart);
 	HookEvent("player_spawn", Event_PlayerSpawn);
-	HookEvent("player_death", Event_PlayerDeath, EventHookMode_Pre);
+	HookEvent("player_death", Event_PlayerDeath);
 
 	if(isLateLoad) {
 		for(int i = 1; i <= MaxClients; i++) {
@@ -121,11 +123,12 @@ public void OnPluginStart()
 //  Needed because when Event_PlayerToBot fires, it's hunter model instead
 // ------------------------------------------------------------------------
 public MRESReturn SetModel_Pre(int client, Handle hParams)
-{ return MRES_Ignored; } // We need this pre hook even though it's empty, or else the post hook will crash the game.
-
+{return MRES_Ignored;} // We need this pre hook even though it's empty, or else the post hook will crash the game.
+// 7/27/2023: Probably shouldn't need this anymore, the DHooks packaged with
+// SM 1.11 has already fixed this issue a long time
 public MRESReturn SetModel(int client, Handle hParams)
 {
-	if (!IsValidClient(client)) return MRES_Ignored;
+	if (!IsValidClient(client, false)) return MRES_Ignored;
 	if (!IsSurvivor(client)) 
 	{
 		g_Models[client][0] = '\0';
@@ -134,9 +137,10 @@ public MRESReturn SetModel(int client, Handle hParams)
 	
 	char model[128];
 	DHookGetParamString(hParams, 1, model, sizeof(model));
-	if (StrContains(model, "models/infected", false) < 0)
+	if (StrContains(model, "survivors", false) >= 0)
 	{
-		strcopy(g_Models[client], 128, model);
+		PrintToServer("setting \"%s\" -> %N", model, client);
+		strcopy(g_Models[client], sizeof(model), model);
 	}
 	return MRES_Ignored;
 }
@@ -149,11 +153,13 @@ public void Event_BotToPlayer(Handle event, const char[] name, bool dontBroadcas
 	int player = GetClientOfUserId(GetEventInt(event, "player"));
 	int bot    = GetClientOfUserId(GetEventInt(event, "bot"));
 
-	if (!IsValidClient(player) || !IsSurvivor(player) || IsFakeClient(player)) return;  // ignore fake players (side product of creating bots)
+	if (player == 0 || !IsSurvivor(player) || IsFakeClient(player))
+		return; // ignore fake players (side product of creating bots)
 
 	char model[128];
 	GetClientModel(bot, model, sizeof(model));
 	SetEntityModel(player, model);
+	PrintToServer("restoring bot \"%s\" -> %N", model, player);
 	strcopy(g_Models[player], 64, model);
 	SetEntProp(player, Prop_Send, "m_survivorCharacter", GetEntProp(bot, Prop_Send, "m_survivorCharacter"));
 }
@@ -172,10 +178,16 @@ public void Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
 		int playerType = GetEntProp(player, Prop_Send, "m_survivorCharacter");
 		if(playerType >= 0 && playerType <= 7) {
 			SetEntProp(bot, Prop_Send, "m_survivorCharacter", playerType);
-			SetClientInfo(bot, "name", survivor_names[playerType]);
-		} else {
-			PrintToServer("[l4d_survivor_identity_fix]: Ignoring player's (%N) m_survivorCharacter due to out of range (%d)", player, playerType);
 		}
+		for(int i = 0; i < 8; i++) {
+			if (strcmp(g_Models[player], survivor_models[i], false) == 0) {
+				// SetClientInfo(bot, "name", survivor_names[i]);
+				break;
+			}
+		}
+		char model[128];
+		GetClientModel(player, model, sizeof(model));
+		PrintToServer("stored: \"%s\" current: \"%s\"", g_Models[player], model);
 		SetEntityModel(bot, g_Models[player]); // Restore saved model. Player model is hunter at this point
 	}
 }
@@ -315,6 +327,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 public void Frame_CheckClient(int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0 && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
+		g_Models[client][0] = '\0';
 		int survivorThreshold = hCookiesEnabled.IntValue == 1 ? 4 : 0;
 		survivors++;
 		if(survivors > survivorThreshold) {
@@ -353,27 +366,25 @@ public Action Timer_SetAllCookieModels(Handle h) {
 	return Plugin_Handled;
 }
 
-public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && client <= MaxClients && GetClientTeam(client) == 2) {
-		if(StrEqual(currentMap, "c6m1_riverbank")) {
-			//If player died as l4d1 character on first map, revert it
-			RevertSwappedSurvivor(client);
-		}else if(StrEqual(currentMap, "c6m3_port")) {
-			//If player not swapped (joined, or via prev. map, switch)
-			if(IsTemporarilyL4D2[client])
-				RequestFrame(Frame_RevertSwappedSurvivor, client);
+		if(StrEqual(currentMap, "c6m1_riverbank") || StrEqual(currentMap, "c6m3_port")) {
+			// In case they respawned - restore their model (death swaps)
+			// Otherwise, spawning in the map in saferoom, swap them
+			if(g_prevSurvivorIndex[client] > 0)
+				RevertSurvivor(client);
 			else
-				RequestFrame(Frame_SwapSurvivor, client);
+				SwapSurvivor(client);
 		}
 	}
 }
-public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
+Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	//Switch players to L4D2 right before death.
 	if(StrEqual(currentMap, "c6m3_port") || StrEqual(currentMap, "c6m1_riverbank")) {
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		if(client > 0 && GetClientTeam(client) == 2) {
-			SwapL4D1Survivor(client, false);
+			SwapSurvivor(client);
 		}
 	}
 	return Plugin_Continue;
@@ -381,44 +392,44 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 
 
 //On finale start: Set back to their L4D1 character.
-public void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
+void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
 	if(StrEqual(currentMap, "c6m3_port")) {
 		for(int i = 1; i <= MaxClients; i++) {
-			if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
-				RevertSwappedSurvivor(i);
+			if(IsClientInGame(i) && GetClientTeam(i) == 2) {
+				RevertSurvivor(i);
 			}
 		}
 	}
 }
-public void Frame_SwapSurvivor(int client) {
-	if(IsClientConnected(client) && IsClientInGame(client))
-		SwapL4D1Survivor(client, true);
-}
-public void Frame_RevertSwappedSurvivor(int client) {
-	if(IsClientConnected(client) && IsClientInGame(client))
-		RevertSwappedSurvivor(client);
-}
-
-void SwapL4D1Survivor(int client, bool showMessage) {
+void SwapSurvivor(int client, bool showMessage = true) {
 	int playerType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
 	//If character is L4D1 Character (4: bill, etc..) then swap
 	if(playerType > 3) {
-		SetEntProp(client, Prop_Send, "m_survivorCharacter", playerType - 4);
-		IsTemporarilyL4D2[client] = true;
 		if(showMessage && GetUserAdmin(client) != INVALID_ADMIN_ID) {
-			PrintToChat(client, "Your survivor is temporarily swapped. Please do not change back, it should auto-revert after the elevator is done. This is to prevent a game bug with L4D1 Survivors on this map.");
+			PrintToChat(client, "\x04NOTICE:\x01 Your survivor has been temporarily swapped. It should revert automatically, this is to prevent a game bug with l4d1 survivors.");
 		}
+	}
+	RequestFrame(_swapSurvivor, client);
+}
+void _swapSurvivor(int client) {
+	if(!IsClientInGame(client)) return;
+	int playerType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
+	//If character is L4D1 Character (4: bill, etc..) then swap
+	if(playerType > 3) {
+		g_prevSurvivorIndex[client] = playerType + 1;
+		SetEntProp(client, Prop_Send, "m_survivorCharacter", playerType - 4);
 		LogMessage("SwapL4D1Survivor: Swapping %N (type=%d)", client, playerType);
 	}
 }
-void RevertSwappedSurvivor(int client) {
-	if(IsTemporarilyL4D2[client]) {
-		int playerType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
-		if(playerType < 3) {
-			SetEntProp(client, Prop_Send, "m_survivorCharacter", playerType + 4);
-			IsTemporarilyL4D2[client] = false;
-			LogMessage("RevertSwappedSurvivor: Reverting %N (type=%d)", client, playerType);
-		}
+void RevertSurvivor(int client) {
+	RequestFrame(_revertSurvivor, client);
+}
+void _revertSurvivor(int client) {
+	if(!IsClientInGame(client)) return;
+	if(g_prevSurvivorIndex[client] > 0) {
+		SetEntProp(client, Prop_Send, "m_survivorCharacter", g_prevSurvivorIndex[client] - 1);
+		g_prevSurvivorIndex[client] = 0;
+		LogMessage("RevertSwappedSurvivor: Reverting %N (type=%d)", client, g_prevSurvivorIndex[client] - 1);
 	}
 }
 
@@ -441,7 +452,7 @@ public Action Cmd_SetSurvivor(int client, int args) {
 			modelPrefCookie.Set(client, arg1);
 			ReplyToCommand(client, "Your survivor preference set to %s", survivor_names[number]);
 			return Plugin_Handled;
-		}else{
+		} else {
 			int type = GetSurvivorId(arg1, false); // Use false to have every character have unique id
 			if(type > -1) {
 				strcopy(g_Models[client], 64, survivor_models[type]);
@@ -509,10 +520,11 @@ public int Native_SetPlayerModel(Handle plugin, int numParams) {
 		return 1;
 	} else {
 		//Set a cookie to remember their model, starting at 1.
-		char charTypeStr[2];
-		Format(charTypeStr, sizeof(charTypeStr), "%d", character + 1);
-		if(!IsFakeClient(client) && keep)
+		if(keep && !IsFakeClient(client)) {
+			char charTypeStr[2];
+			Format(charTypeStr, sizeof(charTypeStr), "%d", character + 1);
 			modelPrefCookie.Set(client, charTypeStr);
+		}
 
 		strcopy(g_Models[client], 64, survivor_models[character]);
 		return 0;
