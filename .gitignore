@@ -15,7 +15,6 @@ scripting/sm_give.sp
 scripting/include/steamtools.inc
 scripting/L4D2Testing.sp
 plugins/L4D2Testing.smx
-scripting/cancer.sp
 plugins/sm_give.smx
 plugins/l4d2_stats_recorder.smx
 scripting/l4d2_stats_recorder.sp
@@ -29,6 +28,7 @@ scripting/l4d_esfp.sp
 scripting/customstatus.sp
 plugins/ssh.smx
 scripting/include/ssh.inc
+scripting/include/stats
 scripting/ssh.sp
 scripting/l4d2_witch_force_attack_cmd.sp
 l4d2_stats_plugin/

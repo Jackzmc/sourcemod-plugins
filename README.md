@@ -10,10 +10,6 @@ Useful things:
 ## Plugin List
 
 ### Created by Me
-* #### CSGO
-  * [csgo-knifehp](#csgo-knifehp) - First plugin I've made
-  * [CSGOTroll](#csgotroll) - Abandoned friend trolling plugin
-* #### L4D2
   * [l4d2-manual-director](#l4d2-manual-director) - Spawn specials on demand via director or at your cursor
   * [l4d2-info-cmd](#l4d2-info-cmd) - Prints a full state of all survivors, useful for external information
   * [AutoWarpBot](#autowarpbot) - Abandoned
