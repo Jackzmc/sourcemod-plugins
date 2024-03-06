@@ -12,6 +12,27 @@ Action Command_Props(int client, int args) {
 		PrintToConsole(client, "favorite - favorites active editor entity");
 		PrintToConsole(client, "controls - list all the controls");
 		PrintToConsole(client, "reload - reload prop list");
+		PrintToConsole(client, "schem[atic] <new/save/edit/delete/load> <name>");
+	} else if(StrEqual(arg, "schem") || StrEqual(arg, "schematic")) {
+		char arg2[16];
+		GetCmdArg(2, arg2, sizeof(arg2));
+		if(StrEqual(arg2, "new")) {
+			char name[32];
+			GetCmdArg(3, name, sizeof(name));
+			if(name[0] == '\0') {
+				PrintToChat(client, "\x04[Editor]\x01 Please enter a name");
+			} else {
+				g_PropData[client].StartSchematic(client, name);
+			}
+		} else if(StrEqual(arg2, "save")) {
+			if(g_PropData[client].pendingSaveType == Save_Schematic) {
+				g_PropData[client].schematic.Save();
+			} else {
+				PrintToChat(client, "\x04[Editor]\x01 No schematic to save.");
+			}
+		} else {
+			PrintToChat(client, "\x04[Editor]\x01 Unknown option: %s", arg2);
+		}
 	} else if(StrEqual(arg, "list")) {
 		char arg2[16];
 		GetCmdArg(2, arg2, sizeof(arg2));

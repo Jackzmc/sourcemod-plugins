@@ -575,12 +575,8 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	// OnPlayerRunCmd :: ENTITY EDITOR
 	/////////////////////////////
 	if(g_pendingSaveClient == client) {
-		if(buttons & IN_ZOOM) {
-			ClearSavePreview();
-			if(buttons & IN_SPEED) {
-				PrintToChat(client, "\x04[Editor]\x01 Loaded save \x05%s", g_pendingSaveName);
-				LoadSave(g_pendingSaveName, false);
-			}
+		if(g_PropData[client].pendingSaveType == Save_Schematic) {
+			// move cursor? or should be editor anyway
 		}
 	} else if(g_PropData[client].markedProps != null) {
 		SetWeaponDelay(client, 0.5);
@@ -615,10 +611,10 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			cmdThrottle[client] = tick;
 		}
 	} else if(Editor[client].IsActive()) { 
-		if(buttons & IN_USE && buttons & IN_RELOAD) {
-			ClientCommand(client, "sm_wall done");
-			return Plugin_Handled;
-		}
+		// if(buttons & IN_USE && buttons & IN_RELOAD) {
+		// 	ClientCommand(client, "sm_wall done");
+		// 	return Plugin_Handled;
+		// }
 		bool allowMove = true;
 		switch(Editor[client].mode) {
 			case MOVE_ORIGIN: {
@@ -626,7 +622,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
 				bool isRotate;
 				int flags = GetEntityFlags(client);
-				if(buttons & IN_USE && ~buttons & IN_ZOOM) {
+				if(buttons & IN_RELOAD && ~buttons & IN_ZOOM) {
 					if(!g_inRotate[client]) {
 						g_inRotate[client] = true;
 					}
@@ -717,22 +713,19 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				}
 			}
 		}
-		if(tick - cmdThrottle[client] > 0.13) {
-			if(buttons & IN_RELOAD)
-				Editor[client].CycleMode(); // R: Cycle forward
-			else if(buttons & IN_ZOOM) {
-				buttons &= ~IN_ZOOM;
-
-				if(buttons & IN_SPEED) {
-					int entity;
-					Editor[client].Done(entity);
-				} else if(Editor[client].flags & Edit_Preview && buttons & IN_DUCK) {
-					Editor[client].CycleBuildType();
-				} else if(~buttons & IN_DUCK) {
-					Editor[client].Cancel();
-				}
+		if(!(oldButtons & IN_USE) && buttons & IN_USE) {
+			if(buttons & IN_SPEED) {
+				Editor[client].Cancel();
+			} else if(buttons & IN_DUCK) {
+				if(Editor[client].flags & Edit_Preview)
+						Editor[client].CycleBuildType();
+			} else {
+				int entity;
+				Editor[client].Done(entity);
 			}
-			cmdThrottle[client] = tick;
+			
+		} else if(!(oldButtons & IN_ZOOM) && buttons & IN_ZOOM) {
+			Editor[client].CycleMode(); // ZOOM: Cycle forward
 		}
 
 		Editor[client].Draw(BUILDER_COLOR, 0.1, 0.1);
@@ -900,7 +893,7 @@ stock bool Filter_NoPlayers(int entity, int mask, int data) {
 }
 
 stock bool Filter_IgnorePlayerAndWall(int entity, int mask, int data) {
-	if(entity > MaxClients && entity != data && EntRefToEntIndex(Editor[data].entity) != entity) {
+	if(entity > MaxClients && entity != data && EntRefToEntIndex(Editor[data].entity) != entity && EntRefToEntIndex(hatData[data].entity) != entity) {
 		static char classname[16];
 		GetEntityClassname(entity, classname, sizeof(classname));
 		// Ignore infected
@@ -912,8 +905,9 @@ stock bool Filter_IgnorePlayerAndWall(int entity, int mask, int data) {
 
 bool Filter_ValidHats(int entity, int mask, int data) {
 	if(entity == data) return false;
-	if(entity <= MaxClients) {
+	if(entity <= MaxClients && entity > 0) {
 		int client = GetRealClient(data);
+		if(client == -1) client = data;
 		return CanTarget(client); // Don't target if player targetting off
 	}
 	return CheckBlacklist(entity);

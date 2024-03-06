@@ -129,7 +129,7 @@ public int ChooseComboHandler(Menu menu, MenuAction action, int client, int para
 			return 0;
 		}
 		
-		static TrollCombo combo;
+		static TrollComboData combo;
 		combos.GetArray(comboID, combo, sizeof(combo));
 		combo.Activate(client, victim);
 	} else if (action == MenuAction_End)
@@ -377,7 +377,7 @@ void ShowTrollCombosMenu(int client, int victimUserID) {
 	Format(id, sizeof(id), "Choose troll combo");
 	comboMenu.SetTitle(id);
 
-	static TrollCombo combo;
+	static TrollComboData combo;
 
 	if(combos.Length == 0) {
 		ReplyToCommand(client, "FTT: No troll combos available");
@@ -457,7 +457,8 @@ void ShowSelectFlagMenu(int activator, int victimUserID, int modifiers, Troll tr
 	prompt.GetPromptText(info, sizeof(info));
 	flagMenu.SetTitle("%s", info);
 
-	if(prevFlags == -1) prevFlags = prompt.defaults;
+	if(prevFlags == -1 && prompt.multiselect) prevFlags = prompt.defaults;
+
 	
 	Format(info, sizeof(info), "%d|%d|%d|%d|%d|1", victimUserID, troll.Id, modifiers, prevFlags, promptIndex);
 

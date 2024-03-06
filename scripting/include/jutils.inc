@@ -657,16 +657,15 @@ stock void StringToUpper(char[] str) {
 	}
 }
 
-stock int GetRealClient(int client) {
-	if(IsFakeClient(client)) {
-		char netclass[32];
-		GetEntityClassname(client, netclass, sizeof(netclass));
-		if(!StrEqual(netclass, "SurvivorBot", false)) return false;
-		int realPlayer = GetClientOfUserId(GetEntProp(client, Prop_Send, "m_humanSpectatorUserID"));
-		return realPlayer > 0 ? realPlayer : -1;
-	}else{
-		return client;
+stock int GetRealClient(int bot) {
+	if(!IsFakeClient(bot)) return -1;
+	static char netclass[16];
+	GetEntityNetClass(bot, netclass, sizeof(netclass));
+	if(StrEqual(netclass, "SurvivorBot")) {
+		int user = GetEntProp(bot, Prop_Send, "m_humanSpectatorUserID");
+		if(user > 0) return GetClientOfUserId(user);
 	}
+	return -1;
 }
 
 stock int FindIdleBot(int client) {

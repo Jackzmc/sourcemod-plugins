@@ -32,7 +32,9 @@ public Plugin myinfo =
 };
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
+	// return APLRes_SilentFailure;
 	CreateNative("ApplyTroll", Native_ApplyTroll);
+	RegPluginLibrary("feedthetrolls");
 	return APLRes_Success;
 }
 public void OnLibraryAdded(const char[] name) {

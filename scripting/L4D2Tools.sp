@@ -5,20 +5,22 @@
 
 #define PLUGIN_VERSION "1.0"
 
-#define PRECACHE_SOUNDS_COUNT 5
+#define PRECACHE_SOUNDS_COUNT 6
 char PRECACHE_SOUNDS[PRECACHE_SOUNDS_COUNT][] = {
 	"custom/meow1.mp3",
 	"custom/xen_teleport.mp3",
 	"custom/mariokartmusic.mp3",
 	"custom/spookyscaryskeletons.mp3",
-	"custom/wearenumberone2.mp3"
+	"custom/wearenumberone2.mp3",
+	"custom/quack.mp3"
 };
 
 #include <sourcemod>
 #include <sdkhooks>
 #include <left4dhooks>
 #include <jutils.inc>
-#include <sceneprocessor>
+#undef REQUIRE_PLUGIN
+#tryinclude <sceneprocessor>
 #include <multicolors>
 #include "l4d_survivor_identity_fix.inc"
 
@@ -177,7 +179,7 @@ Action Timer_CheckPlayerPings(Handle timer) {
 					if(iHighPingCount[i]++ > 2) {
 						PrintToChat(i, "Due to your high ping (%d ms) you have been moved to AFK.", ping);
 						PrintToChat(i, "You will be automatically switched back once your ping restores");
-						SDKCall(hGoAwayFromKeyboard, i);
+						// SDKCall(hGoAwayFromKeyboard, i);
 						//PrintToChat(i, "Type /pingignore to disable this feature.");
 						// L4D_ReplaceWithBot(i);
 						isHighPingIdle[i] = true;
@@ -462,7 +464,7 @@ void SetCharacter(int target, int survivorIndex, L4DModelId modelIndex, bool kee
 	if (IsFakeClient(target)) {
 		char name[32];
 		GetSurvivorName(target, name, sizeof(name));
-		SetClientInfo(target, "name", name);
+		// SetClientInfo(target, "name", name);
 	}
 	UpdatePlayerIdentity(target, view_as<Character>(survivorIndex), keepModel);
 
@@ -636,6 +638,7 @@ public void OnConfigsExecuted() {
 	}
 }
 
+#if defined _sceneprocessor_included
 public void OnSceneStageChanged(int scene, SceneStages stage) {
 	if(stage == SceneStage_Started) {
 		int activator = GetSceneInitiator(scene);
@@ -650,6 +653,7 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 		}
 	}
 }
+#endif
 ///AFK BOT WEAPON FIX
 public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadcast) {
 	int bot = GetClientOfUserId(event.GetInt("bot"));

@@ -6,39 +6,45 @@ enum struct SpecifiedTroll {
     trollModifier mod;
     int flags;
 }
-enum struct TrollCombo {
+enum struct TrollComboData {
     char name[32];
     ArrayList trolls;
 
-    void AddTroll(const char[] name, int flags = 0, trollModifier mod = TrollMod_Invalid) {
-        Troll instance = Troll.FromName(name);
+    bool AddTroll(const char[] name, int flags = 0, trollModifier mod = TrollMod_Invalid) {
+        Troll instance; 
+        if(!Troll.TryFromName(name, instance)) {
+            PrintToServer("[FTT] Combo \"%s\": unknown troll named \"%s\"", this.name, name);
+            return false;
+        }
         if(mod == TrollMod_Invalid) mod = instance.GetDefaultMod();
         SpecifiedTroll troll;
         troll.id = instance.Id;
         troll.mod = mod;
         troll.flags = flags;
         this.trolls.PushArray(troll, sizeof(troll));
+        return true;
     }
 
     void Activate(int client, int target) {
+        PrintToServer("Applying %d trolls for combo %s for %N", this.trolls.Length, this.name, target);
+        SpecifiedTroll troll;
         for(int i = 0; i < this.trolls.Length; i++) {
-            SpecifiedTroll troll;
             this.trolls.GetArray(i, troll, sizeof(troll));
-            Troll(troll.id).Activate(target, client, troll.mod, troll.flags);
+            Troll(troll.id).Activate(client, target, troll.mod, troll.flags);
         }
     }
 }
 
-void SetupCombo(TrollCombo combo, const char[] name) {
+void SetupCombo(TrollComboData combo, const char[] name) {
     strcopy(combo.name, sizeof(combo.name), name);
     combo.trolls = new ArrayList(sizeof(SpecifiedTroll));
     combos.PushArray(combo, sizeof(combo));
 }
 
 void SetupsTrollCombos() {
-    combos = new ArrayList(sizeof(TrollCombo));
+    combos = new ArrayList(sizeof(TrollComboData));
 
-    TrollCombo combo;
+    TrollComboData combo;
     SetupCombo(combo, "Magnet Galore");
     combo.AddTroll("Special Magnet");
     combo.AddTroll("Tank Magnet");
@@ -79,7 +85,7 @@ void SetupsTrollCombos() {
 
     SetupCombo(combo, "Shut up");
     combo.AddTroll("Vocalize Gag");
-    combo.AddTroll("Honk / Meow / Woof", .flags=1);
+    combo.AddTroll("Honk & Animal Sounds", .flags=1);
 
     SetupCombo(combo, "Weakness Compels You");
     combo.AddTroll("No Shove");

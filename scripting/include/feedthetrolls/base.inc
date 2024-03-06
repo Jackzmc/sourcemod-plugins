@@ -4,7 +4,7 @@
 //Allow MAX_TROLLS to be defined elsewhere
 #if defined MAX_TROLLS
 #else
-    #define MAX_TROLLS 56
+    #define MAX_TROLLS 55
 #endif
 
 Troll t_metaReverse;
@@ -21,13 +21,15 @@ enum TrollEffectResponse {
 	TE_Error, // Error, continue menu (retry)
 	TE_Menu // Switching menus / etc, don't continue menu
 }
-
+typeset PromptActivateFunction {
+    function TrollEffectResponse (Troll troll, int activator, int victim, any data, int flags, trollModifier mod)
+    function void (Troll troll, int activator, int victim, any data, int flags, trollModifier mod)
+}
 typedef ActivateFunction = function void (Troll troll, int activator, int victim, int flags, trollModifier mod);
 typedef ResetFunction = function void (Troll troll, int activator, int victim);
-typedef PromptActivateFunction = function TrollEffectResponse (Troll troll, int activator, int victim, any data, int flags, trollModifier mod);
+// typedef PromptActivateFunction = function TrollEffectResponse (Troll troll, int activator, int victim, any data, int flags, trollModifier mod);
 
 StringMap trollKV;
-char trollIds[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
 char DEFAULT_FLAG_PROMPT_MULTIPLE[] = "Enable options (Multiple)";
 char DEFAULT_FLAG_PROMPT[] = "Select an option";
 bool SilentMenuSelected[MAXPLAYERS+1];
@@ -91,45 +93,12 @@ enum struct TrollData {
     Handle timerHandles[MAXPLAYERS+1];
     float timerInterval;
     int timerRequiredFlags;
+    bool timerIsDataPack;
 
-    void Toggle(int client, int flags) {
-        if(this.IsActive(client)) {
-            this.Disable(client);
-        } else {
-            this.Enable(client, flags);
-        }
-    }
-
-    void Enable(int client, int flags) {
-        this.activeFlagClients[client] = flags;
-        // If a timer is assigned, start it:
-        if(this.timerHandles[client] != null) {
-            delete this.timerHandles[client];
-            PrintToServer("FTT Debug: Old timer for %N, killing", client);
-        }
-        if(this.timerInterval > 0.0) {
-            this.timerHandles[client] = CreateTimer(this.timerInterval, this.timerFunction, GetClientUserId(client), TIMER_REPEAT);
-        }
-    }
-
-    void Disable(int client) {
-        this.activeFlagClients[client] = -1;
-        // Stop any running timer:
-        if(this.timerHandles[client] != null) {
-            PrintToServer("FTT Debug: Disabling timer for %N", client);
-            delete this.timerHandles[client];
-        }
-        if(this.resetFn != null) {
-            Call_StartForward(this.resetFn);
-            Call_PushCell(0);
-            Call_PushCell(client);
-            Call_PushCell(0);
-            Call_Finish();
-        }
-    }
-
+    // TODO: REMOVE OLD
     bool IsActive(int client) {
-        return this.activeFlagClients[client] != -1;
+        if(this.id == 0 || client == 0) return false; // bug fix
+        return this.activeFlagClients[client] >= 0;
     }
 
 }
@@ -170,6 +139,12 @@ methodmap Troll {
             LogError("Unknown troll \"%s\"", name);
         return view_as<Troll>(i);
     }
+    public static bool TryFromName(const char[] name, Troll &troll) {
+        int i = GetTrollID(name);
+        if(i > -1)
+            troll = Troll(i);
+        return i > -1;
+    }
     property bool Hidden {
         public get() { return Trolls[this.Id].hidden; }
     }
@@ -194,8 +169,13 @@ methodmap Troll {
         public get() { return this.TotalOptionsCount > 0; }
     }
 
-    public bool IsActive(int client) {
-        return Trolls[this.Id].activeFlagClients[client] != -1;
+    /// Is troll active for client. If flags is > 0, will do bitwise and
+    public bool IsActive(int client, int flags = 0) {
+        if(this.Id == 0 || client == 0) return false; // bug fix
+        if(flags > 0) {
+            return (Trolls[this.Id].activeFlagClients[client] & flags) == flags;
+        } else
+            return Trolls[this.Id].activeFlagClients[client] >= 0;
     }
 
     public bool HasFlag(int client, int flag) {
@@ -203,7 +183,7 @@ methodmap Troll {
     }
 
     public int GetFlags(int client) {
-        return Trolls[this.Id].activeFlagClients[client]
+        return Trolls[this.Id].activeFlagClients[client];
     }
 
     public bool HasMod(trollModifier mod) {
@@ -215,18 +195,23 @@ methodmap Troll {
     }
 
     public TrollEffectResponse Activate(int activator, int victim, trollModifier modifier = TrollMod_Invalid, int flags = 0, bool silent = false) {
-        PrintToServer("Activate: act:%d vic:%d", activator, victim);
         if(modifier == TrollMod_Invalid) modifier = this.GetDefaultMod();
+        if(victim == 0) ThrowError("Victim is invalid");
         return ApplyTroll(victim, this, activator, modifier, flags, silent);
     }
+
     public void Reset(int victim) {
         Trolls[this.Id].activeFlagClients[victim] = -1;
+        // Stop any running timer:
+        if(Trolls[this.Id].timerHandles[victim] != null) {
+            PrintToServer("FTT Debug: Disabling timer for %N", victim);
+            delete Trolls[this.Id].timerHandles[victim];
+        }
         if(Trolls[this.Id].resetFn != null) {
             Call_StartForward(Trolls[this.Id].resetFn);
-            Call_PushCell(this);
+            Call_PushCell(Troll(this.Id));
             Call_PushCell(0);
             Call_PushCell(victim);
-            Call_PushCell(0);
             Call_Finish();
         }
     }
@@ -310,6 +295,43 @@ methodmap Troll {
         else if(Trolls[this.Id].mods == view_as<int>(TrollMod_Constant)) return TrollMod_Constant;
         else return TrollMod_Invalid;
     }
+
+    public TrollEffectResponse _triggerActivateFn(int activator, int victim, int flags, trollModifier modifier) {
+        if(Trolls[this.Id].activateFn == null) return;
+        Call_StartForward(Trolls[this.Id].activateFn);
+        Call_PushCell(this);
+        Call_PushCell(activator);
+        Call_PushCell(victim);
+        Call_PushCell(flags);
+        Call_PushCell(modifier);
+        Call_Finish();
+
+        // TrollFlagPrompt prompt;
+        // for(int i = 0; i < Trolls[trollIndex].flagPrompts.Length; i++) {
+        //     Trolls[trollIndex].flagPrompts.GetArray(i, prompt);
+        //     if(!prompt.multiselect && prompt.activateFn != null) {
+        //         int value;
+        //         instance.GetPromptDataInt(victim, i, value);
+        //         for(int j = 0; j < Trolls[trollIndex].promptOptions.Length; j++) {
+        //             int bit = 1 << j;
+        //             if(flags & bit && prompt.flags & bit) {
+        //                 Call_StartForward(prompt.activateFn);
+        //                 Call_PushCell(instance);
+        //                 Call_PushCell(activator);
+        //                 Call_PushCell(victim);
+        //                 Call_PushCell(value);
+        //                 Call_PushCell(flags);
+        //                 Call_PushCell(modifier);
+        //                 response = view_as<TrollEffectResponse>(Call_Finish());
+        //                 if(response != TE_Success) return response; // Let the menu handler deal with checking
+        //                 break;
+        //             }
+        //         }
+        //         break;
+        //     }
+        // }
+        // return
+    }
 }
 
 int g_iTrollIndex;
@@ -349,15 +371,21 @@ methodmap TrollBuilder {
         strcopy(Trolls[this.Id].description, 128, description);
     }
 
-    public TrollBuilder SetTimer(float interval, Timer timer, int requiredFlags = 0) {
+    public TrollBuilder SetTimer(float interval, Timer timer, int requiredFlags = 0, bool isDatapack = false) {
         Trolls[this.Id].timerInterval = interval;
         Trolls[this.Id].timerFunction = timer;
         Trolls[this.Id].timerRequiredFlags = requiredFlags;
+        Trolls[this.Id].timerIsDataPack = isDatapack;
+        // Don't think this is necessary but whatever
         for(int i = 0; i <= MAXPLAYERS; i++) {
             Trolls[this.Id].timerHandles[i] = null;
         }
         return this;
     }
+
+    public TrollBuilder SetAutoTimer(float interval, int requiredFlags = 0) {
+        this.SetTimer(interval, Timer_GenericTrollActivate, requiredFlags, true);
+    } 
 
     public TrollBuilder AddPrompt(const char[] customPrompt = "", int requiredFlags = 0) {
         this._AddPrompt(false, requiredFlags, customPrompt);
@@ -436,7 +464,7 @@ methodmap TrollBuilder {
 
     }
 
-    public TrollBuilder SetActivationFunction(ActivateFunction fn) {
+    public TrollBuilder OnActivate(ActivateFunction fn) {
         if(Trolls[this.Id].activateFn == null) {
             Trolls[this.Id].activateFn = new PrivateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
         }
@@ -444,7 +472,7 @@ methodmap TrollBuilder {
         return this;
     }
 
-    public TrollBuilder SetResetFunction(ResetFunction fn) {
+    public TrollBuilder OnReset(ResetFunction fn) {
         if(Trolls[this.Id].resetFn == null) {
             Trolls[this.Id].resetFn = new PrivateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
         }
@@ -457,6 +485,7 @@ methodmap TrollBuilder {
     }
 
 }
+
 
 int GetTrollID(const char[] name) {
     static int i = 0;
@@ -471,20 +500,11 @@ int GetTrollID(const char[] name) {
 }
 
 bool IsAnyTrollActive(int victim) {
-    for(int i = 0; i <= MAX_TROLLS; i++) {
-        if(Trolls[i].activeFlagClients[victim] >= 0) return true;
+    for(int i = 1; i <= MAX_TROLLS; i++) {
+        if(Troll(i).IsActive(victim)) return true;
     }
     return false;
 }
-
-void SetTrollFlags(int client, const char[] name, int flags = -1) {
-    int index = GetTrollID(name);
-    if(flags == -1)
-        Trolls[index].Disable(client);
-    else
-        Trolls[index].Enable(client, flags);
-}
-
 
 TrollEffectResponse ApplyTroll(int victim, Troll troll, int activator, trollModifier modifier, int flags = 0, bool silent = false) {
     char name[MAX_TROLL_NAME_LENGTH];
@@ -497,7 +517,16 @@ TrollEffectResponse ApplyTroll(int victim, Troll troll, int activator, trollModi
     if(troll.HasTimer) {
         if(!isActive) {
             if(modifier & TrollMod_Constant && (Trolls[trollIndex].timerRequiredFlags == 0 || Trolls[trollIndex].timerRequiredFlags & flags)) {
-                Trolls[trollIndex].timerHandles[victim] = CreateTimer(Trolls[trollIndex].timerInterval, Trolls[trollIndex].timerFunction, victim, TIMER_REPEAT);
+                if(Trolls[trollIndex].timerIsDataPack) {
+                    DataPack pack;
+                    Trolls[trollIndex].timerHandles[victim] = CreateDataTimer(Trolls[trollIndex].timerInterval, Trolls[trollIndex].timerFunction, pack, TIMER_REPEAT);
+                    pack.WriteCell(troll);
+                    pack.WriteCell(activator);
+                    pack.WriteCell(victim);
+                    pack.WriteCell(flags);
+                } else {
+                    Trolls[trollIndex].timerHandles[victim] = CreateTimer(Trolls[trollIndex].timerInterval, Trolls[trollIndex].timerFunction, victim, TIMER_REPEAT);
+                }
             }
         } else if(Trolls[trollIndex].timerHandles[victim] != null) {
             delete Trolls[trollIndex].timerHandles[victim];
@@ -517,7 +546,7 @@ TrollEffectResponse ApplyTroll(int victim, Troll troll, int activator, trollModi
 
     // If victim is a survivor bot, check if has an idle player
     if(IsFakeClient(victim) && GetClientTeam(victim) == 2) {
-        int player = GetSpectatorClient(victim);
+        int player = GetRealClient(victim);
         if(player > 0) {
             // If there is an idle player, apply troll to them
             ApplyTroll(player, troll, activator, modifier, flags, silent);
@@ -530,8 +559,10 @@ TrollEffectResponse ApplyTroll(int victim, Troll troll, int activator, trollModi
 
 
     // Toggle on flags for client, if it's not a single run.
-    if(modifier & TrollMod_Constant) {
-        Trolls[trollIndex].activeFlagClients[victim] = isActive ? -1 : flags;
+    if(isActive) {
+        Trolls[trollIndex].activeFlagClients[victim] = -1;
+    } else if(modifier & TrollMod_Constant) {
+        Trolls[trollIndex].activeFlagClients[victim] = flags;
     }
 
     // Applies any custom logic needed for a troll, mostly only used for TrollMod_Instant
@@ -541,15 +572,7 @@ TrollEffectResponse ApplyTroll(int victim, Troll troll, int activator, trollModi
     // Invoke Callbacks:
     if(!isActive) {
         Troll instance = Troll(trollIndex);
-        if(Trolls[trollIndex].activateFn != null) {
-            Call_StartForward(Trolls[trollIndex].activateFn);
-            Call_PushCell(instance);
-            Call_PushCell(activator);
-            Call_PushCell(victim);
-            Call_PushCell(flags);
-            Call_PushCell(modifier);
-            Call_Finish();
-        }
+        instance._triggerActivateFn(activator, victim, flags, modifier);
 
         // Call the corresponding prompt callback if applicable
         TrollFlagPrompt prompt;
@@ -558,7 +581,7 @@ TrollEffectResponse ApplyTroll(int victim, Troll troll, int activator, trollModi
             if(!prompt.multiselect && prompt.activateFn != null) {
                 int value;
                 instance.GetPromptDataInt(victim, i, value);
-                for(int j = 0; j < Trolls[trollIndex].promptOptions.Length; i++) {
+                for(int j = 0; j < Trolls[trollIndex].promptOptions.Length; j++) {
                     int bit = 1 << j;
                     if(flags & bit && prompt.flags & bit) {
                         Call_StartForward(prompt.activateFn);
@@ -582,7 +605,6 @@ TrollEffectResponse ApplyTroll(int victim, Troll troll, int activator, trollModi
         Call_PushCell(Troll(trollIndex));
         Call_PushCell(activator);
         Call_PushCell(victim);
-        Call_PushCell(modifier);
         Call_Finish();
     }
     
@@ -611,11 +633,11 @@ TrollEffectResponse ApplyTroll(int victim, Troll troll, int activator, trollModi
 
 
 void EnableTroll(int client, const char[] troll, int flags = 0) {
-    SetTrollFlags(client, troll, flags);
+    Troll.FromName(troll).Activate(0, client, TrollMod_Invalid, flags);
 }
 
 void DisableTroll(int client, const char[] troll) {
-    SetTrollFlags(client, troll, -1);
+    Troll.FromName(troll).Reset(client);
 }
 
 public void SetCategory(const char[] newCat) {
@@ -626,7 +648,6 @@ public void SetCategory(const char[] newCat) {
 void GetCategory(int category, char[] buffer, int size) {
     categories.GetString(category, buffer, size);
 } 
-
 
 public int Native_ApplyTroll(Handle plugin, int numParams) {
     int victim = GetNativeCell(1);
@@ -640,7 +661,7 @@ public int Native_ApplyTroll(Handle plugin, int numParams) {
     int activator = GetNativeCell(5);
 
     Troll troll = Troll.FromName(name);
-    troll.Activate(victim, activator, modifier, flags, GetNativeCell(6));
+    troll.Activate(activator, victim, modifier, flags, GetNativeCell(6));
     return 0;
 }
  

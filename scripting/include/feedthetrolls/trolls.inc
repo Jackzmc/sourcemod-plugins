@@ -1,19 +1,26 @@
 // UP THE VALUE 'MAX_TROLLS' in base.inc before adding new ones!
 
+Troll t_specialMagnet;
+Troll t_tankMagnet;
 int t_slipperyShoesIndex = 0;
 Troll t_stickyGoo;
-int t_invertedTrollIndex;
+Troll t_invertedTroll;
 int t_randomizeAnglesIndex;
 int t_randomizeVelocityIndex;
 int t_vomitPlayerIndex;
 int t_shakeyCameraIndex;
 int t_slotRouletteIndex;
-int t_damageBoostIndex;
-int t_reverseFFIndex;
+Troll t_damageBoost;
+Troll t_reverseFF;
 int t_hideHUDIndex;
 Troll t_throwItAll;
 Troll t_voiceMute;
 Troll t_gunJam;
+Troll t_honk;
+Troll t_vocalGag;
+Troll t_dullMelee;
+Troll t_rewind;
+Troll t_noRushingUs;
 
 void SetupTrolls() {
 	trollKV = new StringMap();
@@ -25,8 +32,10 @@ void SetupTrolls() {
 	SetCategory("Magnets");
 	troll = TrollBuilder("Special Magnet", "Attracts ALL specials to any alive target with this troll enabled", TrollMod_Constant);
 	AddMagnetFlags(troll);
+	t_specialMagnet = troll.Build();
 	troll = TrollBuilder("Tank Magnet", "Attracts ALL tanks to any alive target with this troll enabled", TrollMod_Constant);
 	AddMagnetFlags(troll);
+	t_tankMagnet = troll.Build();
 	#if defined _actions_included
 	TrollBuilder("Witch Magnet", "All witches when startled will target any player with this troll", TrollMod_Constant);
 	#endif
@@ -112,14 +121,14 @@ void SetupTrolls() {
 			.AddOption("UZI Only", true)
 			.AddOption("AWP Only", false)
 	TrollBuilder("Primary Disable", "Player cannot pickup any weapons, only melee/pistols", TrollMod_Constant);
-	TrollBuilder("Dull Melee", "Player's melee weapon does 0 damage (based on %). Headshots still work", TrollMod_Constant)
+	t_dullMelee = TrollBuilder("Dull Melee", "Player's melee weapon does 0 damage (based on %). Headshots still work", TrollMod_Constant)
 		.AddPrompt()
-			.AddOption("Always (100%)", false)
-			.AddOption("Half Time (50%)", true)
-			.AddOption("Rare (10%)", false);
+			.AddOptionFloat("Always (100%)", false, 1.0)
+			.AddOptionFloat("Half Time (50%)", true, 0.5)
+			.AddOptionFloat("Rare (10%)", false, 0.10)
+		.Build();
 	TrollBuilder("Nerf Gun", "When they shoot it does no damage.", TrollMod_Constant);
 	TrollBuilder("Randomize Clip Ammo", "Randomly changes their clip ammo downwards", TrollMod_Constant | TrollMod_Instant);
-	TrollBuilder("CameTooEarly", "When they shoot, random chance they empty whole clip", TrollMod_Constant);
 
 	t_slotRouletteIndex = TrollBuilder("Slot Roulette", "Randomize their slots", TrollMod_Constant)
 		.SetTimer(0.2, Timer_SlotRoulette, 8)
@@ -146,40 +155,42 @@ void SetupTrolls() {
 		.AddPrompt()
 			.AddOption("Show Modified to Them", true)
 			.AddOption("Show Original to Them");
-	TrollBuilder("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant);
-	// 		.AddPrompt()
-	// 		.AddOption("Mute for All", true);
-	// 		.AddOption("Mute For All But Them", false);
-	TrollBuilder("Honk / Meow / Woof", "Custom sounds", TrollMod_Constant)
+	t_vocalGag = TrollBuilder("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant)
+		.AddPromptMulti()
+			.AddOption("Quieter", false)
+			.AddOption("Painful", false)
+		.Build()
+	t_honk = TrollBuilder("Honk & Animal Sounds", "Custom sounds", TrollMod_Constant)
 		.AddPrompt("Choose Sound:")
-			.AddOption("Honk", true)
-			.AddOption("Meow", false)
-			.AddOption("Woof", false)
+			.AddOption("Honk", true) // 1 << 0
+			.AddOption("Quack", false) // 1 << 1
+			.AddOption("Meow", false) // 1 << 2
+			.AddOption("Woof", false) // 1 << 3
 		.AddPrompt("Choose Chat modifier:", 1)
-			.AddOption("Show Modified to Them", true)
-			.AddOption("Show Original to Them", false)
-			.AddOption("Show Modified Only To Them", false);
+			.AddOption("Show Modified To All", true) // 1 << 4
+			.AddOption("Show Original To Others", false) // 1 << 5
+		.Build();
 	TrollBuilder("Reversed", "Reserves their message", TrollMod_Constant);
 	t_voiceMute = TrollBuilder("Voice Mute", "Mutes from voice", TrollMod_Constant).Build();
-	TrollBuilder("No Rushing Us", "Decreases player speed everytime they yell hurry up", TrollMod_Constant);
+	t_noRushingUs = TrollBuilder("No Rushing Us", "Decreases player speed everytime they yell hurry up", TrollMod_Constant).Build();
 
 	/// CATEGORY: Health
 	SetCategory("Health");
-	t_damageBoostIndex = TrollBuilder("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant).Id;
+	t_damageBoost = TrollBuilder("Damage Boost", "Makes a player take more damage than normal", TrollMod_Constant).Build();
 	TrollBuilder("Temp Health Quick Drain", "Makes a player's temporarily health drain very quickly", TrollMod_Constant);
 	TrollBuilder("Slow Drain", "Will make the player slowly lose health over time", TrollMod_Constant);
 	TrollBuilder("KillMeSoftly", "Make player eat or waste pills whenever possible", TrollMod_Instant | TrollMod_Constant);
-	t_reverseFFIndex = TrollBuilder("Reverse FF", "All damage dealt to a player is reversed", TrollMod_Constant)
+	t_reverseFF = TrollBuilder("Reverse FF", "All damage dealt to a player is reversed", TrollMod_Constant)
 		.AddPrompt("Choose Reverse FF", false)
-			.AddOption("1:1 Ratio", true) //1 
-			.AddOption("2x Ratio", false) //2
-			.AddOption("0.5x Ratio", false) //4
-			.AddOption("0.0x Ratio (None)", false) //8
-			.AddOption("3x Ratio", false) //16
+			.AddOptionFloat("1:1 Ratio", true, 1.0) //1 
+			.AddOptionFloat("2x Ratio", false, 2.0) //2
+			.AddOptionFloat("0.5x Ratio", false, 0.5) //4
+			.AddOptionFloat("0.0x Ratio (None)", false, 0.0) //8
+			.AddOptionFloat("3x Ratio", false, 3.0) //16
 		.AddPromptMulti("Modes")
 			.AddOption("Reverse Fire Damage", false) //32
 			.AddOption("Reverse Explosions", false) //64
-		.Id;
+		.Build();
 
 
 	TrollBuilder("Dep Bots", "Makes bots heal a player. At any cost", TrollMod_Constant)
@@ -202,15 +213,19 @@ void SetupTrolls() {
 	/// CATEGORY: Movement
 	SetCategory("Movement");
 	TrollBuilder("Slow Speed", "Sets player speed to 0.8x of normal speed", TrollMod_Constant)
+		.OnReset(Reset_SlowSpeed)
 		.AddPrompt()
+			.OnPromptActivate(Activate_SlowSpeed)
 			.AddOptionFloat("90% Movement Speed", true, 0.9)
 			.AddOptionFloat("80% Movement Speed", false, 0.8)
 			.AddOptionFloat("70% Movement Speed", false, 0.7)
 			.AddOptionFloat("50% Movement Speed", false, 0.5)
 			.AddOptionFloat("30% Movement Speed", false, 0.3)
 			.AddOptionFloat("0% Movement Speed", false, 0.0);
-	TrollBuilder("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant);
-	t_invertedTrollIndex = TrollBuilder("Inverted Controls", "Well, aint it obvious", TrollMod_Constant).Id;
+	TrollBuilder("Higher Gravity", "Sets player gravity to 1.3x of normal gravity", TrollMod_Constant)
+		.OnActivate(Activate_HighGravity)
+		.OnReset(Reset_HighGravity);
+	t_invertedTroll = TrollBuilder("Inverted Controls", "Well, aint it obvious", TrollMod_Constant).Build();
 	t_slipperyShoesIndex = TrollBuilder("Slippery Shoes", "Periodically stumbles around.", TrollMod_Constant | TrollMod_Instant)
 		.AddPromptMulti()
 			.AddOption("Periodically", true) // 1 << 0
@@ -236,8 +251,16 @@ void SetupTrolls() {
 			.AddOption("Severe Earthquake", false) //8
 			.AddOption("Bouncy Castle", false) //16
 		.Id;
-	TrollBuilder("Rewind", "Teleports player backwards", TrollMod_Instant | TrollMod_Constant)
-		.SetTimer(10.0, Timer_RandomRewind);
+	t_rewind = TrollBuilder("Rewind", "Teleports player backwards", TrollMod_Instant | TrollMod_Constant)
+		// .SetTimer(10.0, Timer_RandomRewind)
+		.SetAutoTimer(10.0)
+		.OnActivate(Activate_Rewind)
+		.AddPrompt("Distance")
+			.AddOptionFloat("Subtle", false, 10.0)
+			.AddOptionFloat("Tiny", false, 50.0)
+			.AddOptionFloat("Normal", true, 100.0)
+			.AddOptionFloat("Far", false, 250.0)
+		.Build();
 
 	/// CATEGORY: MISC
 	SetCategory("Misc");
@@ -297,8 +320,25 @@ TrollEffectResponse Activate_SmartCharge(Troll troll, int activator, int victim,
 	return TE_Success;
 }
 
+void Activate_Rewind(Troll troll, int activator, int victim, int flags, trollModifier mod) {
+	float distance;
+	troll.GetPromptDataFloat(activator, 0, distance);
+	RewindPlayer(victim, distance);
+}
+void Activate_SlowSpeed(Troll troll, int activator, int victim, float movement, int flags, trollModifier mod) {
+	SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", movement);
+}
+void Reset_SlowSpeed(Troll troll, int activator, int victim) {
+	SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
+}
+void Activate_HighGravity(Troll troll, int activator, int victim, int flags, trollModifier mod) {
+	SetEntityGravity(victim, 1.3);
+}
+void Reset_HighGravity(Troll troll, int activator, int victim) {
+	SetEntityGravity(victim, 1.0);
+}
+
 void AddMagnetFlags(TrollBuilder troll) {
-	PrintToServer("adding: %d", troll.Id);
 	troll.AddPrompt("Choose Magnet Chance:")
 		.AddOptionFloat("Always (100%)", true, 1.0)
 		.AddOptionFloat("Half Time (50%)", false, 0.5)
@@ -309,30 +349,12 @@ TrollEffectResponse ApplyAffect(int victim, Troll troll, int activator, trollMod
 	bool toActive = troll.IsActive(victim);
 	char name[MAX_TROLL_NAME_LENGTH];
 	troll.GetName(name, sizeof(name));
-	if(StrEqual(name, "Reset User")) {
+	if(troll.Id == 0) {
 		LogAction(activator, victim, "\"%L\" reset all effects for \"%L\"", activator, victim);
 		ShowActivityEx(activator, "[FTT] ", "reset effects for %N. ", victim);
-		// for(int i = 0; i <= MAX_TROLLS; i++) {
-		// 	Trolls[i].activeFlagClients[victim] = -1;
-		// }
-		// SetEntityGravity(victim, 1.0);
-		// SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
 		ResetClient(victim, true);
 		return TE_Error; // Not an error, but don't want to show activation
-	} else if(StrEqual(name, "Slow Speed")) {
-		if(toActive) {
-			float movement = 0.0;
-			if(flags & 1) movement = 0.9;
-			else if(flags & 2) movement = 0.8;
-			else if(flags & 4) movement = 0.7;
-			else if(flags & 8) movement = 0.5;
-			else if(flags & 16) movement = 0.3;
-			SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", movement);
-		} else 
-			SetEntPropFloat(victim, Prop_Send, "m_flLaggedMovementValue", 1.0);
-	} else if(StrEqual(name, "Higher Gravity"))
-		SetEntityGravity(victim, toActive ? 1.3 : 1.0);
-	else if(StrEqual(name, "UziRules / AwpSmells")) {
+	} else if(StrEqual(name, "UziRules / AwpSmells")) {
 		DisableTroll(victim, "No Pickup");
 		DisableTroll(victim, "Primary Disable");
 	} else if(StrEqual(name, "Primary Disable")) {
@@ -343,8 +365,6 @@ TrollEffectResponse ApplyAffect(int victim, Troll troll, int activator, trollMod
 		DisableTroll(victim, "UziRules / AwpSmells");
 		DisableTroll(victim, "Primary Disable");
 		SDKHook(victim, SDKHook_WeaponCanUse, Event_ItemPickup);
-	} else if(StrEqual(name, "CameTooEarly")) {
-		ReplyToCommand(activator, "This troll mode is not implemented.");
 	} else if(StrEqual(name, "KillMeSoftly")) {
 		static char wpn[32];
 		GetClientWeaponName(victim, 4, wpn, sizeof(wpn));

@@ -481,8 +481,21 @@ Action Timer_RestoreHud(Handle h, int userid) {
 }
 Action Timer_RandomRewind(Handle h, int client) {
 	if(IsClientInGame(client) && GetURandomFloat() > 0.3) {
-		RewindPlayer(client);
+		float distance = 100.0;
+		t_rewind.GetPromptDataFloat(client, 0, distance);
+		RewindPlayer(client, distance);
 	}
 	return Plugin_Handled;
 
+}
+Action Timer_GenericTrollActivate(Handle h, DataPack pack) {
+	pack.Reset();
+	Troll troll = Troll(pack.ReadCell());
+	int activator = pack.ReadCell();
+	int victim = pack.ReadCell();
+	if(IsClientInGame(victim)) {
+		int flags = pack.ReadCell();
+		troll._triggerActivateFn(activator, victim, flags, TrollMod_Constant);
+	}
+	return Plugin_Handled;
 }

@@ -259,6 +259,7 @@ public void OnPluginStart() {
 	
 	HookEvent("player_spawn", 		Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
+	HookEvent("player_left_start_area", Event_LeaveStartArea);
 	//Tracking player items:
 	HookEvent("item_pickup",		Event_ItemPickup);
 	HookEvent("weapon_drop",		Event_ItemPickup);
@@ -939,6 +940,10 @@ void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) 
 		delete g_saveTimer[client];
 }
 
+void Event_LeaveStartArea(Event event, const char[] name, bool dontBroadcast) {
+	PopulateItems();
+}
+
 void Event_PlayerInfo(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && !IsFakeClient(client)) {
@@ -1336,7 +1341,6 @@ public void OnMapStart() {
 	L4D2_RunScript(HUD_SCRIPT_CLEAR);
 	Director_OnMapStart();
 	g_areItemsPopulated = false;
-	CreateTimer(30.0, Timer_Populate);
 
 	if(g_isLateLoaded) {
 		UpdateSurvivorCount();
@@ -1486,11 +1490,6 @@ public void OnMapEnd() {
 void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
 	g_finaleStage = Stage_Active;
 }
-Action Timer_Populate(Handle h) {
-	PopulateItems();	
-	return Plugin_Continue;
-
-}
 public void OnClientSpeaking(int client) {
 	g_isSpeaking[client] = true;
 }
@@ -1566,7 +1565,7 @@ Action Hook_CabinetItemSpawn(int entity) {
 			int cabEnt = cabinets[ci].items[block];
 			PrintDebug(DEBUG_ANY, "cabinet %d spawner %d block %d: %d", cabinet, entity, block, cabEnt);
 			if(cabEnt <= 0) {
-				cabinets[ci].items[block] = entity;
+				cabinets[ci].items[block] = EntIndexToEntRef(entity);
 				PrintDebug(DEBUG_SPAWNLOGIC, "Adding spawner %d for cabinet %d block %d", entity, cabinet, block);
 				break;
 			}
@@ -1770,6 +1769,7 @@ Action Timer_UpdateHud(Handle h) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PopulateItems() {
+	PrintToServer("[EPI:TEMP] PopulateItems hasRan=%b finale=%b", g_areItemsPopulated, L4D_IsMissionFinalMap(true));
 	if(g_areItemsPopulated) return;
 	UpdateSurvivorCount();
 	if(!IsEPIActive()) return;
@@ -1831,7 +1831,8 @@ void PopulateCabinets() {
 		while(extraAmount > 0) {
 			//FIXME: spawner is sometimes invalid entity. Ref needed?
 			for(int block = 0; block < CABINET_ITEM_BLOCKS; block++) {
-				spawner = cabinets[i].items[block];
+				if(cabinets[i].items[block] == 0) break;
+				spawner = EntRefToEntIndex(cabinets[i].items[block]);
 				if(spawner > 0) {
 					if(!HasEntProp(spawner, Prop_Data, "m_itemCount")) continue;
 					hasSpawner = true;

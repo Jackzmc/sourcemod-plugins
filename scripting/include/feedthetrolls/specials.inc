@@ -154,6 +154,9 @@ Action Timer_SetWitchTarget(Handle h, DataPack pack) {
 }
 
 stock SpecialType GetSpecialType(const char[] input) {
+	if(StrEqual(input, "random")) {
+		return view_as<SpecialType>(GetRandomInt(0, 6))
+	}
 	for(int i = 0; i < 8; i++) {
 		if(strcmp(SPECIAL_NAMES[i], input, false) == 0) return view_as<SpecialType>(i + 1);
 	}

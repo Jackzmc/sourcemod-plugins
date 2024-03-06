@@ -16,3 +16,21 @@ native void ApplyTroll(int victim, const char[] name, TrollModifier modifier = T
 forward void OnTrollApplied(int victim, const char[] trollName, int flags = 0, int activator = 0); 
 
 forward void OnTrollMarked(int activator, int victim); 
+
+public SharedPlugin __pl_myfile = 
+{
+    name = "feedthetrolls",
+    file = "feedthetrolls.smx",
+#if defined REQUIRE_PLUGIN
+    required = 1,
+#else
+    required = 0,
+#endif
+};
+
+#if !defined REQUIRE_PLUGIN
+public void __pl_myfile_SetNTVOptional()
+{
+  MarkNativeAsOptional("ApplyTroll");
+}
+#endif

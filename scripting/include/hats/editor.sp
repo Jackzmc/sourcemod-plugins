@@ -155,7 +155,7 @@ enum struct EditorData {
 
 	bool CheckEntity() {
 		if(this.entity != INVALID_ENT_REFERENCE) {
-			if(!IsValidEntity(this.entity)) {
+			if(this.entity == -1 && !IsValidEntity(this.entity)) {
 				PrintToChat(this.client, "\x04[Editor]\x01 Entity has vanished, editing cancelled.");
 				this.Reset();
 				return false;
@@ -301,7 +301,7 @@ enum struct EditorData {
 		char component[16];
 		for(int i = 0; i < 4; i++) {
 			if(this.colorIndex == i)
-				Format(component, sizeof(component), "%s \x05 %c \x01", component, COLOR_INDEX[i]);
+				Format(component, sizeof(component), "%s \x05%c\x01", component, COLOR_INDEX[i]);
 			else
 				Format(component, sizeof(component), "%s %c", component, COLOR_INDEX[i]);
 		}

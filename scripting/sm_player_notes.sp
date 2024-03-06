@@ -14,7 +14,7 @@
 #include <jutils>
 // Addons:
 #undef REQUIRE_PLUGIN
-#tryinclude <feedthetrolls>
+#include <feedthetrolls>
 #undef REQUIRE_PLUGIN
 #tryinclude <tkstopper>
 
@@ -504,6 +504,7 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 		#if defined _ftt_included_
 			if(GetFeatureStatus(FeatureType_Native, "ApplyTroll") != FeatureStatus_Available) {
 				PrintToServer("[PlayerNotes] Warn: Action \"%s\" for %N has missing plugin: Feed The Trolls", action, target);
+				return false;
 			} 
 			// Replace under scores with spaces
 			char newKey[32];
@@ -524,6 +525,7 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 		#if defined _tkstopper_included_
 			if(GetFeatureStatus(FeatureType_Native, "SetImmunity") != FeatureStatus_Available) {
 				PrintToServer("[PlayerNotes] Warn: Action \"%s\" for %N has missing plugin: TKStopper", action, target);
+				return false;
 			} else if(StrEqual(key, "rff")) {
 				SetImmunity(target, TKImmune_ReverseFriendlyFire, true);
 			} else if(StrEqual(key, "tk")) {
@@ -544,6 +546,8 @@ bool ApplyAction(int targetUserId, const char[] action, const char[] key, const 
 		} else {
 
 		}
+	} else if(strncmp(action, "model", 4) == 0) {
+		ServerCommand("sm_model %s #%d", key, GetClientUserId(target));
 	} else {
 		PrintToServer("[PlayerNotes] Warn: Action (\"%s\") for %N is not valid", action, target);
 		return false;

@@ -196,7 +196,7 @@ void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) 
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0) {
 		for(int i = 0 ; i < MAX_TROLLS; i++) {
-			Trolls[i].activeFlagClients[client] = 0;
+			Trolls[i].activeFlagClients[client] = -1;
 			if(Trolls[i].timerHandles[client] != null) {
 				delete Trolls[i].timerHandles[client];
 			}
@@ -321,10 +321,6 @@ public Action RushPlayer(Handle h, int user) {
 	return Plugin_Handled;
 }
 public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
-	static int spMagnetID, tankMagnetID;
-	if(spMagnetID == 0) spMagnetID = GetTrollID("Special Magnet");
-	if(tankMagnetID == 0) tankMagnetID = GetTrollID("Tank Magnet");
-
 	L4D2Infected class = view_as<L4D2Infected>(GetEntProp(attacker, Prop_Send, "m_zombieClass"));
 	// Check for any existing victims
 	int existingTarget = GetClientOfUserId(pdata[attacker].attackerTargetUid);
@@ -337,16 +333,16 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 			} 
 			// Stop targetting if no longer magnetted:
 			if(class == L4D2Infected_Tank) {
-				if(!Trolls[tankMagnetID].IsActive(existingTarget) || !WillMagnetRun(Trolls[tankMagnetID], existingTarget)) return Plugin_Continue;
+				if(!t_tankMagnet.IsActive(existingTarget) || !WillMagnetRun(t_tankMagnet, existingTarget)) return Plugin_Continue;
 			} else if(class != L4D2Infected_Tank) {
-				if(!Trolls[spMagnetID].IsActive(existingTarget) || !WillMagnetRun(Trolls[spMagnetID], existingTarget)) return Plugin_Continue;
+				if(!t_specialMagnet.IsActive(existingTarget) || !WillMagnetRun(t_specialMagnet, existingTarget)) return Plugin_Continue;
 			}
 
 			// Only set target based on incap rules:
-			if(class == L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 2) && WillMagnetRun(Trolls[tankMagnetID], existingTarget)) {
+			if(class == L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 2) && WillMagnetRun(t_tankMagnet, existingTarget)) {
 				curTarget = existingTarget;
 				return Plugin_Changed;
-			} else if(class != L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 1) && WillMagnetRun(Trolls[spMagnetID], existingTarget)) {
+			} else if(class != L4D2Infected_Tank && (!IsPlayerIncapped(existingTarget) || hMagnetTargetMode.IntValue & 1) && WillMagnetRun(t_specialMagnet, existingTarget)) {
 				curTarget = existingTarget;
 				return Plugin_Changed;
 			}
@@ -367,9 +363,9 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
 			if(class == L4D2Infected_Tank) {
-				if(!Trolls[tankMagnetID].IsActive(i) || !WillMagnetRun(Trolls[tankMagnetID], i)) continue;
+				if(!t_tankMagnet.IsActive(i) || !WillMagnetRun(t_tankMagnet, i)) continue;
 			} else if(class != L4D2Infected_Tank) {
-				if(!Trolls[spMagnetID].IsActive(i) || !WillMagnetRun(Trolls[spMagnetID], i)) continue;
+				if(!t_specialMagnet.IsActive(i) || !WillMagnetRun(t_specialMagnet, i)) continue;
 			}
 
 			if(IsPlayerIncapped(i)) {
@@ -395,26 +391,21 @@ public Action L4D2_OnChooseVictim(int attacker, int &curTarget) {
 	return Plugin_Continue;
 }
 
-// TODO: migrate to Troll
-bool WillMagnetRun(const TrollData troll, int i) {
+bool WillMagnetRun(Troll troll, int client) {
 	// In the case none of the flags are set, return true (100% chance)
 	// Some systems may give magnet w/  no flags
-	if(troll.activeFlagClients[i] == 0) return true;
-
-	float cChance = 1.0;
-	//Skip first bit as it is ('Always')
-	if(troll.activeFlagClients[i] & 2) // 2nd: 50%
-		cChance = 0.5;
-	else if(troll.activeFlagClients[i] & 4) //3rd: 10%
-		cChance = 0.1;
-	return GetRandomFloat() <= cChance;
+	int flags = troll.GetFlags(client);
+	if(flags == 0) return true;
+	float chance = 1.0;
+	troll.GetPromptDataFloat(client, 0, chance);
+	return GetRandomFloat() <= chance;
 }
 
 public Action L4D2_OnEntityShoved(int client, int entity, int weapon, float vecDir[3], bool bIsHighPounce) {
 	if(client > 0 && client <= MaxClients) {
-		static int noShoveIndex;
-		if(noShoveIndex == 0) noShoveIndex == GetTrollID("No Shove");
-		if(Trolls[noShoveIndex].IsActive(client) && GetRandomFloat() < hShoveFailChance.FloatValue) {
+		static Troll t_noShove;
+		if(t_noShove.Id == 0) t_noShove == Troll.FromName("No Shove");
+		if(t_noShove.IsActive(client) && GetRandomFloat() < hShoveFailChance.FloatValue) {
 			float shoveTime = L4D2Direct_GetNextShoveTime(client);
 			L4D2Direct_SetNextShoveTime(client, shoveTime + 2.0);
 			return Plugin_Handled;
@@ -426,14 +417,12 @@ public Action L4D2_OnEntityShoved(int client, int entity, int weapon, float vecD
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
 	if(client <= 0 || sArgs[0] == '@') return Plugin_Continue; //Ignore admin chat or console
 
-	static int honkID;
 	static int profanityID;
 	static int typooId;
-	if(honkID == 0) honkID = GetTrollID("Honk / Meow / Woof");
 	if(profanityID == 0) profanityID = GetTrollID("No Profanity");
 	if(typooId == 0) typooId = GetTrollID("Typoos");
 
-	if(Trolls[honkID].IsActive(client) && Trolls[honkID].activeFlagClients[client] & 1) {
+	if(t_honk.IsActive(client) && t_honk.GetFlags(client) & 1) {
 		// Honk Processing
 		static char strings[32][8]; 
 		int words = ExplodeString(sArgs, " ", strings, sizeof(strings), 5);
@@ -446,17 +435,14 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		int length = 8 * words;
 		char[] message = new char[length];
 		ImplodeStrings(strings, 32, " ", message, length);
-		if(Trolls[honkID].activeFlagClients[client] & 1)
+		if(t_honk.HasFlag(client, 16)) {
+			// Show modified to them
 			CPrintToChatAll("{blue}%N {default}:  %s", client, message);
-		else {
+		} else {
 			CPrintToChat(client, "{blue}%N {default}:  %s", client, message);
-			bool showOriginalToOthers = Trolls[honkID].activeFlagClients[client] & 4 != 0;
 			for(int i = 1; i <= MaxClients; i++) {
 				if(IsClientConnected(i) && IsClientInGame(i) && i != client) {
-					if(showOriginalToOthers)
-						CPrintToChat(i, "{blue}%N {default}:  %s", client, sArgs);
-					else
-						CPrintToChat(i, "{blue}%N {default}:  %s", client, message);
+					CPrintToChat(i, "{blue}%N {default}:  %s", client, sArgs);
 				}
 			}
 		}
@@ -742,7 +728,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	}
 
 	// Inverted control code:
- 	if(Trolls[t_invertedTrollIndex].IsActive(client)) {
+ 	if(t_invertedTroll.IsActive(client)) {
 		if(buttons & IN_MOVELEFT || buttons & IN_MOVERIGHT) {
 			vel[1] = -vel[1];
 		}
@@ -786,7 +772,7 @@ Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage
 		if(GetClientTeam(attacker) == 4 && IsFakeClient(attacker)) return Plugin_Continue;
 	}
 	// Boost all damage no matter what
-	if(Trolls[t_damageBoostIndex].IsActive(victim)) {
+	if(t_damageBoost.IsActive(victim)) {
 		damage * 2;
 		return Plugin_Changed;
 	}
@@ -804,29 +790,22 @@ Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage
 			if(damage > 0.0 && Trolls[t_slipperyShoesIndex].IsActive(victim) && Trolls[t_slipperyShoesIndex].activeFlagClients[victim] & 16) { 
 				L4D_StaggerPlayer(victim, victim, NULL_VECTOR);
 			}
-			if(isSameTeam && Trolls[t_reverseFFIndex].IsActive(attacker)) {
+			if(isSameTeam && t_reverseFF.IsActive(attacker)) {
 				// Should this be applied? (as in no FF granted)
 				bool disableFF = false;
+				int flags = t_reverseFF.GetFlags(attacker);
 				if(damagetype & DMG_BURN) {
-					disableFF = Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 32 != 0;
+					disableFF = flags & 64 != 0;
 				} else if(damagetype & DMG_BLAST) {
-					disableFF = Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 64 != 0;
+					disableFF = flags & 32 != 0;
 				} else {
-					// Does not run if DMG_BURN or DMG_BLAST
+					// Does not run if DMG_BURN or DMG_BLAST, basically any other damage was caused besides burn/blast, then allow it
 					disableFF = true;
 				}
 
 				if(disableFF) {
 					float returnDmg = damage; //default is 1:1
-					if(Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 2) {
-						returnDmg *= 2.0;
-					} else if(Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 4) {
-						returnDmg /= 2.0;
-					} else if(Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 8) {
-						returnDmg = 0.0;
-					} else if(Trolls[t_reverseFFIndex].activeFlagClients[attacker] & 16) {
-						returnDmg *= 3.0;
-					}
+					t_reverseFF.GetPromptDataFloat(attacker, 0, returnDmg);
 					SDKHooks_TakeDamage(attacker, attacker, attacker, returnDmg, damagetype, -1);
 					damage = 0.0;
 					return Plugin_Changed;
@@ -863,11 +842,7 @@ Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage
 }
 
 public Action OnVocalizeCommand(int client, const char[] vocalize, int initiator) {
-	static int vocalGagID;
-	static int noRushingUsID;
-	if(vocalGagID == 0) vocalGagID = GetTrollID("Vocalize Gag");
-	if(noRushingUsID == 0) noRushingUsID = GetTrollID("No Rushing Us");
-	if(Trolls[noRushingUsID].IsActive(client) && (StrEqual(vocalize, "PlayerHurryUp") || StrEqual(vocalize, "PlayerYellRun") || StrEqual(vocalize, "PlayerMoveOn") || StrEqual(vocalize, "PlayerLeadOn"))) {
+	if(t_noRushingUs.IsActive(client) && (StrEqual(vocalize, "PlayerHurryUp") || StrEqual(vocalize, "PlayerYellRun") || StrEqual(vocalize, "PlayerMoveOn") || StrEqual(vocalize, "PlayerLeadOn"))) {
 		noRushingUsSpeed[client] -= 0.01;
 		if(noRushingUsSpeed[client] < 0.05) {
 			noRushingUsSpeed[client] = 0.05;
@@ -878,7 +853,7 @@ public Action OnVocalizeCommand(int client, const char[] vocalize, int initiator
 	if(Trolls[t_slotRouletteIndex].IsActive(client) && GetURandomFloat() < 0.10) {
 		SetSlot(client, -1);
 	}
-	if(Trolls[vocalGagID].IsActive(client)) {
+	if(t_vocalGag.IsActive(client) && t_vocalGag.GetFlags(client) == 0) {
 		return Plugin_Handled;
 	} 
 	return Plugin_Continue;
@@ -922,11 +897,6 @@ public void OnSceneStageChanged(int scene, SceneStages stage) {
 #endif
 
 public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char soundEntry[PLATFORM_MAX_PATH], int& seed) {
-	static int honkID;
-	static int vocalGagID;
-	if(honkID == 0) honkID = GetTrollID("Honk / Meow / Woof");
-	if(vocalGagID == 0) vocalGagID = GetTrollID("Vocalize Gag");
-	
 	if(lastButtonUser > 0 && IsClientConnected(lastButtonUser) && !IsFakeClient(lastButtonUser) && StrEqual(sample, "npc/mega_mob/mega_mob_incoming.wav")) {
 		PrintToConsoleAll("CRESCENDO STARTED BY %N", lastButtonUser);
 		#if defined DEBUG
@@ -943,24 +913,37 @@ public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PL
 		lastButtonUser = -1;
 	}else if(numClients > 0 && entity > 0 && entity <= MaxClients) {
 		if(StrContains(sample, "survivor\\voice") > -1) {
-			if(Trolls[honkID].IsActive(entity)) {
-				if(Trolls[honkID].activeFlagClients[entity] & 1)
+			if(t_honk.IsActive(entity)) {
+				int trollFlags = t_honk.GetFlags(entity);
+				if(trollFlags & 1) {
 					strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
-				else if(Trolls[honkID].activeFlagClients[entity] & 2) {
+				} else if(trollFlags & 2) {
+					strcopy(sample, sizeof(sample), "custom/quack.mp3");
+					// volume += 0.2;
+				} else if(trollFlags & 4) {
 					strcopy(sample, sizeof(sample), "custom/meow1.mp3");
 					volume += 0.2;
-				} else if(Trolls[honkID].activeFlagClients[entity] & 4) {
+				} else if(trollFlags & 8) {
 					strcopy(sample, sizeof(sample), "custom/woof1.mp3");
 					volume += 0.6;
 				} else
 					return Plugin_Continue;
 				return Plugin_Changed;
-			} else if(Trolls[vocalGagID].IsActive(entity)) {
-				if(Trolls[vocalGagID].activeFlagClients[entity] & 2) {
-					clients[0] = entity;
-					numClients = 1;
+			} else if(t_vocalGag.IsActive(entity)) {
+				int trollFlags = t_vocalGag.GetFlags(entity);
+				if(trollFlags & 2) {
+					SDKHooks_TakeDamage(entity, entity, entity, 1.0, DMG_GENERIC);
+				}
+				if(trollFlags & 1) {
+					volume /= 2.0;
 					return Plugin_Changed;
 				}
+				
+				// if(Trolls[vocalGagID].activeFlagClients[entity] & 2) {
+				// 	clients[0] = entity;
+				// 	numClients = 1;
+				// 	return Plugin_Changed;
+				// }
 				return Plugin_Handled;
 			}
 		}
@@ -1008,11 +991,10 @@ public void Event_WitchVictimSet(Event event, const char[] name, bool dontBroadc
 public Action L4D2_MeleeGetDamageForVictim(int client, int weapon, int victim, float &damage) {
 	static int dullMeleeID;
 	if(!dullMeleeID) dullMeleeID = GetTrollID("Dull Melee");
-	if(Trolls[dullMeleeID].IsActive(client)) {
-		float max = 1.0;
-		if(Trolls[dullMeleeID].activeFlagClients[client] & 2) max = 0.5;
-		else if(Trolls[dullMeleeID].activeFlagClients[client] & 4) max = 0.1;
-		if(GetRandomFloat() <= max) {
+	if(t_dullMelee.IsActive(client)) {
+		float chance = 1.0;
+		t_dullMelee.GetPromptDataFloat(client, 0, chance);
+		if(GetURandomFloat() <= chance) {
 			damage = 0.0;
 			return Plugin_Changed;
 		}

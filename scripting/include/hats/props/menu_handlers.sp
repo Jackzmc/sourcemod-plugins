@@ -75,44 +75,89 @@ void AdminMenu_SaveLoad(TopMenu topmenu, TopMenuAction action, TopMenuObject obj
 	if(action == TopMenuAction_DisplayOption) {
 		Format(buffer, maxlength, "Save / Load");
 	} else if(action == TopMenuAction_SelectOption) {
-		Menu menu = new Menu(SaveLoadHandler);
-		menu.SetTitle("Save / Load");
-		char name[64];
-		// TODO: possibly let you overwrite saves?
-		menu.AddItem("", "[New Save]");
-		ArrayList saves = LoadSaves();
-		if(saves != null) {
-			for(int i = 0; i < saves.Length; i++) {
-				saves.GetString(i, name, sizeof(name));
-				menu.AddItem(name, name);
-			}
-			delete saves;
-		}
-		menu.ExitBackButton = true;
-		menu.ExitButton = true;
-		menu.Display(param, MENU_TIME_FOREVER);
+		Spawn_ShowSaveLoadMainMenu(param);
 	}
 }
 
-int SaveLoadHandler(Menu menu, MenuAction action, int client, int param2) {
+int SaveLoadMainMenuHandler(Menu menu, MenuAction action, int client, int param2) {
+	if (action == MenuAction_Select) {
+		char info[2];
+		menu.GetItem(param2, info, sizeof(info));
+		SaveType type = view_as<SaveType>(StringToInt(info));
+		ShowSaves(client, type);
+	} else if (action == MenuAction_Cancel) {
+		if(param2 == MenuCancel_ExitBack) {
+			Spawn_ShowSaveLoadMainMenu(client);
+		} 
+	} else if (action == MenuAction_End)	
+		delete menu;
+	return 0;
+}
+
+int SaveLoadSceneHandler(Menu menu, MenuAction action, int client, int param2) {
 	if (action == MenuAction_Select) {
 		char saveName[64];
 		menu.GetItem(param2, saveName, sizeof(saveName));
 		if(saveName[0] == '\0') {
 			// Save new
 			FormatTime(saveName, sizeof(saveName), "%Y-%m-%d_%H-%I-%M");
-			if(CreateSave(saveName)) {
+			if(CreateSceneSave(saveName)) {
 				PrintToChat(client, "\x04[Editor]\x01 Saved as \x05%s/%s.txt", g_currentMap, saveName);
 			} else {
 				PrintToChat(client, "\x04[Editor]\x01 Unable to save. Sorry.");
 			}
-		} else if(LoadSave(saveName, true)) {
-			strcopy(g_pendingSaveName, sizeof(g_pendingSaveName), saveName); 
+		} else if(g_pendingSaveClient != 0 && g_pendingSaveClient != client) {
+			PrintToChat(client, "\x04[Editor]\x01 Another user is currently loading a save.");
+		} else if(g_PropData[client].pendingSaveType == Save_Schematic) {
+			PrintToChat(client, "\x04[Editor]\x01 Please complete or cancel current schematic to continue.");
+		} else if(LoadScene(saveName, true)) {
+			ConfirmSave(client, saveName);
+			g_pendingSaveClient = client;
+			PrintToChat(client, "\x04[Editor]\x01 Previewing save \x05%s", saveName);
+			PrintToChat(client, "\x04[Editor]\x01 Press \x05Shift + Middle Mouse\x01 to spawn, \x05Middle Mouse\x01 to cancel");
+		} else {
+			PrintToChat(client, "\x04[Editor]\x01 Could not load save file.");
+		}
+	} else if (action == MenuAction_Cancel) {
+		if(param2 == MenuCancel_ExitBack) {
+			Spawn_ShowSaveLoadMainMenu(client);
+		} 
+	} else if (action == MenuAction_End)	
+		delete menu;
+	return 0;
+}
+
+int SaveLoadSchematicHandler(Menu menu, MenuAction action, int client, int param2) {
+	if (action == MenuAction_Select) {
+		char saveName[64];
+		menu.GetItem(param2, saveName, sizeof(saveName));
+		Schematic schem;
+		if(saveName[0] == '\0') {
+			if(g_PropData[client].pendingSaveType == Save_Schematic) {
+				if(g_PropData[client].schematic.Save()) {
+					PrintToChat(client, "\x04[Editor]\x01 Saved schematic as \x05%s", g_PropData[client].schematic.name);
+				} else {
+					PrintToChat(client, "\x04[Editor]\x01 Failed to save schematic.");
+				}
+				g_PropData[client].schematic.Reset();
+				g_PropData[client].pendingSaveType = Save_None;
+			} else {
+				g_PropData[client].chatPrompt = Prompt_SaveSchematic;
+				PrintToChat(client, "\x04[Editor]\x01 Enter in chat a name for schematic");
+			}
+		} else if(schem.Import(saveName)) {
+			float pos[3];
+			GetCursorLocation(client, pos);
+			ArrayList list = schem.SpawnEntities(pos, true);
+			SaveData save;
+			int parent = list.GetArray(0, save);
+			delete list;
+			Editor[client].Import(parent);
 			if(g_pendingSaveClient != 0 && g_pendingSaveClient != client) {
-				PrintToChat(client, "\x04[Editor]\x01 Another user is currently loading a save.");
+				PrintToChat(client, "\x04[Editor]\x01 Another user is currently loading a scene.");
 			} else {
 				g_pendingSaveClient = client;
-				PrintToChat(client, "\x04[Editor]\x01 Previewing save \x05%s", saveName);
+				PrintToChat(client, "\x04[Editor]\x01 Previewing schematic \x05%s", saveName);
 				PrintToChat(client, "\x04[Editor]\x01 Press \x05Shift + Middle Mouse\x01 to spawn, \x05Middle Mouse\x01 to cancel");
 			}
 		} else {
@@ -120,12 +165,31 @@ int SaveLoadHandler(Menu menu, MenuAction action, int client, int param2) {
 		}
 	} else if (action == MenuAction_Cancel) {
 		if(param2 == MenuCancel_ExitBack) {
-			DisplayTopMenuCategory(g_topMenu, g_propSpawnerCategory, client);
+			Spawn_ShowSaveLoadMainMenu(client);
 		} 
 	} else if (action == MenuAction_End)	
 		delete menu;
 	return 0;
 }
+
+int SaveLoadConfirmHandler(Menu menu, MenuAction action, int client, int param2) {
+	if (action == MenuAction_Select) {
+		ClearSavePreview();
+		char info[64];
+		menu.GetItem(param2, info, sizeof(info));
+		if(info[0] != '\0') {
+			PrintToChat(client, "\x04[Editor]\x01 Loaded scene \x05%s", info);
+			LoadScene(info, false);
+		}
+	} else if (action == MenuAction_Cancel) {
+		if(param2 == MenuCancel_ExitBack) {
+			Spawn_ShowSaveLoadMainMenu(client);
+		} 
+	} else if (action == MenuAction_End)	
+		delete menu;
+	return 0;
+}
+
 int DeleteHandler(Menu menu, MenuAction action, int client, int param2) {
 	if (action == MenuAction_Select) {
 		char info[8];

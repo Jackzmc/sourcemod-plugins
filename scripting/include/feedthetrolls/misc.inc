@@ -63,18 +63,6 @@ bool ToggleMarkPlayer(int client, int target) {
 	}
 }
 
-// Finds the survivor bot that took over an idle player
-int GetSpectatorClient(int bot) {
-	if(!IsFakeClient(bot)) return -1;
-	static char netclass[16];
-	GetEntityNetClass(bot, netclass, sizeof(netclass));
-	if(strcmp(netclass, "SurvivorBot") == 0 ) {
-		int user = GetEntProp(bot, Prop_Send, "m_humanSpectatorUserID");
-		if(user > 0) return GetClientOfUserId(user);
-	}
-	return -1;
-}
-
 stock bool IsPlayerIncapped(int client) {
 	return GetEntProp(client, Prop_Send, "m_isIncapacitated") == 1;
 }
@@ -641,13 +629,13 @@ void SetSlot(int client, int slot) {
 	ClientCommand(client, slotStr);
 }
 
-void RewindPlayer(int client) {
+void RewindPlayer(int client, float distance = 100.0) {
 	float curFlow = L4D2Direct_GetFlowDistance(client);
 	ArrayList navs = new ArrayList(); 
 	L4D_GetAllNavAreas(navs);
 	navs.Sort(Sort_Random, Sort_Integer);
-	float minFlow = curFlow - 300.0;
-	float maxFlow = curFlow - 150.0;
+	float minFlow = curFlow - (3.0*distance);
+	float maxFlow = curFlow - (1.5*distance);
 	// This finds the first nav area in range, usually closer
 	for(int i = 0; i < navs.Length; i++) {
 		float flow = L4D2Direct_GetTerrorNavAreaFlow(navs.Get(i));

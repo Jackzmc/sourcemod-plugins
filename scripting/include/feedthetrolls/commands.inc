@@ -383,10 +383,7 @@ public Action Command_ListTheTrolls(int client, int args) {
 		char buffer[50];
 		for(int p = 0; p < target_count; p++) {
 			int target = target_list[p];
-			if(IsPlayerAlive(target))
-				ReplyToCommand(client, "> Active Trolls for %N:", target);
-			else
-				ReplyToCommand(client, "> Active Trolls for %N:  (Paused)", target);
+			CReplyToCommand(client, "> Active Trolls for {olive}%N:", target);
 
 			if(IsFakeClient(target)) {
 				int player = GetRealClient(target);
@@ -401,9 +398,9 @@ public Action Command_ListTheTrolls(int client, int args) {
 					if(flags > 0) {
 						buffer[0] = '\0';
 						troll.GetFlagNames(target, flags, buffer, sizeof(buffer));
-						ReplyToCommand(client, "\"%s\" Flags: %s", Trolls[troll.Id].name, buffer);
+						CReplyToCommand(client, "\t{green}%s:{default} %s", Trolls[troll.Id].name, buffer);
 					} else
-						ReplyToCommand(client, "%s", Trolls[troll.Id].name);
+						CReplyToCommand(client, "\t{green}%s", Trolls[troll.Id].name);
 				}
 			}
 		}
@@ -411,31 +408,29 @@ public Action Command_ListTheTrolls(int client, int args) {
 	}
 
 	int count = 0;
-	char[][] modeListArr = new char[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
-	static char modeList[255];
-	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) > 1 && IsAnyTrollActive(i)) {
-			if(IsFakeClient(i)) {
-				int player = GetRealClient(i);
-				if(player != -1) i = player;
+	char[][] bufferList = new char[MAX_TROLLS+1][MAX_TROLL_NAME_LENGTH];
+	char buffer[255];
+	for(int player = 1; player <= MaxClients; player++) {
+		if(IsClientConnected(player) && IsClientInGame(player) && GetClientTeam(player) > 1 && IsAnyTrollActive(player)) {
+			if(IsFakeClient(player)) {
+				int realPlayer = GetRealClient(player);
+				if(realPlayer != -1) player = realPlayer;
 			}
-			int modeCount = 0;
-			for(int j = 1; j <= MAX_TROLLS; j++) {
+			int trollCount = 0;
+			for(int j = 1; j < MAX_TROLLS; j++) {
 				Troll troll = Troll(j);
-				if(troll.IsActive(i)) {
-					if(troll.GetFlags(i) > 0)
-						Format(modeListArr[modeCount], MAX_TROLL_NAME_LENGTH, "%s(%d)", trollIds[j], Trolls[j].activeFlagClients[i]);
+				if(troll.IsActive(player)) {
+					int flags = troll.GetFlags(player);
+					if(flags > 0)
+						Format(bufferList[trollCount], MAX_TROLL_NAME_LENGTH, "%s(%d)", Trolls[j].name,  flags);
 					else
-						strcopy(modeListArr[modeCount], MAX_TROLL_NAME_LENGTH, trollIds[j]);
-					modeCount++;
+						strcopy(bufferList[trollCount], MAX_TROLL_NAME_LENGTH, Trolls[j].name);
+					trollCount++;
 				}
 			}
 
-			ImplodeStrings(modeListArr, modeCount, ", ", modeList, sizeof(modeList));
-			if(IsPlayerAlive(i))
-				ReplyToCommand(client, "%N | %s", i, modeList);
-			else
-				ReplyToCommand(client, "%N (Paused) | %s", i, modeList);
+			ImplodeStrings(bufferList, trollCount, ", ", buffer, sizeof(buffer));
+			ReplyToCommand(client, "%N | %s", player, buffer);
 			count++;
 		}
 	}
