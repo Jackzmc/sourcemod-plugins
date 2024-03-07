@@ -58,14 +58,6 @@ Some do require newer includes for my modified plugins (such as my improved surv
 
 ## Descriptions
 
-### csgo-knifehp
-On knife kill, gives the player 100 HP (configurable)
-* **Convars:**
-   * `knifehp_enable <0/1>` - Enable regaining health on knife kill
-   * `knifehp_max_health <#>` - Maximum health to set an attacker to
-   * `knifehp_amount <#>` - Amount of health to give attacker
-   
-
 ### l4d2-manual-director
 ~~Probably going to be posted publicly sometime.~~ Allows you to spawn specials on cursor, or via director, forcefully, bypassing limits
 * **Convars:**
@@ -123,16 +115,6 @@ It also makes any vote kicks created by an admin to instantly be accepted by all
 
 * **Convars:**
   * `sm_votekick_force_threshold <#>` - The threshold of damage where the offending player is just immediately kicked. 0 -> Any attempted damage, -1 -> No auto kick.
-
-
-### CSGOTroll
-Another joke plugin, with it configured, a victim will have a % chance their shots just fail. This can be for the AWP or all weapons at least for now.
-* **Convars:**
-  * `troll_enable <0/1>` - Enable troll. 0 -> OFF, 1 -> Shots
-  * `troll_shot_fail_percentage <0.0-1.0>` - percentage float (0.0 to 1.0) chance that victims' shots fail
-  * `troll_targets <ids>` - comma separated list of steamid64 targets (ex: STEAM_0:0:75141700)
-  * `troll_shot_mode <0/1>` - 0 -> ALL Weapons, 1 -> AWP
-
 
 ### l4d2_avoid_minigun
 Makes the bots avoid standing in front of or on top of the player that is using a minigun. It checks every 2.0 seconds if they are in the way, then forces them to move to behind you.  There is no configuration, all automatic.
