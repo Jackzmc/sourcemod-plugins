@@ -33,3 +33,4 @@ scripting/ssh.sp
 scripting/l4d2_witch_force_attack_cmd.sp
 l4d2_stats_plugin/
 data
+!sql/*

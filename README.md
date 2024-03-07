@@ -1,11 +1,11 @@
-# sourcemod-plugins
+# Sourcemod L4D2 Plugins
 This is a collection of sourcemod plugins, most are used on my servers. The majority of the plugins are created by me, but some are modifications of other plugins. 
 Some of the plugins / changes are very specific, but may be useful to someone.
 
 Not always the latest versions. If you have any interest with a plugin, I can make sure to upload the latest.
 
 Useful things:
-1. Netprop viewer https://jackz.me/netprops/l4d2
+1. **Netprop Viewer** [L4D2 Netprops](https://jackz.me/netprops/l4d2) and [L4D2 Datamaps](https://jackz.me/netprops/l4d2-data)
 
 ## Plugin List
 
@@ -35,6 +35,7 @@ Useful things:
   * [sm_namespamblock](#sm_namespamblock) - Basic plugin that bans players if they change their name in rapid succession 
   * [l4d2-stats-plugin](https://github.com/jackzmc/l4d2-stats-plugin) - Custom stats recorder, see https://stats.jackz.me
   * [l4d2-ai-tweaks](#l4d2_ai_tweaks) - Very minor tweaks to survivor bots' behavior
+  * [sm_player_notes](#sm_player_notes) - Add notes to players
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
@@ -308,6 +309,8 @@ This plugin will store bans in a database and read from it on connect. This allo
 It will automatically intercept any ban that calls OnBanIdentity or OnBanClient (so sm_ban will work normally)
 Note: All admin players are ignored
 
+[Database File](sql/globalbans.sql)
+
 * **Convars:**
   * `sm_globalbans_kick_type <0/1/2>`
     * 0 = Do not kick, just notify
@@ -468,3 +471,14 @@ Simply, prevents an idle bot (that is a bot for an idle player) from healing ano
 2. The player has been idle for over **ALLOW_HEALING_MIN_IDLE_TIME** (a \#define) seconds (default is 3 minutes)
     
 Requires recompile to change.
+
+### sm_player_notes
+
+Simply lets you add notes to any player, and includes reputation summary and automatic actions (for my other plugins). When a player joins, all admins will see their notes. 
+
+[Database File](sql/sm_player_notes.sql) | [Docs for Automatic Actions](https://admin.jackz.me/docs/notes)
+
+* **Commands:**
+  * `sm_note <player> <message>` - Add notes to player, message does not need to be surrounded with quotes
+  * `sm_notedisconnected` - Shows menu of all players that have disconnected
+  * `sm_notes <player>` - View notes for player
