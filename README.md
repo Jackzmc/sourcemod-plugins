@@ -138,7 +138,7 @@ Makes the bots avoid standing in front of or on top of the player that is using 
 
 
 ### l4d2_ai_minigun
-Requires: [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+Requires: [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 
 Spawn the holdout bots used in the passing. This supports all 8 characters, including with the minigun. They can spawn with any weapon or default to ak47.
 
@@ -155,8 +155,8 @@ Code modified from https://forums.alliedmods.net/showthread.php?p=1741099
 
 
 ### L4D2Tools
-Requires:
-* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+Plugin requirements:
+* [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 * [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
 * [Modified L4D Survivor Identity Fix](#l4d_survivor_identity_fix)
 
@@ -199,14 +199,14 @@ This really only affects wandering zombies, mobs and panic events, but it may wo
 
 ### l4d2_feedthetrolls
 Requires:
-* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+* [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 * (Optional) [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
 * (Optional) [Actions](https://forums.alliedmods.net/showthread.php?t=336374)
 * (Optional) [Modified L4D Antirush](#l4d_anti_rush)
 
 This plugin allows you to enact certain troll modes on any player, some are subtle some are less so. Either way, it works great to deal with a rusher, an asshole or even your friends.
 
-See updated list of trolls and their descriptions:
+See the up-to-date list of trolls and their descriptions:
 https://admin.jackz.me/docs/ftt
 
 * **Convars:**
@@ -240,8 +240,8 @@ Bots do sometimes miss, but sometimes still manage to kill witch. They also don'
 
 
 ### l4d2_extraplayeritems
-Requires:
-* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+Plugin requirements:
+* [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 * [L4D Info Editor](https://forums.alliedmods.net/showthread.php?p=2614626)
 * (Development dependency) Updated l4d2_weapon_stocks.inc
 
@@ -278,8 +278,8 @@ Features:
 
 
 ### l4d_survivor_identity_fix
-Requires:
-* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+Plugin requirements:
+* [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 
 A fork of [Survivor Identity Fix plugin](https://forums.alliedmods.net/showthread.php?t=280539) that adds support for other plugins to update the model cache. This is used by [L4D2Tools](#L4D2Tools) to update the identity when someone changes their model with `sm_model`. It also will clear the memory of model when a player disconnects entirely or on a new map.
 
@@ -316,8 +316,8 @@ Note: All admin players are ignored
 
 
 ### l4d2_rollback
-Requires:
-* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+Plugin requirements:
+* [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 
 An idea that you can either manually or have events (friendly fire, new player joining) trigger saving all the player's states. Then if say, a troll comes and kills you and/or incaps your team, you can just quick restore to exactly the point you were at with the same items, health, etc. 
 
@@ -338,8 +338,8 @@ Plugin that automatically restarts server when the server is NOT hibernating, wi
 This fixes an issue with custom maps that force sb_all_bot_game to 1 and disable hibernation.
 
 ### l4d2_TKStopper
-Requires:
-* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+Plugin requirements:
+* [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 
 Plugin that prevents team killers by checking multiple criterias. Default system is as:
 Any survivor that attacks another survivor
@@ -363,8 +363,8 @@ During any of the above three conditions, if they deal (or attempt to deal) over
 
 
 ### l4d2_crescendo_control
-Requires:
-* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+Plugin requirements:
+* [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 
 This plugin prevents the activation of buttons ahead of the team. It will prevent players from starting crescendos (and some small other activities as a side effect) until a certain threshold of the team has reached the area.
 
@@ -389,20 +389,24 @@ A fork of https://forums.alliedmods.net/showthread.php?p=2757330
 
 
 ### l4d2_hideandseek
-Requires:
-* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+Plugin requirements:
+* [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 * [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
 
 A sourcemod extenstion of the vscript gamemode (https://steamcommunity.com/sharedfiles/filedetails/?id=2467133506)
-- Player blockers, portals, and props to change and control the maps
-- Optional climbable infected ladders, and heart beat when seeker nearby
-- Some quality of life (winner messages, change seeker mid game, change map time)
-- and a lot more
+- Custom map boundaries, portals (tunnel through walls), and extra map props to spice up the maps
+- Optional climbable infected ladders
+- Heart beat sounds when a seeker is nearby
+- Quality of life improvements (winner messages, change seeker mid-game, change round time)
+- and a lot more that I've forgotten
+
+> [!TIP]
+> **Note:** Starting the gamemode is very tricky, sometimes you need to slay all players multiple times and sometimes reload the plugin for it to properly start. Once it works, it should be stable.
 
 
 ### l4d2_guesswho
-Requires:
-* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+Plugin requirements:
+* [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 * [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
 
 Based off gmod guess who game, find the real players amongst a group of bots.
@@ -414,8 +418,8 @@ Gamemode: https://steamcommunity.com/sharedfiles/filedetails/?id=2823719841
 Requires l4dtoolz and left4dhooks, and optionally skip intro cutscene 
 
 ### l4d2_prophunt
-Requires:
-* [Left4Dhooks](https://forums.alliedmods.net/showthread.php?t=321696)
+Plugin requirements:
+* [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 * [Scene Processor](https://forums.alliedmods.net/showthread.php?p=2147410)
 
 Based off gmod prop hunt, find the real players amongst a group of props.
@@ -428,13 +432,25 @@ Vscript required for hud & mutation
 
 Requires l4dtoolz and left4dhooks, and optionally skip intro cutscene
 
-### l4d2_hats
+### l4d2_hats (Hats & Editor)
 
-Lets you hat any entity (has blacklist support), including players. Yeet, place, restore, and more with the hats. 
+Lets you hat any entity (has blacklist support), including players. Yeet, place, restore, and more with the hats. Also includes an entire prop editor that replaces any other prop spawner. You can create custom invisible walls and spawn props (In the future, may become a separate plugin.)
 
-**Be warned, this can cause server crashes.** It's a lot stable now, but some features are disabled by default (reverse hats + visible hats) as they caused too many crashes. Most crashes are caused by hats and ladders, but default settings prevent it.
+[Prop Spawner Cheatsheat](https://admin.jackz.me/docs/props)
 
-It also includes an entity editor and invisible wall creator. View the file to see commands and cvars
+The prop spawner includes:
+
+* Recents (recently spawned props)
+* Spawn Previews
+* Manual Placement (Move prop with cursor before spawning)
+* Prop Search
+* Better prop categories
+* Item spawning
+* Schematics (in early development)
+* Favorited props (in alpha)
+
+> [!WARNING]
+> **Be warned, hatting can cause server crashes.** It's a LOT more stable now, but some features are disabled by default (reverse hats, visible hats) as they caused too many crashes. Most crashes are caused by hats and ladders, but the default settings prevent it.
 
 ### sm_namespamblock
 
