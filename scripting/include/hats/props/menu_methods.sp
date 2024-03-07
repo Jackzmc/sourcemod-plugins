@@ -182,3 +182,46 @@ void Spawn_ShowFavorites(int client) {
 	g_db.Format(query, sizeof(query), "SELECT model, name FROM editor_favorites WHERE steamid = '%s' ORDER BY position DESC", query);
 	g_db.Query(DB_GetFavoritesCallback, query, GetClientUserId(client));
 }
+
+void Spawn_ShowSaveLoadMainMenu(int client) {
+	Menu menu = new Menu(SaveLoadMainMenuHandler);
+	menu.SetTitle("Save / Load");
+	// Id is SaveType
+	menu.AddItem("1", "Map Scenes");
+	menu.AddItem("2", "Schematics");
+	menu.ExitBackButton = true;
+	menu.ExitButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+
+void ShowSaves(int client, SaveType type) {
+	ArrayList saves;
+	Menu newMenu;
+	if(type == Save_Scene) {
+		newMenu = new Menu(SaveLoadSceneHandler);
+		newMenu.SetTitle("Save & Load > Map Scenes");
+		newMenu.AddItem("", "[Save New Scene]");
+		saves = LoadScenes();
+	} else if(type == Save_Schematic) {
+		newMenu = new Menu(SaveLoadSchematicHandler);
+		newMenu.SetTitle("Save & Load > Schematics");
+		if(g_PropData[client].pendingSaveType == Save_Schematic) {
+			newMenu.AddItem("", "[Save Schematic]");
+		} else {
+			newMenu.AddItem("", "[Start New Schematic]");
+			// Don't load saves when in middle of creating schematic
+			saves = LoadSchematics();
+		}
+	}
+	if(saves != null) {
+		char name[64];
+		for(int i = 0; i < saves.Length; i++) {
+			saves.GetString(i, name, sizeof(name));
+			newMenu.AddItem(name, name);
+		}
+		delete saves;
+	}
+	newMenu.ExitBackButton = true;
+	newMenu.ExitButton = true;
+	newMenu.Display(client, MENU_TIME_FOREVER);
+}

@@ -1,5 +1,5 @@
 
-ArrayList LoadSaves() {
+ArrayList LoadScenes() {
 	char path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "data/prop_spawner/saves/%s", g_currentMap);
 	FileType fileType;
@@ -15,9 +15,23 @@ ArrayList LoadSaves() {
 	return saves;
 }
 
-ArrayList g_previewItems;
+ArrayList LoadSchematics() {
+	char path[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, path, sizeof(path), "data/prop_spawner/schematics");
+	FileType fileType;
+	DirectoryListing listing = OpenDirectory(path);
+	if(listing == null) return null;
+	char buffer[64];
+	ArrayList saves = new ArrayList(ByteCountToCells(64));
+	while(listing.GetNext(buffer, sizeof(buffer), fileType) && fileType == FileType_File) {
+		if(buffer[0] == '.') continue;
+		saves.PushString(buffer);
+	}
+	delete listing;
+	return saves;
+}
 
-bool LoadSave(const char[] save, bool asPreview = false) {
+bool LoadScene(const char[] save, bool asPreview = false) {
 	char path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "data/prop_spawner/saves/%s/%s", g_currentMap, save);
 	// ArrayList savedItems = new ArrayList(sizeof(SaveData));
@@ -33,41 +47,24 @@ bool LoadSave(const char[] save, bool asPreview = false) {
 	while(file.ReadLine(buffer, sizeof(buffer))) {
 		if(buffer[0] == '#') continue;
 		data.Deserialize(buffer);
-		int entity = -1;
-		if(data.type == Build_Physics)
-			entity = CreateEntityByName("prop_physics");
-		else
-			entity = CreateEntityByName("prop_dynamic_override");
+		int entity = data.ToEntity(NULL_VECTOR, asPreview);
 		if(entity == -1) {
-			PrintToServer("[Editor] LoadSave(\"%s\", %b): failed to create %s", save, asPreview, buffer);
+			PrintToServer("[Editor] LoadScene(\"%s\", %b): failed to create %s", save, asPreview, buffer);
 			continue;
 		}
-		PrecacheModel(data.model);
-		DispatchKeyValue(entity, "model", data.model);
-		DispatchKeyValue(entity, "targetname", "saved_prop");
-		if(asPreview) {
-			DispatchKeyValue(entity, "rendermode", "1");
-			DispatchKeyValue(entity, "solid", "0");
-		} else {
-			DispatchKeyValue(entity, "solid", data.type == Build_NonSolid ? "0" : "6");
-		}
-		TeleportEntity(entity, data.origin, data.angles, NULL_VECTOR);
-		if(!DispatchSpawn(entity)) {
-			PrintToServer("[Editor] LoadSave(\"%s\", %b): failed to spawn %s", save, asPreview, buffer);
-			continue;
-		}
-		int alpha = asPreview ? 200 : data.color[3];
-		SetEntityRenderColor(entity, data.color[0], data.color[1], data.color[2], alpha);
-
-		if(asPreview)
-			g_previewItems.Push(EntIndexToEntRef(entity));
-		else
-			AddSpawnedItem(entity);
 	}
 	delete file;
 	return true;
 }
 
+void ConfirmSave(int client, const char[] name) {
+	Menu newMenu = new Menu(SaveLoadConfirmHandler);
+	newMenu.AddItem(name, "Spawn");
+	newMenu.AddItem("", "Cancel");
+	newMenu.ExitBackButton = false;
+	newMenu.ExitButton = false;
+	newMenu.Display(client, 0);
+}
 void ClearSavePreview() {
 	if(g_previewItems != null) {
 		for(int i = 0; i < g_previewItems.Length; i++) {
@@ -82,14 +79,16 @@ void ClearSavePreview() {
 }
 
 void AddSpawnedItem(int entity, int client = 0) {
+	if(client > 0 && g_PropData[client].pendingSaveType == Save_Schematic) {
+		g_PropData[client].schematic.AddEntity(entity, client);
+	} 
+	// TODO: confirm if we want it to be in list, otherwise we need to clean manually
+	int userid = client > 0 ? GetClientUserId(client) : 0;
 	int index = g_spawnedItems.Push(EntIndexToEntRef(entity));
-	if(client == 0)
-		g_spawnedItems.Set(index, 0, 1);
-	else
-		g_spawnedItems.Set(index, GetClientUserId(client), 1);
+	g_spawnedItems.Set(index, userid, 1);
 }
 
-bool CreateSave(const char[] name) {
+bool CreateSceneSave(const char[] name) {
 	char path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "data/prop_spawner/saves/%s", g_currentMap);
 	CreateDirectory(path, 509);
@@ -321,13 +320,18 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	}
 	switch(g_PropData[client].chatPrompt) {
 		case Prompt_Search: DoSearch(client, sArgs);
-		case Prompt_Save: {
-			if(CreateSave(sArgs)) {
+		case Prompt_SaveScene: {
+			if(CreateSceneSave(sArgs)) {
 				PrintToChat(client, "\x04[Editor]\x01 Saved as \x05%s/%s.txt", g_currentMap, sArgs);
 			} else {
 				PrintToChat(client, "\x04[Editor]\x01 Unable to save. Sorry.");
 			}
 		}
+		case Prompt_SaveSchematic: {
+			g_PropData[client].StartSchematic(client, sArgs);
+		}
+		default: 
+			PrintToChat(client, "\x04[Editor]\x01 Not implemented.");
 	}
 	g_PropData[client].chatPrompt = Prompt_None;
 	return Plugin_Handled;
@@ -471,13 +475,15 @@ int DeleteAll(int onlyPlayer = 0) {
 		int ref = g_spawnedItems.Get(i);
 		int spawnedBy = g_spawnedItems.Get(i, 1);
 		// Skip if wishing to only delete certain items:
-		if(onlyPlayer != 0 && spawnedBy != userid) continue;
-		if(IsValidEntity(ref)) {
-			RemoveEntity(ref);
+		if(onlyPlayer == 0 || spawnedBy == userid) {
+			if(IsValidEntity(ref)) {
+				RemoveEntity(ref);
+			}
+			// TODO: erasing while removing
+			g_spawnedItems.Erase(i);
+			i--; // go back up one
+			count++;
 		}
-		// TODO: erasing while removing
-		g_spawnedItems.Erase(i);
-		count++;
 	}
 	return count;
 }
@@ -488,9 +494,9 @@ void ShowHint(int client) {
 	int lastActive = g_PropData[client].lastActiveTime; 
 	g_PropData[client].lastActiveTime = time;
 	if(time - lastActive < SHOW_HINT_MIN_DURATION) return;
-	PrintToChat(client, "\x05R: \x01Change Mode");
-	PrintToChat(client, "\x05Middle Click: \x01Cancel Placement  \x05Shift + Middle Click: \x01Place  \x05Ctrl + Middle Click: \x01Change Type");
-	PrintToChat(client, "\x05E: \x01Rotate (hold, use mouse)  \x05Left Click: \x01Change Axis  \x05Right Click: \x01Snap Angle");
+	PrintToChat(client, "\x05ZOOM: \x01Change Mode");
+	PrintToChat(client, "\x05USE: \x01Place  \x05Shift + USE: \x01Cancel  \x05Ctrl + USE: \x01Change Type");
+	PrintToChat(client, "\x05R: \x01Rotate (hold, use mouse)  \x05Left Click: \x01Change Axis  \x05Right Click: \x01Snap Angle");
 	PrintToChat(client, "Type \x05/prop favorite\x01 to (un)favorite.");
 	PrintToChat(client, "More information & cheatsheat: \x05%s", "https://admin.jackz.me/docs/props");
 }
