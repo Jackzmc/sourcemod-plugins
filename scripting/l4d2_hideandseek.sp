@@ -135,10 +135,24 @@ public void OnClientConnected(int client) {
 		currentPlayers++;
 		if(isEnabled) {
 			GameState state = GetState();
+			// Once first player joins, wait for others to join
 			if(currentPlayers == 1 && state == State_Startup) {
 				CreateTimer(10.0, Timer_KeepWaiting, _, TIMER_REPEAT);
 			}
 		}
+	}
+}
+
+public void OnClientPutInServer(int client) {
+	if(isEnabled && !IsFakeClient(client)) {
+		ChangeClientTeam(client, 1);
+		isPendingPlay[client] = true;
+		isNearbyPlaying[client] = false;
+		PrintToChatAll("%N will play next round", client);
+		float pos[3];
+		// Try to get spawn point, if not, just let them spawn normally
+		if(GetSpawnPosition(pos))
+			TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
 	}
 }
 
@@ -150,8 +164,8 @@ public Action Timer_KeepWaiting(Handle h) {
 }
 
 public void OnClientDisconnect(int client) {
+	distanceTraveled[client] = 0.0;
 	if(!IsFakeClient(client)) {
-		distanceTraveled[client] = 0.0;
 		currentPlayers--;
 	}
 }
@@ -375,17 +389,7 @@ public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast
 	}
 }
 
-public void OnClientPutInServer(int client) {
-	if(isEnabled && !IsFakeClient(client)) {
-		ChangeClientTeam(client, 1);
-		isPendingPlay[client] = true;
-		isNearbyPlaying[client] = false;
-		PrintToChatAll("%N will play next round", client);
-		float pos[3];
-		GetSpawnPosition(pos);
-		TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
-	}
-}
+
 
 
 public void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
@@ -453,7 +457,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		PrintToServer("[H&S] Using provided spawnpoint: %.1f %.1f %.1f", mapConfig.spawnpoint[0], mapConfig.spawnpoint[1], mapConfig.spawnpoint[2]);
 	}
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i)) {
+		if(IsClientInGame(i)) {
 			if(isPendingPlay[i]) {
 				JoinGame(i);
 			}
