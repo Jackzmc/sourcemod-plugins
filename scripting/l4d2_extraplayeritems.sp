@@ -34,7 +34,8 @@
 
 #define EXTRA_TANK_MIN_SEC 2.0
 #define EXTRA_TANK_MAX_SEC 16.0
-#define MAX_RANDOM_SPAWNS 12
+// The map's max flow rate is divided by this. Parish Ch4 = ~16 items
+#define MAX_RANDOM_SPAWNS 1700.0
 #define DATE_FORMAT "%F at %I:%M %p"
 
 
@@ -348,6 +349,7 @@ public void OnPluginStart() {
 			}
 		}
 		g_currentChapter = L4D_GetCurrentChapter();
+		UpdateSurvivorCount();
 		TryStartHud();
 	}
 
@@ -1097,7 +1099,7 @@ Action Timer_SetupNewClient(Handle h, int userid) {
 		PrintDebug(DEBUG_SPAWNLOGIC, "Giving new client (%N) tier 1: %s", client, weaponName);
 		GiveWeapon(client, weaponName, 0.6, 0);
 	}
-	PrintDebug(DEBUG_SPAWNLOGIC, "%N: Giving random secondary / %d", secondaryWeapons.Length, client);
+	PrintDebug(DEBUG_SPAWNLOGIC, "%N: Giving random secondary / %d", client, secondaryWeapons.Length);
 	if(secondaryWeapons.Length > 0) {
 		secondaryWeapons.GetString(GetRandomInt(0, secondaryWeapons.Length - 1), weaponName, sizeof(weaponName));
 		GiveWeapon(client, weaponName, 0.6, 1);
@@ -1371,54 +1373,6 @@ bool IsWallNearby(const float pos[3], WallCheck wall, float maxDistance = 80.0) 
 	return TR_DidHit();
 }
 
-void PopulateItemSpawns() {
-	ArrayList navs = new ArrayList();
-	L4D_GetAllNavAreas(navs);
-	navs.Sort(Sort_Random, Sort_Integer);
-	float pos[3];
-	float percentage = hExtraSpawnBasePercentage.FloatValue * (g_survivorCount - 4);
-	PrintToServer("[EPI] Populating extra item spawns based on player count (%d-4) | Percentage %.2f%%", g_survivorCount, percentage * 100);
-	int tier;
-	// On first chapter, 10% chance to give tier 2
-	if(g_currentChapter == 1) tier = GetRandomFloat() < 0.15 ? 1 : 0;
-	else tier = DiceRoll(0, 3, 2, BIAS_LEFT);
-	int count;
-	for(int i = 0; i < navs.Length; i++) {
-		Address nav = navs.Get(i);
-		int spawnFlags = L4D_GetNavArea_SpawnAttributes(nav);
-		int baseFlags = L4D_GetNavArea_AttributeFlags(nav);
-		if(!(baseFlags & (NAV_BASE_FLOW_BLOCKED)) &&
-			!(spawnFlags & NAV_SPAWN_ESCAPE_ROUTE|NAV_SPAWN_DESTROYED_DOOR|NAV_SPAWN_CHECKPOINT|NAV_SPAWN_NO_MOBS|NAV_SPAWN_STOP_SCAN)) 
-		{
-			L4D_FindRandomSpot(view_as<int>(nav), pos);
-			bool north = IsWallNearby(pos, Wall_North);
-			bool east = IsWallNearby(pos, Wall_East);
-			bool south = IsWallNearby(pos, Wall_South);
-			bool west = IsWallNearby(pos, Wall_West);
-			// TODO: collision check (windows like c1m1)
-			int wallCount = 0;
-			if(north) wallCount++;
-			if(east) wallCount++;
-			if(south) wallCount++;
-			if(west) wallCount++;
-			if(wallCount >= 2) {
-				if(GetURandomFloat() < percentage) {
-					int wpn;
-					pos[2] += 7.0;
-					if(GetURandomFloat() > 0.30) {
-						wpn = CreateWeaponSpawn(pos, "", tier);
-					} else {
-						wpn = CreateRandomMeleeSpawn(pos);
-					}
-					if(wpn == -1) continue;
-					if(++count > MAX_RANDOM_SPAWNS) break;
-				}
-			}
-		}
-	}
-	PrintToServer("[EPI] Spawned %d/%d new item spawns (tier=%d)", count, MAX_RANDOM_SPAWNS, tier);
-	delete navs;
-}
 
 char WEAPON_SPAWN_CLASSNAMES[32][] = {
 "weapon_pistol_magnum_spawn","weapon_smg_spawn","weapon_smg_silenced_spawn","weapon_pumpshotgun_spawn","weapon_shotgun_chrome_spawn","weapon_pipe_bomb_spawn","weapon_upgradepack_incendiary_spawn","weapon_upgradepack_explosive_spawn","weapon_adrenaline_spawn","weapon_smg_mp5_spawn","weapon_defibrillator_spawn","weapon_propanetank_spawn","weapon_oxygentank_spawn","weapon_chainsaw_spawn","weapon_gascan_spawn","weapon_ammo_spawn","weapon_sniper_scout_spawn","weapon_hunting_rifle_spawn","weapon_pain_pills_spawn","weapon_rifle_spawn","weapon_rifle_desert_spawn","weapon_sniper_military_spawn","weapon_autoshotgun_spawn","weapon_shotgun_spas_spawn","weapon_first_aid_kit_spawn","weapon_molotov_spawn","weapon_vomitjar_spawn","weapon_rifle_ak47_spawn","weapon_rifle_sg552_spawn","weapon_grenade_launcher_spawn","weapon_sniper_awp_spawn","weapon_rifle_m60_spawn"
@@ -1676,7 +1630,6 @@ void UnlockDoor(int flag) {
 		SetVariantString("Unlock");
 		AcceptEntityInput(entity, "SetAnimation");
 		g_saferoomDoorEnt = INVALID_ENT_REFERENCE;
-		PopulateItems();
 	}
 }
 
@@ -1709,7 +1662,7 @@ Action Timer_UpdateHud(Handle h) {
 	// TODO: name scrolling
 	// TODO: name cache (hook name change event), strip out invalid
 	for(int i = 1; i <= MaxClients; i++) { 
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2) {
+		if(IsClientInGame(i) && GetClientTeam(i) == 2) {
 			data[0] = '\0';
 			prefix[0] = '\0';
 			int health = GetClientRealHealth(i);
@@ -1723,8 +1676,8 @@ Action Timer_UpdateHud(Handle h) {
 			} else {
 				Format(prefix, HUD_NAME_LENGTH, "%s", playerData[client].nameCache[playerData[client].scrollIndex]);
 			}
-			if(g_isSpeaking[i])
-				Format(prefix, HUD_NAME_LENGTH, "🔊%s", prefix);
+			// if(g_isSpeaking[i])
+			// 	Format(prefix, HUD_NAME_LENGTH, "%s", prefix);
 
 			playerData[client].AdvanceScroll();
 			
@@ -1769,9 +1722,9 @@ Action Timer_UpdateHud(Handle h) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PopulateItems() {
-	PrintToServer("[EPI:TEMP] PopulateItems hasRan=%b finale=%b", g_areItemsPopulated, L4D_IsMissionFinalMap(true));
 	if(g_areItemsPopulated) return;
 	UpdateSurvivorCount();
+	PrintToServer("[EPI:TEMP] PopulateItems hasRan=%b finale=%b willRun=%b players=%d", g_areItemsPopulated, L4D_IsMissionFinalMap(true), !g_areItemsPopulated&&IsEPIActive, g_realSurvivorCount);
 	if(!IsEPIActive()) return;
 
 	g_areItemsPopulated = true;
@@ -1799,6 +1752,7 @@ void PopulateItems() {
 				if(count == 4) {
 					// Some item spawns are only for 4 players, so here we set to # of players:
 					SetEntProp(i, Prop_Data, "m_itemCount", g_survivorCount);
+					++affected;
 				} else if(count > 0 && GetURandomFloat() < percentage) {
 					SetEntProp(i, Prop_Data, "m_itemCount", ++count);
 					++affected;
@@ -1810,6 +1764,64 @@ void PopulateItems() {
 
 	PopulateItemSpawns();
 	PopulateCabinets();
+}
+
+void PopulateItemSpawns(int minWalls = 4) {
+	ArrayList navs = new ArrayList();
+	L4D_GetAllNavAreas(navs);
+	navs.Sort(Sort_Random, Sort_Integer);
+	float pos[3];
+	float percentage = hExtraSpawnBasePercentage.FloatValue * (g_survivorCount - 4);
+	PrintToServer("[EPI] Populating extra item spawns based on player count (%d-4) | Percentage %.2f%%", g_survivorCount, percentage * 100);
+	int tier;
+	// On first chapter, 10% chance to give tier 2
+	if(g_currentChapter == 1) tier = GetRandomFloat() < 0.15 ? 1 : 0;
+	else tier = DiceRoll(0, 3, 2, BIAS_LEFT);
+	int count;
+
+	float mapFlowMax = L4D2Direct_GetMapMaxFlowDistance();
+	PrintToServer("[EPI] PopulateItemSpawns: flow[0, %f]", mapFlowMax);
+	int maxSpawns = RoundFloat(mapFlowMax / MAX_RANDOM_SPAWNS);
+	for(int i = 0; i < navs.Length; i++) {
+		Address nav = navs.Get(i);
+		int spawnFlags = L4D_GetNavArea_SpawnAttributes(nav);
+		int baseFlags = L4D_GetNavArea_AttributeFlags(nav);
+		if((!(baseFlags & NAV_BASE_FLOW_BLOCKED)) &&
+			!(spawnFlags & (NAV_SPAWN_ESCAPE_ROUTE|NAV_SPAWN_DESTROYED_DOOR|NAV_SPAWN_CHECKPOINT|NAV_SPAWN_NO_MOBS|NAV_SPAWN_STOP_SCAN))) 
+		{
+			L4D_FindRandomSpot(view_as<int>(nav), pos);
+			bool north = IsWallNearby(pos, Wall_North);
+			bool east = IsWallNearby(pos, Wall_East);
+			bool south = IsWallNearby(pos, Wall_South);
+			bool west = IsWallNearby(pos, Wall_West);
+			// TODO: collision check (windows like c1m1)
+			int wallCount = 0;
+			if(north) wallCount++;
+			if(east) wallCount++;
+			if(south) wallCount++;
+			if(west) wallCount++;
+			if(wallCount >= minWalls) {
+				if(GetURandomFloat() < percentage) {
+					int wpn;
+					pos[2] += 7.0;
+					if(GetURandomFloat() > 0.30) {
+						wpn = CreateWeaponSpawn(pos, "", tier);
+					} else {
+						wpn = CreateRandomMeleeSpawn(pos);
+					}
+					if(wpn == -1) continue;
+					if(++count >= maxSpawns) break;
+				}
+			}
+		}
+	}
+	PrintToServer("[EPI] Spawned %d/%d new item spawns (tier=%d)", count, maxSpawns, tier);
+	delete navs;
+	// Incase there was no suitable spots, try again:
+	minWalls--;
+	if(count == 0 && minWalls > 0) {
+		PopulateItemSpawns(minWalls);
+	}
 }
 
 void PopulateCabinets() {

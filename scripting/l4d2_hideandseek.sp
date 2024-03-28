@@ -61,6 +61,12 @@ enum GameState {
 	State_Restarting,
 	State_Hunting
 }
+char GAME_STATE_DEBUG[4][] = {
+	"Startup",
+	"Hiding",
+	"Restarting",
+	"Hunting"
+};
 
 bool isNearbyPlaying[MAXPLAYERS+1];
 bool wasThirdPersonVomitted[MAXPLAYERS+1];
@@ -69,6 +75,7 @@ int currentSeeker;
 int currentPlayers = 0;
 
 Handle suspenseTimer, thirdPersonTimer, peekCamStopTimer, hiderCheckTimer;
+Handle startupTimer;
 
 
 int g_BeamSprite;
@@ -134,12 +141,19 @@ public void OnClientConnected(int client) {
 	if(!IsFakeClient(client)) {
 		currentPlayers++;
 		if(isEnabled) {
-			GameState state = GetState();
 			// Once first player joins, wait for others to join
-			if(currentPlayers == 1 && state == State_Startup) {
-				CreateTimer(10.0, Timer_KeepWaiting, _, TIMER_REPEAT);
+			if(currentPlayers == 1) {
+				StartWaiting();
 			}
 		}
+	}
+}
+
+void StartWaiting(bool fireInstantly = false) {
+	if(GetState() == State_Startup && startupTimer != null) {
+		startupTimer = CreateTimer(10.0, Timer_KeepWaiting, _, TIMER_REPEAT);
+		if(fireInstantly) 
+			TriggerTimer(startupTimer);
 	}
 }
 
@@ -160,7 +174,12 @@ public Action Timer_KeepWaiting(Handle h) {
 	SetTick(-40);
 	SetState(State_Startup);
 	PrintHintTextToAll("Waiting for players to join...");
-	return IsGameSoloOrPlayersLoading() ? Plugin_Continue : Plugin_Stop;
+	if(IsGameSoloOrPlayersLoading()) {
+		return Plugin_Continue;
+	} else {
+		startupTimer = null;
+		return Plugin_Handled;
+	}
 }
 
 public void OnClientDisconnect(int client) {
@@ -189,8 +208,7 @@ public void OnMapStart() {
 		}
 		strcopy(g_currentSet, sizeof(g_currentSet), "default");
 		if(IsGameSoloOrPlayersLoading()) {
-			Handle timer = CreateTimer(10.0, Timer_KeepWaiting, _, TIMER_REPEAT);
-			TriggerTimer(timer);
+			StartWaiting(true);
 			PrintToServer("[H&S] Player(s) are connecting, or solo. Waiting...");
 			SetState(State_Startup);
 		}
@@ -595,10 +613,11 @@ public Action Timer_Music(Handle h) {
 	int playerCount;
 
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientConnected(i) && IsClientInGame(i) && i != currentSeeker) {
+		if(IsClientInGame(i) && i != currentSeeker) {
 			playerCount++;
 			// GetClientAbsOrigin(i, playerLoc);
 			// float dist = GetVectorDistance(seekerLoc, playerLoc, true);
+			if(currentSeeker == 0) continue;
 			float dist = GetFlowDistance(currentSeeker, i);
 			if(dist <= HEARTBEAT_CLOSE_DIST) {
 				StopSound(i, SNDCHAN_AUTO, SOUND_SUSPENSE_1);

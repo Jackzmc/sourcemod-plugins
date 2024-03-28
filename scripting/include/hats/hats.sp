@@ -372,7 +372,7 @@ Action Command_DoAHat(int client, int args) {
 			if(IsFakeClient(entity) && L4D_GetIdlePlayerOfBot(entity) > 0) {
 				PrintToChat(client, "[Hats] Cannot hat idle bots");
 				return Plugin_Handled;
-			} else if(GetClientTeam(entity) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
+			} else if(!isForced && GetClientTeam(entity) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
 				PrintToChat(client, "[Hats] Cannot make enemy a hat... it's dangerous");
 				return Plugin_Handled;
 			} else if(entity == EntRefToEntIndex(Editor[client].entity)) {
@@ -747,7 +747,11 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 		} else {
 			float mins[3];
 			GetEntPropVector(modifyEntity, Prop_Send, "m_vecMins", mins);
-			hatData[client].offset[2] += mins[2];
+			if(StrContains(classname, "weapon_molotov") > -1 || StrContains(classname, "weapon_pipe_bomb") > -1 || StrContains(classname, "weapon_vomitjar") > -1) {
+				hatData[client].offset[2] += 7.2;
+			} else {
+				hatData[client].offset[2] += mins[2];
+			}
 		}
 
 		if(cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_ReversedHats) && flags & view_as<int>(HAT_REVERSED)) {

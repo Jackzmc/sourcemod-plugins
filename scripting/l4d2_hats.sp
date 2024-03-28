@@ -622,24 +622,24 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
 				bool isRotate;
 				int flags = GetEntityFlags(client);
-				if(buttons & IN_RELOAD && ~buttons & IN_ZOOM) {
+				if(buttons & IN_RELOAD) {
 					if(!g_inRotate[client]) {
 						g_inRotate[client] = true;
 					}
-					if(buttons & IN_JUMP) {
-						buttons = buttons & ~IN_JUMP;
+					if(!(oldButtons & IN_JUMP) && (buttons & IN_JUMP)) {
+						buttons &= ~IN_JUMP;
 						Editor[client].CycleStacker(tick);
-					} if(buttons & IN_SPEED) {
+					} else if(!(oldButtons & IN_SPEED) && (buttons & IN_SPEED)) {
 						Editor[client].ToggleCollision(tick);
 						return Plugin_Handled; 
-					} else if(buttons & IN_DUCK) {
+					}  else if(!(oldButtons & IN_DUCK) && (buttons & IN_DUCK)) {
 						Editor[client].ToggleCollisionRotate(tick);
 						return Plugin_Handled; 
 					} else {
 						PrintCenterText(client, "%.1f %.1f %.1f", Editor[client].angles[0], Editor[client].angles[1], Editor[client].angles[2]);
 						isRotate = true;
 						SetEntityFlags(client, flags |= FL_FROZEN);
-						if(buttons & IN_ATTACK) Editor[client].CycleAxis(tick);
+						if(!(oldButtons & IN_ATTACK) && (buttons & IN_ATTACK)) Editor[client].CycleAxis(tick);
 						else if(buttons & IN_ATTACK2) Editor[client].CycleSnapAngle(tick);
 						
 						// Rotation control:

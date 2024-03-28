@@ -20,6 +20,21 @@ public Action Command_HideAndSeek(int client, int args) {
 				ReplyToCommand(client, "Error occurred while reloading map file");
 			}
 			return Plugin_Handled;
+		} else if(StrEqual(subcmd, "state")) {
+			int state = GetCmdArgInt(2);
+			if(state < 0 || state > view_as<int>(State_Hunting)) {
+				ReplyToCommand(client, "Invalid state. 0 to %d", view_as<int>(State_Hunting));
+			} else {
+				if(SetState(view_as<GameState>(state))) {
+					ReplyToCommand(client, "State set to %s (%d)", GAME_STATE_DEBUG[state],state);
+					if(view_as<GameState>(state) == State_Startup) {
+						StartWaiting();
+					}
+				} else {
+					ReplyToCommand(client, "Game not active");
+				}
+			}
+			return Plugin_Handled;
 		} else if(StrEqual(subcmd, "set", false)) {
 			char set[16];
 			if(args == 1) {
@@ -207,29 +222,6 @@ public Action Command_HideAndSeek(int client, int args) {
 		} else if(StrEqual(subcmd, "stuck")) {
 			TeleportEntity(client, mapConfig.spawnpoint, NULL_VECTOR, NULL_VECTOR);
 			return Plugin_Handled;
-		} else if(StrEqual(subcmd, "bots")) {
-			if(args == 2) {
-				char arg[16];
-				GetCmdArg(2, arg, sizeof(arg));
-				if(StrEqual(arg, "toggle")) {
-					bool newValue = !IsBotsEnabled();
-					SetBotsEnabled(newValue);
-					if(newValue) ReplyToCommand(client, "Bots are now enabled");
-					else ReplyToCommand(client, "Bots are now disabled");
-					return Plugin_Handled;
-				} else if(StrEqual(arg, "on") || StrEqual(arg, "true")) {
-					SetBotsEnabled(true);
-					ReplyToCommand(client, "Bots are now enabled");
-					return Plugin_Handled;
-				} else if(StrEqual(arg, "off") || StrEqual(arg, "false")) {
-					SetBotsEnabled(false);
-					ReplyToCommand(client, "Bots are now disabled");
-					return Plugin_Handled;
-				}
-			}
-			if(IsBotsEnabled()) ReplyToCommand(client, "Bots are enabled");
-			else ReplyToCommand(client, "Bots are disabled");
-			return Plugin_Handled;
 		} else if(StrEqual(subcmd, "peekfix")) {
 			if(!PeekCam.Exists()) {
 				PeekCam.Target = client;
@@ -272,21 +264,21 @@ public Action Command_HideAndSeek(int client, int args) {
 			}
 			return Plugin_Handled;
 		} else if(StrEqual(subcmd, "debug")) {
-			ReplyToCommand(client, "- Game Info -");
-			int addSlasher = GetSlasher();
-			ReplyToCommand(client, "Current seeker: %N(%d) (addon says %N(%d))", currentSeeker, currentSeeker, addSlasher, addSlasher);
-			ReplyToCommand(client, "State: %d | Tick: %d", view_as<int>(GetState()), GetTick());
+			int mutationSlasher = GetSlasher();
+			CReplyToCommand(client, "Current seeker: \x04%N(%d)", currentSeeker, currentSeeker);
+			CReplyToCommand(client, "\tMutation Says: \x04%N(%d)", mutationSlasher, mutationSlasher);
+			int state = view_as<int>(GetState());
+			CReplyToCommand(client, "State: \x04%s(%d)\x01 | Tick: \x04%d\x01", GAME_STATE_DEBUG[state], state, GetTick());
 
-			ReplyToCommand(client, "- Map Info -");
-			ReplyToCommand(client, "Map: %s (set %s)", g_currentMap, g_currentSet);
+			CReplyToCommand(client, "Map: \x04%s\x01/\x05%s", g_currentMap, g_currentSet);
 			if(mapConfig.hasSpawnpoint)
-				ReplyToCommand(client, "Has Spawnpoint: yes (%f %f %f)", mapConfig.spawnpoint[0], mapConfig.spawnpoint[1], mapConfig.spawnpoint[2]);
+				CReplyToCommand(client, "Has Spawnpoint: \x04yes\x01 (\x05%.1f %.1f %.1f\x01)", mapConfig.spawnpoint[0], mapConfig.spawnpoint[1], mapConfig.spawnpoint[2]);
 			else
-				ReplyToCommand(client, "Has Spawnpoint: no (possibly map spawn %f %f %f)", mapConfig.spawnpoint[0], mapConfig.spawnpoint[1], mapConfig.spawnpoint[2]);
-			ReplyToCommand(client, "Climbing: %b", mapConfig.canClimb);
-			ReplyToCommand(client, "Buttons Auto-press: %b", mapConfig.pressButtons);
-			ReplyToCommand(client, "Map Time Override: %d", mapConfig.mapTime);
-			ReplyToCommand(client, "Your travel distance: %f", distanceTraveled[client]);
+				CReplyToCommand(client, "Has Spawnpoint: \x04no (possibly map spawn \x05%.1f %.1f %.1f\x01)", mapConfig.spawnpoint[0], mapConfig.spawnpoint[1], mapConfig.spawnpoint[2]);
+			CReplyToCommand(client, "Climbing: \x04%b", mapConfig.canClimb);
+			CReplyToCommand(client, "Buttons Auto-press: \x04%b", mapConfig.pressButtons);
+			CReplyToCommand(client, "Map Time Override: \x04%d", mapConfig.mapTime);
+			CReplyToCommand(client, "Your travel distance: \x04%f", distanceTraveled[client]);
 			return Plugin_Handled;
 		}
 		ReplyToCommand(client, "Unknown command");
@@ -303,7 +295,6 @@ public Action Command_HideAndSeek(int client, int args) {
 		ReplyToCommand(client, "- Admin Commands -");
 		ReplyToCommand(client, "set [new set]: Change the prop set or view current");
 		ReplyToCommand(client, "setspawn: Sets the temporary spawnpoint for the map");
-		ReplyToCommand(client, "bots [toggle, [value]]: View if bots are enabled, or turn them on");
 		ReplyToCommand(client, "peekfix - Clear peek camera from all players");
 		ReplyToCommand(client, "seeker [new seeker]: Get the active seeker, or set a new one.");
 		ReplyToCommand(client, "sm_cvar hs_peekcam <0/2> - Turn the peek camera on or off");

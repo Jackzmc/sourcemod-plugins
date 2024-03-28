@@ -5,14 +5,12 @@
 
 #define PLUGIN_VERSION "1.0"
 
-#define PRECACHE_SOUNDS_COUNT 6
+#define PRECACHE_SOUNDS_COUNT 4
 char PRECACHE_SOUNDS[PRECACHE_SOUNDS_COUNT][] = {
-	"custom/meow1.mp3",
 	"custom/xen_teleport.mp3",
 	"custom/mariokartmusic.mp3",
 	"custom/spookyscaryskeletons.mp3",
 	"custom/wearenumberone2.mp3",
-	"custom/quack.mp3"
 };
 
 #include <sourcemod>
@@ -101,7 +99,7 @@ public void OnPluginStart() {
 	if(hSVMaxPlayers != null) { 
 		hPlayerLimit    = CreateConVar("sm_player_limit", "0", "Overrides sv_maxplayers. 0 = off, > 0: limit", FCVAR_NONE, true, 0.0, false);
 		hPlayerLimit.AddChangeHook(Event_PlayerLimitChange);
-		hSVMaxPlayers.IntValue = hPlayerLimit.IntValue;
+		if(hPlayerLimit.IntValue > 0) hSVMaxPlayers.IntValue = hPlayerLimit.IntValue;
 	}
 
 	hFFNotice.AddChangeHook(CVC_FFNotice);

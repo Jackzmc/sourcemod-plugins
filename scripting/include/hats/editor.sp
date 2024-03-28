@@ -211,7 +211,7 @@ enum struct EditorData {
 	}
 
 	void CycleStacker(float tick) {
-		if(tick - cmdThrottle[this.client] <= 0.20) return;
+		if(tick - cmdThrottle[this.client] <= 0.10) return;
 		int newDirection = view_as<int>(this.stackerDirection) + 1;
 		if(newDirection == view_as<int>(Stack_Down)) newDirection = 0;
 		this.stackerDirection = view_as<StackerDirection>(newDirection);
@@ -334,8 +334,10 @@ enum struct EditorData {
 			return this._FinishPreview(entity) ? Complete_PropSpawned : Complete_PropError;
 		} else {
 			// Is edit, do nothing, just reset
+			PrintHintText(this.client, "Edit Complete");
 			this.Reset();
 			entity = 0;
+
 			return Complete_EditSuccess;
 		}
 	}
@@ -384,6 +386,7 @@ enum struct EditorData {
 		this.Reset();
 		if(!isEdit) {
 			id = createdWalls.Push(EntIndexToEntRef(blocker));
+			PrintToChat(this.client, "\x04[Editor]\x01 Created wall \x05#%d\x01.", id);
 		}
 		return true;
 	}
@@ -430,7 +433,8 @@ enum struct EditorData {
 				this.origin[2] += (size[2] * sign);
 			}
 		}
-
+		PrintHintText(this.client, "%s\n%s", this.classname, this.data);
+		// PrintToChat(this.client, "\x04[Editor]\x01 Editing copy \x05%d\x01 of entity \x05%d\x01. End with \x05/edit done\x01 or \x04/edit cancel\x01", entity, oldEntity);
 		// Don't kill preview until cancel
 		return true;
 	}
@@ -606,7 +610,8 @@ enum struct EditorData {
 			TeleportEntity(this.entity, this.prevOrigin, this.prevAngles, NULL_VECTOR);
 		}
 		this.SetMode(INACTIVE);
-		CPrintToChat(this.client, "\x04[Editor]\x01 Cancelled.");
+		PrintHintText(this.client, "Cancelled");
+		// CPrintToChat(this.client, "\x04[Editor]\x01 Cancelled.");
 	}
 }
 EditorData Editor[MAXPLAYERS+1];

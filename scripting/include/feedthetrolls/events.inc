@@ -9,7 +9,8 @@ public void OnMapStart() {
 	PrecacheSound("custom/meow1.mp3");	
 	AddFileToDownloadsTable("sound/custom/woof1.mp3");
 	PrecacheSound("custom/woof1.mp3");	
-
+	AddFileToDownloadsTable("sound/custom/quack.mp3");
+	PrecacheSound("custom/quack.mp3");	
 
 	lastButtonUser = -1;
 	HookEntityOutput("func_button", "OnPressed", Event_ButtonPress);
@@ -919,7 +920,7 @@ public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PL
 					strcopy(sample, sizeof(sample), "player/footsteps/clown/concrete1.wav");
 				} else if(trollFlags & 2) {
 					strcopy(sample, sizeof(sample), "custom/quack.mp3");
-					// volume += 0.2;
+					volume = 1.0;
 				} else if(trollFlags & 4) {
 					strcopy(sample, sizeof(sample), "custom/meow1.mp3");
 					volume += 0.2;

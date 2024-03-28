@@ -183,22 +183,6 @@ bool IsGameSoloOrPlayersLoading() {
 	return connecting > 0 || ingame == 1;
 }
 
-//cm_NoSurvivorBots 
-bool SetBotsEnabled(bool value) {
-	static char buffer[64];
-	if(value) 
-		Format(buffer, sizeof(buffer), "g_ModeScript.MutationOptions.cm_NoSurvivorBots = true");
-	else
-		Format(buffer, sizeof(buffer), "g_ModeScript.MutationOptions.cm_NoSurvivorBots = false");
-	return L4D2_ExecVScriptCode(buffer);
-}
-
-bool IsBotsEnabled() {
-	static char result[8];
-	L4D2_GetVScriptOutput("g_ModeScript.MutationState.cm_NoSurvivorBots", result, sizeof(result));
-	return StrEqual(result, "true", false);
-}
-
 stock void GetHorizontalPositionFromClient(int client, float units, float finalPosition[3]) {
 	float pos[3], ang[3];
 	GetClientEyeAngles(client, ang);

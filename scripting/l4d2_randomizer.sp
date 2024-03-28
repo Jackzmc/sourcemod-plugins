@@ -59,37 +59,41 @@ public void OnPluginStart() {
 
 char currentMap[64];
 
+bool hasRan;
 // TODO: on round start
 public void OnMapStart() {
 	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt", true);
 	GetCurrentMap(currentMap, sizeof(currentMap));
+	if(cvarEnabled.BoolValue)
+		CreateTimer(5.0, Timer_Run);
 }
 
 public void OnMapEnd() {
 	Cleanup();
 }
 
-bool hasRan;
 public void OnMapInit(const char[] map) {
-	if(cvarEnabled.BoolValue) {
-		if(LoadMapData(currentMap, FLAG_NONE) && g_MapData.lumpEdits.Length > 0) {
-			Log("Found %d lump edits, running...", g_MapData.lumpEdits.Length);
-			LumpEditData lump;
-			for(int i = 0; i < g_MapData.lumpEdits.Length; i++) {
-				g_MapData.lumpEdits.GetArray(i, lump);
-				lump.Trigger();
-			}
-		}
-	}
-	hasRan = false;
+	// if(cvarEnabled.BoolValue) {
+	// 	if(LoadMapData(currentMap, FLAG_NONE) && g_MapData.lumpEdits.Length > 0) {
+	// 		Log("Found %d lump edits, running...", g_MapData.lumpEdits.Length);
+	// 		LumpEditData lump;
+	// 		for(int i = 0; i < g_MapData.lumpEdits.Length; i++) {
+	// 			g_MapData.lumpEdits.GetArray(i, lump);
+	// 			lump.Trigger();
+	// 		}
+	// 		hasRan = true;
+	// 	}
+	// }
 }
 
-public void OnClientPutInServer(int client) {
-	if(!hasRan) {
-		hasRan = true;
-		if(cvarEnabled.BoolValue)
-			RunMap(currentMap, FLAG_NONE);
-	}
+public void OnConfigsExecuted() {
+
+}
+
+Action Timer_Run(Handle h) {
+	if(cvarEnabled.BoolValue)
+		RunMap(currentMap, FLAG_NONE);
+	return Plugin_Handled;
 }
 
 stock int GetLookingEntity(int client, TraceEntityFilter filter) {
@@ -438,7 +442,7 @@ public bool LoadMapData(const char[] map, int flags) {
 
 	json_cleanup_and_delete(data);
 	profiler.Stop();
-	Log("Parsed map file and found %d scenes in %.4f seconds", g_MapData.scenes.Length, profiler.Time);
+	Log("Parsed map file for %s(%d) and found %d scenes in %.4f seconds", map, flags, g_MapData.scenes.Length, profiler.Time);
 	delete profiler;
 	delete file;
 	return true;
