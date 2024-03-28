@@ -148,6 +148,14 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 	}
 	lastReceiveTime = GetTime();
 	switch(response) {
+		case Live_RunComand: {
+			char command[128];
+			char cmdNamespace[32];
+			int id = receiveBuffer.ReadByte();
+			receiveBuffer.ReadString(command, sizeof(command));
+			receiveBuffer.ReadString(cmdNamespace, sizeof(cmdNamespace));
+			ProcessCommand(id, command, cmdNamespace);
+		}
 		case Live_OK: {
 			int viewerCount = receiveBuffer.ReadByte();
 			g_isPaused = viewerCount == 0;
@@ -167,6 +175,58 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 		delete receiveTimeoutTimer;
 	}
 	receiveTimeoutTimer = CreateTimer(SOCKET_TIMEOUT_DURATION, Timer_Reconnect, 1);
+}
+
+void ProcessCommand(int id, const char[] command, const char[] cmdNamespace = "") {
+	char output[128];
+	if(!StartPayload()) return;
+	if(cmdNamespace[0] == '\0' || StrEqual(cmdNamespace, "default")) {
+		SplitString(command, " ", output, sizeof(output));
+		StartRecord(Live_CommandResponse);
+		if(CommandExists(output)) {
+			ServerCommandEx(output, sizeof(output), "%s", command);
+			AddCommandResponseRecord(id, 1, output);
+		} else {
+			AddCommandResponseRecord(id, -1, "");
+		}
+		SendPayload();
+	} else if(StrEqual(cmdNamespace, "builtin")) {
+		StartRecord(Live_CommandResponse);
+		int result = ProcessBuiltin(command, output, sizeof(output));
+		AddCommandResponseRecord(id, result, output);
+		SendPayload();
+	} else {
+		AddCommandResponseRecord(id, -1, "");
+	}
+}
+
+int ProcessBuiltin(const char[] fullCommand, char[] output, int maxlen) {
+	char command[32];
+	int index = SplitString(fullCommand, " ", command, sizeof(command));
+	if(StrEqual(command, "stop")) {
+		RequestFrame(StopServer);
+		return 1;
+	} else if(StrEqual(command, "request_stop")) {
+		if(GetClientCount(false) == 0) return 0;
+		RequestFrame(StopServer);
+		return 1;
+	} else if(StrEqual(command, "kick")) {
+		char arg[32];
+		index += SplitString(fullCommand[index], " ", arg, sizeof(arg));
+		int player = FindPlayer(arg);
+		if(player == -1) return 0;
+
+		index += SplitString(fullCommand[index], " ", arg, sizeof(arg));
+		KickClient(player, arg);
+		return 1;
+	} else {
+		return -1;
+	}
+}
+
+int FindPlayer(const char[] arg) {
+	// TODO: IMPLEMENT
+	return -1;
 }
 
 void OnSocketConnect(Socket socket, int any) {
@@ -737,6 +797,13 @@ void AddInfectedRecord(int client) {
 		sendBuffer.WriteInt(0);
 }
 
+void AddCommandResponseRecord(int id, int resultValue = -1, const char[] message = "") {
+	StartRecord(Live_CommandResponse);
+	sendBuffer.WriteByte(id);
+	sendBuffer.WriteByte(resultValue);
+	sendBuffer.WriteString(message);
+}
+
 void SendPayload() {
 	sendBuffer.Finish();
 	if(cvar_debug.BoolValue)
@@ -796,16 +863,6 @@ enum struct Buffer {
 
 	void WriteFloat(float value) {
 		this.WriteInt(view_as<int>(value));
-	}
-
-	/// Writes a variable-width string, with the size being prepended. Only supports strings up to 2^15 in size
-	/// @param lenHint - optional, but the length of the string, to avoid strlen() twice
-	void WriteVarString(const char[] string, int lenHint = -1) {
-		if(lenHint < 0) lenHint = strlen(string);
-		this.WriteShort(lenHint);
-		// null term written will just get overwritten
-		strcopy(this.buffer[this.offset], BUFFER_SIZE, string);
-		this.offset += lenHint;
 	}
 
 	// Writes a null-terminated length string, strlen > size is truncated.
