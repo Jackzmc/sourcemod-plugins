@@ -27,13 +27,13 @@ public Plugin myinfo =
 };
 
 int LIVESTATUS_VERSION = 0;
-
+Regex CommandArgRegex;
 
 ConVar cvar_debug;
 ConVar cvar_gamemode; char gamemode[32];
 ConVar cvar_difficulty; int gameDifficulty;
-ConVar cvar_id; char serverId[32];
 ConVar cvar_address; char serverIp[16] = "127.0.0.1"; int serverPort = DEFAULT_SERVER_PORT; 
+ConVar cvar_authToken; char authToken[256];
 
 char currentMap[64];
 int numberOfPlayers = 0;
@@ -55,6 +55,7 @@ bool lateLoaded;
 
 Socket g_socket;
 bool g_isPaused;
+bool isAuthenticated;
 #define BUFFER_SIZE 2048
 Buffer sendBuffer;
 Buffer receiveBuffer; // Unfortunately there's no easy way to have this not be the same as BUFFER_SIZE
@@ -67,22 +68,25 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
+
 	// TODO: periodic reconnect
 	g_socket = new Socket(SOCKET_TCP, OnSocketError);
 	g_socket.SetOption(SocketKeepAlive, 1);
 	g_socket.SetOption(SocketReuseAddr, 1);
 
 	uptime = GetTime();
-	cvar_debug = CreateConVar("sm_adminpanel_debug", "0", "Turn on debug mode", FCVAR_DONTRECORD, true, 0.0, true, 1.0);
+	cvar_debug = CreateConVar("sm_adminpanel_debug", "1", "Turn on debug mode", FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 
-	cvar_id = CreateConVar("sm_adminpanel_id", "", "The server ID to post updates for", FCVAR_NONE);
-	cvar_id.AddChangeHook(OnCvarChanged);
-	cvar_id.GetString(serverId, sizeof(serverId));
+	cvar_authToken = CreateConVar("sm_adminpanel_authtoken", "", "The token for authentication", FCVAR_PROTECTED);
+	cvar_authToken.AddChangeHook(OnCvarChanged);
+	cvar_authToken.GetString(authToken, sizeof(authToken));
 
-	cvar_address = CreateConVar("sm_adminpanel_host", "100.108.152.125:7888", "The IP and port to connect to, default is 7888", FCVAR_NONE);
+	cvar_address = CreateConVar("sm_adminpanel_host", "127.0.0.1:7888", "The IP and port to connect to, default is 7888", FCVAR_NONE);
 	cvar_address.AddChangeHook(OnCvarChanged);
 	cvar_address.GetString(serverIp, sizeof(serverIp));
 	OnCvarChanged(cvar_address, "", serverIp);
+
+
 
 	cvar_gamemode = FindConVar("mp_gamemode");
 	cvar_gamemode.AddChangeHook(OnCvarChanged);
@@ -116,6 +120,8 @@ public void OnPluginStart()
 
 	RegAdminCmd("sm_panel_debug", Command_PanelDebug, ADMFLAG_GENERIC);
 	RegAdminCmd("sm_panel_request_stop", Command_RequestStop, ADMFLAG_GENERIC);
+
+	CommandArgRegex = new Regex("(?:[^\\s\"]+|\"[^\"]*\")+", 0);
 }
 
 void TriggerHealthUpdate(int client, bool instant = false) {
@@ -140,12 +146,41 @@ void OnSocketError(Socket socket, int errorType, int errorNumber, int any) {
 	}
 }
 
+void SendFullSync() {
+	if(StartPayload()) {
+		AddGameRecord();
+		int stage = L4D2_GetCurrentFinaleStage();
+		if(stage != 0)
+			AddFinaleRecord(stage);
+		SendPayload();
+
+		// Resend all players
+		SendPlayers();
+	}
+}
+
 void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int arg) {
 	receiveBuffer.FromArray(receiveData, dataSize);
 	LiveRecordResponse response = view_as<LiveRecordResponse>(receiveBuffer.ReadByte());
 	if(cvar_debug.BoolValue) {
-		PrintToServer("[AdminPanel] Received: %d", response);
+		PrintToServer("[AdminPanel] Received response=%d size=%d bytes", response, dataSize);
 	}
+	if(!isAuthenticated) {
+		if(response == Live_OK) {
+			isAuthenticated = true;
+			PrintToServer("[AdminPanel] Authenticated with server successfully.");
+			SendFullSync();
+		} else if(response == Live_Error) {
+			g_socket.Disconnect();
+			char message[128];
+			receiveBuffer.ReadString(message, sizeof(message));
+			SetFailState("Failed to authenticate with socket: %s", message);
+		} else {
+			// Ignore packets when not authenticated
+		}
+		return;
+	}
+
 	lastReceiveTime = GetTime();
 	switch(response) {
 		case Live_RunComand: {
@@ -154,95 +189,189 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 			int id = receiveBuffer.ReadByte();
 			receiveBuffer.ReadString(command, sizeof(command));
 			receiveBuffer.ReadString(cmdNamespace, sizeof(cmdNamespace));
+			if(cvar_debug.BoolValue) {
+				PrintToServer("[AdminPanel] Running %s:%s", cmdNamespace, command);
+			}
 			ProcessCommand(id, command, cmdNamespace);
 		}
 		case Live_OK: {
 			int viewerCount = receiveBuffer.ReadByte();
 			g_isPaused = viewerCount == 0;
 		} 
+		case Live_Error: {
+			
+		}
 		case Live_Reconnect:
 			CreateTimer(5.0, Timer_Reconnect);
 		case Live_Refresh: {
-			PrintToServer("[AdminPanel] Refresh requested, performing");
-			StartPayload();
-			AddGameRecord();
-			SendPayload();
-
-			SendPlayers();
+			PrintToServer("[AdminPanel] Sync requested, performing");
+			SendFullSync();
 		}
 	}
 	if(receiveTimeoutTimer != null) {
 		delete receiveTimeoutTimer;
 	}
-	receiveTimeoutTimer = CreateTimer(SOCKET_TIMEOUT_DURATION, Timer_Reconnect, 1);
+	// receiveTimeoutTimer = CreateTimer(SOCKET_TIMEOUT_DURATION, Timer_Reconnect, 1);
 }
 
 void ProcessCommand(int id, const char[] command, const char[] cmdNamespace = "") {
 	char output[128];
-	if(!StartPayload()) return;
+	if(!StartPayload(true)) return;
 	if(cmdNamespace[0] == '\0' || StrEqual(cmdNamespace, "default")) {
 		SplitString(command, " ", output, sizeof(output));
-		StartRecord(Live_CommandResponse);
 		if(CommandExists(output)) {
 			ServerCommandEx(output, sizeof(output), "%s", command);
-			AddCommandResponseRecord(id, 1, output);
+			AddCommandResponseRecord(id, Result_Boolean, 1, output);
 		} else {
-			AddCommandResponseRecord(id, -1, "");
+			AddCommandResponseRecord(id, Result_Error, -1, "Command does not exist");
 		}
-		SendPayload();
 	} else if(StrEqual(cmdNamespace, "builtin")) {
-		StartRecord(Live_CommandResponse);
-		int result = ProcessBuiltin(command, output, sizeof(output));
-		AddCommandResponseRecord(id, result, output);
-		SendPayload();
+		CommandResultType type;
+		int result = ProcessBuiltin(command, type, output, sizeof(output));
+		AddCommandResponseRecord(id, type, result, output);
 	} else {
-		AddCommandResponseRecord(id, -1, "");
+		AddCommandResponseRecord(id, Result_Error, -2, "Unknown namespace");
 	}
+	SendPayload();
 }
 
-int ProcessBuiltin(const char[] fullCommand, char[] output, int maxlen) {
+int GetPlayersOnline() {
+	int count;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientInGame(i) && !IsFakeClient(i)) {
+			count++;
+		}
+	}
+	return count;
+}
+
+int ProcessBuiltin(const char[] fullCommand, CommandResultType &type = Result_Boolean, char[] output, int maxlen) {
 	char command[32];
-	int index = SplitString(fullCommand, " ", command, sizeof(command));
+	int matches = CommandArgRegex.MatchAll(fullCommand);
+	CommandArgRegex.GetSubString(0, command, sizeof(command), 0);
 	if(StrEqual(command, "stop")) {
+		type = Result_Boolean;
 		RequestFrame(StopServer);
 		return 1;
 	} else if(StrEqual(command, "request_stop")) {
-		if(GetClientCount(false) == 0) return 0;
-		RequestFrame(StopServer);
-		return 1;
+		type = Result_Boolean;
+		int count = GetPlayersOnline();
+		if(count > 0) {
+			Format(output, maxlen, "There are %d players online", count);
+			return 0;
+		} else {
+			RequestFrame(StopServer);
+			return 1;
+		}
 	} else if(StrEqual(command, "kick")) {
 		char arg[32];
-		index += SplitString(fullCommand[index], " ", arg, sizeof(arg));
+		if(matches >= 2)
+			CommandArgRegex.GetSubString(0, arg, sizeof(arg), 1);
 		int player = FindPlayer(arg);
-		if(player == -1) return 0;
-
-		index += SplitString(fullCommand[index], " ", arg, sizeof(arg));
-		KickClient(player, arg);
-		return 1;
+		if(player > 0) {
+			// Is a player, kick em
+			if(matches >= 2)
+				CommandArgRegex.GetSubString(0, arg, sizeof(arg), 2);
+			KickClient(player, arg);
+			type = Result_Integer;
+			return 1;
+		} else {
+			// Get the failure code
+			type = Result_Error;
+			GetTargetErrorReason(player, output, maxlen);
+			return player;
+		}
+	} else if(StrEqual(command, "ban")) {
+		char arg[32];
+		if(matches >= 2)
+			CommandArgRegex.GetSubString(0, arg, sizeof(arg), 1);
+		int player = FindPlayer(arg);
+		if(player > 0) {
+			// Is a player, kick em
+			if(matches >= 2)
+				CommandArgRegex.GetSubString(0, arg, sizeof(arg), 2);
+			int time = StringToInt(arg);
+			if(matches >= 2)
+				CommandArgRegex.GetSubString(0, arg, sizeof(arg), 3);
+			type = Result_Integer;
+			return BanClient(player, time, BANFLAG_AUTHID, arg, arg, "sm_adminpanel");
+		} else {
+			// Get the failure code
+			GetTargetErrorReason(player, output, maxlen);
+			type = Result_Error;
+			return player;
+		}
+	} else if(StrEqual(command, "players")) {
+		type = Result_Integer;
+		return GetClientCount(false);	
+	} else if(StrEqual(command, "unreserve")) {
+		type = Result_Boolean;
+		if(L4D_LobbyIsReserved()) {
+			L4D_LobbyUnreserve();
+			strcopy(output, maxlen, "Lobby reservation has been removed");
+			return true;
+		} else {
+			return false;
+		}
 	} else {
+		type = Result_Error;
+		strcopy(output, maxlen, "Unknown builtin command");
 		return -1;
 	}
 }
 
+stock void GetTargetErrorReason(int reason, char[] output, int maxlen) {
+	switch (reason) {
+		case COMMAND_TARGET_NONE: {
+			strcopy(output, maxlen, "No matching client");
+		}
+		case COMMAND_TARGET_NOT_ALIVE: {
+			strcopy(output, maxlen, "Target must be alive");
+		}
+		case COMMAND_TARGET_NOT_DEAD: {
+			strcopy(output, maxlen, "Target must be dead");
+		}
+		case COMMAND_TARGET_NOT_IN_GAME: {
+			strcopy(output, maxlen, "Target is not in game");
+		}
+		case COMMAND_TARGET_IMMUNE: {
+			strcopy(output, maxlen, "Unable to target");
+		}
+		case COMMAND_TARGET_EMPTY_FILTER: {
+			strcopy(output, maxlen, "No matching clients");
+		}
+		case COMMAND_TARGET_NOT_HUMAN: {
+			strcopy(output, maxlen, "Cannot target bot");
+		}
+		case COMMAND_TARGET_AMBIGUOUS: {
+			strcopy(output, maxlen, "More than one client matched");
+		}
+	}
+}
+
+// Returns player index OR a target failure. > 0: player, <= 0: failure
 int FindPlayer(const char[] arg) {
 	// TODO: IMPLEMENT
-	return -1;
+	int targets[1];
+	bool is_ml;
+	int result = ProcessTargetString(arg, 0, targets, 1, 0, "", 0, is_ml);
+	if(result == 1) return targets[0];
+	return result;
 }
 
 void OnSocketConnect(Socket socket, int any) {
 	if(cvar_debug.BoolValue)
 		PrintToServer("[AdminPanel] Connected to %s:%d", serverIp, serverPort);
 	g_socket.SetArg(0);
-	// Late loads / first setup we can't send
-	if(currentMap[0] != '\0' && StartPayload()) {
-		AddGameRecord();
-		SendPayload();
-		// Resend all players
-		SendPlayers();
-	}
+
+	PrintToServer("[AdminPanel] Authenticating with server");
+	StartPayloadEx();
+	AddAuthRecord();
+	SendPayload();
 }
 
 void OnSocketDisconnect(Socket socket, int attempt) {
+	isAuthenticated = false;
 	g_socket.SetArg(attempt + 1);
 	float nextAttempt = Exponential(float(attempt) / 2.0) + 2.0;
 	if(nextAttempt > MAX_ATTEMPT_TIMEOUT) nextAttempt = MAX_ATTEMPT_TIMEOUT;
@@ -255,14 +384,14 @@ Action Timer_Reconnect(Handle h, int type) {
 		PrintToServer("[AdminPanel] No response after %f seconds, attempting reconnect", SOCKET_TIMEOUT_DURATION);
 	}
 	ConnectSocket();
-	return Plugin_Handled;
+	return Plugin_Continue;
 }
 
 void ConnectSocket() {
 	if(g_socket == null) LogError("Socket is invalid");
 	if(g_socket.Connected)
 		g_socket.Disconnect();
-	if(serverId[0] == '\0') return;
+	if(authToken[0] == '\0') return;
 	g_socket.SetOption(DebugMode, cvar_debug.BoolValue);
 	g_socket.Connect(OnSocketConnect, OnSocketReceive, OnSocketDisconnect, serverIp, serverPort);
 }
@@ -272,15 +401,27 @@ Action Command_PanelDebug(int client, int args) {
 	char arg[32];
 	GetCmdArg(1, arg, sizeof(arg));
 	if(StrEqual(arg, "connect")) {
-		if(serverId[0] == '\0') 
-			ReplyToCommand(client, "No server id.");
+		if(authToken[0] == '\0') 
+			ReplyToCommand(client, "No auth token.");
 		else
 			ConnectSocket();
 	} else if(StrEqual(arg, "info")) {
-		ReplyToCommand(client, "Connected: %b\tPaused: %b\t#Player: %d", g_socket.Connected, g_isPaused, numberOfPlayers);
-		ReplyToCommand(client, "ID: %s", serverId);
+		ReplyToCommand(client, "Connected: %b\tAuthenticated: %b", g_socket.Connected, isAuthenticated);
+		ReplyToCommand(client, "Paused: %b\t#Players: %d", g_isPaused, numberOfPlayers);
 		ReplyToCommand(client, "Target Host: %s:%d", serverIp, serverPort);
 		ReplyToCommand(client, "Buffer Size: %d", BUFFER_SIZE);
+	} else if(StrEqual(arg, "builtin")) {
+		if(args < 2) {
+			ReplyToCommand(client, "Usage: builtin <command>");
+			return Plugin_Handled;
+		}
+		char command[128];
+		GetCmdArg(2, command, sizeof(command));
+		char output[128];
+		CommandResultType type;
+		int result = ProcessBuiltin(command, type, output, sizeof(output));
+		ReplyToCommand(client, "Result: %d (type=%d)", result, view_as<int>(type));
+		ReplyToCommand(client, "Output: %s", output);
 	} else if(g_socket.Connected) {
 		if(StrEqual(arg, "game")) {
 			StartPayload();
@@ -288,6 +429,8 @@ Action Command_PanelDebug(int client, int args) {
 			SendPayload();
 		} else if(StrEqual(arg, "players")) {
 			SendPlayers();
+		} else if(StrEqual(arg, "sync")) {
+			SendFullSync();
 		} else {
 			ReplyToCommand(client, "Unknown type");
 			return Plugin_Handled;
@@ -400,11 +543,12 @@ public void OnMapStart() {
 	GetCurrentMap(currentMap, sizeof(currentMap));
 	numberOfPlayers = 0;
 	if(lateLoaded) {
-		StartPayload();
-		AddGameRecord();
-		SendPayload();
+		if(StartPayload()) {
+			AddGameRecord();
+			SendPayload();
 
-		SendPlayers();
+			SendPlayers();
+		}
 	}
 }
 
@@ -543,10 +687,7 @@ public void OnClientDisconnect(int client) {
 
 // Cvar updates
 void OnCvarChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
-	if(cvar_id == convar) {
-		strcopy(serverId, sizeof(serverId), newValue);
-		PrintToServer("[AdminPanel] Server ID changed to: %s", serverId);
-	} else if(cvar_address == convar) {
+	if(cvar_address == convar) {
 		if(newValue[0] == '\0') {
 			if(g_socket.Connected)
 				g_socket.Disconnect();
@@ -574,6 +715,10 @@ void OnCvarChanged(ConVar convar, const char[] oldValue, const char[] newValue) 
 			AddGameRecord();
 			SendPayload();
 		}
+	} else if(cvar_authToken == convar) {
+		strcopy(authToken, sizeof(authToken), newValue);
+		// Token changed, re-try authentication
+		ConnectSocket();
 	}
 }
 
@@ -670,6 +815,14 @@ stock int GetDifficultyInt() {
 	else return 1;
 }
 
+enum CommandResultType {
+	Result_Error = -1,
+	Result_None,
+	Result_Boolean,
+	Result_Integer,
+	Result_Float
+}
+
 enum LiveRecordType {
 	Live_Game,
 	Live_Player,
@@ -689,21 +842,30 @@ enum LiveRecordResponse {
 	Live_RunComand
 }
 
-bool StartPayload() {
-	if(!cvar_debug.BoolValue && (g_isPaused || numberOfPlayers == 0)) return false;
+bool StartPayload(bool ignorePause = false) {
+	// PrintToServer("conn=%b auth=%b igPause=%b debug=%b paused=%b player=%b", )
+	if(!g_socket.Connected || !isAuthenticated) return false;
+	if(!ignorePause && (g_isPaused || numberOfPlayers == 0)) return false;
+	StartPayloadEx();
+	return true;
+}
+
+/// Starts payload, ignoring if the payload can even be sent
+bool hasRecord;
+void StartPayloadEx() {
 	sendBuffer.Reset();
-	sendBuffer.WriteByte(LIVESTATUS_VERSION);
-	sendBuffer.WriteString(serverId);
-	return g_socket.Connected;
+	hasRecord = false;
 }
 
 void StartRecord(LiveRecordType type) {
-	sendBuffer.WriteChar('\x1e'); // record separator
+	if(hasRecord) {
+		sendBuffer.WriteChar('\x1e');
+	}
 	sendBuffer.WriteByte(view_as<int>(type));
+	hasRecord = true;
 }
 
 void AddGameRecord() {
-	PrintToServer("pushing Live_Game");
 	StartRecord(Live_Game);
 	sendBuffer.WriteInt(uptime);
 	sendBuffer.WriteInt(campaignStartTime);
@@ -797,11 +959,18 @@ void AddInfectedRecord(int client) {
 		sendBuffer.WriteInt(0);
 }
 
-void AddCommandResponseRecord(int id, int resultValue = -1, const char[] message = "") {
+void AddCommandResponseRecord(int id, CommandResultType resultType = Result_None, int resultValue = 0, const char[] message = "") {
 	StartRecord(Live_CommandResponse);
 	sendBuffer.WriteByte(id);
+	sendBuffer.WriteByte(view_as<int>(resultType));
 	sendBuffer.WriteByte(resultValue);
 	sendBuffer.WriteString(message);
+}
+
+void AddAuthRecord() {
+	StartRecord(Live_Auth);
+	sendBuffer.WriteByte(LIVESTATUS_VERSION);
+	sendBuffer.WriteString(authToken);
 }
 
 void SendPayload() {
