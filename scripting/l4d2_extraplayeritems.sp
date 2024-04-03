@@ -1106,10 +1106,13 @@ Action Timer_SetupNewClient(Handle h, int userid) {
 	}
 
 	if(lowestClient > 0) {
-		// Get a position behind the player, but not too far to put them in a wall.
-		// Hopefully reducing the chance they shot for "appearing" infront of a player
+		// Gets the nav area of lowest client, and finds a random spot inside
 		float pos[3];
-		GetHorizontalPositionFromClient(lowestClient, -40.0, pos);
+		GetClientAbsOrigin(lowestClient, pos);
+		int nav = L4D_GetNearestNavArea(pos);
+		if(nav > 0) {
+			L4D_FindRandomSpot(nav, pos);
+		}
 		TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
 		// Just incase they _are_ in a wall, let the game check:
 		L4D_WarpToValidPositionIfStuck(client);
@@ -1130,8 +1133,6 @@ void GiveWeapon(int client, const char[] weaponName, float delay = 0.3, int clea
 			AcceptEntityInput(oldWpn, "Kill");
 		}
 	}
-	PrintToServer("%N: Giving %s", client, weaponName);
-	PrintToConsoleAll("%N: Giving %s", client, weaponName);
 	DataPack pack;
 	CreateDataTimer(delay, Timer_GiveWeapon, pack);
 	pack.WriteCell(GetClientUserId(client));
@@ -1187,7 +1188,6 @@ int SpawnItem(const char[] itemName, float pos[3], float ang[3] = NULL_VECTOR) {
 	int spawner = CreateEntityByName(classname);
 	if(spawner == -1) return -1;
 	DispatchKeyValue(spawner, "solid", "6");
-	// DispatchKeyValue(entity_weapon, "model", g_bLeft4Dead2 ? g_sWeaponModels2[model] : g_sWeaponModels[model]);
 	DispatchKeyValue(spawner, "rendermode", "3");
 	DispatchKeyValue(spawner, "disableshadows", "1");
 	TeleportEntity(spawner, pos, ang, NULL_VECTOR);
@@ -1285,6 +1285,12 @@ void Debug_GetAttributes(int attributes, char[] output, int maxlen) {
 		if(attributes & (1 << i)) {
 			Format(output, maxlen, "%s %s", output, NAV_SPAWN_NAMES[i]);
 		}
+	}
+}
+
+public void L4D2_OnChangeFinaleStage_Post(int stage) {
+	if(stage == 1) {
+		IncreaseKits(true);
 	}
 }
 
@@ -1729,9 +1735,9 @@ void PopulateItems() {
 
 	g_areItemsPopulated = true;
 
-	if(L4D_IsMissionFinalMap(true)) {
-		IncreaseKits(true);
-	}
+	// if(L4D_IsMissionFinalMap(true)) {
+	// 	IncreaseKits(true);
+	// }
 
 	//Generic Logic
 	float percentage = hExtraItemBasePercentage.FloatValue * (g_survivorCount - 4);

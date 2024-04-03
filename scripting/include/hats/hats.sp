@@ -745,12 +745,14 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 				hatData[client].offset[2] += 4.2;
 			}
 		} else {
-			float mins[3];
+			float mins[3], maxs[3];
+			GetEntPropVector(modifyEntity, Prop_Send, "m_vecMaxs", maxs);
 			GetEntPropVector(modifyEntity, Prop_Send, "m_vecMins", mins);
+			PrintToServer("%s mins: %f height:%f", classname, mins[2], maxs[2] - mins[2]);
 			if(StrContains(classname, "weapon_molotov") > -1 || StrContains(classname, "weapon_pipe_bomb") > -1 || StrContains(classname, "weapon_vomitjar") > -1) {
-				hatData[client].offset[2] += 7.2;
+				hatData[client].offset[2] += 10.0 + 1.0;
 			} else {
-				hatData[client].offset[2] += mins[2];
+				hatData[client].offset[2] += 10.0 + mins[2];
 			}
 		}
 

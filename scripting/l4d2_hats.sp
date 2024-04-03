@@ -547,8 +547,8 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			if(entity > 0) {
 				if(buttons & IN_ZOOM) {
 					// Offset controls:
-					if(buttons & IN_JUMP) hatData[client].offset[2] += 1.0;
-					if(buttons & IN_DUCK) hatData[client].offset[2] -= 1.0;
+					// if(buttons & IN_JUMP) hatData[client].offset[2] += 1.0;
+					// if(buttons & IN_DUCK) hatData[client].offset[2] -= 1.0;
 					if(buttons & IN_FORWARD) hatData[client].offset[0] += 1.0;
 					if(buttons & IN_BACK) hatData[client].offset[0] -= 1.0;
 					if(buttons & IN_MOVELEFT) hatData[client].offset[1] += 1.0;

@@ -14,6 +14,7 @@
 #include <multicolors>
 #include <jutils>
 #include <socket>
+#include <SteamWorks>
 
 #pragma newdecls required
 
@@ -32,14 +33,15 @@ Regex CommandArgRegex;
 ConVar cvar_debug;
 ConVar cvar_gamemode; char gamemode[32];
 ConVar cvar_difficulty; int gameDifficulty;
+ConVar cvar_maxplayers, cvar_visibleMaxPlayers;
 ConVar cvar_address; char serverIp[16] = "127.0.0.1"; int serverPort = DEFAULT_SERVER_PORT; 
 ConVar cvar_authToken; char authToken[256];
 
 char currentMap[64];
 int numberOfPlayers = 0;
+int numberOfViewers;
 int campaignStartTime;
 int uptime;
-bool g_inTransition;
 bool isL4D1Survivors;
 int lastReceiveTime;
 
@@ -54,8 +56,18 @@ Handle receiveTimeoutTimer = null;
 bool lateLoaded;
 
 Socket g_socket;
-bool g_isPaused;
-bool isAuthenticated;
+enum AuthState {
+	Auth_Fail = -1,
+	Auth_Pending,
+	Auth_Success,
+}
+AuthState authState;
+enum GameState {
+	State_None,
+	State_Transitioning,
+	State_Hibernating
+}
+GameState g_gameState;
 #define BUFFER_SIZE 2048
 Buffer sendBuffer;
 Buffer receiveBuffer; // Unfortunately there's no easy way to have this not be the same as BUFFER_SIZE
@@ -73,6 +85,7 @@ public void OnPluginStart()
 	g_socket = new Socket(SOCKET_TCP, OnSocketError);
 	g_socket.SetOption(SocketKeepAlive, 1);
 	g_socket.SetOption(SocketReuseAddr, 1);
+	g_socket.SetOption(SocketSendBuffer, BUFFER_SIZE);
 
 	uptime = GetTime();
 	cvar_debug = CreateConVar("sm_adminpanel_debug", "1", "Turn on debug mode", FCVAR_DONTRECORD, true, 0.0, true, 1.0);
@@ -86,7 +99,8 @@ public void OnPluginStart()
 	cvar_address.GetString(serverIp, sizeof(serverIp));
 	OnCvarChanged(cvar_address, "", serverIp);
 
-
+	cvar_maxplayers = FindConVar("sv_maxplayers");
+	cvar_visibleMaxPlayers = FindConVar("sv_visiblemaxplayers");
 
 	cvar_gamemode = FindConVar("mp_gamemode");
 	cvar_gamemode.AddChangeHook(OnCvarChanged);
@@ -107,6 +121,8 @@ public void OnPluginStart()
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 	HookEvent("map_transition", Event_MapTransition);
 	HookEvent("player_death", Event_PlayerDeath);
+	HookEvent("player_bot_replace", Event_PlayerToBot);
+	HookEvent("bot_player_replace", Event_BotToPlayer);
 
 	campaignStartTime = GetTime();
 	for(int i = 1; i <= MaxClients; i++) {
@@ -147,7 +163,10 @@ void OnSocketError(Socket socket, int errorType, int errorNumber, int any) {
 }
 
 void SendFullSync() {
-	if(StartPayload()) {
+	PrintToServer("SendFullSync");
+	if(StartPayload(true)) {
+		PrintToServer("SendFullSync : Started");
+
 		AddGameRecord();
 		int stage = L4D2_GetCurrentFinaleStage();
 		if(stage != 0)
@@ -165,16 +184,17 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 	if(cvar_debug.BoolValue) {
 		PrintToServer("[AdminPanel] Received response=%d size=%d bytes", response, dataSize);
 	}
-	if(!isAuthenticated) {
+	if(authState == Auth_Pending) {
 		if(response == Live_OK) {
-			isAuthenticated = true;
+			authState = Auth_Success;
 			PrintToServer("[AdminPanel] Authenticated with server successfully.");
 			SendFullSync();
 		} else if(response == Live_Error) {
+			authState = Auth_Fail;
 			g_socket.Disconnect();
 			char message[128];
 			receiveBuffer.ReadString(message, sizeof(message));
-			SetFailState("Failed to authenticate with socket: %s", message);
+			LogError("Failed to authenticate with socket: %s", message);
 		} else {
 			// Ignore packets when not authenticated
 		}
@@ -195,8 +215,7 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 			ProcessCommand(id, command, cmdNamespace);
 		}
 		case Live_OK: {
-			int viewerCount = receiveBuffer.ReadByte();
-			g_isPaused = viewerCount == 0;
+			numberOfViewers = receiveBuffer.ReadByte();
 		} 
 		case Live_Error: {
 			
@@ -205,7 +224,7 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 			CreateTimer(5.0, Timer_Reconnect);
 		case Live_Refresh: {
 			PrintToServer("[AdminPanel] Sync requested, performing");
-			SendFullSync();
+			// SendFullSync();
 		}
 	}
 	if(receiveTimeoutTimer != null) {
@@ -270,7 +289,7 @@ int ProcessBuiltin(const char[] fullCommand, CommandResultType &type = Result_Bo
 		int player = FindPlayer(arg);
 		if(player > 0) {
 			// Is a player, kick em
-			if(matches >= 2)
+			if(matches >= 3)
 				CommandArgRegex.GetSubString(0, arg, sizeof(arg), 2);
 			KickClient(player, arg);
 			type = Result_Integer;
@@ -288,10 +307,10 @@ int ProcessBuiltin(const char[] fullCommand, CommandResultType &type = Result_Bo
 		int player = FindPlayer(arg);
 		if(player > 0) {
 			// Is a player, kick em
-			if(matches >= 2)
+			if(matches >= 3)
 				CommandArgRegex.GetSubString(0, arg, sizeof(arg), 2);
 			int time = StringToInt(arg);
-			if(matches >= 2)
+			if(matches >= 4)
 				CommandArgRegex.GetSubString(0, arg, sizeof(arg), 3);
 			type = Result_Integer;
 			return BanClient(player, time, BANFLAG_AUTHID, arg, arg, "sm_adminpanel");
@@ -311,7 +330,29 @@ int ProcessBuiltin(const char[] fullCommand, CommandResultType &type = Result_Bo
 			strcopy(output, maxlen, "Lobby reservation has been removed");
 			return true;
 		} else {
+			strcopy(output, maxlen, "Lobby reservation has been already been removed");
 			return false;
+		}
+	} else if(StrEqual(command, "cvar")) {
+		char arg[64];
+		if(matches >= 2)
+			CommandArgRegex.GetSubString(0, arg, sizeof(arg), 1);
+		ConVar cvar = FindConVar(arg);
+		if(cvar == null) {
+			type = Result_Error;
+			strcopy(output, maxlen, "Cvar not found");
+			return -1;
+		} else {
+			if(matches >= 3) {
+				CommandArgRegex.GetSubString(0, arg, sizeof(arg), 2);
+				cvar.SetString(arg);
+				type = Result_Boolean;
+				return true;
+			} else {
+				type = Result_Float;
+				cvar.GetString(output, maxlen);
+				return view_as<int>(cvar.FloatValue);
+			}
 		}
 	} else {
 		type = Result_Error;
@@ -371,12 +412,58 @@ void OnSocketConnect(Socket socket, int any) {
 }
 
 void OnSocketDisconnect(Socket socket, int attempt) {
-	isAuthenticated = false;
+	authState = Auth_Pending;
 	g_socket.SetArg(attempt + 1);
 	float nextAttempt = Exponential(float(attempt) / 2.0) + 2.0;
 	if(nextAttempt > MAX_ATTEMPT_TIMEOUT) nextAttempt = MAX_ATTEMPT_TIMEOUT;
 	PrintToServer("[AdminPanel] Disconnected, retrying in %.0f seconds", nextAttempt);
 	CreateTimer(nextAttempt, Timer_Reconnect);
+}
+
+Handle hibernateTimer;
+
+public void L4D_OnServerHibernationUpdate(bool hibernating) {
+	if(hibernating) {
+		g_gameState = State_Hibernating;
+		PrintToServer("[AdminPanel] Server is hibernating, disconnecting from socket");
+		hibernateTimer = CreateTimer(30.0, Timer_Wake, 0, TIMER_REPEAT);
+	} else {
+		g_gameState = State_None;
+		PrintToServer("[AdminPanel] Server is not hibernating");
+		if(hibernateTimer != null) {
+			delete hibernateTimer;
+		}
+	}
+
+	if(StartPayload(true)) {
+		AddGameRecord();
+		SendPayload();
+	}
+
+	if(hibernating) {
+		g_socket.Disconnect();
+	} else {
+		ConnectSocket();
+	}
+}
+
+Action Timer_Wake(Handle h) {
+	PrintToServer("[AdminPanel] Waking server from hibernation");
+	return Plugin_Continue;
+}
+
+public void SteamWorks_SteamServersConnected() {
+	if(StartPayload(true)) {
+		AddMetaRecord(true);
+		SendPayload();
+	}
+}
+
+public void SteamWorks_SteamServersDisconnected() {
+	if(StartPayload(true)) {
+		AddMetaRecord(false);
+		SendPayload();
+	}
 }
 
 Action Timer_Reconnect(Handle h, int type) {
@@ -392,7 +479,8 @@ void ConnectSocket() {
 	if(g_socket.Connected)
 		g_socket.Disconnect();
 	if(authToken[0] == '\0') return;
-	g_socket.SetOption(DebugMode, cvar_debug.BoolValue);
+	// Do not try to reconnect on auth failure, until token has changed
+	if(authState == Auth_Fail) return;
 	g_socket.Connect(OnSocketConnect, OnSocketReceive, OnSocketDisconnect, serverIp, serverPort);
 }
 
@@ -406,10 +494,11 @@ Action Command_PanelDebug(int client, int args) {
 		else
 			ConnectSocket();
 	} else if(StrEqual(arg, "info")) {
-		ReplyToCommand(client, "Connected: %b\tAuthenticated: %b", g_socket.Connected, isAuthenticated);
-		ReplyToCommand(client, "Paused: %b\t#Players: %d", g_isPaused, numberOfPlayers);
+		ReplyToCommand(client, "Connected: %b\tAuthenticated: %d\tState: %d", g_socket.Connected, authState, g_gameState);
+		ReplyToCommand(client, "#Viewers: %d\t#Players: %d", numberOfViewers, numberOfPlayers);
 		ReplyToCommand(client, "Target Host: %s:%d", serverIp, serverPort);
 		ReplyToCommand(client, "Buffer Size: %d", BUFFER_SIZE);
+		ReplyToCommand(client, "Can Send: %b\tCan Force-Send: %b", CanSendPayload(), CanSendPayload(true));
 	} else if(StrEqual(arg, "builtin")) {
 		if(args < 2) {
 			ReplyToCommand(client, "Usage: builtin <command>");
@@ -420,13 +509,21 @@ Action Command_PanelDebug(int client, int args) {
 		char output[128];
 		CommandResultType type;
 		int result = ProcessBuiltin(command, type, output, sizeof(output));
-		ReplyToCommand(client, "Result: %d (type=%d)", result, view_as<int>(type));
+		if(type == Result_Float)
+			ReplyToCommand(client, "Result: %f (type=%d)", result, view_as<int>(type));
+		else
+			ReplyToCommand(client, "Result: %d (type=%d)", result, view_as<int>(type));
+		
 		ReplyToCommand(client, "Output: %s", output);
 	} else if(g_socket.Connected) {
 		if(StrEqual(arg, "game")) {
-			StartPayload();
-			AddGameRecord();
-			SendPayload();
+			if(StartPayload(true)) {
+				AddGameRecord();
+				SendPayload();
+				ReplyToCommand(client, "Sent Game record");
+			} else { 
+				ReplyToCommand(client, "StartPayload(): false");
+			}
 		} else if(StrEqual(arg, "players")) {
 			SendPlayers();
 		} else if(StrEqual(arg, "sync")) {
@@ -456,7 +553,8 @@ void StopServer() {
 
 void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
 	campaignStartTime = GetTime();
-	if(StartPayload()) {
+	g_gameState = State_None;
+	if(StartPayload(true)) {
 		AddGameRecord();
 		SendPayload();
 	}
@@ -466,8 +564,8 @@ void Event_GameEnd(Event event, const char[] name, bool dontBroadcast) {
 }
 
 void Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
-	g_inTransition = true;
-	if(StartPayload()) {
+	g_gameState = State_Transitioning;
+	if(StartPayload(true)) {
 		AddGameRecord();
 		SendPayload();
 	}
@@ -476,8 +574,24 @@ void Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
 void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0) {
-		PrintToServer("death: %N", client);
 		TriggerHealthUpdate(client, true);
+	}
+}
+public void Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast) {
+	int player = GetClientOfUserId(GetEventInt(event, "player"));
+	int bot    = GetClientOfUserId(GetEventInt(event, "bot")); 
+	if(player > 0 && !IsFakeClient(player) && StartPayload(true)) {
+		AddSurvivorRecord(player);
+		SendPayload();
+	}
+}
+
+public void Event_BotToPlayer(Handle event, char[] name, bool dontBroadcast) {
+	int player = GetClientOfUserId(GetEventInt(event, "player"));
+	int bot    = GetClientOfUserId(GetEventInt(event, "bot")); 
+	if(player > 0 && !IsFakeClient(player) && StartPayload(true)) {
+		AddPlayerRecord(player);
+		SendPayload();
 	}
 }
 
@@ -521,34 +635,27 @@ void RecalculatePlayerCount() {
 void SendPlayers() {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientInGame(i)) {
-			StartPayload();
-			AddPlayerRecord(i);
-			SendPayload();
+			if(StartPayload(true)) {
+				AddPlayerRecord(i);
+				SendPayload();
+			}
 		}
 	}
 }
 
-// public void OnPlayerRunCmdPost(int client, int buttons, int impulse, const float vel[3], const float angles[3], int weapon, int subtype, int cmdnum, int tickcount, int seed, const int mouse[2]) {
-// 	float time = GetGameTime();
-// 	// if(time - lastUpdateTime[client] > 7.0) {
-// 	// 	if(StartPayload()) {
-// 	// 		lastUpdateTime[client] = time;
-// 	// 		AddSurvivorRecord(client);
-// 	// 		SendPayload();
-// 	// 	}
-// 	// }
-// }
+public void OnPlayerRunCmdPost(int client, int buttons, int impulse, const float vel[3], const float angles[3], int weapon, int subtype, int cmdnum, int tickcount, int seed, const int mouse[2]) {
+	if(updateHealthTimer[client] != null)
+		TriggerHealthUpdate(client);
+}
 
 public void OnMapStart() {
 	GetCurrentMap(currentMap, sizeof(currentMap));
 	numberOfPlayers = 0;
-	if(lateLoaded) {
-		if(StartPayload()) {
-			AddGameRecord();
-			SendPayload();
+	if(StartPayload(true)) {
+		AddGameRecord();
+		SendPayload();
 
-			SendPlayers();
-		}
+		SendPlayers();
 	}
 }
 
@@ -557,8 +664,8 @@ public void OnConfigsExecuted() {
 }
 // Player counts
 public void OnClientPutInServer(int client) {
-	if(g_inTransition) {
-		g_inTransition = false;
+	if(g_gameState == State_Transitioning) {
+		g_gameState = State_None;
 		if(StartPayload()) {
 			AddGameRecord();
 			SendPayload();
@@ -570,9 +677,7 @@ public void OnClientPutInServer(int client) {
 		numberOfPlayers++;
 	} else {
 		// Check if they are not a bot, such as ABMBot or EPIBot, etc
-		char classname[32];
-		GetEntityClassname(client, classname, sizeof(classname));
-		if(StrContains(classname, "bot", false) > -1) {
+		if(StrContains(nameCache[client], "bot", false) > -1) {
 			return;
 		}
 		strcopy(steamidCache[client], 32, "BOT");
@@ -701,6 +806,7 @@ void OnCvarChanged(ConVar convar, const char[] oldValue, const char[] newValue) 
 				if(serverPort == 0) serverPort = DEFAULT_SERVER_PORT;
 			}
 			PrintToServer("[AdminPanel] Sending data to %s:%d", serverIp, serverPort);
+			authState = Auth_Pending;
 			ConnectSocket();
 		}
 	} else if(cvar_gamemode == convar) {
@@ -717,6 +823,7 @@ void OnCvarChanged(ConVar convar, const char[] oldValue, const char[] newValue) 
 		}
 	} else if(cvar_authToken == convar) {
 		strcopy(authToken, sizeof(authToken), newValue);
+		authState = Auth_Pending;
 		// Token changed, re-try authentication
 		ConnectSocket();
 	}
@@ -831,8 +938,20 @@ enum LiveRecordType {
 	Live_Finale,
 	Live_SurvivorItems,
 	Live_CommandResponse,
-	Live_Auth
+	Live_Auth,
+	Live_Meta
 }
+char LIVE_RECORD_NAMES[view_as<int>(Live_Meta)+1][] = {
+	"Game",
+	"Player",
+	"Survivor",
+	"Infected",
+	"Finale",
+	"Items",
+	"Commands",
+	"Auth",
+	"Meta"
+};
 
 enum LiveRecordResponse {
 	Live_OK,
@@ -842,27 +961,51 @@ enum LiveRecordResponse {
 	Live_RunComand
 }
 
+char pendingRecords[64];
+
+bool CanSendPayload(bool ignorePause = false) {
+	if(!g_socket.Connected || authState != Auth_Success) return false;
+	if(!ignorePause && (numberOfViewers == 0 || numberOfPlayers == 0)) return false;
+	return true;
+}
+
 bool StartPayload(bool ignorePause = false) {
-	// PrintToServer("conn=%b auth=%b igPause=%b debug=%b paused=%b player=%b", )
-	if(!g_socket.Connected || !isAuthenticated) return false;
-	if(!ignorePause && (g_isPaused || numberOfPlayers == 0)) return false;
+	if(!CanSendPayload(ignorePause)) return false;
 	StartPayloadEx();
 	return true;
 }
 
 /// Starts payload, ignoring if the payload can even be sent
 bool hasRecord;
+int recordStart;
+
 void StartPayloadEx() {
 	sendBuffer.Reset();
 	hasRecord = false;
+	pendingRecords[0] = '\0';
+	recordStart = 0;
 }
+
 
 void StartRecord(LiveRecordType type) {
 	if(hasRecord) {
 		sendBuffer.WriteChar('\x1e');
 	}
+	if(cvar_debug.BoolValue)
+		Format(pendingRecords, sizeof(pendingRecords), "%s%s ", pendingRecords, LIVE_RECORD_NAMES[view_as<int>(type)]);
+	recordStart = sendBuffer.offset;
+	sendBuffer.WriteByte(0); // write temp NULL to be replaced
 	sendBuffer.WriteByte(view_as<int>(type));
 	hasRecord = true;
+}
+
+void EndRecord() {
+	int length = sendBuffer.offset - recordStart - 1; // subtract 1, as don't count length inside
+	sendBuffer.WriteByteAt(length, recordStart);
+	// if(cvar_debug.BoolValue) {
+	// 	int type = sendBuffer.ReadByteAt(recordStart + 1);
+	// 	PrintToServer("End record %s(%d) (start: %d, end: %d) length: %d", LIVE_RECORD_NAMES[view_as<int>(type)], type, recordStart, sendBuffer.offset, length);
+	// }
 }
 
 void AddGameRecord() {
@@ -870,36 +1013,32 @@ void AddGameRecord() {
 	sendBuffer.WriteInt(uptime);
 	sendBuffer.WriteInt(campaignStartTime);
 	sendBuffer.WriteByte(gameDifficulty);
-	sendBuffer.WriteByte(g_inTransition);
+	sendBuffer.WriteByte(view_as<int>(g_gameState));
+	sendBuffer.WriteByte(GetMaxPlayers());
 	sendBuffer.WriteString(gamemode);
 	sendBuffer.WriteString(currentMap);
+	EndRecord();
 }	
+
+
+int GetMaxPlayers() {
+	if(cvar_visibleMaxPlayers != null && cvar_visibleMaxPlayers.IntValue > 0) return cvar_visibleMaxPlayers.IntValue;
+	if(cvar_maxplayers != null) return cvar_maxplayers.IntValue;
+	return L4D_IsVersusMode() ? 8 : 4;
+}
 
 void AddFinaleRecord(int stage) {
 	StartRecord(Live_Finale);
 	sendBuffer.WriteByte(stage); // finale stage
 	sendBuffer.WriteByte(L4D_IsFinaleEscapeInProgress()); // escape or not
+	EndRecord();
 }
 
 void AddPlayerRecord(int client, bool connected = true) {
 	// fake bots are ignored:
+	if(steamidCache[client][0] == '\0') return;
 
-	int originalClient = client;
 	bool isIdle = false;
-	if(connected) {
-		// If this is an idle player's bot, then we use the real player's info instead.
-		if(IsFakeClient(client)) {
-			int realPlayer = L4D_GetIdlePlayerOfBot(client);
-			if(realPlayer > 0) {
-				PrintToServer("%d is idle bot of %N", client, realPlayer);
-				isIdle = true;
-				client = realPlayer;
-			} else if(steamidCache[client][0] == '\0') {
-				PrintToServer("skipping %N %s", client, steamidCache[client]);
-				return;
-			}
-		}
-	}
 	StartRecord(Live_Player);
 	sendBuffer.WriteInt(GetClientUserId(client));
 	sendBuffer.WriteString(steamidCache[client]);
@@ -907,49 +1046,67 @@ void AddPlayerRecord(int client, bool connected = true) {
 		sendBuffer.WriteByte(isIdle);
 		sendBuffer.WriteInt(playerJoinTime[client]);
 		sendBuffer.WriteString(nameCache[client]);
+		EndRecord();
 
-		if(GetClientTeam(originalClient) == 2) {
-			AddSurvivorRecord(originalClient, client);
-			AddSurvivorItemsRecord(originalClient, client);
+		if(GetClientTeam(client) == 2) {
+			AddSurvivorRecord(client);
+			AddSurvivorItemsRecord(client);
 		} else if(GetClientTeam(client) == 3) {
 			AddInfectedRecord(client);
 		}
+	} else {
+		EndRecord();
 	}
 }
 
-void AddSurvivorRecord(int client, int forClient = 0) {
-	if(forClient == 0) forClient = client;
+void AddSurvivorRecord(int client) {
+	if(steamidCache[client][0] == '\0') return;
+
+	int userid = GetClientUserId(client);
+	int bot = L4D_GetBotOfIdlePlayer(client);
+	if(bot > 0) client = bot;
+
 	int survivor = GetEntProp(client, Prop_Send, "m_survivorCharacter");
 	// The icons are mapped for survivors as 4,5,6,7; so inc to that for L4D1 survivors
 	if(isL4D1Survivors) {
 		survivor += 4; 
 	}
-	if(survivor >= 8) return;
+	if(survivor >= 8) LogError("invalid survivor %d", survivor);
+
 	StartRecord(Live_Survivor);
-	sendBuffer.WriteInt(GetClientUserId(forClient));
+	sendBuffer.WriteInt(userid);
 	sendBuffer.WriteByte(survivor);
 	sendBuffer.WriteByte(L4D_GetPlayerTempHealth(client)); //temp health
-	sendBuffer.WriteByte(GetEntProp(client, Prop_Send, "m_iHealth")); //perm health
+	int health = IsPlayerAlive(client) ? GetEntProp(client, Prop_Send, "m_iHealth"): 0;
+	sendBuffer.WriteByte(health); //perm health
 	sendBuffer.WriteByte(L4D2_GetVersusCompletionPlayer(client)); // flow%
 	sendBuffer.WriteInt(GetPlayerStates(client)); // state (incl. alive)
 	sendBuffer.WriteInt(GetPlayerMovement(client)); // move
 	sendBuffer.WriteInt(GetAction(client)); // action
+	EndRecord();
 }
-void AddSurvivorItemsRecord(int client, int forClient = 0) {
-	if(forClient == 0) forClient = client;
+void AddSurvivorItemsRecord(int client) {
+	if(steamidCache[client][0] == '\0') return;
+
+	int userid = GetClientUserId(client);
+	int bot = L4D_GetBotOfIdlePlayer(client);
+	if(bot > 0) client = bot;
+
 	StartRecord(Live_SurvivorItems);
-	sendBuffer.WriteInt(GetClientUserId(client));
+	sendBuffer.WriteInt(userid);
 	char name[32];
 	for(int slot = 0; slot < 6; slot++) {
 		name[0] = '\0';
 		GetClientWeaponNameSmart2(client, slot, name, sizeof(name));
 		sendBuffer.WriteString(name);
 	}
+	EndRecord();
 }
 void AddInfectedRecord(int client) {
 	StartRecord(Live_Infected);
 	sendBuffer.WriteInt(GetClientUserId(client));
-	sendBuffer.WriteShort(GetEntProp(client, Prop_Send, "m_iHealth")); //cur health
+	int health = IsPlayerAlive(client) ? GetEntProp(client, Prop_Send, "m_iHealth"): 0;
+	sendBuffer.WriteShort(health); //cur health
 	sendBuffer.WriteShort(GetEntProp(client, Prop_Send, "m_iMaxHealth")); //max health
 	sendBuffer.WriteByte(L4D2_GetPlayerZombieClass(client)); // class
 	int victim = L4D2_GetSurvivorVictim(client);
@@ -957,6 +1114,7 @@ void AddInfectedRecord(int client) {
 		sendBuffer.WriteInt(GetClientUserId(victim));
 	else
 		sendBuffer.WriteInt(0);
+	EndRecord();
 }
 
 void AddCommandResponseRecord(int id, CommandResultType resultType = Result_None, int resultValue = 0, const char[] message = "") {
@@ -965,18 +1123,27 @@ void AddCommandResponseRecord(int id, CommandResultType resultType = Result_None
 	sendBuffer.WriteByte(view_as<int>(resultType));
 	sendBuffer.WriteByte(resultValue);
 	sendBuffer.WriteString(message);
+	EndRecord();
 }
 
 void AddAuthRecord() {
 	StartRecord(Live_Auth);
 	sendBuffer.WriteByte(LIVESTATUS_VERSION);
 	sendBuffer.WriteString(authToken);
+	EndRecord();
+}
+
+void AddMetaRecord(bool state) {
+	StartRecord(Live_Meta);
+	sendBuffer.WriteByte(state);
+	EndRecord();
 }
 
 void SendPayload() {
-	sendBuffer.Finish();
-	if(cvar_debug.BoolValue)
-		PrintToServer("[AdminPanel] Sending %d bytes of data", sendBuffer.offset);
+	if(sendBuffer.offset == 0) return;
+	if(cvar_debug.BoolValue) {
+		PrintToServer("[AdminPanel] Sending %d bytes of data (records = %s)", sendBuffer.offset, pendingRecords);
+	}
 	g_socket.Send(sendBuffer.buffer, sendBuffer.offset);
 }
 
@@ -1018,6 +1185,10 @@ enum struct Buffer {
 		this.buffer[this.offset++] = value & 0xFF;
 	}
 
+	void WriteByteAt(int value, int offset) {
+		this.buffer[offset] = value & 0xFF;
+    }
+
 	void WriteShort(int value) {
 		this.buffer[this.offset++] = value & 0xFF;
 		this.buffer[this.offset++] = (value >> 8) & 0xFF;
@@ -1040,13 +1211,12 @@ enum struct Buffer {
 		this.offset += written + 1;
 	}
 
-	void Finish() {
-		// Set newline
-		this.buffer[this.offset++] = '\n';
-	}
-
 	int ReadByte() {
 		return this.buffer[this.offset++] & 0xFF;
+	}
+
+	int ReadByteAt(int offset) {
+		return this.buffer[offset] & 0xFF;
 	}
 
 	int ReadShort() {
