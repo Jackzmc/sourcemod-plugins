@@ -248,6 +248,9 @@ public void OnMapStart() {
 		lateLoaded = false;
 	}
 }
+public void OnMapEnd() {
+	Game.Cleanup();
+}
 
 public Action L4D2_OnChangeFinaleStage(int &finaleType, const char[] arg) {
 	if(isEnabled) {

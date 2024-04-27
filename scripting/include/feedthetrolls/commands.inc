@@ -707,15 +707,15 @@ Action Command_SetReverseFF(int client, int args) {
 	} else if(StrEqual(arg, "1")) {
 		flag = 1;
 	} else {
-		ReplyToCommand(client, "Unsupported amount. Possible values: 0, 2, 0.5, 3, 1");
+		ReplyToCommand(client, "Unsupported amount. Possible values: 0.5, 1, 2, 3");
 		return Plugin_Handled;
 	}
 	// args are 1-indexed so <=
 	for(int i = 3; i <= args; i++) {
 		GetCmdArg(i, arg, sizeof(arg));
-		if(arg[0] == 'f') {
+		if(arg[0] == 'f') { // [f]ire
 			flag |= 32;
-		} else if(arg[0] == 'e') {
+		} else if(arg[0] == 'e' || arg[0] == 'b') { //[]blast or [e]xplode
 			flag |= 64;
 		} else {
 			ReplyToCommand(client, "Unknown arg: %s", arg);

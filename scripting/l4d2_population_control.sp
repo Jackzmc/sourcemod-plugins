@@ -10,6 +10,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <anymap>
 
 public Plugin myinfo = 
 {
@@ -33,7 +34,7 @@ static ConVar hZCommonLimit;
 static bool IsDoneLoading, clownMusicPlayed;
 
 static int iCurrentCommons, commonLimit, clownCommonsSpawned;
-static int commonType[2048];
+static AnyMap commonType;
 
 #define COMMON_MODELS_COUNT 6
 static char INFECTED_MODELS[COMMON_MODELS_COUNT][] = {
@@ -50,13 +51,15 @@ static char WORKER_MODELS[3][] = {
 	"models/infected/common_male_roadcrew.mdl",
 	"models/infected/common_male_roadcrew_rain.mdl"
 };
-enum CommonTypes {
+enum CommonType {
+	Common_Worker = -2,
+	Common_Any = -1,
 	Common_Clown,
 	Common_Mud,
 	Common_Ceda,
 	Common_Riot,
 	Common_Jimmy,
-	Common_Worker = -1,
+	Common_Fallen,
 };
 
 //TODO: Add back survivor zombie, inc z_fallen_max_count 
@@ -66,6 +69,8 @@ public void OnPluginStart() {
 	if(g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
+
+	commonType = new AnyMap();
 
 	HookEvent("game_start", OnGameStart);
 
@@ -114,6 +119,7 @@ public void OnMapEnd() {
 	IsDoneLoading = false;
 	iCurrentCommons = 0;
 	clownCommonsSpawned = 0;
+	commonType.Clear();
 }
 
 public void CVAR_hTotalZombiesChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
@@ -137,28 +143,28 @@ public void OnEntityCreated(int entity, const char[] classname) {
 		if(GetRandomFloat() <= hPercentTotal.FloatValue) {
 			if(GetRandomFloat() <= hPercentClown.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Clown]);
-				commonType[entity] = 2;
+				commonType.SetValue(entity, Common_Clown);
 			}else if(GetRandomFloat() <= hPercentMud.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Mud]);
-				commonType[entity] = 3;
+				commonType.SetValue(entity, Common_Mud);
 			}else if(GetRandomFloat() <= hPercentCeda.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Ceda]);
-				commonType[entity] = 4;
+				commonType.SetValue(entity, Common_Ceda);
 			}else if(GetRandomFloat() <= hPercentWorker.FloatValue) {
 				//worker has multiple models:
 				SetEntityModel(entity, WORKER_MODELS[GetRandomInt(0,2)]);
-				commonType[entity] = 5;
+				commonType.SetValue(entity, Common_Worker);
 			}else if(GetRandomFloat() <= hPercentRiot.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Riot]);
-				commonType[entity] = 6;
+				commonType.SetValue(entity, Common_Riot);
 			}else if(GetRandomFloat() <= hPercentJimmy.FloatValue) {
 				SetEntityModel(entity, INFECTED_MODELS[Common_Jimmy]);
-				commonType[entity] = 7;
+				commonType.SetValue(entity, Common_Jimmy);
 			}else{
-				commonType[entity] = 1;
+				commonType.SetValue(entity, Common_Any);
 			}
 		}else{
-			commonType[entity] = 1;
+			commonType.SetValue(entity, Common_Any);
 		}
 	}
 }
@@ -171,7 +177,8 @@ public Action Hook_SpawnPost(int entity) {
 		}
 	}
 	++iCurrentCommons;
-	if(commonType[entity] == 2) {
+	CommonType type;
+	if(commonType.GetValue(entity, type) && type == Common_Clown) {
 		if(++clownCommonsSpawned > CLOWN_MUSIC_THRESHOLD && !clownMusicPlayed) {
 			clownMusicPlayed = true;
 			EmitSoundToAll("custom/clown.mp3");
@@ -189,11 +196,12 @@ public Action Hook_SpawnPost(int entity) {
 // }
 
 public void OnEntityDestroyed(int entity) {
-	if(entity > 0 && entity <= 2048 && commonType[entity] > 0) {
-		commonType[entity] = 0;
-		if(commonType[entity] == 2) {
+	if(entity > 0 && entity <= 2048 && commonType.ContainsKey(entity)) {
+		CommonType type;
+		if(commonType.GetValue(entity, type) && type == Common_Clown) {
 			--clownCommonsSpawned;
 		}
+		commonType.Remove(entity);
 		if(--iCurrentCommons < CLOWN_MUSIC_THRESHOLD - 10) {
 			clownMusicPlayed = false;
 		}

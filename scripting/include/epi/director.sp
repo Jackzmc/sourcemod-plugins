@@ -169,8 +169,7 @@ void OnTankBotSpawn(int client) {
 			SetEntProp(client, Prop_Send, "m_iHealth", health);
 			g_finaleStage = Stage_FirstTankSpawned;
 			return;
-		} else if(g_realSurvivorCount < 6 && g_finaleStage == Stage_FirstTankSpawned) {
-			// 2nd tank spawned
+		} else if(g_realSurvivorCount >= 6 && g_finaleStage == Stage_FirstTankSpawned) {
 			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: [FINALE] 2nd tank spawned");
 			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
 			// Pass it 0, which doesnt make it a split tank, has default health
@@ -215,6 +214,7 @@ int CalculateExtraTankHealth(int client) {
 	int health = GetEntProp(client, Prop_Send, "m_iHealth");
 	float additionalHealth = float(g_survivorCount - 4) * cvEPITankHealth.FloatValue;
 	health += RoundFloat(additionalHealth);
+	if(health <= 0) PrintToServer("CalculateExtraTankHealth: returning 0?");
 	return health;
 }
 

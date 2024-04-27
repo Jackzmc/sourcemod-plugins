@@ -273,6 +273,7 @@ public void OnMapEnd() {
 			Game.UnsetupPlayer(i);
 		}
 	}
+	Game.Cleanup();
 }
 
 void ClearInventory(int client) {
@@ -347,7 +348,7 @@ stock void GlowEntity(int entity, int client, float lifetime = 5.0) {
 	GetEntPropVector(entity, Prop_Data, "m_vecMaxs", maxs);
 	GetEntPropVector(entity, Prop_Data, "m_angRotation", ang);
 
-	Effect_DrawBeamBoxRotatableToClient(client, pos, mins, maxs, ang, g_iLaserIndex, 0, 0, 1, lifetime, 1.0, 1.0, 100, 0.1, COLOR_PROPFINDER, 0.0);
+	Effect_DrawBeamBoxRotatableToClient(client, pos, mins, maxs, ang, g_iLaserIndex, 0, 0, 1, lifetime, 1.0, 1.0, 100, 0.1, COLOR_PROPFINDER, 0);
 }
 
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {

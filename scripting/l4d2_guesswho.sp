@@ -343,6 +343,9 @@ public void OnMapStart() {
 	}
 	Game.State = State_Unknown;
 }
+public void OnMapEnd() {
+	Game.Cleanup();
+}
 
 public void ThinkPost(int entity) {  
 	static int iTeamNum[MAXPLAYERS+1];

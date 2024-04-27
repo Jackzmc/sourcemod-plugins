@@ -181,7 +181,7 @@ public void Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
 		}
 		for(int i = 0; i < 8; i++) {
 			if (strcmp(g_Models[player], survivor_models[i], false) == 0) {
-				// SetClientInfo(bot, "name", survivor_names[i]);
+				SetClientInfo(bot, "name", survivor_names[i]);
 				break;
 			}
 		}

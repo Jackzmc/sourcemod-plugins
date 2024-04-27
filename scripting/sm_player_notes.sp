@@ -250,7 +250,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			// TODO: escape content
 			DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", menuNoteTarget, buffer, sArgsTrimmed);
 			DB.Query(DB_AddNote, query);
-			LogAction(client, -1, "\"%L\" added note for \"%s\" (%s): \"%s\"", client, menuNoteTargetName, menuNoteTarget, sArgsTrimmed);
+			LogAction(client, -1, "added note for \"%s\" (%s): \"%s\"", client, menuNoteTargetName, menuNoteTarget, sArgsTrimmed);
 			Format(buffer, sizeof(buffer), "%N: ", client);
 			CShowActivity2(client, buffer, "added a note for {green}%s: {default}\"%s\"", menuNoteTargetName, sArgs);
 		}

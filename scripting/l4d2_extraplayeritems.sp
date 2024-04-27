@@ -86,9 +86,14 @@ public Plugin myinfo =
 };
 
 ConVar hExtraItemBasePercentage, hExtraSpawnBasePercentage, hAddExtraKits, hMinPlayers, hUpdateMinPlayers, hMinPlayersSaferoomDoor, hSaferoomDoorWaitSeconds, hSaferoomDoorAutoOpen, hEPIHudState, hExtraFinaleTank, cvDropDisconnectTime, hSplitTankChance, cvFFDecreaseRate, cvZDifficulty, cvEPIHudFlags, cvEPISpecialSpawning, cvEPIGamemodes, hGamemode, cvEPITankHealth, cvEPIEnabledMode;
+ConVar cvEPICommonCountScale, cvEPICommonCountScaleMax;
 ConVar g_ffFactorCvar, hExtraTankThreshold;
+
+
+ConVar cvZCommonLimit; int zCommonLimitPrevValue; 
+
 int g_extraKitsAmount, g_extraKitsStart, g_saferoomDoorEnt, g_prevPlayerCount;
-bool g_forcedSurvivorCount;
+bool g_forcedSurvivorCount, g_extraKitsSpawnedFinale;
 static int g_currentChapter;
 bool g_isCheckpointReached, g_isLateLoaded, g_startCampaignGiven, g_isFailureRound, g_areItemsPopulated;
 static ArrayList g_ammoPacks;
@@ -317,6 +322,10 @@ public void OnPluginStart() {
 	cvEPITankHealth			 = CreateConVar("epi_tank_chunkhp", "2500", "The amount of health added to tank, for each extra player", FCVAR_NONE, true, 0.0);
 	cvEPIGamemodes           = CreateConVar("epi_gamemodes", "coop,realism,versus", "Gamemodes where plugin is active. Comma-separated", FCVAR_NONE);
 	cvEPIEnabledMode		 = CreateConVar("epi_enabled", "1", "Is EPI enabled?\n0=OFF\n1=Auto (Official Maps Only)(5+)\n2=Auto (Any map) (5+)\n3=Forced on", FCVAR_NONE, true, 0.0, true, 3.0);
+	cvEPICommonCountScale    = CreateConVar("epi_commons_scale_multiplier", "0", "This value is multiplied by the number of extra players playing. It's then added to z_common_limit. 5 players with value 5 would be z_common_limit + ", FCVAR_NONE, true, 0.0);
+	cvEPICommonCountScaleMax = CreateConVar("epi_commons_scale_max", "60", "The maximum amount that z_common_limit can be scaled to.", FCVAR_NONE, true, 0.0);
+	cvZCommonLimit = FindConVar("z_common_limit");
+	
 	// TODO: hook flags, reset name index / ping mode
 	cvEPIHudFlags.AddChangeHook(Cvar_HudStateChange);
 	cvEPISpecialSpawning.AddChangeHook(Cvar_SpecialSpawningChange);
@@ -1001,6 +1010,19 @@ Action Event_Pickup(int client, int weapon) {
 void Event_ItemPickup(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
+		if(!g_extraKitsSpawnedFinale && L4D_IsMissionFinalMap(true)) {
+			float pos[3];
+			GetAbsOrigin(client, pos);
+			Address address = L4D_GetNearestNavArea(pos);
+			if(address != Address_Null) {
+				int attributes = L4D_GetNavArea_SpawnAttributes(address);
+				if(attributes & NAV_SPAWN_FINALE) {
+					IncreaseKits(true);
+				}
+			}
+		}
+		// TODO: trigger increase kits finale on kit pickup
+		
 		UpdatePlayerInventory(client);
 		QueueSaveInventory(client);
 	}
@@ -1197,6 +1219,11 @@ int SpawnItem(const char[] itemName, float pos[3], float ang[3] = NULL_VECTOR) {
 }
 
 void IncreaseKits(bool inFinale) {
+	if(inFinale) {
+		if(g_extraKitsSpawnedFinale) return;
+		g_extraKitsSpawnedFinale = true;
+		g_extraKitsAmount = g_realSurvivorCount - 4;
+	}
 	float pos[3];
 	int entity = FindEntityByClassname(-1, "weapon_first_aid_kit_spawn");
 	if(entity == INVALID_ENT_REFERENCE) {
@@ -1289,12 +1316,13 @@ void Debug_GetAttributes(int attributes, char[] output, int maxlen) {
 }
 
 public void L4D2_OnChangeFinaleStage_Post(int stage) {
-	if(stage == 1) {
+	if(stage == 1 && IsEPIActive()) {
 		IncreaseKits(true);
 	}
 }
 
 public void OnMapStart() {
+	g_extraKitsSpawnedFinale = false;
 	char map[32];
 	GetCurrentMap(map, sizeof(map));
 	// If map starts with c#m#, 98% an official map
@@ -2031,14 +2059,7 @@ bool DoesInventoryDiffer(int client) {
 bool IsEPIActive() {
 	return g_epiEnabled;
 }
-/*
-[Debug] UpdateSurvivorCount: total=4 real=4 active=4
-[Debug] UpdateSurvivorCount: total=4 real=4 active=4
-Player no longer idle
-[Debug] UpdateSurvivorCount: total=5 real=4 active=5
-[Debug] UpdateSurvivorCount: total=4 real=4 active=4
-Player no longer idle 
-*/
+bool wasActive;
 void UpdateSurvivorCount() {
 	#if defined DEBUG_FORCE_PLAYERS
 		g_survivorCount = DEBUG_FORCE_PLAYERS;
@@ -2075,9 +2096,35 @@ void UpdateSurvivorCount() {
 		isActive = (g_isOfficialMap || cvEPIEnabledMode.IntValue == 2) && g_realSurvivorCount > 4;
 	}
 	g_epiEnabled = isActive;
+	if(g_epiEnabled && !wasActive) {
+		OnEPIActive();
+		wasActive = true;
+	} else if(wasActive) {
+		OnEPIInactive();
+	}
+	
+	if(isActive)
 	SetFFFactor(g_epiEnabled);
 }
 
+
+void OnEPIActive()  {
+	zCommonLimitPrevValue = cvZCommonLimit.IntValue;
+	// TODO: lag check for common limit
+	if(cvEPICommonCountScale.IntValue > 0) {
+		int newLimit = zCommonLimitPrevValue + RoundFloat(cvEPICommonCountScale.FloatValue * float(g_realSurvivorCount));
+		if(newLimit > 0) {
+			if(newLimit > cvEPICommonCountScaleMax.IntValue) {
+				newLimit = cvEPICommonCountScaleMax.IntValue;
+			}
+		}
+		cvZCommonLimit.IntValue = newLimit;
+	}
+}
+
+void OnEPIInactive() {
+	cvZCommonLimit.IntValue = zCommonLimitPrevValue;
+}
 void SetFFFactor(bool enabled) {
 	static float prevValue;
 	// Restore the previous value (we use the value for the calculations of new value)

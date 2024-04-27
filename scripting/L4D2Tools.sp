@@ -21,6 +21,7 @@ char PRECACHE_SOUNDS[PRECACHE_SOUNDS_COUNT][] = {
 #tryinclude <sceneprocessor>
 #include <multicolors>
 #include "l4d_survivor_identity_fix.inc"
+#include <anymap>
 
 char MODELS[8][] = {
 	"models/survivors/survivor_gambler.mdl",
@@ -51,6 +52,7 @@ static bool isHighPingIdle[MAXPLAYERS+1], isL4D1Survivors;
 static Handle hGoAwayFromKeyboard;
 static StringMap SteamIDs;
 static char lastSound[MAXPLAYERS+1][64], gamemode[32];
+AnyMap disabledItems;
 
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
 
@@ -108,6 +110,7 @@ public void OnPluginStart() {
 	}
 
 	LasersUsed = new ArrayList(1, 0);
+	disabledItems = new AnyMap();
 	SteamIDs = new StringMap();
 
 	hGamemode = FindConVar("mp_gamemode"); 
@@ -462,7 +465,7 @@ void SetCharacter(int target, int survivorIndex, L4DModelId modelIndex, bool kee
 	if (IsFakeClient(target)) {
 		char name[32];
 		GetSurvivorName(target, name, sizeof(name));
-		// SetClientInfo(target, "name", name);
+		SetClientInfo(target, "name", name);
 	}
 	UpdatePlayerIdentity(target, view_as<Character>(survivorIndex), keepModel);
 
@@ -595,7 +598,6 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 	}
 }
 
-int disabledItem[2048];
 //Can also probably prevent kit drop to pick them up 
 public void Event_WeaponDrop(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
@@ -604,16 +606,18 @@ public void Event_WeaponDrop(Event event, const char[] name, bool dontBroadcast)
 	GetEntityClassname(client, newWpn, sizeof(newWpn));
 	if(StrEqual(newWpn, "weapon_ammo_pack")) {
 		// prevent weapon from being picked up?
-		disabledItem[weapon] = client;
+		disabledItems.SetValue(weapon, GetClientUserId(client));
 		CreateTimer(10.0, Timer_AllowKitPickup, weapon);
 	}
 }
 public Action Event_OnWeaponEquip(int client, int weapon) {
-	if(disabledItem[weapon] > 0 && disabledItem[weapon] != client) return Plugin_Handled;
-	return Plugin_Continue;
+	int userid;
+	if(disabledItems.GetValue(weapon, userid) && GetClientUserId(client) == userid)
+		return Plugin_Handled;
+	else return Plugin_Continue;
 }
 public Action Timer_AllowKitPickup(Handle h, int entity) {
-	disabledItem[entity] = 0;
+	disabledItems.Remove(entity);
 	return Plugin_Handled;
 }
 public void OnMapStart() {
@@ -629,6 +633,9 @@ public void OnMapStart() {
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 }
+public void OnMapEnd() {
+	disabledItems.Clear();
+}
 public void OnConfigsExecuted() {
 	isL4D1Survivors = L4D2_GetSurvivorSetMap() == 1;
 	if(hSVMaxPlayers != null && hPlayerLimit.IntValue > 0) {
@@ -638,14 +645,19 @@ public void OnConfigsExecuted() {
 
 #if defined _sceneprocessor_included
 public void OnSceneStageChanged(int scene, SceneStages stage) {
-	if(stage == SceneStage_Started) {
+	if(stage == SceneStage_SpawnedPost) {
 		int activator = GetSceneInitiator(scene);
+		// int actor = GetActorFromScene(scene);
+		
+		// PrintToServer("activator=%N actor=%N %s", activator, actor, sceneFile);
 		if(activator == 0) {
 			static char sceneFile[64];
 			GetSceneFile(scene, sceneFile, sizeof(sceneFile));
 			if(StrContains(sceneFile, "scenes/mechanic/dlc1_c6m1_initialmeeting") > -1 || StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting07.vcd")) {
 				CancelScene(scene);
-			}else if(StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting13.vcd") && activator == 0) {
+			} else if(StrEqual(sceneFile, "scenes/teengirl/dlc1_c6m1_initialmeeting13.vcd")) {
+				CancelScene(scene);
+			} else if(StrEqual(sceneFile, "scenes/coach/worldc1m3b04.vcd")) {
 				CancelScene(scene);
 			}
 		}
