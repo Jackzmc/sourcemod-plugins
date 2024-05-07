@@ -89,10 +89,17 @@ methodmap UIElement < JSONObject {
         view_as<JSONObject>(this).Clear();
     }
 
+    public void Hide() {
+        this.Visibility = false;
+    }
+    public void Show() {
+        this.Visibility = true;
+    }
+
     public native bool Send();
 }
 
-methodmap UIPosition {
+methodmap UIPosition < JSONObject {
     public UIPosition(int x = 0, int y = 0) {
         JSONObject obj = new JSONObject();
         obj.SetInt("x", x);
@@ -102,16 +109,16 @@ methodmap UIPosition {
 
     property int X {
         public get() { return view_as<JSONObject>(this).GetInt("x"); }
-        public set(int coord) { return view_as<JSONObject>(this).SetInt("x", coord); }
+        public set(int coord) { view_as<JSONObject>(this).SetInt("x", coord); }
     }
 
     property int Y {
         public get() { return view_as<JSONObject>(this).GetInt("y"); }
-        public set(int coord) { return view_as<JSONObject>(this).SetInt("y", coord); }
+        public set(int coord) { view_as<JSONObject>(this).SetInt("y", coord); }
     }
 }
 
-methodmap UIColor {
+methodmap UIColor < JSONObject {
     /// Creates a new UIColor with RGB between 0-255, alpha is normalized 0.0-1.0
     public UIColor(int r = 255, int g = 255, int b = 255) {
         JSONObject obj = new JSONObject();
@@ -123,15 +130,15 @@ methodmap UIColor {
 
     property int R {
         public get() { return view_as<JSONObject>(this).GetInt("r"); }
-        public set(int value) { return view_as<JSONObject>(this).SetInt("r", value); }
+        public set(int value) { view_as<JSONObject>(this).SetInt("r", value); }
     }
     property int G {
         public get() { return view_as<JSONObject>(this).GetInt("g"); }
-        public set(int value) { return view_as<JSONObject>(this).SetInt("g", value); }
+        public set(int value) { view_as<JSONObject>(this).SetInt("g", value); }
     }
     property int B {
         public get() { return view_as<JSONObject>(this).GetInt("b"); }
-        public set(int value) { return view_as<JSONObject>(this).SetInt("b", value); }
+        public set(int value) { view_as<JSONObject>(this).SetInt("b", value); }
     }
 }
 
@@ -144,7 +151,7 @@ enum UIVisibility {
     Vis_DisplayOnly
 }
 
-methodmap TempUIElementDefaults {
+methodmap TempUIElementDefaults < JSONObject {
     public TempUIElementDefaults() {
         JSONObject obj = new JSONObject();
         obj.Set("position", new UIPosition(0, 0))
@@ -154,18 +161,18 @@ methodmap TempUIElementDefaults {
     }
 
     public bool GetTitle(char[] output, int maxlen) {
-        view_as<JSONObject>(this).GetString(output, maxlen);
+        view_as<JSONObject>(this).GetString("title", output, maxlen);
     }
     public bool SetTitle(const char[] title) {
-        view_as<JSONObject>(this).SetString(title);
+        view_as<JSONObject>(this).SetString("title", title);
     }
     property UIPosition Position {
-        public get() { return view_as<JSONObject>(this).Get("position"); }
-        public set(UIPosition pos) { view_as<JSONObject>(this).Set("position", pos); }
+        public get() { return view_as<UIPosition>(view_as<JSONObject>(this).Get("position")); }
+        public set(UIPosition pos) { view_as<JSONObject>(this).Set("position", view_as<JSON>(pos)); }
     }
     property UIColor BackgroundColor {
-        public get() { return view_as<JSONObject>(this).Get("bgColor"); }
-        public set(UIColor color) { view_as<JSONObject>(this).Set("bgColor", color); }
+        public get() { return view_as<UIColor>(view_as<JSONObject>(this).Get("bgColor")); }
+        public set(UIColor color) { view_as<JSONObject>(this).Set("bgColor", view_as<JSON>(color)); }
     }
     /// Returns or sets opacity, -1 is not set
     property int Opacity {
@@ -176,8 +183,8 @@ methodmap TempUIElementDefaults {
         }
         public set(int value) {
             JSONObject obj = view_as<JSONObject>(this);
-            if(value == -1) obj.remove("opacity")
-            return obj.SetInt("opacity", value);
+            if(value == -1) obj.Remove("opacity")
+            else obj.SetInt("opacity", value);
         }
     }
 
@@ -197,6 +204,9 @@ enum UIType {
     Element_Text,
     Element_List,
 }
+enum UIFlags {
+    Element_None
+}
 
 #define UI_TYPES_MAX 2
 char UI_TYPE_IDS[UI_TYPES_MAX][] = {
@@ -205,11 +215,11 @@ char UI_TYPE_IDS[UI_TYPES_MAX][] = {
 }
 
 
-methodmap TempUIElement {
+methodmap TempUIElement < JSONObject {
     public TempUIElement(const char[] type) {
         JSONObject obj = new JSONObject();
         obj.Set("defaults", new TempUIElementDefaults());
-        obj.Set("flags", 0);
+        obj.SetInt("flags", 0);
         obj.SetString("type", type);
 
         return view_as<TempUIElement>(obj);
@@ -232,9 +242,9 @@ methodmap TempUIElement {
     }
 
     property TempUIElementDefaults Defaults {
-        public get() { return view_as<JSONObject>(this).Get("defaults"); }
+        public get() { return view_as<TempUIElementDefaults>(view_as<JSONObject>(this).Get("defaults")); }
     }
-    
+
     public void SetVariable(const char[] id, JSON json) {
         view_as<JSONObject>(this).Set(id, json);
     }
@@ -257,16 +267,15 @@ methodmap TempUIElement {
 }
 methodmap TextElement < TempUIElement {
     public TextElement() {
-        TempUIElement elem = new TempUIElement();
-        elem.SetString("type", UI_TYPE_IDS[Element_Text]);
+        TempUIElement elem = new TempUIElement("text");
         return view_as<TextElement>(elem);
     }
 
     public void GetTemplate(char[] output, int maxlen) {
-        return view_as<JSONObject>(this).GetString("template", output, maxlen);
+        view_as<JSONObject>(this).GetString("template", output, maxlen);
     }
     public void SetTemplate(const char[] template) {
-        return view_as<JSONObject>(this).SetString("template", template);
+        view_as<JSONObject>(this).SetString("template", template);
     }
 }
 
@@ -304,10 +313,10 @@ methodmap TempUI {
 
     property TempUIElement Element {
         public get() { 
-            return view_as<JSONObject>(this).Get("element")
+            return view_as<TempUIElement>(view_as<JSONObject>(this).Get("element"));
         }
         public set(TempUIElement newElement) {
-            view_as<JSONObject>(this).Set("element", newElement);
+            view_as<JSONObject>(this).Set("element", view_as<JSON>(newElement));
         }
     }
 
@@ -330,6 +339,13 @@ methodmap TempUI {
 
     public void Clear() {
         view_as<JSONObject>(this).Clear();
+    }
+
+    public void Hide() {
+        this.Visibility = false;
+    }
+    public void Show() {
+        this.Visibility = true;
     }
 
     public native bool Send();
