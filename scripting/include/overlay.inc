@@ -22,8 +22,9 @@ methodmap UIElement < JSONObject {
     public UIElement(const char[] elemNamespace, const char[] elemId) {
         JSONObject obj = new JSONObject();
         obj.SetString("namespace", elemNamespace);
-        obj.SetString("id", elemId);
+        obj.SetString("elem_id", elemId);
         obj.SetBool("visibility", false);
+        obj.Set("variables", new JSONObject());
 
         return view_as<UIElement>(obj);
     }
@@ -78,6 +79,10 @@ methodmap UIElement < JSONObject {
 
     public void ClearClients() {
         view_as<JSONObject>(this).Remove("steamids");
+    }
+
+    public void Clear() {
+        view_as<JSONObject>(this).Clear();
     }
 
     public native bool Send();

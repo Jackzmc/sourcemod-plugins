@@ -51,7 +51,10 @@ char OUT_EVENT_IDS[view_as<int>(Event_Invalid)][] = {
 };
 char steamidCache[MAXPLAYERS+1][32];
 
-// TODO: add natives
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
+	CreateNative("UIElement.Send", Native_UpdateUI);
+	return APLRes_Success;
+}
 
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
@@ -327,6 +330,16 @@ bool Native_PlayAudio(Handle plugin, int numParams) {
 	GetNativeString(1, url, sizeof(url));
 
 	return false;
+	return true;
+}
+
+bool Native_UpdateUI(Handle plugin, int numParams) {
+	if(!isManagerReady()) return false;
+
+	UIElement elem = view_as<UIElement>(GetNativeCell(1));
+
+	g_ws.Write(view_as<JSON>(elem));
+
 	return true;
 }
 
