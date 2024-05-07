@@ -11,6 +11,7 @@
 #include <sdktools>
 //#include <sdkhooks>
 #include <ripext>
+#include <overlay>
 
 WebSocket g_ws;
 ConVar cvarManagerUrl; char managerUrl[128];
@@ -53,6 +54,7 @@ char steamidCache[MAXPLAYERS+1][32];
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	CreateNative("UIElement.Send", Native_UpdateUI);
+	CreateNative("TempUI.Send", Native_UpdateTempUI);
 	return APLRes_Success;
 }
 
@@ -336,7 +338,17 @@ bool Native_PlayAudio(Handle plugin, int numParams) {
 bool Native_UpdateUI(Handle plugin, int numParams) {
 	if(!isManagerReady()) return false;
 
-	UIElement elem = view_as<UIElement>(GetNativeCell(1));
+	UIElement elem = GetNativeCell(1);
+
+	g_ws.Write(view_as<JSON>(elem));
+
+	return true;
+}
+
+bool Native_UpdateTempUI(Handle plugin, int numParams) {
+	if(!isManagerReady()) return false;
+
+	TempUI elem = GetNativeCell(1);
 
 	g_ws.Write(view_as<JSON>(elem));
 
@@ -347,5 +359,3 @@ bool Native_UpdateUI(Handle plugin, int numParams) {
 bool Native_IsOverlayConnected(Handle plugin, int numParams) {
 	return isManagerReady();
 }
-
-void OnUIAction(const char[] elemNamespace, const char[] elemId, const char[] action);
