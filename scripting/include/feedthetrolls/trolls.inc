@@ -21,6 +21,7 @@ Troll t_vocalGag;
 Troll t_dullMelee;
 Troll t_rewind;
 Troll t_noRushingUs;
+Troll t_noProfanity;
 
 void SetupTrolls() {
 	trollKV = new StringMap();
@@ -148,13 +149,14 @@ void SetupTrolls() {
 	SetCategory("Chat");
 	TrollBuilder("Typoos", "", TrollMod_Constant);
 	TrollBuilder("iCantSpellNoMore", "Chat messages letter will randomly changed with wrong letters", TrollMod_Constant);
-	TrollBuilder("No Profanity", "Replaces some words with random phrases", TrollMod_Constant)
+	t_noProfanity = TrollBuilder("No Profanity", "Replaces some words with random phrases", TrollMod_Constant)
 		.AddPrompt()
 			.AddOption("Only Replace Swears")
 			.AddOption("Replace Full Messages", true)
 		.AddPrompt()
 			.AddOption("Show Modified to Them", true)
-			.AddOption("Show Original to Them");
+			.AddOption("Show Original to Them")
+		.Build();
 	t_vocalGag = TrollBuilder("Vocalize Gag", "Prevents player from sending any vocalizations (even automatic)", TrollMod_Constant)
 		.AddPromptMulti()
 			.AddOption("Quieter", false)

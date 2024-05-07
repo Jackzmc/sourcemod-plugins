@@ -52,9 +52,10 @@ static char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"prop_ragdoll"
 };
 
-#define MAX_FORBIDDEN_MODELS 1
+#define MAX_FORBIDDEN_MODELS 2
 char FORBIDDEN_MODELS[MAX_FORBIDDEN_MODELS][] = {
 	"models/props_vehicles/c130.mdl",
+	"models/props_vehicles/helicopter_rescue.mdl"
 };
 
 #define MAX_HIGHLIGHTED_CLASSNAMES 3

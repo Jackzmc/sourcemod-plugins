@@ -2,7 +2,7 @@ TopMenuObject g_propSpawnerCategory;
 public void OnAdminMenuReady(Handle topMenuHandle) {
 	TopMenu topMenu = TopMenu.FromHandle(topMenuHandle);
 	if(g_topMenu != topMenuHandle) { 
-		g_propSpawnerCategory = topMenu.AddCategory("hats_editor", Category_Handler);
+		g_propSpawnerCategory = topMenu.AddCategory("hats_editor", Category_Handler, "sm_prop");
 		if(g_propSpawnerCategory != INVALID_TOPMENUOBJECT) {
 			topMenu.AddItem("editor_spawn", AdminMenu_Spawn, g_propSpawnerCategory, "sm_prop");
 			topMenu.AddItem("editor_edit", AdminMenu_Edit, g_propSpawnerCategory, "sm_prop");
@@ -20,7 +20,7 @@ void Category_Handler(TopMenu topmenu, TopMenuAction action, TopMenuObject topob
 	if(action == TopMenuAction_DisplayTitle) {
 		Format(buffer, maxlength, "Select a task:");
 	} else if(action == TopMenuAction_DisplayOption) {
-		Format(buffer, maxlength, "Spawn Props (Beta)");
+		Format(buffer, maxlength, "Spawn Props");
 	}
 }
 

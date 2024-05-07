@@ -10,6 +10,10 @@
 #if !defined ENT_ENV_NAME
 	#define ENT_ENV_NAME "cenv"
 #endif
+#if !defined _anymap_included
+#include <anymap>
+#endif
+
 
 stock void DeleteCustomEnts() {
 	EntFireTarget(ENT_PROP_NAME, "Kill");
@@ -76,11 +80,11 @@ enum PortalType {
 	Portal_Relative,
 	Portal_Teleport
 }
-enum struct EntData {
+enum struct PortalData {
 	PortalType portalType;
 	float portalOffsets[3];
 }
-EntData entData[2048];
+static AnyMap portals;
 
 stock int CreatePortal(PortalType type, const char model[64], const float pos[3], const float offset[3] = { 40.0, 40.0, 0.0 }, const float scale[3] = { 5.0, 5.0, 5.0 }) {
 	int entity = CreateEntityByName("trigger_multiple");
@@ -107,17 +111,21 @@ stock int CreatePortal(PortalType type, const char model[64], const float pos[3]
 		#endif
 		AcceptEntityInput(entity, "Enable");
 
-		entData[entity].portalOffsets = NULL_VECTOR;
+		PortalData data;
+
+		data.portalOffsets = NULL_VECTOR;
 
 		// Convert relative offset to one based off full scale:
-		entData[entity].portalType = type;
+		data.portalType = type;
 		if(type == Portal_Relative) {
-			if(offset[0] != 0.0) entData[entity].portalOffsets[0] = (scale[0] * 2) + offset[0];
-			if(offset[1] != 0.0) entData[entity].portalOffsets[1] = (scale[1] * 2) + offset[1];
-			if(offset[2] != 0.0) entData[entity].portalOffsets[2] = (scale[2] * 2) + offset[2];
+			if(offset[0] != 0.0) data.portalOffsets[0] = (scale[0] * 2) + offset[0];
+			if(offset[1] != 0.0) data.portalOffsets[1] = (scale[1] * 2) + offset[1];
+			if(offset[2] != 0.0) data.portalOffsets[2] = (scale[2] * 2) + offset[2];
 		} else {
-			entData[entity].portalOffsets = offset;
+			data.portalOffsets = offset;
 		}
+		if(portals == null) portals = new AnyMap();
+		portals.SetArray(entity, data, sizeof(data));
 
 		return entity;
 	}
@@ -125,24 +133,31 @@ stock int CreatePortal(PortalType type, const char model[64], const float pos[3]
 }
 
 void OnPortalTouch(const char[] output, int caller, int activator, float delay) { 
-	if(entData[caller].portalType == Portal_Relative) {
+	PortalData data;
+	if(!portals.GetArray(caller, data, sizeof(data))) return;
+	if(data.portalType == Portal_Relative) {
 		float pos[3];
 		GetClientAbsOrigin(activator, pos);
 		float ang[3];
 		GetClientAbsAngles(activator, ang);
-		if(ang[0] < 0) pos[0] -= entData[caller].portalOffsets[0];
-		else pos[0] += entData[caller].portalOffsets[0];
-		if(ang[1] < 0) pos[1] -= entData[caller].portalOffsets[1];
-		else pos[1] += entData[caller].portalOffsets[1];
-		if(ang[2] < 0) pos[2] -= entData[caller].portalOffsets[2];
-		else pos[2] += entData[caller].portalOffsets[2];
+		if(ang[0] < 0) pos[0] -= data.portalOffsets[0];
+		else pos[0] += data.portalOffsets[0];
+		if(ang[1] < 0) pos[1] -= data.portalOffsets[1];
+		else pos[1] += data.portalOffsets[1];
+		if(ang[2] < 0) pos[2] -= data.portalOffsets[2];
+		else pos[2] += data.portalOffsets[2];
 		TeleportEntity(activator, pos, NULL_VECTOR, NULL_VECTOR);
 	} else {
-		TeleportEntity(activator, entData[caller].portalOffsets, NULL_VECTOR, NULL_VECTOR);
+		TeleportEntity(activator, data.portalOffsets, NULL_VECTOR, NULL_VECTOR);
 	}
 	#if defined PORTAL_ENTER_SOUND
 	EmitSoundToClient(activator, PORTAL_ENTER_SOUND, activator);
 	#endif
+}
+
+stock void ClearPortalData() {
+	if(portals != null)
+		portals.Clear();
 }
 
 stock int StartPropCreate(const char[] entClass, const char[] model, const float pos[3], const float ang[3] = NULL_VECTOR, const float vel[3] = NULL_VECTOR) {

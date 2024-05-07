@@ -420,7 +420,6 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 	static int profanityID;
 	static int typooId;
-	if(profanityID == 0) profanityID = GetTrollID("No Profanity");
 	if(typooId == 0) typooId = GetTrollID("Typoos");
 
 	if(t_honk.IsActive(client) && t_honk.GetFlags(client) & 1) {
@@ -538,7 +537,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		PrintToServer("%N: %s", client, sArgs);
 		CPrintToChatAll("{blue}%N {default}:  %s", client, newMessage);
 		return Plugin_Handled;
-	}else if(Trolls[profanityID].IsActive(client)) {
+	} else if(t_noProfanity.IsActive(client)) {
 		char strings[32][MAX_PHRASE_LENGTH];
 		static ArrayList phrases;
 		bool foundWord = false;
@@ -796,9 +795,9 @@ Action Event_TakeDamage(int victim, int& attacker, int& inflictor, float& damage
 				bool disableFF = false;
 				int flags = t_reverseFF.GetFlags(attacker);
 				if(damagetype & DMG_BURN) {
-					disableFF = flags & 64 != 0;
-				} else if(damagetype & DMG_BLAST) {
 					disableFF = flags & 32 != 0;
+				} else if(damagetype & DMG_BLAST) {
+					disableFF = flags & 64 != 0;
 				} else {
 					// Does not run if DMG_BURN or DMG_BLAST, basically any other damage was caused besides burn/blast, then allow it
 					disableFF = true;

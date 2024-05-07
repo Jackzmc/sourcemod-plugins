@@ -62,10 +62,12 @@ char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"prop_ragdoll"
 };
 
-#define MAX_FORBIDDEN_MODELS 1
+#define MAX_FORBIDDEN_MODELS 2
 char FORBIDDEN_MODELS[MAX_FORBIDDEN_MODELS][] = {
 	"models/props_vehicles/c130.mdl",
+	"models/props_vehicles/helicopter_rescue.mdl"
 };
+
 
 #define MAX_REVERSE_CLASSNAMES 2
 // Classnames that should automatically trigger reverse infected
@@ -90,7 +92,7 @@ Action Command_DoAHat(int client, int args) {
 		if(adminId == INVALID_ADMIN_ID) {
 			PrintToChat(client, "[Hats] Hats are for admins only");
 			return Plugin_Handled;
-		} else if(!adminId.HasFlag(Admin_Cheats)) {
+		} else if(!adminId.HasFlag(Admin_Custom2)) {
 			PrintToChat(client, "[Hats] You do not have permission");
 			return Plugin_Handled;
 		}
@@ -750,7 +752,7 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 			GetEntPropVector(modifyEntity, Prop_Send, "m_vecMins", mins);
 			PrintToServer("%s mins: %f height:%f", classname, mins[2], maxs[2] - mins[2]);
 			if(StrContains(classname, "weapon_molotov") > -1 || StrContains(classname, "weapon_pipe_bomb") > -1 || StrContains(classname, "weapon_vomitjar") > -1) {
-				hatData[client].offset[2] += 10.0 + 1.0;
+				hatData[client].offset[2] += 10.0;
 			} else {
 				hatData[client].offset[2] += 10.0 + mins[2];
 			}

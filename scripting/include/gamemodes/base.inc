@@ -49,6 +49,10 @@ methodmap BaseGame {
 			Format(GAMEMODE_PREFIX, sizeof(GAMEMODE_PREFIX), "[%s]", prefix);
 	}
 
+	public void Cleanup() {
+		ClearPortalData();
+	}
+
 	public void PrintToServer(const char[] format, any ...) {
 		VFormat(buffer, sizeof(buffer), format, 3);
 		PrintToServer("[%s] %s", GAMEMODE_NAME, buffer);

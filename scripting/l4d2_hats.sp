@@ -77,10 +77,10 @@ public void OnPluginStart() {
 
 	RegConsoleCmd("sm_hat", Command_DoAHat, "Hats");
 	RegAdminCmd("sm_hatf", Command_DoAHat, ADMFLAG_ROOT, "Hats");
-	RegAdminCmd("sm_mkwall", Command_MakeWall, ADMFLAG_CHEATS);
-	RegAdminCmd("sm_edit", Command_Editor, ADMFLAG_CHEATS);
-	RegAdminCmd("sm_wall", Command_Editor, ADMFLAG_CHEATS);
-	RegAdminCmd("sm_prop", Command_Props, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_mkwall", Command_MakeWall, ADMFLAG_CUSTOM2);
+	RegAdminCmd("sm_edit", Command_Editor, ADMFLAG_CUSTOM2);
+	RegAdminCmd("sm_wall", Command_Editor, ADMFLAG_CUSTOM2);
+	RegAdminCmd("sm_prop", Command_Props, ADMFLAG_CUSTOM2);
 	RegConsoleCmd("sm_hatp", Command_DoAHatPreset);
 
 	cvar_sm_hats_blacklist_enabled = CreateConVar("sm_hats_blacklist_enabled", "1", "Is the prop blacklist enabled", FCVAR_NONE, true, 0.0, true, 1.0);
