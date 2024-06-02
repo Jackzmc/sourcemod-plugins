@@ -257,12 +257,13 @@ void ProcessCommand(int id, const char[] command, const char[] cmdNamespace = ""
 	char output[128];
 	if(!StartPayload(true)) return;
 	if(cmdNamespace[0] == '\0' || StrEqual(cmdNamespace, "default")) {
-		SplitString(command, " ", output, sizeof(output));
-		if(CommandExists(output)) {
+		int index = SplitString(command, " ", output, sizeof(output));
+		if(index == -1 && CommandExists(command) || CommandExists(output)) {
 			ServerCommandEx(output, sizeof(output), "%s", command);
 			AddCommandResponseRecord(id, Result_Boolean, 1, output);
 		} else {
-			AddCommandResponseRecord(id, Result_Error, -1, "Command does not exist");
+			Format(output, sizeof(output), "Command \"%s\" does not exist", output);
+			AddCommandResponseRecord(id, Result_Error, -1, output);
 		}
 	} else if(StrEqual(cmdNamespace, "builtin")) {
 		CommandResultType type;
