@@ -42,8 +42,8 @@ Useful things:
 * [l4d_survivor_identity_fix](#l4d_survivor_identity_fix) - Use with [L4D2Tools](#l4d2tools) to change models, some fixes
 * [BetterWitchAvoidance](#betterwitchavoidance)
 * l4d_anti_rush - Modified plugin to add a forward, so other plugins (like feedthetrolls) can do something. In addition, use highest flow value achieved for players (fixes issue when admins go back and players who haven't moved suddenly get punished)
-* [l4d2_sb_fix](#l4d2_sb_fix) - Updated to 1.11 & latest sourcepawn syntax & removed the FCVAR_NOTIFY from all cvars (why is that added?)
-* GrabEnt - Improved version that prevents moving certain entities (such as invisual walls, ragdolls, etc) and improved some code
+* [l4d2_sb_fix](#l4d2_sb_fix) - Updated to 1.11 & latest sourcepawn syntax & removed the FCVAR_NOTIFY from all cvars
+* [GrabEnt](https://forums.alliedmods.net/showthread.php?p=2669771) - Improved version that prevents moving certain entities (such as invisual walls, ragdolls, etc) and improved some code
 
 ## Dependencies
 This is a list of most common dependencies, independent if they are used for a certain plugin.
@@ -59,7 +59,7 @@ Some do require newer includes for my modified plugins (such as my improved surv
 ## Descriptions
 
 ### l4d2-manual-director
-~~Probably going to be posted publicly sometime.~~ Allows you to spawn specials on cursor, or via director, forcefully, bypassing limits
+Allows you to spawn specials on cursor, or via director, forcefully, bypassing limits
 * **Convars:**
    * `manual_director_version|mandirector_version` - ... gets version
    * `mandirector_notify_spawn <1/0>` - Should spawning specials notify on use?
@@ -163,8 +163,7 @@ A collection of small tools:
 
 
 ### l4d2_swarm
-This plugin is used to counter trolls and otherwise bad players. It simply uses the new script function RushVictim() to make all zombies in X radius attack Y target. It's that simple. 
-
+It uses the new script function RushVictim() to make all zombies in X radius attack Y target, that's it.
 This really only affects wandering zombies, mobs and panic events, but it may work slightly when bile or pipes are thrown. It does not and can't change the targets of zombies.
 
 * **Convars:**
@@ -187,7 +186,7 @@ Requires:
 * (Optional) [Actions](https://forums.alliedmods.net/showthread.php?t=336374)
 * (Optional) [Modified L4D Antirush](#l4d_anti_rush)
 
-This plugin allows you to enact certain troll modes on any player, some are subtle some are less so. Either way, it works great to deal with a rusher, an asshole or even your friends.
+This plugin allows you to enact certain counter-troll effects on any player, some are subtle, some are less so. It works great to deal with a rusher, a griefer, assholes or even your friends..
 
 See the up-to-date list of trolls and their descriptions:
 https://admin.jackz.me/docs/ftt
@@ -227,8 +226,12 @@ Plugin requirements:
 * [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 * [L4D Info Editor](https://forums.alliedmods.net/showthread.php?p=2614626)
 * (Development dependency) Updated l4d2_weapon_stocks.inc
+Recommended plugins:
+* [Modified l4d_survivor_identity_fix](#l4d_survivor_identity_fix) - dependency of L4D2Tools, automodel
+* [L4D2Tools](#l4d2tools) - for survivor model changing
+* [ABM](https://forums.alliedmods.net/showthread.php?t=291562) - for 5+ survivors
 
-A well rounded tool that provides extra utilities to a 5+ co-op campaign. 
+A well rounded tool that provides extra utilities to a 5+ co-op campaign. It's intended to hopefully one day replace ABM. Currently ABM is required for extra survivor management.
 
 Features:
 * Automatically giving extra kits for each extra player in saferooms
@@ -237,7 +240,7 @@ Features:
 * Automatically lock the first saferoom door for every chapter, until a threshold of players or time has passed
 * Includes a HUD that shows all the survivors and their items, and optionally their ping (breaks randomly not sure why)
 * Includes a new 5+ special spawning director
-* Spawn an extra tank that scales with player count
+* Spawning of an extra tank that scales with player count
 
 * **Convars:**
   * `epi_item_chance` - The base chance (multiplied by player count) of an extra item being spawned. Default: 0.056
@@ -267,7 +270,7 @@ Plugin requirements:
 A fork of [Survivor Identity Fix plugin](https://forums.alliedmods.net/showthread.php?t=280539) that adds support for other plugins to update the model cache. This is used by [L4D2Tools](#L4D2Tools) to update the identity when someone changes their model with `sm_model`. It also will clear the memory of model when a player disconnects entirely or on a new map.
 
 In addition, has a fix for the passing finale, and will automatically temporarily change L4D characters to L4D2 until finale starts preventing game messing up their characters.
-
+(Note: its very broken..., especially when multiple L4D1 survviors)
 
 ### l4d2_population_control
 Allows you to set the chances that a common spawns as a certain uncommon. The order of the cvars is the order the percentages are ran
@@ -289,14 +292,14 @@ Allows you to set the chances that a common spawns as a certain uncommon. The or
 ### globalbans
 This plugin will store bans in a database and read from it on connect. This allows you to easily have bans global between servers.
 It will automatically intercept any ban that calls OnBanIdentity or OnBanClient (so sm_ban will work normally)
-Note: All admin players are ignored
+Note: Will not record any admins being banned.
 
 [Database File](sql/globalbans.sql)
 
 * **Convars:**
   * `sm_globalbans_kick_type <0/1/2>`
     * 0 = Do not kick, just notify
-    * 1 = Kick if banned
+    * 1 = Kick if banned (default)
     * 2 = Kick if cannot reach database
 
 
@@ -319,8 +322,10 @@ Currently auto triggers:
   * `sm_restore <player(s)>` - Restores the selected player's state. @all for all 
 
 ### l4d2_autorestart
-Plugin that automatically restarts server when the server is NOT hibernating, with bots around and no players.
-This fixes an issue with custom maps that force sb_all_bot_game to 1 and disable hibernation.
+Plugin that automatically restarts server when the server is NOT hibernating, with bots around and no players, this fixes an issue with custom maps that force sb_all_bot_game to 1 and disable hibernation.
+It also periodically can restart the server (default: every 2 days), waiting for long periods where no games are being played.
+
+To change the auto restart time, change `#define MAX_TIME_ONLINE_SECONDS` and recompile.
 
 ### l4d2_TKStopper
 Plugin requirements:
@@ -435,7 +440,7 @@ The prop spawner includes:
 * Favorited props (in alpha)
 
 > [!WARNING]
-> **Be warned, hatting can cause server crashes.** It's a LOT more stable now, but some features are disabled by default (reverse hats, visible hats) as they caused too many crashes. Most crashes are caused by hats and ladders, but the default settings prevent it.
+> **Be warned, hatting can in rare cases cause crashes.** It's a LOT more stable now, but some features are disabled by default (reverse hats, visible hats) as they caused too many crashes. The majority of crashes are caused by hats and ladders, but the default settings prevent it.
 
 ### sm_namespamblock
 
@@ -462,5 +467,5 @@ Simply lets you add notes to any player, and includes reputation summary and aut
 
 * **Commands:**
   * `sm_note <player> <message>` - Add notes to player, message does not need to be surrounded with quotes
-  * `sm_notedisconnected` - Shows menu of all players that have disconnected
-  * `sm_notes <player>` - View notes for player
+  * `sm_notedisconnected` - Shows menu of all players that have disconnected, allowing you to add a note.
+  * `sm_notes <player>` - Show the notes for player
