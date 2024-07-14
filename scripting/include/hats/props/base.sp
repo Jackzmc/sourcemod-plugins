@@ -297,30 +297,27 @@ enum struct PropSelector {
 
 		int ref = EntIndexToEntRef(entity);
 		if(this.GetEntityRefIndex(ref) == -1) {
-			PrintToServer("Selector.AddEntity: PRE CALLBACK");
-			// FIXME: crashes server, sourcemod bug
-			/*if(this.selectPreCallback != null && useCallback) {
+			if(this.selectPreCallback != null && useCallback) {
 				Call_StartForward(this.selectPreCallback)
 				Call_PushCell(this._client);
 				Call_PushCell(entity);
 				bool allowed = true;
-			PrintToServer("Selector.AddEntity: PRE CALLBACK pre finish");
+				PrintToServer("Selector.AddEntity: PRE CALLBACK pre finish");
 				Call_Finish(allowed);
-			PrintToServer("Selector.AddEntity: PRE CALLBACK pre result %b", allowed);
+				PrintToServer("Selector.AddEntity: PRE CALLBACK pre result %b", allowed);
 				if(!allowed) return -2;
-			}*/
+			}
 
 			L4D2_SetEntityGlow(entity, L4D2Glow_Constant, 10000, 0, this.selectColor, false);
 			int index = this.list.Push(ref);
 			PrintToServer("Selector.AddEntity: post CALLBACK pre");
-			//FIXME: crashes server, sourcemod bug
-			/*if(this.selectPostCallback != null && useCallback) {
+			if(this.selectPostCallback != null && useCallback) {
 				Call_StartForward(this.selectPostCallback)
 				Call_PushCell(this._client);
 				Call_PushCell(entity);
 				//Call_PushCell(index);
 				Call_Finish();
-			}*/
+			}
 			PrintToServer("Selector.AddEntity: post CALLBACK post");
 			return index;
 		}
