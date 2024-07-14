@@ -1,0 +1,102 @@
+Mall
+models/props_mall/atrium_skylight.mdl Atrium Light
+models/props_mall/atrium_stairs.mdl Atrium Stairs
+models/props_mall/bay_guardrail_left.mdl Bay Guardrail Left
+models/props_mall/bay_guardrail_right.mdl Bay Guardrail Right
+models/props_mall/bay_guardrail_short.mdl Bay Guardrail Short
+models/props_mall/bay_railing_left.mdl Bay Railing Left
+models/props_mall/bay_railing_right.mdl Bay Railing Right
+models/props_mall/bay_railing_short.mdl Bay Railing Short
+models/props_mall/cage_light_fixture.mdl Light Fixture Cage
+models/props_mall/cash_register.mdl Cash Register
+models/props_mall/mall_register.mdl Cash Register 2
+models/props_mall/clothing_dress_shirts.mdl Dress Shirts
+models/props_mall/clothing_jeans.mdl Jeans
+models/props_mall/clothing_pants01.mdl Pants 1
+models/props_mall/clothing_pants02.mdl Pants 2
+models/props_mall/clothing_pants_draping01.mdl Pants Draped 1 
+models/props_mall/clothing_pants_draping02.mdl Pants Draped 2
+models/props_mall/clothing_pants_draping03.mdl Pants Draped 3
+models/props_mall/clothing_pile01.mdl Clothing Pile 1
+models/props_mall/clothing_pile02.mdl Clothing Pile 2
+models/props_mall/clothing_pile03.mdl Clothing Pile 3
+models/props_mall/clothing_pile04.mdl Clothing Pile 4
+models/props_mall/clothing_pile05.mdl Clothing Pile 5
+models/props_mall/clothing_pile06.mdl Clothing Pile 6
+models/props_mall/clothing_pile07.mdl Clothing Pile 7
+models/props_mall/clothing_shirts01.mdl Shirts 1
+models/props_mall/clothing_shirts02.mdl Shirts 2
+models/props_mall/clothing_shirts03.mdl Shirts 3
+models/props_mall/clothing_shirts_draping01.mdl Shirts Draping
+models/props_mall/clothing_tshirts.mdl T-Shirts 
+models/props_mall/column_01.mdl Column 1
+models/props_mall/column_02.mdl Column 2
+models/props_mall/column_03.mdl Column 3
+models/props_mall/column_04.mdl Column 4
+models/props_mall/column_05.mdl Column 5
+models/props_mall/mall_column_large.mdl Column Large
+models/props_mall/concourse_skylight_01.mdl Skylight 1
+models/props_mall/concourse_skylight_02.mdl Skylight 2
+models/props_mall/elevator_glazing.mdl Elevator Glazing
+models/props_mall/elevator_structure.mdl Elevator Structure
+models/props_mall/entry_canopy_01.mdl Entry Canopy
+models/props_mall/entry_facade_01.mdl Entry Facade
+models/props_mall/entry_facade_corner.mdl Entry Facade Corner
+models/props_mall/glass_rail_center.mdl Glass Rail Middle
+models/props_mall/glass_rail_end.mdl Glass Rail End
+models/props_mall/glass_support_center.mdl Glass Support Middle
+models/props_mall/glass_support_left.mdl Glass Support Left
+models/props_mall/glass_support_right.mdl Glass Support Right 
+models/props_mall/information_desk.mdl Information Desk
+models/props_mall/info_desk_signage.mdl Information Desk Sign
+models/props_mall/lower_stair_guardrail.mdl Lower Stairs Guard Rail
+models/props_mall/lower_stair_railing.mdl Lower Stairs Railing
+models/props_mall/main_stair_guardrail.mdl Main Stair Guardrail
+models/props_mall/main_stair_railing.mdl Main Stairs Railing
+models/props_mall/mall_bench.mdl Bench 1
+models/props_mall/mall_bench2.mdl Benc 2
+models/props_mall/mall_counter_corner.mdl Counter Corner
+models/props_mall/mall_counter_entrance.mdl Counter Entrance
+models/props_mall/mall_counter_entrance_02.mdl Counter Entrance 2
+models/props_mall/mall_counter_long.mdl Counter Long
+models/props_mall/mall_counter_short.mdl Counter Short
+models/props_mall/mall_directory.mdl signs-mall map
+models/props_mall/mall_display_03.mdl Shopping mall poster information display cabinet
+models/props_mall/mall_display_04.mdl shopping mall small showcase
+models/props_mall/mall_display_05.mdl Display 3
+models/props_mall/mall_display_06.mdl Display 4
+models/props_mall/mall_display_06b.mdl Display 4-2 
+models/props_mall/mall_display_06c.mdl Display 4-3
+models/props_mall/mall_display_06d.mdl Display 4-4 
+models/props_mall/mall_display_07.mdl mall commodity cabinet
+models/props_mall/mall_display_08.mdl Display 6
+models/props_mall/mall_display_09.mdl Display 7
+models/props_mall/mall_display_10.mdl Display 8
+models/props_mall/mall_display_11.mdl Display 9
+models/props_mall/mall_display_12.mdl Display 10
+models/props_mall/mall_escalator.mdl Mall Escalator 1
+models/props_mall/mall_escalator2.mdl Mall Escalator 2
+models/props_mall/mall_kiosk.mdl mall kiosk A
+models/props_mall/mall_kioskb.mdl mall kiosk B
+models/props_mall/mall_kioskc.mdl mall kiosk C
+models/props_mall/mall_mannequin_female_base.mdl Mannequin Female Base
+models/props_mall/mall_mannequin_female_larm1.mdl Mannequin Female LArm 1
+models/props_mall/mall_mannequin_female_larm2.mdl Mannequin Female LArm 2
+models/props_mall/mall_mannequin_female_lleg.mdl Mannequin Female Lleg
+models/props_mall/mall_mannequin_female_rarm1.mdl Mannequin Female Rarm 1
+models/props_mall/mall_mannequin_female_rarm2.mdl Mannequin Female Rarm 2
+models/props_mall/mall_mannequin_female_torso1.mdl Mannequin Female Torso 1
+models/props_mall/mall_mannequin_female_torso2.mdl Mannequin Female Torso 2
+models/props_mall/mall_mannequin_female_torso3.mdl Mannequin Female Torso 3
+models/props_mall/mall_mannequin_base.mdl Mannequin Male Base
+models/props_mall/mall_mannequin_larm1.mdl Mannequin Male Larm 1
+models/props_mall/mall_mannequin_larm2.mdl Mannequin Male Larm 2
+models/props_mall/mall_mannequin_lhand.mdl Mannequin Male Lhand
+models/props_mall/mall_mannequin_lleg.mdl Mannequin Male Lleg
+models/props_mall/mall_mannequin_rarm1.mdl Mannequin Male Rarm 1
+models/props_mall/mall_mannequin_rhand.mdl Mannequin Male Rhand
+models/props_mall/mall_mannequin_torso1.mdl Mannequin Male Torso 1
+models/props_mall/mall_mannequin_torso2.mdl Mannequin Male Torso 2
+models/props_mall/mall_shopliftscanner.mdl Shoplifting Scanner 1
+models/props_mall/mall_shopliftscanner2.mdl Shoplifting Scanner 2
+models/props_vehicles/mall_banner.mdl Jimmy Gibbs Jr Banner

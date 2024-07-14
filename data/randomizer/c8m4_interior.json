@@ -1,0 +1,487 @@
+{
+    "elevator": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "inputs": [
+                    { "hammerid": 3638150, "input": "_allow_ladder" }
+                ],
+                "entities": [
+                    {
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [12374.72, 13596.57, 152.35],
+                        "angles": [0.00, 155.69, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12442.71, 13549.03, 288.03],
+                        "angles": [0.00, 179.02, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12437.78, 13543.19, 424.75],
+                        "angles": [0.00, -179.67, 0.00]
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    {
+                        "hammerid": 3638150,
+                        "input": "_allow_ladder"
+                    }
+                ],
+                "entities": [
+                    {
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [12374.72, 13596.57, 288.03],
+                        "angles": [0.00, 155.69, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12445.46, 13541.89, 152.03],
+                        "angles": [0.00, 178.94, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12437.78, 13543.19, 424.75],
+                        "angles": [0.00, -179.67, 0.00]
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    {
+                        "hammerid": 3638150,
+                        "input": "_allow_ladder"
+                    }
+                ],
+                "entities": [
+                    {
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [12374.72, 13596.57, 423.97],
+                        "angles": [0.00, 155.69, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12445.46, 13541.89, 152.03],
+                        "angles": [0.00, 178.94, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12442.71, 13549.03, 288.03],
+                        "angles": [0.00, 179.02, 0.00]
+                    }
+                ]
+            },
+
+            {
+                "inputs": [
+                    { "hammerid": 3638150, "input": "_allow_ladder" },
+                    { "targetname": "hospmetaldoor01", "input": "break"}
+                ],
+                "entities": [
+                    {
+                        "model": "models/props/cs_office/shelves_metal.mdl",
+                        "origin": [12262.51, 13293.07, 11.45],
+                        "angles": [0.00, 92.44, 0.00]
+                    },
+                    {
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [12374.72, 13596.57, 152.35],
+                        "angles": [0.00, 155.69, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12442.71, 13549.03, 288.03],
+                        "angles": [0.00, 179.02, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12437.78, 13543.19, 424.75],
+                        "angles": [0.00, -179.67, 0.00]
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    { "hammerid": 3638150, "input": "_allow_ladder" },
+                    { "targetname": "hospmetaldoor01", "input": "break"}
+                ],
+                "entities": [
+                    {
+                        "model": "models/props/cs_office/shelves_metal.mdl",
+                        "origin": [12262.51, 13293.07, 11.45],
+                        "angles": [0.00, 92.44, 0.00]
+                    },
+                    {
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [12374.72, 13596.57, 288.03],
+                        "angles": [0.00, 155.69, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12445.46, 13541.89, 152.03],
+                        "angles": [0.00, 178.94, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12437.78, 13543.19, 424.75],
+                        "angles": [0.00, -179.67, 0.00]
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    { "hammerid": 3638150, "input": "_allow_ladder" },
+                    { "targetname": "hospmetaldoor01", "input": "break"}
+                ],
+                "entities": [
+                    {
+                        "model": "models/props/cs_office/shelves_metal.mdl",
+                        "origin": [12262.51, 13293.07, 11.45],
+                        "angles": [0.00, 92.44, 0.00]
+                    },
+                    {
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [12374.72, 13596.57, 423.97],
+                        "angles": [0.00, 155.69, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12445.46, 13541.89, 152.03],
+                        "angles": [0.00, 178.94, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12442.71, 13549.03, 288.03],
+                        "angles": [0.00, 179.02, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "commons": {
+        "chance": 0.2,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_interiors/sofa01.mdl",
+                        "origin": [12302.97, 12852.66, 152.20],
+                        "angles": [0.00, 162.99, 0.00]
+                    },
+                    {
+                        "model": "models/props_unique/hospital/hospital_bed.mdl",
+                        "origin": [12268.59, 12848.06, 174.29],
+                        "angles": [-90.00, 0.82, 0.00]
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    {"targetname": "hospmetaldoor20", "input": "Close"},
+                    {"targetname": "hospmetaldoor20", "input": "Lock"}
+                ]
+            }
+        ]
+    },
+    "elevatorblock": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "inputs": [
+                    {"hammerid": 6143277, "input": "Break" },
+                    {"hammerid": 5694290, "input": "Break"}
+                ],
+                "entities": [
+                    {
+                        "model": "models/props_unique/hospital/hospital_bed.mdl",
+                        "origin": [12209.85, 13292.08, 447.59],
+                        "angles": [-90.00, 56.92, 0.00]
+                    },
+                    {
+                        "model": "models/props/cs_office/shelves_metal1.mdl",
+                        "origin": [12225.10, 13316.98, 426.17],
+                        "angles": [0.00, 90.47, 0.00]
+                    },
+                    {
+                        "model": "models/props/cs_office/shelves_metal.mdl",
+                        "origin": [12168.08, 13366.62, 424.03],
+                        "angles": [0.00, 178.43, 0.00]
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    {"hammerid": 6143277, "input": "SetHealth 10000"}
+                ]
+            }
+        ]
+    },
+    "hospital": {
+        "chance": 0.3,
+        "group": "wall",
+        "variants": [
+            {
+                "inputs": [
+                    { "hammerid": 5694308, "input": "Break" }, 
+                    { "targetname": "hospitaldoor01L", "input": "Close" },
+                    { "targetname": "hospitaldoor01R", "input": "Close" },
+                    { "targetname": "hospitaldoor01L", "input": "Lock" },
+                    { "targetname": "hospitaldoor01R", "input": "Lock" },
+                    { "targetname": "hospitaldoor01L", "input": "SetUnbreakable" },
+                    { "targetname": "hospitaldoor01R", "input": "SetUnbreakable" }
+                ],
+                "entities": [
+
+                ]
+            },
+            {
+                "inputs": [
+                    { "hammerid": 5694308, "input": "Break" }, 
+                    { "targetname": "hospitaldoor01L", "input": "Close" },
+                    { "targetname": "hospitaldoor01R", "input": "Close" },
+                    { "targetname": "hospitaldoor01L", "input": "Lock" },
+                    { "targetname": "hospitaldoor01R", "input": "Lock" },
+                    { "targetname": "hospitaldoor01L", "input": "SetUnbreakable" },
+                    { "targetname": "hospitaldoor01R", "input": "SetUnbreakable" },
+                    { "targetname": "hospmetaldoor10", "input": "Close" },
+                    { "targetname": "hospmetaldoor10", "input": "Lock" },
+                    { "targetname": "hospmetaldoor10", "input": "SetUnbreakable" }
+
+                ],
+                "entities": [
+
+                ]
+            }
+        ]
+    },
+    "operation": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "inputs": [
+                    {"targetname": "hospitaldoor02L", "input": "Close"},
+                    {"targetname": "hospitaldoor02R", "input": "Close"},
+                    {"targetname": "hospitaldoor02L", "input": "Lock"},
+                    {"targetname": "hospitaldoor02R", "input": "Lock"},
+                    {"targetname": "hospitaldoor02L", "input": "SetUnbreakable"},
+                    {"targetname": "hospitaldoor02R", "input": "SetUnbreakable"}
+                ]
+            }
+        ]
+    },
+    "hospital-elevator": {
+        "chance": 0.25,
+        "variants": [
+            {
+                "inputs": [
+                    {"hammerid": 5626546, "input": "Break"}
+                ],
+                "entities": [
+                    {
+                        "model": "models/props/cs_office/shelves_metal.mdl",
+                        "origin": [13408.75, 14627.20, 435.32],
+                        "angles": [60.00, 177.73, 0.00]
+                    },
+                    {
+                        "model": "models/props/cs_office/shelves_metal1.mdl",
+                        "origin": [13385.80, 14699.95, 425.39],
+                        "angles": [0.00, -177.20, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "vent": {
+        "chance": 0.1,
+        "group": "wall",
+        "variants": [
+            {
+                "inputs": [
+                    { "hammerid": 5694308, "input": "SetHealth 1000" }, 
+                    {"classname": "env_player_blocker", "input": "Kill"},
+                    {"hammerid": 3654412, "input": "_allow_ladder"},
+                    {"hammerid": 3654188, "input": "_allow_ladder"},
+                    {"hammerid": 5694222, "input": "SetHealth 1000"}
+                ],
+                "entities": [
+                    {
+                        "type": "infodecal",
+                        "model": "decals/checkpointarrow01_black",
+                        "origin": [12810.576172, 15100.389648, 468.031250],
+	                    "angles": [0.00, 0.00, 0.00]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [12869.00, 15086.90, 417.80],
+                        "angles": [0.00, 0.63, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "elevator-top": {
+        "chance": 0.6,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props/de_prodigy/concretebags.mdl",
+                        "origin": [13545.61, 14802.17, 5537.51],
+                        "angles": [0.00, -6.01, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [13488.83, 14756.86, 5535.34],
+                        "angles": [0.00, -15.20, 0.00]
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    {"targetname": "breakwall02", "input": "Break"}
+                ],
+                "entities": [
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [13424.76, 14834.82, 5535.98],
+                        "angles": [0.00, -95.22, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [13417.71, 14832.62, 5588.58],
+                        "angles": [0.00, -95.86, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "forklift": {
+        "chance": 0.4,
+        "variants": [
+            {
+                "inputs": [
+                    {"hammerid": 2944967, "input": "Kill"}
+                ],
+                "entities": [
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props/cs_assault/forklift.mdl",
+                        "origin": [13752.76, 14457.58, 5536.18],
+                        "angles": [0.00, 66.78, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "alt": {
+        "chance": 0.2,
+        "variants": [
+            {
+                "inputs": [
+                    {"hammerid": 6142886, "input": "Break" }
+                ],
+                "entities": [
+                    {
+                        "model": "models/props/cs_assault/box_stack2.mdl",
+                        "origin": [12827.77, 14013.51, 5534.55],
+                        "angles": [0.00, -134.88, 0.00]
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    {"hammerid": 6142886, "input": "Break" }
+                ],
+                "entities": [
+                    {
+                        "model": "models/props/cs_assault/box_stack2.mdl",
+                        "origin": [12827.77, 14013.51, 5534.55],
+                        "angles": [0.00, -134.88, 0.00]
+                    },
+                    {
+                        "model": "models/props/cs_militia/boxes_garage_lower.mdl",
+                        "origin": [12666.67, 14175.61, 5534.82],
+                        "angles": [0.00, 90.08, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "doorway": {
+        "chance": 0.1,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props/cs_assault/handtruck.mdl",
+                        "origin": [11850.68, 14165.32, 5536.03],
+                        "angles": [0.00, 88.74, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "alt2": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props/cs_assault/box_stack2.mdl",
+                        "origin": [12123.03, 14254.85, 5537.03],
+                        "angles": [0.00, -3.79, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props/cs_assault/box_stack1.mdl",
+                        "origin": [12057.65, 14262.43, 5535.58],
+                        "angles": [0.00, -0.37, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "saferoom": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props/cs_assault/box_stack1.mdl",
+                        "origin": [12060.67, 15047.06, 5536.16],
+                        "angles": [0.00, -86.58, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props/de_prodigy/concretebags.mdl",
+                        "origin": [12227.43, 14983.76, 5536.60],
+                        "angles": [0.00, 123.10, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props/de_prodigy/concretebags.mdl",
+                        "origin": [12227.43, 14983.76, 5536.60],
+                        "angles": [0.00, 123.10, 0.00]
+                    },
+                    {
+                        "model": "models/props/de_prodigy/concretebags.mdl",
+                        "origin": [12336.78, 15001.30, 5536.03],
+                        "angles": [0.00, 96.02, 0.00]
+                    }
+                ]
+            }
+        ]
+    }
+}

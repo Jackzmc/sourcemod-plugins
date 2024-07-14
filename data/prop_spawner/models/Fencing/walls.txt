@@ -1,0 +1,28 @@
+Walls
+models/props_update/brick_128.mdl brick wall/floor (128u)
+models/props_update/brick_256.mdl brick wall/floor (256u)
+models/props_update/concrete_128.mdl cement wall/floor (128u)
+models/props_update/concrete_256.mdl cement wall/floor (256u)
+models/props_update/plywood_128.mdl wooden wall/floor (128u)
+models/props_update/plywood_256.mdl wooden wall/floor (256u)
+models/props_update/whitebrick_128.mdl white brick wall (128u)
+models/props_update/whitebrick_256.mdl white brick wall (256u)
+models/props_update/wood_128.mdl wooden walls (128u)
+models/props_update/wood_256.mdl wooden walls (256u)
+models/props_urban/gate_wall001_64.mdl Urban Wall (64u)
+models/props_urban/gate_wall001_128.mdl Urban Wall (128u)
+models/props_urban/gate_wall001_256.mdl Urban Wall (256u)
+models/props_urban/gate_wall002_128.mdl urban fence wall (128u)
+models/props_unique/zombiebreakwallexteriorairport01_main.mdl Wallpaper - Airport
+models/props_unique/zombiebreakwallexteriorairportoffices01_main.mdl Wallpaper - Airport Office
+models/props_unique/zombiebreakwallhospitalexterior01_main.mdl Wallpaper - Hospital
+models/lighthouse/props/wall_144_324.mdl Wall-144X(324u) (No Side)
+models/props_interiors/constructionwalls02checkpoint.mdl steel building framing (with doorway)
+models/props_interiors/constructionwalls03.mdl steel building framing
+models/props_interiors/constructionwalls04_damage01.mdl Extra-long building steel column
+models/props_cemetery/crypts_wall.mdl Thickened stone wall-Cemetery Exposed Brick
+models/props_mill/locker_roof_collapsed01.mdl Mill Locker Roof Collapsed (no side)
+models/props_mill/millwall_01.mdl Mill wall 1 (no side)
+models/props_mill/millwall_02.mdl Mill wall 2 (no side)
+models/props_mill/millwall_03.mdl Mill wall 3 (no side)
+models/props_mill/column_01.mdl Mill Rebar Column

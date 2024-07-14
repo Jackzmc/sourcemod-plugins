@@ -1,0 +1,67 @@
+Lights
+models/props_c17/lamppost03a_on.mdl Street Light (On)
+models/props_c17/lamppost03a_off.mdl Street Light (Off)
+models/props_c17/light_domelight02_on.mdl Dome Light
+models/props/cs_assault/floodlight02.mdl Flood Light 2
+models/props/cs_assault/light_shop2.mdl light shop 2
+models/props/cs_office/light_inset.mdl Inset light
+models/props/cs_office/light_shop.mdl Office Light Shop
+models/props/cs_office/light_shopb.mdl Office Light Shop 1
+models/props/de_nuke/emergency_lighta.mdl Emergency Light
+models/props/de_nuke/industriallight01.mdl Industrial Light
+models/props/de_nuke/wall_light.mdl Wall Light (On)
+models/props/de_nuke/wall_light_off.mdl Wall Light (Off)
+models/props/de_train/light_inset.mdl inset light
+models/props_downtown/light01_32.mdl Ceiling Light (32u)
+models/props_downtown/light01_64.mdl Ceiling Light (64u)
+models/props_downtown/light02_128.mdl Ceiling Light (128u)
+models/props_downtown/light02_32.mdl Ceiling Light 2 (32u)
+models/props_downtown/light02_64.mdl Ceiling Light 2 (64u)
+models/props_downtown/street_lamp01.mdl Street Lamp
+models/props_downtown/street_lamp_wall01.mdl Street Lamp Wall
+models/props_equipment/light_floodlight.mdl LED searchlight
+models/props_interiors/furniture_lamp01a.mdl table lamp-furniture
+models/props_interiors/lamp_floor.mdl table lamp-lengthened
+models/props_interiors/lamp_floor_arch.mdl table lamp-curved
+models/props_interiors/lamp_floor_gib1.mdl table lamp-no lamp
+models/props_interiors/lamp_floor_gib2.mdl table lamp shade 1
+models/props_interiors/lamp_table01_gib2.mdl table lamp shade 2
+models/props_interiors/lamp_table02_gib2.mdl table lamp shade 3
+models/props_interiors/lamp_table01.mdl Table lamp 01
+models/props_interiors/lamp_table02.mdl table lamp 02
+models/props_interiors/lamp_table02_gib1.mdl table lamp-no lamp
+models/props_interiors/lightsconce02.mdl Light sconce
+models/props_furniture/lamp1ure/lamp1.mdl table lamp
+models/props_lighting/corner_light_180.mdl Corner Light 180
+models/props_lighting/lampbedside01.mdl Bedside Lamp
+models/props_lighting/lightbulb01a.mdl Lightbulb
+models/props_lighting/light_construction.mdl Construction Light
+models/props_lighting/light_shop.mdl Shop Light
+models/props_lighting/searchlight_small_01.mdl Small Searchlight
+models/props_lighting/searchlight_small_base_01.mdl Small Searchlight base
+models/props_lighting/semi_flush_001.mdl Wall light
+models/props_lighting/semi_flush_002.mdl Wall light 2
+models/props_urban/porch_light001.mdl Porch light
+models/props_urban/porch_light001_02.mdl Porch light 2
+models/props_urban/porch_light002.mdl Porch light 3 
+models/props_urban/porch_light002_02.mdl Porch light 4 
+models/props_urban/porch_light003.mdl Porch light 5 
+models/props_urban/roof_light001.mdl Roof light 1
+models/props_urban/flood_light001.mdl Flood light 
+models/props_urban/flood_light001_02.mdl Flood light part 2
+models/props_urban/streetlight001.mdl Street Light
+models/props_urban/carnival_lights001.mdl carnival lights
+models/props_urban/ceiling_light001.mdl ceiling light
+models/props_urban/emergency_light001.mdl Emergency light
+models/props_urban/light_fixture01.mdl Chandelier
+models/props_urban/hotel_lamp001.mdl table lamp-hotel
+models/props_unique/spawn_apartment/lantern.mdl Electric Lantern
+models/props_urban/telephone_streetlight001.mdl Telephone street light
+models/props_street/trafficlight01.mdl Large Traffic Light (Green)
+models/props_street/trafficlight01_off.mdl Large Traffic Light (Off)
+models/props_street/traffic_plate_01.mdl Traffic Light metal iron plate
+models/props_wasteland/light_spotlight01_base.mdl Spotlight Base
+models/props_wasteland/light_spotlight01_lamp.mdl Spotlight lamp
+models/props_urban/parkinglot_light001.mdl parking lot light
+models/props_furniture/inn_chandelier1.mdl Inn Chandelier
+models/lighthouse/candle.mdl candle

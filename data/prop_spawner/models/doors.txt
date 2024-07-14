@@ -1,0 +1,263 @@
+Doors
+Classname:prop_door_rotating
+models/props_doors/checkpoint_crossbar_-01.mdl checkpoint bar1
+models/props_doors/checkpoint_crossbar_01.mdl checkpoint bar2
+models/props_doors/checkpoint_door_-01.mdl security door-starting point
+models/props_doors/checkpoint_door_-02.mdl Security Door-End
+models/props_doors/checkpoint_doorframe_01.mdl Saferoom Doorframe 1
+models/props_doors/checkpoint_doorframe_02.mdl Saferoom Doorframe 2
+models/props_doors/checkpoint_door_-01_static.mdl Saferoom Door1
+models/props_doors/checkpoint_door_-02_static.mdl Saferoom Door2
+models/props_doors/checkpoint_door_01.mdl Saferoom Door1a
+models/props_doors/checkpoint_door_01_static.mdl Saferoom Door1b
+models/props_doors/checkpoint_door_02.mdl Saferoom Door2a
+models/props_doors/checkpoint_door_02_static.mdl Saferoom Door2b
+models/props_doors/checkpoint_frame_reinforcement_01.mdl Saferoom Doorframe Reinforcement
+models/props_doors/doordm_rural01_01.mdl Wood Door 1-1
+models/props_doors/doordm_rural01_02.mdl Wood Door 1-2
+models/props_doors/doordm_rural02_01.mdl Wood Door 2-1
+models/props_doors/doordm_rural02_02.mdl Wood Door 2-2
+models/props_doors/doordm_rural02_03.mdl Wood Door 2-3
+models/props_doors/doordm_rural03_01.mdl Wood Door 3-1
+models/props_doors/doordm_rural03_02.mdl Wood Door 3-2
+models/props_doors/doordm_rural03_03.mdl Wood Door 3-3
+models/props_doors/doordm_rural04_01.mdl Wood Door 4-1
+models/props_doors/doordm_rural04_02.mdl Wood Door 4-2
+models/props_doors/doordm_rural04_03.mdl Wood Door 4-3
+models/props_doors/doordm_rural04_04.mdl Wood Door 4-4
+models/props_doors/doorfreezer01.mdl Invincible Freezer Door
+models/props_doors/doorglassmain01.mdl Outside Business Door Door 
+models/props_doors/doorglassmain01_dm01.mdl Outside Business Door Damaged 1
+models/props_doors/doorglassmain01_dm02.mdl Outside Business Door Damaged 2 
+models/props_doors/doorglassmain01_dm03_a.mdl Outside Business Door Door Damaged 3a
+models/props_doors/doorglassmain01_dm03_b.mdl Outside Business Door Damaged 3b
+models/props_doors/doorglassmain01_dm03_c.mdl Outside Business Door Damaged 3c
+models/props_doors/doorglassmain01_dm03_d.mdl Outside Business Door Damaged 3d
+models/props_doors/doorglassmain01_dm03_e.mdl Outside Business Door Damaged 3e
+models/props_doors/doorglassmain01_dm03_f.mdl Outside Business Door Damaged 3f
+models/props_doors/doorglassmain01_dm03_g.mdl Outside Business Door Damaged 3g
+models/props_doors/doorglassmain01_dm03_h.mdl Outside Business Door Damaged 3h
+models/props_doors/doorglassmain01_dm03_i.mdl Outside Business Door Damaged 3i
+models/props_doors/doormain01_small.mdl Main Door Small
+models/props_doors/doormain01_small_01.mdl Wood Office Door Whole
+models/props_doors/doormain01_small_02.mdl Wood Office Door Broken 1
+models/props_doors/doormain02_small_01.mdl Wood Office Door Broken 2
+models/props_doors/doormain02_small_02.mdl Wood Office Door Broken 3
+models/props_doors/doormain02_small_03.mdl Wood Office Door Broken 4
+models/props_doors/doormain03_small_01.mdl Wood Office Door Broken 5
+models/props_doors/doormain03_small_02.mdl Wood Office Door Broken 6
+models/props_doors/doormain03_small_03.mdl Wood Office Door Broken 7
+models/props_doors/doormain04_small_01.mdl Wood Office Door Broken 8
+models/props_doors/doormain04_small_02.mdl Wood Office Door Broken 9
+models/props_doors/doormain04_small_03.mdl Wood Office Door Broken 10
+models/props_doors/doormain04_small_04.mdl Wood Office Door Broken 11
+models/props_doors/doormainmetal01.mdl Metal Basic Door
+models/props_doors/doormainmetal01_dm01.mdl Metal Basic Door Damaged 1
+models/props_doors/doormainmetal01_dm02.mdl Metal Basic Door Damaged 2
+models/props_doors/doormainmetal01_dm03.mdl Metal Basic Door Damaged 3-1
+models/props_doors/doormainmetal01_dm03_a.mdl Metal Basic Door Damaged 3-2
+models/props_doors/doormainmetal01_dm03_b.mdl Metal Basic Door Damaged 3-3
+models/props_doors/doormainmetal01_dm04.mdl Metal Basic Door Damaged 4
+models/props_doors/doormainmetal01_dm05.mdl Metal Basic Door Damaged 5
+models/props_doors/doormainmetal01_dm05_a.mdl Metal Basic Door Damaged 5-1
+models/props_doors/doormainmetal01_dm05_b.mdl Metal Basic Door Damaged 5-2
+models/props_doors/doormainmetal01_dm06.mdl Main Door Metal Damaged 6-1
+models/props_doors/doormainmetal01_dm06_a.mdl Metal Basic Door Damaged 6-2
+models/props_doors/doormainmetal01_dm06_b.mdl Metal Basic Door Damaged 6-3
+models/props_doors/doormainmetal01_dm07.mdl Metal Basic Door Damaged 7-1
+models/props_doors/doormainmetal01_dm07_a.mdl Metal Basic Door Damaged 7-2
+models/props_doors/doormainmetal01_dm07_b.mdl Metal Basic Door Damaged 7-3
+models/props_doors/doormainmetal01_dm08_a.mdl Metal Basic Door Damaged 8-1
+models/props_doors/doormainmetal01_dm08_b.mdl Metal Basic Door Damaged 8-2
+models/props_doors/doormainmetal01_dm08_c.mdl Metal Basic Door Damaged 8-3
+models/props_doors/doormainmetal01_dm08_d.mdl Metal Basic Door Damaged 8-4
+models/props_doors/doormainmetal01_dm08_e.mdl Metal Basic Door Damaged 8-5
+models/props_doors/doormainmetal01_dm08_f.mdl Metal Basic Door Damaged 8-6
+models/props_doors/doormainmetal01_dm08_g.mdl Metal Basic Door Damaged 8-7
+models/props_doors/doormainmetal01_dm08_h.mdl Metal Basic Door Damaged 8-8
+models/props_doors/doormainmetalwindow01.mdl Metal Basic Door With Window
+models/props_doors/doormainmetalwindow01_dm01.mdl Metal Basic Door With Window Damaged 1
+models/props_doors/doormainmetalwindow01_dm02.mdl Metal Basic Door With Window Damaged 2
+models/props_doors/doormainmetalwindow01_dm03.mdl Metal Basic Door With Window Damaged 3-1
+models/props_doors/doormainmetalwindow01_dm03_a.mdl Metal Basic Door With Window Damaged 3-2
+models/props_doors/doormainmetalwindow01_dm03_b.mdl Metal Basic Door With Window Damaged 3-3
+models/props_doors/doormainmetalwindow01_dm04.mdl Metal Basic Door With Window Damaged 4-1
+models/props_doors/doormainmetalwindow01_dm04_a.mdl Metal Basic Door With Window Damaged 4-2
+models/props_doors/doormainmetalwindow01_dm04_b.mdl Metal Basic Door With Window Damaged 4-3
+models/props_doors/doormainmetalwindow01_dm05.mdl Metal Basic Door With Window Damaged 5
+models/props_doors/doormainmetalwindow01_dm06.mdl Metal Basic Door With Window Damaged 6-1
+models/props_doors/doormainmetalwindow01_dm06_a.mdl Metal Basic Door With Window Damaged 6-2
+models/props_doors/doormainmetalwindow01_dm06_b.mdl Metal Basic Door With Window Damaged 6-3
+models/props_doors/doormainmetalwindow01_dm07.mdl Metal Basic Door With Window Damaged 7
+models/props_doors/doormainmetalwindow01_dm07_a.mdl Metal Basic Door With Window Damaged 7-1
+models/props_doors/doormainmetalwindow01_dm08_a.mdl Metal Basic Door With Window Damaged 8-1
+models/props_doors/doormainmetalwindow01_dm08_b.mdl Metal Basic Door With Window Damaged 8-2
+models/props_doors/doormainmetalwindow01_dm08_c.mdl Metal Basic Door With Window Damaged 8-3
+models/props_doors/doormainmetalwindow01_dm08_d.mdl Metal Basic Door With Window Damaged 8-4
+models/props_doors/doormainmetalwindow01_dm08_e.mdl Metal Basic Door With Window Damaged 8-5
+models/props_doors/doormainmetalwindow01_dm08_f.mdl Metal Basic Door With Window Damaged 8-6
+models/props_doors/doormainmetalwindow01_dm08_g.mdl Metal Basic Door With Window Damaged 8-7
+models/props_doors/doormainmetalwindow01_dm08_h.mdl Metal Basic Door With Window Damaged 8-8
+models/props_doors/doormainmetalwindow01_dm08_i.mdl Metal Basic Door With Window Damaged 8-9
+models/props_doors/doormainmetalwindow01_dm08_j.mdl Metal Basic Door With Window Damaged 8-10
+models/props_doors/doormain_rural01.mdl Rural Main 
+models/props_doors/doormain_rural01_small.mdl Rural Small
+models/props_doors/doormain_rural01_small_01.mdl Rural Small 1-1
+models/props_doors/doormain_rural01_small_02.mdl Rural Small 1-2
+models/props_doors/doormain_rural02_small_01.mdl Rural Small 2-1
+models/props_doors/doormain_rural02_small_02.mdl Rural Small 2-2
+models/props_doors/doormain_rural02_small_03.mdl Rural Small 2-3
+models/props_doors/doormain_rural03_small_01.mdl Rural Small 3-1
+models/props_doors/doormain_rural03_small_02.mdl Rural Small 3-2
+models/props_doors/doormain_rural03_small_03.mdl Rural Small 3-3
+models/props_doors/doormain_rural04_small_01.mdl Rural Small 4-1
+models/props_doors/doormain_rural04_small_02.mdl Rural Small 4-2
+models/props_doors/doormain_rural04_small_03.mdl Rural Small 4-3
+models/props_doors/doormain_rural04_small_04.mdl Rural Small 4-4
+models/props_doors/door_rotate_112.mdl Rotating Door 112unit
+models/props_doors/door_sliding_112.mdl Sliding Door 112unit
+models/props_doors/door_urban_48_118_boarded.mdl Urban Door Boarded up 48x118 (No Back/Sides)
+models/props_doors/door_urban_48_118_damaged_boarded.mdl Urban Door Boarded Damage 48x118 (No Back/Sides)
+models/props_doors/door_urban_48_118_damaged.mdl Urban Door Damaged 48x118 (No Back/Sides)
+models/props_doors/door_urban_double01.mdl Urban Double Door (No Back/Sides)
+models/props_doors/door_urban_rooftop.mdl Urban Rooftop Door(No Back/Sides)
+models/props_doors/gun_store_door.mdl Gun Store Door w/Dropbox (No Back/Sides)
+models/props_doors/roll-up_door_full.mdl Roll up door closed
+models/props_doors/roll-up_door_half.mdl Roll up Door Half Open
+models/props_doors/roll-up_door_open.mdl Roll up door fully open
+models/props_doors/shackwall01.mdl Shack Wall Door
+models/props_doors/shackwall01_dmg01.mdl Shack Wall Damage 1-1
+models/props_doors/shackwall01_dmg01_a.mdl Shack Wall Damage 1-2
+models/props_doors/shackwall01_dmg01_b.mdl Shack Wall Damage 1-3
+models/props_doors/shackwall01_dmg02.mdl Shack Wall Damage 2-1
+models/props_doors/shackwall01_dmg02_a.mdl Shack Wall Damage 2-2
+models/props_doors/shackwall01_dmg02_b.mdl Shack Wall Damage 2-3
+models/props_doors/shackwall01_dmg03.mdl Shack Wall Damage 3-1
+models/props_doors/shackwall01_dmg03_a.mdl Shack Wall Damage 3-2
+models/props_doors/shackwall01_dmg03_b.mdl Shack Wall Damage 3-3
+models/props_doors/shackwall01_dmg03_c.mdl Shack Wall Damage 3-4
+models/props_doors/shackwall01_dmg03_d.mdl Shack Wall Damage 3-4
+models/props_doors/shackwall01_dmg03_e.mdl Shack Wall Damage 3-5
+models/props_doors/shackwall01_dmg03_f.mdl Shack Wall Damage 3-6
+models/props_doors/shackwall01_dmg03_g.mdl Shack Wall Damage 3-7
+models/props_doors/shackwall01_dmg04.mdl Shack Wall Damage 4-1
+models/props_doors/shackwall01_dmg04_a.mdl Shack Wall Damage 4-2
+models/props_doors/shackwall01_dmg04_b.mdl Shack Wall Damage 4-3
+models/props_doors/shackwall01_dmg04_c.mdl Shack Wall Damage 4-4
+models/props_doors/shackwall01_dmg04_d.mdl Shack Wall Damage 4-5
+models/props_doors/shackwall01_dmg04_e.mdl Shack Wall Damage 4-6
+models/props_doors/shackwall01_dmg04_f.mdl Shack Wall Damage 4-7
+models/props_doors/shackwall01_dmg04_g.mdl Shack Wall Damage 4-8
+models/props_doors/shackwall01_dmg04_h.mdl Shack Wall Damage 4-9
+models/props_doors/shackwall01_dmg05_a.mdl Shack Wall Damage 5-1
+models/props_doors/shackwall01_dmg05_b.mdl Shack Wall Damage 5-2
+models/props_doors/shackwall01_dmg05_c.mdl Shack Wall Damage 5-3
+models/props_doors/shackwall01_dmg05_d.mdl Shack Wall Damage 5-4
+models/props_doors/shackwall01_dmg05_e.mdl Shack Wall Damage 5-5
+models/props_doors/shackwall01_dmg05_f.mdl Shack Wall Damage 5-6
+models/props_doors/shackwall01_dmg05_g.mdl Shack Wall Damage 5-7
+models/props_doors/shackwall01_dmg05_h.mdl Shack Wall Damage 5-8
+models/props_doors/shackwall01_dmg05_i.mdl Shack Wall Damage 5-9
+models/props_doors/shackwall01_dmg05_j.mdl Shack Wall Damage 5-10
+models/props_doors/shackwall01_dmg05_k.mdl Shack Wall Damage 5-11
+models/props_downtown/door01_80_136.mdl Downtown Door1 80x136 (No Back/Sides)
+models/props_downtown/door02_80_136.mdl Downtown Door2 80x136 (No Back/Sides)
+models/props_downtown/door03_48_104.mdl Downtown Door3 48x104 (No Back/Sides)
+models/props_downtown/door_frame01.mdl Downtown Door Frame (No Back/Sides)
+models/props_downtown/door_interior_112_01.mdl Downtown Door Interior 112
+models/props_downtown/door_interior_with_trim_112_01.mdl Downtown Door Interior With Trim 112 (No Back, No Handle)
+models/props_downtown/door_interior_112_01_dm01_01.mdl Downtown Door Interior Damage 112 1-1
+models/props_downtown/door_interior_112_01_dm01_02.mdl Downtown Door Interior Damage 112 1-2
+models/props_downtown/door_interior_112_01_dm02_01.mdl Downtown Door Interior Damage 112 2-1
+models/props_downtown/door_interior_112_01_dm02_02.mdl Downtown Door Interior Damage 112 2-2
+models/props_downtown/door_interior_112_01_dm02_03.mdl Downtown Door Interior Damage 112 2-3
+models/props_downtown/door_interior_112_01_dm02_04.mdl Downtown Door Interior Damage 112 2-4
+models/props_downtown/door_interior_112_01_dm02_05.mdl Downtown Door Interior Damage 112 2-5
+models/props_downtown/door_interior_112_01_dm03_01.mdl Downtown Door Interior Damage 112 3-1
+models/props_downtown/door_interior_112_01_dm03_02.mdl Downtown Door Interior Damage 112 3-2
+models/props_downtown/door_interior_112_01_dm03_03.mdl Downtown Door Interior Damage 112 3-3
+models/props_downtown/door_interior_112_01_dm03_04.mdl Downtown Door Interior Damage 112 3-4
+models/props_downtown/door_interior_112_01_dm04_01.mdl Downtown Door Interior Damage 112 4-1
+models/props_downtown/door_interior_112_01_dm04_02.mdl Downtown Door Interior Damage 112 4-2
+models/props_downtown/door_interior_112_01_dm04_03.mdl Downtown Door Interior Damage 112 4-3
+models/props_downtown/door_interior_112_01_dm04_04.mdl Downtown Door Interior Damage 112 4-4
+models/props_downtown/door_interior_112_01_dm04_05.mdl Downtown Door Interior Damage 112 4-5
+models/props_downtown/door_interior_128_01.mdl Downtown Door Interior 128
+models/props_downtown/door_interior_with_trim_128_01.mdl Downtown Door Interior With Trim 128 (No Back, No Handle)
+models/props_downtown/door_interior_128_01_dm01_01.mdl Downtown Door Interior 128 1-1
+models/props_downtown/door_interior_128_01_dm01_02.mdl Downtown Door Interior 128 1-2
+models/props_downtown/door_interior_128_01_dm02_01.mdl Downtown Door Interior 128 2-1
+models/props_downtown/door_interior_128_01_dm02_02.mdl Downtown Door Interior 128 2-2
+models/props_downtown/door_interior_128_01_dm02_03.mdl Downtown Door Interior 128 2-3
+models/props_downtown/door_interior_128_01_dm02_04.mdl Downtown Door Interior 128 2-4
+models/props_downtown/door_interior_128_01_dm02_05.mdl Downtown Door Interior 128 2-5
+models/props_downtown/door_interior_128_01_dm03_01.mdl Downtown Door Interior 128 3-1
+models/props_downtown/door_interior_128_01_dm03_02.mdl Downtown Door Interior 128 3-2
+models/props_downtown/door_interior_128_01_dm03_03.mdl Downtown Door Interior 128 3-3
+models/props_downtown/door_interior_128_01_dm03_04.mdl Downtown Door Interior 128 3-4
+models/props_downtown/door_interior_128_01_dm04_01.mdl Downtown Door Interior 128 4-1
+models/props_downtown/door_interior_128_01_dm04_02.mdl Downtown Door Interior 128 4-2
+models/props_downtown/door_interior_128_01_dm04_03.mdl Downtown Door Interior 128 4-3
+models/props_downtown/door_interior_128_01_dm04_04.mdl Downtown Door Interior 128 4-4
+models/props_downtown/door_interior_128_01_dm04_05.mdl Downtown Door Interior 128 4-5
+models/props_downtown/door_pillar01.mdl Downtown Door Pillar 1 (No Sides)
+models/props_downtown/door_pillar02.mdl Downtown Door Pillar 2 (No Sides)
+models/props_downtown/door_trim_56_112_01.mdl Downtown Door Trim 56x112 - 1(No Sides)
+models/props_downtown/door_trim_56_112_02.mdl Downtown Door Trim 56x112 - 2 (No Sides)
+models/props_downtown/door_trim_64_128_01.mdl Downtown Door Trim 64x128 - 1 (No Sides)
+models/props_downtown/door_trim_64_128_02.mdl Downtown Door Trim 64x128 - 2 (No Sides)
+models/props_downtown/door_trim_64_128_03.mdl Downtown Door Trim 64x128 - 3 (No Sides)
+models/props_downtown/door_trim_exterior_01.mdl Downtown Door Trim Exterior 1 (No Sides)
+models/props_downtown/door_trim_exterior_02.mdl Downtown Door Trim Exterior 2 (No Sides)
+models/props_downtown/door_trim_exterior_03.mdl Downtown Door Trim Exterior 3 (No Sides)
+models/props_downtown/metal_door_112.mdl Downtown Metal Door 112
+models/props_downtown/metal_door_112_16_frame.mdl Downtown Door Metal Frame 112x16 (No Sides)
+models/props_downtown/metal_door_112_dm01_01.mdl Downtown Metal Door Damage 1-1
+models/props_downtown/metal_door_112_dm02_01.mdl Downtown Metal Door Damage 2-1
+models/props_downtown/metal_door_112_dm02_02.mdl Downtown Metal Door Damage 2-2
+models/props_downtown/metal_door_112_dm03_01.mdl Downtown Metal Door Damage 3-1
+models/props_downtown/metal_door_112_dm03_02.mdl Downtown Metal Door Damage 3-2
+models/props_downtown/metal_door_112_dm03_03.mdl Downtown Metal Door Damage 3-3
+models/props_downtown/metal_door_112_dm03_04.mdl Downtown Metal Door Damage 3-4
+models/props_downtown/metal_door_112_dm04_01.mdl Downtown Metal Door Damage 4-1
+models/props_downtown/metal_door_112_dm04_02.mdl Downtown Metal Door Damage 4-2
+models/props_downtown/metal_door_112_dm05_01.mdl Downtown Metal Door Damage 5-1
+models/props_downtown/metal_door_112_dm05_02.mdl Downtown Metal Door Damage 5-2
+models/props_downtown/metal_door_112_dm05_03.mdl Downtown Metal Door Damage 5-3
+models/props_downtown/metal_door_112_dm05_04.mdl Downtown Metal Door Damage 5-4
+models/props_downtown/metal_door_112_dm05_05.mdl Downtown Metal Door Damage 5-5
+models/props_downtown/metal_door_112_frame.mdl Downtown Metal Door Frame 112 (No Sides)
+models/props_downtown/metal_door_112_static.mdl Downtown Metal Door Frame 112 (No Handle)
+models/props_downtown/metal_door_doublewide_112_16_frame.mdl Downtown Metal Double Wide Door Frame 112x16
+models/props_downtown/metal_door_doublewide_112_frame.mdl Downtown Metal Double Wide Door Frame 112
+models/props_shacks/screen01.mdl Shack Screen Door 1
+models/props_shacks/screen01_breakable.mdl Shack Door Screen 1 (Breakable)
+models/props_shacks/screen02.mdl Shack Door Screen 2
+models/props_shacks/screen02_breakable.mdl Shack Door Screen 2 (Breakable)
+models/props_shacks/screen03.mdl Shack Door Screen 3
+models/props_shacks/screen03_breakable.mdl Shack Door Screen 3 (Breakable)
+models/props_shacks/screen04.mdl Shack Door Screen 4
+models/props_shacks/screen04_breakable.mdl Shack Door Screen 4 (Breakable)
+models/props_shacks/screen05.mdl Shack Door Screen 5
+models/props_shacks/screen05_breakable.mdl Shack Door Screen 5 (Breakable)
+models/props_shacks/screen05_breakable.mdl Shack Door Screen Door 6
+models/props_shacks/screen06_breakable.mdl Shack Door Screen 6 (Breakable)
+models/props_urban/screen_door001.mdl Urban Screen Door (No Screen)
+models/props_mill/rollup_door01.mdl Mill Roll-up door Closed
+models/props_windows/hotel_door_sliding.mdl Hotel Sliding Door (No Glass)
+models/props_windows/hotel_door_sliding_chips.mdl Hotel Sliding Door with broken edge
+models/props_windows/hotel_door_sliding_glass001.mdl Hotel Sliding Door Glass 1
+models/props_windows/hotel_door_sliding_glass002.mdl Hotel Sliding Door Glass 2
+models/props_windows/hotel_door_sliding_glass003.mdl Hotel Sliding Door Glass 3
+models/props_windows/hotel_glass_frame.mdl Hotel Sliding Door Glass Frame 1
+models/props_windows/hotel_glass_frame002.mdl Hotel Sliding Door Glass Frame 2
+models/c1_chargerexit/doornframes.mdl Double Metal Door Frame
+models/c1_chargerexit/doors_glass_1.mdl Double Metal Door Glass 1
+models/c1_chargerexit/doors_glass_2.mdl Double Metal Door Glass 2
+models/c1_chargerexit/doors_glass_3.mdl Double Metal Door Glass 3
+models/c1_chargerexit/doors_glass_4.mdl Double Metal Door Glass 4
+models/c1_chargerexit/doors_glass_5.mdl Double Metal Door Glass 5
+models/c1_chargerexit/doors_glass_6.mdl Double Metal Door Glass 6
+models/c1_chargerexit/door_frames_static.mdl Double Metal Door Frame (Static)
+models/c1_chargerexit/door_frames_static_out.mdl Double Metal Door Frame Out (Static)
+models/props_buildings/storefront_door_straight.mdl Storefront Door Straight

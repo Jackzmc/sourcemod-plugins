@@ -1,0 +1,190 @@
+Debris
+models/props_debris/airliner_wreckage1.mdl Wrecked Aircraft-Head
+models/props_debris/airliner_wreckage2.mdl Wrecked Aircraft-Wing
+models/props_debris/airliner_wreckage3.mdl Wrecked Aircraft-Airframe
+models/props_vehicles/airliner_finale_left.mdl half plane-left
+models/props_vehicles/airliner_finale_right.mdl half plane-right
+models/props_debris/barricade_short02a.mdl Rubble and Broken Earth and Stone-Short 02a
+models/props_debris/barricade_short03a.mdl Rubble and Broken Earth and Stone-Short 03a
+models/props_debris/barricade_short04a.mdl Rubble and Broken Earth and Stone-Short 04a
+models/props_debris/barricade_tall01a.mdl Rubble and Broken Earth and Stone-Length 01a
+models/props_debris/barricade_tall02a.mdl Rubble and Broken Earth and Stone-Length 02a
+models/props_debris/barricade_tall03a.mdl Rubble and Broken Earth and Stone-Length 03a
+models/props_debris/airliner_wreckage4_ext.mdl Airline Wreckage 4
+models/props_debris/airliner_wreckage5_int.mdl Airline Wreckage 5
+models/props_debris/airliner_wreckage6_ripped.mdl Airline Wreckage 6-1
+models/props_debris/airliner_wreckage6_wing.mdl Airline Wreckage 6-2
+models/props_debris/airliner_wreckage7_exitdoor.mdl Airline Wreckage Exit Door
+models/props_debris/airliner_wreckage8_seats.mdl Airline Wreckage Seats
+models/props_debris/airliner_wreckage9_seatrow.mdl Airline Wreckage Row of Seats
+models/props_debris/airliner_wreckage_sb.mdl Airline Wreckage SB
+models/props_debris/burnt_building_chimney_01.mdl Burnt Building Chimney
+models/props_debris/burnt_building_corner_01.mdl Burnt Building Corner
+models/props_debris/burnt_building_corner_02.mdl Burnt Building Corner 2
+models/props_debris/burnt_building_debrispile_01.mdl Burnt Building Debris Pile
+models/props_debris/burnt_building_debrispile_02.mdl Burnt Building Debris Pile 2
+models/props_debris/burnt_building_rafters_01.mdl Burnt Building Rafters 
+models/props_debris/burnt_building_rafters_02.mdl Burnt Building Rafters 2
+models/props_debris/burnt_building_roof_01.mdl Burnt Building Roof 1
+models/props_debris/burnt_building_roof_02.mdl Burnt Building Roof 2
+models/props_debris/burnt_building_wall_01.mdl Burnt Building Wall 1
+models/props_debris/burnt_building_wall_02.mdl Burnt Building Wall 2
+models/props_debris/burnt_building_wall_03.mdl Burnt Building Wall 3
+models/props_debris/burnt_building_wall_04.mdl Burnt Building Wall 4
+models/props_debris/burnt_building_wall_05.mdl Burnt Building Wall 5
+models/props_debris/burnt_building_wall_06.mdl Burnt Building Wall 6
+models/props_debris/burnt_building_wall_07.mdl Burnt Building Wall 7
+models/props_debris/concrete_chunk01a.mdl Concrete Chunk 1-1
+models/props_debris/concrete_chunk01c.mdl Concrete Chunk 1-2
+models/props_debris/concrete_chunk02a.mdl Concrete Chunk 2
+models/props_debris/concrete_chunk03a.mdl Concrete Chunk 3
+models/props_debris/concrete_chunk07a.mdl Concrete Chunk 4
+models/props_debris/concrete_chunk08a.mdl Concrete Chunk 5
+models/props_debris/concrete_chunk09a.mdl Concrete Chunk 6
+models/props_debris/concrete_debris128pile001a.mdl Debris Pile 128 Units 1
+models/props_debris/concrete_debris128pile001b.mdl Debris Pile 128 Units 2
+models/props_debris/concrete_debris256pile001a.mdl Debris Pile 256 Units
+models/props_debris/concrete_debris256barricade001a.mdl Debris Barricade 256 Units
+models/props_debris/concrete_section64floor001b.mdl Debris Concrete Floor Section
+models/props_debris/concrete_spawnchunk001a.mdl Concrete Chunk 1
+models/props_debris/concrete_spawnchunk001b.mdl Concrete Chunk 2
+models/props_debris/concrete_spawnchunk001c.mdl Concrete Chunk 3
+models/props_debris/concrete_spawnchunk001d.mdl Concrete Chunk 4
+models/props_debris/concrete_spawnchunk001e.mdl Concrete Chunk 5
+models/props_debris/concrete_spawnchunk001f.mdl Concrete Chunk 6
+models/props_debris/corner_rubble1.mdl Corner Rubble
+models/props_mill/brickwall_broken01.mdl Brickwall Broken 1-1
+models/props_mill/brickwall_broken01_b.mdl Brickwall Broken 1-2
+models/props_mill/brickwall_broken02.mdl Brickwall Broken 2
+models/props_mill/brickwall_broken03.mdl Brickwall Broken 3-1
+models/props_mill/brickwall_broken03_b.mdl Brickwall Broken 3-2
+models/props_mill/brickwall_broken04.mdl Brickwall Broken 4-1
+models/props_mill/brickwall_broken04_b.mdl Brickwall Broken 4-2
+models/props_mill/brickwall_broken05_b.mdl Brickwall Broken 5
+models/lighthouse/props/brick_broken_wall_debris.mdl Scattered Bricks
+models/props_urban/brick_edge01.mdl Brick Edge
+models/props_debris/debris_brick01.mdl Loose Brick 1
+models/props_debris/debris_brick02.mdl Loose Brick 2
+models/props_debris/floor_rubble1.mdl Floor Rubble
+models/props_debris/mansion_structure.mdl Mansion Structure
+models/props_debris/rebar002a_32.mdl Rebar 32unit
+models/props_debris/rebar002d_96.mdl Rebar 96 unit
+models/props_debris/rebar003c_64.mdl Rebar 64 units
+models/props_debris/rebar004b_48.mdl Rebar 48 Units
+models/props_debris/rebar_cluster001a.mdl Rebar Cluster 1
+models/props_debris/rebar_cluster001b.mdl Rebar Cluster 2
+models/props_debris/rebar_cluster002a.mdl Rebar Cluster 3
+models/props_debris/rebar_cluster002b.mdl Rebar Cluster 4
+models/props_debris/tv_monitor01.mdl Broken TV Monitor
+models/props_debris/wood_board04a.mdl Wooden Board 1
+models/props_debris/wood_board05a.mdl Wooden Board 2
+models/props_debris/wood_chunk04a.mdl Wooden Board Piece 1-1
+models/props_debris/wood_chunk04b.mdl Wooden Board Piece 1-2
+models/props_debris/wood_chunk04c.mdl Wooden Board Piece 1-3
+models/props_debris/wood_chunk04d.mdl Wooden Board Piece 1-4
+models/props_debris/wood_chunk04e.mdl Wooden Board Piece 1-5
+models/props_debris/wood_chunk04f.mdl Wooden Board Piece 1-6
+models/props_debris/wood_chunk05a.mdl Wooden Board Piece 2-1
+models/props_debris/wood_chunk05b.mdl Wooden Board Piece 2-2
+models/props_debris/wood_chunk05c.mdl Wooden Board Piece 2-3
+models/props_debris/wood_chunk05d.mdl Wooden Board Piece 2-4
+models/props_debris/wood_chunk05e.mdl Wooden Board Piece 2-5
+models/props_debris/wood_chunk05f.mdl Wooden Board Piece 2-6
+models/props_debris/wood_splinters01a.mdl Wood Splinter 1
+models/props_debris/wood_splinters01b.mdl Wood Splinter 2
+models/props_debris/wood_splinters01c.mdl Wood Splinter 3
+models/props_debris/wood_splinters01d.mdl Wood Splinter 4
+models/props_debris/wood_splinters01e.mdl Wood Splinter 5
+models/props_destruction/dest_ceilingbroken128a.mdl Broken Ceiling 128 Units 1
+models/props_destruction/dest_ceilingbroken128b.mdl Broken Ceiling 128 Units 2
+models/props_destruction/dest_ceilingcollapsedvoid.mdl Collapsed Ceiling Void?
+models/props_destruction/dest_fire_ceilingfallbig.mdl Fire destroyed ceiling collapse
+models/props_destruction/dest_fire_ceilingtilesonly.mdl Fire destroyed ceiling tiles
+models/props_destruction/dest_fire_wallcollapse.mdl fire destroyed wall collapse
+models/props_destruction/dest_rubbletile01.mdl Tile rubbel 1
+models/props_destruction/dest_rubbletile02.mdl Tile rubbel 2
+models/props_destruction/dest_rubbletile03.mdl Tile rubbel 3
+models/props_destruction/general_dest_concrete_set.mdl Concrete Rubble
+models/props_destruction/general_dest_plaster_set.mdl Plaster Rubble
+models/props_destruction/general_dest_roof_set.mdl Roof Rubble
+models/c3_plantation/gate_expl_1.mdl Destroyed Gate 1
+models/c3_plantation/gate_expl_2.mdl Destroyed Gate 2
+models/c3_plantation/gate_expl_3.mdl Destroyed Gate 3
+models/c5m3_bridge_overpass_debris/bridgedebris_set_a.mdl Destroyed Bridge 1
+models/c5m3_bridge_overpass_debris/bridgedebris_set_b.mdl Destroyed Bridge 2
+models/c5m3_bridge_overpass_debris/bridgedebris_set_c.mdl Destroyed Bridge 3
+models/c5m3_bridge_overpass_debris/bridgedebris_set_d.mdl Destroyed Bridge 4
+models/c5m3_bridge_overpass_debris/c5m3_bridge_chunks.mdl Destroyed Bridge Chunks
+models/c5m3_bridge_overpass_debris/c5m3_bridge_divider_debris.mdl Destroyed Bridge Divider
+models/c5m3_bridge_overpass_debris/c5m3_bridge_overpass_debris.mdl Destroyed Bridge Overpass
+models/c5m3_overpass_explosion/smalldebris_part_baked_setsexp.mdl Overpass Explosion
+models/c5_bridge_destruction/bridge_busses.mdl Bridge Destruction Busses
+models/c5_bridge_destruction/bridge_centdwn_1.mdl Bridge Destruction CentDwn 1-1
+models/c5_bridge_destruction/bridge_centdwn_1b.mdl Bridge Destruction Centdwn 1-2
+models/c5_bridge_destruction/bridge_centdwn_2.mdl Bridge Destruction Centdown 2
+models/c5_bridge_destruction/bridge_centup_1.mdl Bridge Destruction CentUp 1-1
+models/c5_bridge_destruction/bridge_centup_1b.mdl Bridge Destruction CentUp 1-2
+models/c5_bridge_destruction/bridge_centup_2.mdl Bridge Destruction CentUp 2-1
+models/c5_bridge_destruction/bridge_centup_2b.mdl Bridge Destruction CentUp 2-2
+models/c5_bridge_destruction/bridge_dynamic_center1.mdl Bridge Destruction Dynamic Center 1
+models/c5_bridge_destruction/bridge_dynamic_center2.mdl Bridge Destruction Dynamic Center 2
+models/c5_bridge_destruction/bridge_dynamic_end1.mdl Bridge Destruction Dynamic End 1
+models/c5_bridge_destruction/bridge_dynamic_end2.mdl Bridge Destruction Dynamic End 2
+models/c5_bridge_destruction/bridge_fueltruck.mdl Bridge Destruction Fuel Truck
+models/c5_bridge_destruction/bridge_hummers.mdl Bridge Destruction Hummer
+models/c5_bridge_destruction/bridge_left_tower.mdl Bridge Destruction Left Tower
+models/c5_bridge_destruction/bridge_lfttower_rip_botfloors.mdl Bridge Destruction Left Tower Bottom Floors
+models/c5_bridge_destruction/bridge_lfttower_rip_topfloors.mdl Bridge Destruction Left Tower Top FLoors
+models/c5_bridge_destruction/bridge_lfttower_stat_floors.mdl Bridge Destruction Stat Floors
+models/c5_bridge_destruction/bridge_pierbase.mdl Bridge Destruction Pierbase
+models/c5_bridge_destruction/bridge_rgttower_floors.mdl Bridge Destruction Right Tower Floors
+models/c5_bridge_destruction/bridge_rgttower_topfloors.mdl Bridge Destruction Right Tower Top Floors
+models/c5_bridge_destruction/bridge_right_tower.mdl Bridge Destruction Right Tower
+models/c5_bridge_destruction/bridge_semiflatnose.mdl Bridge Destruction Flat Nose Semi
+models/c5_bridge_destruction/bridge_vertical_rails.mdl Bridge Destruction Vertical Rails
+models/c5_bridge_destruction/water_splashes.mdl Bridge Destruction Water Splashes
+models/destruction_tanker/c1m2_cables_far.mdl Tanker Cables Far c1m2 Gunstore
+models/destruction_tanker/c1m2_cables_near.mdl Tanker Cables Near c1m2 Gunstore
+models/destruction_tanker/destruction_awning.mdl Tanker Awning Destroyed
+models/destruction_tanker/destruction_tanker_cab.mdl Tanker Cab Destroyed
+models/destruction_tanker/destruction_tanker_debris_1.mdl Tanker Debris 1
+models/destruction_tanker/destruction_tanker_debris_2.mdl Tanker Debris 2
+models/destruction_tanker/destruction_tanker_debris_3.mdl Tanker Debris 3
+models/destruction_tanker/destruction_tanker_debris_4.mdl Tanker Debris 4
+models/destruction_tanker/destruction_tanker_debris_5.mdl Tanker Debris 5
+models/destruction_tanker/destruction_tanker_debris_6.mdl Tanker Debris 6
+models/destruction_tanker/destruction_tanker_front.mdl Tanker Debris Front
+models/destruction_tanker/destruction_tanker_rear.mdl Tanker Debris Back
+models/destruction_tanker/pre_destruction_tanker_trailer.mdl Pre-destroyed Tanker
+models/gibs/glass_shard01.mdl Glass Shard 1
+models/gibs/glass_shard02.mdl Glass Shard 2
+models/gibs/glass_shard03.mdl Glass Shard 3
+models/gibs/glass_shard04.mdl Glass Shard 4
+models/gibs/glass_shard05.mdl Glass Shard 5
+models/gibs/glass_shard06.mdl Glass Shard 6
+models/gibs/hgibs.mdl Skull
+models/gibs/metal_gib1.mdl Metal Pieces 1
+models/gibs/metal_gib2.mdl Metal Pieces 2
+models/gibs/metal_gib3.mdl Metal Pieces 3
+models/gibs/metal_gib4.mdl Metal Pieces 4
+models/gibs/metal_gib5.mdl Metal Pieces 5
+models/gibs/wood_gib01a.mdl Wood Pieces 1
+models/gibs/wood_gib01b.mdl Wood Pieces 2
+models/gibs/wood_gib01c.mdl Wood Pieces 3
+models/gibs/wood_gib01d.mdl Wood Pieces 4
+models/gibs/wood_gib01e.mdl Wood Pieces 5
+models/gibs/furniture_gibs/furnituretable001a_chunk01.mdl Table Chunks 1
+models/gibs/furniture_gibs/furnituretable001a_chunk02.mdl Table Chunks 2
+models/gibs/furniture_gibs/furnituretable001a_chunk03.mdl Table Chunks 3
+models/gibs/furniture_gibs/furnituretable001a_chunk04.mdl Table Chunks 4
+models/gibs/furniture_gibs/furnituretable001a_chunk05.mdl Table Chunks 5
+models/gibs/furniture_gibs/furnituretable001a_chunk06.mdl Table Chunks 6
+models/gibs/furniture_gibs/furnituretable001a_chunk07.mdl Table Chunks 7
+models/gibs/furniture_gibs/furnituretable001a_shard01.mdl Table Wood Shard
+models/lighthouse/props/wood_chunks02.mdl Three pieces of wood
+models/lighthouse/props/wood_chunks03.mdl a piece of broken wood
+models/lighthouse/props/wood_chunks04.mdl half of the broken wood
+models/lighthouse/props/wood_plank_128.mdl a piece of wood
+models/brokenglass_piece.mdl Broken Glass Piece
+models/hybridphysx/lawnmower_gore.mdl Chopped Up Gore
+models/props_downtown/broken_ceiling01.mdl Downtown Broken Ceiling

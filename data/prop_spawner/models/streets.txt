@@ -1,0 +1,90 @@
+Streets
+models/props_street/firehydrant.mdl Fire hydrant
+models/props_urban/fire_hydrant001.mdl Fire Hydrant 2
+models/props_street/mail_dropbox.mdl Mail Dropbox
+models/props_urban/mail_box001.mdl Mailbox 
+models/props_street/manhole_cover_surround.mdl Manhole Cover
+models/props_street/newspaper_dispensers.mdl Newspaper Dispenser
+models/props_street/trashbin01.mdl Trashbin
+models/props_urban/dumpster001.mdl Dumpster
+models/props_urban/garbage_can001.mdl Urban Garbage Can 1
+models/props_urban/garbage_can002.mdl Urban Garbage Can 2
+models/props_junk/dumpster.mdl trash can-green
+models/props_junk/dumpster_2.mdl trash can-white
+models/props_urban/garden_hose001.mdl Garden Hose
+models/props_urban/gas_meter.mdl Gas meter
+models/props_urban/gas_pump001.mdl Gas Pump
+models/props_urban/highway_barrel001.mdl Highway Barrel
+models/props_urban/concrete_car_stop001.mdl Concrete Car Stop
+models/props_urban/carport_01.mdl Carport 1
+models/props_urban/shopping_cart001.mdl Super shopping cart
+models/props_urban/telephone_connector_bracket001.mdl Telephone Pole Connector Bracket
+models/props_urban/telephone_pole001.mdl Telephone Pole 1
+models/props_urban/telephone_pole002.mdl Telephone Pole 2
+models/props_urban/telephone_pole003.mdl Telephone Pole 3
+models/props_street/phonepole1_tall.mdl Telephone Pole 4
+models/props_c17/utilitypole01d.mdl Telephone Pole 5
+models/props_urban/curb_curve001_64.mdl Curved Curb 64 Unit - 1
+models/props_urban/curb_curve002_64.mdl Curved Curber 64 Units - 2
+models/props_urban/curb_drain001_32.mdl Street Drain 32 Units
+models/props_urban/curb_ramp001_128.mdl Curb Ramp 128 units
+models/props_urban/curb_ramp001_256.mdl Curb Ramp 256 Units
+models/props_urban/curb_ramp001_64.mdl Curb Ramp 64 Units
+models/props_urban/curb_straight001_32.mdl Straight Curb 32 Units
+models/props_urban/curb_straight001_64.mdl Straight Curb 64 Units
+models/props_urban/curb_straight001_128.mdl Straight Curb 128 Units
+models/props_urban/curb_straight001_256.mdl Straight Curb 256 Units
+models/props_urban/curb_straight001_512.mdl Straight Curb 512 Units
+models/props_equipment/irrigation_system.mdl Irrigation System 
+models/props_equipment/irrigation_system_end.mdl Irrigation System End
+models/props_downtown/gutter_downspout_corner01.mdl Gutter Corner Piece 
+models/props_downtown/gutter_downspout_straight01.mdl Gutter Straight 1
+models/props_downtown/gutter_downspout_straight02.mdl Gutter Straight 2
+models/props_downtown/gutter_downspout_straight_160_01.mdl Gutter Straight 3
+models/props_downtown/gutter_downspout_straight_160_02.mdl Gutter Straight 4
+models/props/cs_assault/pylon.mdl Pylon
+models/props_street/roadsidereflector01.mdl Road Reflector
+models/props_unique/bridge_onramp_01.mdl Bridge Onramp 1
+models/props_unique/bridge_onramp_02.mdl Bridge Onramp 2
+models/props_highway/bridge_512_botbeam.mdl Bridge Beam 512 Units
+models/props_highway/bridge_beamheavy.mdl Bridge Beam Heavy
+models/props_highway/bridge_beam_bottom.mdl Bridge Beam Bottom
+models/props_highway/bridge_beam_top.mdl Bridge Beam Top
+models/props_highway/bridge_beam_top_damaged1.mdl Bridge Beam Top Damaged 1
+models/props_highway/bridge_beam_top_damaged2.mdl Bridge Beam Top Damaged 2
+models/props_highway/bridge_column.mdl Bridge Column
+models/props_highway/bridge_column_damaged_1.mdl Bridge Column 2
+models/props_highway/bridge_gratesupports.mdl Bridge Grate Supports
+models/props_highway/bridge_pier.mdl Bridge Pier
+models/props_highway/bridge_pipe01.mdl Bridge Pipe 1
+models/props_highway/bridge_pipe01_256.mdl Bridge 1 Pipe 256 Units
+models/props_highway/bridge_pipe02.mdl Bridge 2
+models/props_highway/bridge_rail.mdl Bridge Rail
+models/props_highway/bridge_rail_tall_128.mdl Bridge Rail 128 Units Tall
+models/props_highway/bridge_rail_tall_128_damaged.mdl Bridge Rail 128 Units Tall Damaged
+models/props_highway/bridge_rail_tall_end.mdl Bridge Rail Tall End
+models/props_highway/bridge_ramp.mdl Bridge Ramp
+models/props_highway/bridge_sec_cross.mdl Bridge Cross Section
+models/props_highway/bridge_sec_cross_damaged1.mdl Bridge Cross Section Damaged
+models/props_highway/bridge_straight_1024_side.mdl Bridge Straight 1024 Units
+models/props_highway/bridge_straight_256_side.mdl Bridge Straight 256 Unit Side 1
+models/props_highway/bridge_straight_256_side_a.mdl Bridge Straight 256 Unit Side 2
+models/props_highway/bridge_straight_256_side_b.mdl Bridge Straight 256 Unit Side 3
+models/props_highway/bridge_straight_256_side_c.mdl Bridge Straight 256 Unit Side 4
+models/props_highway/bridge_straight_512_side.mdl Bridge Straight 512 Unit Side 1
+models/props_highway/bridge_straight_512_side_topbeam.mdl Bridge Straight 512 Unit Side 2
+models/props_highway/bridge_tower.mdl Bridge Tower
+models/props_highway/corrugated_panel_01.mdl Highway Corrugated Panel 1
+models/props_highway/corrugated_panel_02.mdl Highway Corrugated Panel 2
+models/props_highway/corrugated_panel_03.mdl Highway Corrugated Panel 3
+models/props_highway/corrugated_panel_04.mdl Highway Corrugated Panel 4
+models/props_highway/corrugated_panel_05.mdl Highway Corrugated Panel 5
+models/props_highway/corrugated_panel_06.mdl Highway Corrugated Panel 6
+models/props_highway/corrugated_panel_damaged_01.mdl Highway Corrugated Panel Damaged 1
+models/props_highway/corrugated_panel_damaged_02.mdl Highway Corrugated Panel Damaged 2
+models/props_highway/corrugated_panel_damaged_03.mdl Highway Corrugated Panel Damaged 3
+models/props_highway/corrugated_panel_damaged_04.mdl Highway Corrugated Panel Damaged 4
+models/props_highway/corrugated_panel_damaged_05.mdl Highway Corrugated Panel Damaged 5
+models/props_highway/beam_damaged_01.mdl Highway Beam Damaged 1
+models/props_highway/beam_damaged_02.mdl Highway Beam Damaged 2
+models/props_highway/beam_damaged_03.mdl Highway Beam Damaged 3

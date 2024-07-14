@@ -1,0 +1,17 @@
+models/props_foliage/tree_city01.mdl,0,3885.35,975.53,-181.83,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3642.65,947.31,-187.19,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3468.77,829.96,-191.92,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3307.11,884.36,-191.40,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3125.19,936.39,-190.80,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3030.40,1056.55,-189.02,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,2980.58,1148.92,-185.63,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3035.97,943.40,-190.72,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3216.03,851.74,-191.77,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3227.04,1213.61,-183.26,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3287.81,1207.10,-183.50,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3336.33,1206.29,-183.53,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3387.21,1208.56,-183.45,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3253.85,1299.06,-180.61,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3254.58,1382.95,-178.33,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3296.38,1497.73,-174.57,0.00,0.00,0.00,255,255,255,255
+models/props_foliage/tree_city01.mdl,0,3423.99,1601.33,-172.27,0.00,0.00,0.00,255,255,255,255

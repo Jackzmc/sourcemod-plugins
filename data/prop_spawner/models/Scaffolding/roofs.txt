@@ -1,0 +1,8 @@
+Roofs & Awnings
+models/props_downtown/mansion_roof_wall.mdl Downtown Mansion Roof Wall (No Bottom)
+models/props_street/awning_department_store.mdl Street Department Store Awning
+models/props_street/awning_short.mdl Street Awning (No Back)
+models/props_urban/rosette01.mdl Rosette 1
+models/props_urban/rosette01_ripped.mdl Rosette Ripped
+models/props_urban/rosette01_ripped2.mdl Rosette Ripped 2
+models/props_c17/awning001a.mdl c17 Awning

@@ -1,0 +1,110 @@
+Small Junk & Litter
+models/props_unique/airport/luggage_pile1.mdl Airport Luggage Pile
+models/props_unique/airport/luggage1.mdl Luggage 1
+models/props_unique/airport/luggage2.mdl Luggage 2
+models/props_unique/airport/luggage3.mdl Luggage 3
+models/props_unique/airport/luggage4.mdl Luggage 4
+models/props/cs_militia/logpile2.mdl Log Pile
+models/props/cs_militia/newspaperstack01.mdl Stack of Newspapers
+models/props/cs_office/cardboard_box01.mdl Cardboard Box
+models/props/cs_office/cardboard_box02.mdl Cardboard Box2
+models/props_junk/cardboard_box03_static.mdl Cardboard Box 3 (Static State)
+models/props_junk/cardboard_box04.mdl Cardboard Box 4
+models/props_junk/cardboard_box04_static.mdl Cardboard Box 4 (Static State)
+models/props_junk/cardboard_box05.mdl Cardboard Box 5
+models/props_junk/cardboard_box05_static.mdl Cardboard Box 5 (Static State)
+models/props_junk/cardboard_box07.mdl Cardboard Box 6
+models/props_junk/cardboard_box07_static.mdl Cardboard Box 6 (Static State)
+models/props/cs_office/coffee_mug.mdl Coffee Mug
+models/props/cs_office/coffee_mug_p1.mdl Broken Coffee Mug 1
+models/props/cs_office/coffee_mug_p2.mdl Broken Coffee Mug 2
+models/props/cs_office/coffee_mug_p3.mdl Broken Coffee Mug 3
+models/props_urban/mega_phone001.mdl Megaphone
+models/props_interiors/waterbottle.mdl water bucket
+models/props_interiors/waterheater.mdl water heater
+models/props_interiors/styrofoam_cups.mdl stacked cups (movable)
+models/props_interiors/styrofoam_cups_p1.mdl Styrofoam cups scattered 1
+models/props_interiors/styrofoam_cups_p2.mdl Styrofoam cups scattered 2
+models/props_interiors/styrofoam_cups_p3.mdl Styrofoam cups scattered 3
+models/props_interiors/styrofoam_cups_p4.mdl Styrofoam cups scattered 4
+models/props_interiors/teddy_bear.mdl teddy bear
+models/props_interiors/toaster.mdl Toaster
+models/props_interiors/toaster_static.mdl Toaster (solid state)
+models/props_interiors/toiletpaperdispenser_commercial.mdl Commercial Toilet Paper Dispenser
+models/props_interiors/toiletpaperdispenser_residential.mdl Home toilet paper dispenser
+models/props_interiors/toiletpaperroll.mdl toilet paper roll
+models/props_junk/cinderblock01a.mdl square tiles
+models/props_junk/dieselcan.mdl Diesel Can
+models/props_junk/explosive_box001.mdl pyrotechnic box model
+models/props_junk/food_pile01.mdl Ground garbage dump a
+models/props_junk/food_pile02.mdl Ground garbage dump b
+models/props_junk/food_pile03.mdl garbage dump on the ground c
+models/props_junk/furniture/mattress001a.mdl Loose Mattress
+models/props_junk/garbage128_composite001d.mdl Compost 128 Units -1
+models/props_junk/garbage256_composite002a.mdl Compost 256 Units - 2
+models/props_junk/garbage256_composite002b.mdl Compost 256 Units - 2-1
+models/props_junk/garbage_beancan01a.mdl Can of Beans 
+models/props_junk/garbage_beancan01a_fullsheet.mdl Can of Beans Full Label
+models/props_junk/garbage_beercan01a_crushed.mdl Crushed Beer Can
+models/props_junk/garbage_cerealbox01a_fullsheet.mdl Cereal Box 1
+models/props_junk/garbage_cerealbox02a_fullsheet.mdl Cereal Box 2
+models/props_junk/garbage_cleanercan01a_fullsheet.mdl Sink Cleaner Can
+models/props_junk/garbage_coffeecup01a_fullsheet.mdl Store Coffee Cup
+models/props_junk/garbage_coffeemug001a.mdl Coffee Mug No Label
+models/props_junk/garbage_coffeemug001a_fullsheet.mdl Coffee Mug Full Label
+models/props_junk/garbage_fastfoodcontainer01a.mdl Fast Food Container
+models/props_junk/garbage_frenchfrycup01a_fullsheet.mdl French Fry Container
+models/props_junk/garbage_glassbottle001a.mdl Glass Bottle
+models/props_junk/garbage_glassbottle001a_chunk01.mdl Glass Bottle Pieces 1
+models/props_junk/garbage_glassbottle001a_chunk02.mdl Glass Bottle Pieces 2
+models/props_junk/garbage_glassbottle001a_chunk03.mdl Glass Bottle Pieces 3
+models/props_junk/garbage_glassbottle001a_chunk04.mdl Glass Bottle Pieces 4
+models/props_junk/garbage_glassbottle003a.mdl Glass Bottle 2
+models/props_junk/garbage_glassbottle003a_static.mdl Garbage glass bottle (Static)
+models/props_junk/garbage_hubcap01a.mdl Hubcap
+models/props_junk/garbage_metalcan002a.mdl Metal Can
+models/props_junk/garbage_milkcarton002a_fullsheet.mdl Milk Carton
+models/props_junk/garbage_pizzabox01a.mdl Damaged Pizzabox
+models/props_junk/garbage_pizzabox01a_fullsheet.mdl Pizzabox
+models/props_junk/garbage_plasticbottle001a.mdl Garbage Plastic Bottle
+models/props_junk/garbage_plasticbottle001a_static.mdl Garbage plastic bottle (Static)
+models/props_junk/garbage_plasticbottle001a_fullsheet.mdl Plastic Bottle
+models/props_junk/garbage_plasticbottle002a.mdl Garbage Plastic Bottle 2
+models/props_junk/garbage_plasticbottle002a_fullsheet.mdl Plastic Bottle 2
+models/props_junk/garbage_plasticbottle003a.mdl Plastic Bottle 3
+models/props_junk/garbage_sixpackbox01a_fullsheet.mdl Six Pack Drink Box
+models/props_junk/garbage_smallbox01a_fullsheet.mdl Small Box
+models/props_junk/garbage_sodacan01a.mdl Can of Soda
+models/props_junk/garbage_sodacan01a_crushed_fullsheet.mdl Crashed Can of Soda
+models/props_junk/garbage_sodacan01a_fullsheet.mdl Can of Soda Full Label
+models/props_junk/garbage_spraypaintcan01a_fullsheet.mdl Spray Paint Can
+models/props_junk/gascan001a.mdl Gascan model
+models/props_junk/gnome.mdl Gnome
+models/props_junk/metalbucket01a.mdl Metal Bucket
+models/props_junk/metalbucket01a_static.mdl metal bucket (Static)
+models/props_junk/metalbucket02a.mdl Large Metal Bucket
+models/props_junk/metalbucket02a_static.mdl large metal bucket (Static)
+models/props_junk/metal_paintcan001b.mdl Paintcan
+models/props_junk/metal_paintcan001b_static.mdl paint can (solid)
+models/props_junk/petfoodbag01.mdl Pet Food
+models/props_junk/plasticcrate01a.mdl Plastic Crate
+models/props_junk/pooh_bucket_01.mdl Poop Bucket
+models/props_junk/propanecanister001a.mdl Gas barrel model
+models/props_junk/torchoven_01.mdl Torch Oven
+models/props_junk/trashbin01a.mdl Trash Bin
+models/props_junk/trashcluster01a.mdl Trash Pile 1
+models/props_junk/trashcluster01a_corner.mdl Trash Pile 2
+models/props_junk/trashcluster01b.mdl Trash Pile 3
+models/props_junk/trashcluster01b_corner.mdl Trash Pile 4
+models/props_interiors/clothing_pile1.mdl Clothes on the floor 1
+models/props_interiors/clothing_pile2.mdl Clothes on the floor 2
+models/props_interiors/clothing_pile3.mdl Clothes on the floor 3
+models/props_interiors/clothing_pile4.mdl Clothes on the floor 4
+models/props_interiors/clothing_pile5.mdl Clothes on the floor 5
+models/props_unique/spawn_apartment/blanket01.mdl Blanket
+models/props_unique/spawn_apartment/blanket03.mdl Blanket 2
+models/props_downtown/bedding_pile_01.mdl Bedding Pile 1
+models/props_downtown/bedding_pile_02.mdl Bedding Pile 2
+models/lighthouse/glass_design01a.mdl clear glass
+models/lighthouse/glass_design01b.mdl clear glass-wider
+models/props_downtown/phone_book.mdl Phone Book

@@ -1,0 +1,119 @@
+Buildings
+models/props_exteriors/guardshack.mdl guard room
+models/props_unique/ticketbooth.mdl ticket booth
+models/props_buildings/bus_stop.mdl Bus Stop
+models/props_unique/bus_canopy_frame.mdl Bus Stop Canopy Frame
+models/props_street/watertower01.mdl Large Water Tower
+models/props_buildings/watertower_001a.mdl water tower-huge height
+models/props_unique/park_gazebo.mdl Park Gazebo (No interior)
+models/props_unique/park_gazebo_roof_01.mdl Park Gazebo Roof (No bottom)
+models/props_unique/park_gazebo_railing_01.mdl Park Gazebo Railing
+models/props_unique/park_gazebo_steps.mdl Park Gezebo Steps
+models/props_misc/gazebo.mdl Temporary Gazebo
+models/props_unique/park_entrance_arch.mdl Park Entrance Arch Frame
+models/props_unique/park_entrance_base.mdl Park Entrance Concrete Arch
+models/props_unique/airport/phone_booth_airport.mdl Airport Phonebooth
+models/props_equipment/phone_booth.mdl Phonebooth
+models/props_equipment/phone_booth_indoor.mdl Wall Payphone (No back)
+models/props_urban/outhouse001.mdl Portapotty (Complete)
+models/props_urban/outhouse002.mdl Portapotty (No Door)
+models/props_urban/outhouse_door001.mdl Portapotty door
+models/props_urban/outhouse_door001_dm01_01.mdl Portapotty Door Gib
+models/props_urban/outhouse_door001_dm02_01.mdl Portapotty Door Gib2
+models/props_urban/outhouse_door001_dm03_01.mdl Portapotty Door Gib3 
+models/props_wasteland/coolingtank01.mdl Cooling Tower-Oval
+models/props_wasteland/coolingtank02.mdl cooling tank (tall pill shape)
+models/props_yard/playground_slide.mdl Playground Slide
+models/props_yard/playground_structure.mdl Playground Structure
+models/props_yard/playground_swingset02.mdl Playground Swingset frame
+models/props_swamp/ferry.mdl Build a tin house
+models/props_wasteland/powertower01.mdl High Voltage Tower
+models/props/de_train/de_train_horizontalcoolingtank.mdl Horizontal Cooling Tank
+models/props_equipment/gas_pump.mdl Gas Pump
+models/props_equipment/diesel_pump.mdl Diesel Pump
+models/lighthouse/diesel_pump.mdl diesel pump 2
+models/props_mill/beam_01.mdl Mill Beam
+models/props_mill/boiler_01.mdl Mill Boiler
+models/props_mill/brace_01.mdl Mill Brace
+models/props_mill/cane_carrier01.mdl Mill Cane Carrier
+models/props_mill/canopy_support_01.mdl Mill Canopy Support
+models/props_mill/ceiling_grid.mdl Mill Ceiling Grid
+models/props_mill/office_roof_beams01.mdl Mill Office Roof Beams
+models/props_mill/office_roof_collapsed01.mdl Mill Office Roof Collapsed (partial collision)
+models/props_mill/silo_01.mdl Mill Silo (No texture)
+models/props_mill/silo_02.mdl Mill Silo 2 (No texture)
+models/props_mill/silo_03.mdl Mill Silo 3
+models/props_mill/silo_pipes_01.mdl Silo Bracing Pipes (no collision)
+models/props_mill/stack_01.mdl Mill Stack 1 (No collision)
+models/props_mill/truss_01.mdl Mill Truss
+models/props_mill/wood_stack.mdl Mill Wood Stack
+models/props_urban/roof_tower001.mdl Urban Roof Tower (no collision)
+models/props_cemetery/crypts_base01.mdl Crypts Base 1 (2 steps, no inside)
+models/props_cemetery/crypts_base02.mdl Crypts Base 2 (1 step, no inside) 
+models/props_cemetery/crypts_base04.mdl Crypts Base 4 (No steps, no inside)
+models/props_cemetery/crypts_base03.mdl Crypts Base 3 (Just steps, no back)
+models/props_cemetery/crypts_bodyfront01.mdl Crypts Body Front 1 
+models/props_cemetery/crypts_bodyfront02.mdl Crypts Body Front 2
+models/props_cemetery/crypts_bodyfront03.mdl Crypts Body Front 3
+models/props_cemetery/crypts_bodyfront04.mdl Crypts Body Front 4
+models/props_cemetery/crypts_bodyfront05.mdl Crypts Body Front 5
+models/props_cemetery/crypts_oneoff01.mdl Crypts One Off 1
+models/props_cemetery/crypts_oneoff02.mdl Crypts One Off 2
+models/props_cemetery/crypts_oneoff03.mdl Crypts One Off 3
+models/props_cemetery/crypts_roof01.mdl Crypt Roof 1
+models/props_cemetery/crypts_roof02.mdl Crypt Roof 2
+models/props_cemetery/crypts_roofapex.mdl Crypt Roof Apex
+models/props_cemetery/crypts_roofapexshort.mdl Crypt Roof Apex Short
+models/props_cemetery/crypts_top01.mdl Crypt Roof Cross
+models/props_cemetery/crypts_top02.mdl Crypt Roof Cross 2
+models/props_cemetery/crypts_top04.mdl Crypt Roof Cross 3
+models/props_cemetery/crypts_top05.mdl Crypt Roof Cross 4
+models/props_cemetery/crypts_top06.mdl Crypt Roof Cross 5
+models/props_cemetery/crypts_wall.mdl Crypt Wall (Bricks showing)
+models/props_cemetery/crypt_bodyfront_destroyed.mdl Crypt Body Destroyed
+models/props_cemetery/curb_16.mdl Cemetary curb 16 unit 
+models/props_cemetery/curb_32.mdl Cemetary curb 32 unit (no back)
+models/props_cemetery/curb_64.mdl Cemetary curb 64 unit (no back)
+models/props_cemetery/curb_64a.mdl Cemetary curb 64 unit 2 (no back)
+models/props_cemetery/curb_128.mdl Cemetary curb 128 Unit (no back)
+models/props_misc/triage_tent.mdl Triage Tent (Large)
+models/props_mill/grinder_cutter01.mdl Mill Grinder Cutter (No Bottom)
+models/props_mill/grinder_cutter01_ramp.mdl Mill Grinder Cutter Ramp
+models/props_mill/grinder_platform01.mdl Mill Grinder Platform 1
+models/props_mill/grinder_platform02.mdl Mill Grinder Platform 2
+models/props_mill/grinder_platform03.mdl Mill Grinder Platform 3
+models/props_mill/grinder_platform04.mdl Mill Grinder Platform 4
+models/props_mill/grinder_platform05.mdl Mill Grinder Platform 5
+models/props_mill/grinder_platform06.mdl Mill Grinder Platform 6
+models/props_mill/grinder_platform07.mdl Mill Grinder Platform 7
+models/props_mill/grinder_platform08.mdl Mill Grinder Platform 8
+models/props_mill/grinder_ramp01.mdl Mill Grinder Ramp 1 
+models/props_mill/grinder_ramp02.mdl Mill Grinder Ramp 2
+models/props_mill/grinder_ramp03.mdl Mill Grinder Ramp 3
+models/props_mill/grinder_rollers01.mdl Mill Grinder Rollers 1 (no bottom)
+models/props_mill/grinder_rollers02.mdl Mill Grinder Rollers 2 (no bottom)
+models/props_mill/grinder_rollers03.mdl Mill Grinder Rollers 3 (no bottom)
+models/props_mill/grinder_wheel01.mdl Mill Grinder Wheel 1 (no bottom)
+models/props_mill/grinder_wheel02.mdl Mill Grinder Wheel 2 (no bottom)
+models/props_mill/locker_roof_beams01.mdl Mill Locker Roof Beams
+models/props_rooftop/rooftank01.mdl Large water storage tank
+models/props_unique/sandtower02.mdl Sand Tower
+models/props_mill/tank_medium01.mdl Cylindrical water tower-c4
+models/props_mill/tank_medium02.mdl Cylindrical water tower-c42
+models/props_mill/tank_medium03.mdl Cylindrical water tower-c43
+models/props_mill/tank_large01.mdl Cylindrical water tower-c45
+models/props_mill/tank_molasses01.mdl Molasses Tank
+models/props_equipment/cargo_container01.mdl container
+models/props_equipment/cargo_container02.mdl TAG-opened container
+models/props_unique/hospital05_rooftop_cube01.mdl Generous base-c8m5
+models/props_canal/canal_bars004.mdl Drainage hole of underpass
+models/lighthouse/b_waterwheel01.mdl Waterwheel-Irrigation tools
+models/lighthouse/waterwheelengine_01.mdl waterwheel engine 1
+models/lighthouse/waterwheelengine_02.mdl waterwheel engine 2
+models/props_unique/generator_short.mdl Generator-Turbine
+models/props_c17/substation_circuitbreaker03.mdl Power Plant-Circuit Breaker
+models/props_c17/substation_transformer01a.mdl Power Plant-Transformer
+models/props_c17/substation_transformer01b.mdl Power Plant-Transformer Edge Measurement
+models/props_unique/generator.mdl large generator a-c8m2
+models/props_unique/generator01.mdl large generator b-c8m2
+models/conspiracy/cspy_radiotower.mdl Ultra-high radio tower

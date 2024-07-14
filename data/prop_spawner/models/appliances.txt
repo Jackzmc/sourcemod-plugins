@@ -1,0 +1,52 @@
+Appliances
+models/props_interiors/coffee_maker.mdl Coffee Maker
+models/props_unique/coffeemachine01.mdl Coffee Machine
+models/props_unique/coffeepot01.mdl Coffee Pot
+models/props/cs_militia/microwave01.mdl Toaster Oven
+models/props/cs_office/microwave.mdl Microwave 2
+models/props/cs_office/vending_machine.mdl Soda Machine (No money slots)
+models/props_office/vending_machine01.mdl Soda Machine
+models/props_equipment/snack_machine.mdl Snack Vending Machine 
+models/props_equipment/snack_machine2.mdl Snack Vending Machine (Empty)
+models/props_equipment/snack_machine_glass.mdl Vending Machine Glass
+models/props_downtown/cigarettemachine.mdl Cigarette Vending Machine
+models/props_interiors/bbq_grill.mdl barbecue grill
+models/props_interiors/cashregister01.mdl Cash Register
+models/props_interiors/dryer.mdl Dryer
+models/props_interiors/washer.mdl washing machine
+models/props_interiors/fridge_mini.mdl Mini Fridge (Wood style)
+models/props_downtown/mini_fridge.mdl Mini Fridge 
+models/props_interiors/refrigerator02_freezerdoor.mdl Fridge (Freezer Door)
+models/props_interiors/refrigerator02_lowerdoor.mdl Fridge (Lower Door)
+models/props_interiors/refrigerator02_main.mdl Fridge (No Doors)
+models/props_interiors/refrigerator03.mdl Fridge (Complete)
+models/props_interiors/refrigerator03_damaged_01.mdl Refridgerator damaged (no doors)
+models/props_interiors/refrigerator03_damaged_04.mdl refridgerator damaged crisper drawer
+models/props_interiors/refrigerator_industrial01.mdl Industrial Refridgerator
+models/props_urban/fridge001.mdl Fridge 2 (Round no door)
+models/props_urban/fridge_door003.mdl Fridge 2 Door
+models/props_urban/fridge002.mdl Fridge Yellow (No Doors)
+models/props_urban/fridge_door001.mdl Fridge (Freezer Door)
+models/props_unique/grocerystorechiller01.mdl Grocery Chiller Shelves
+models/props_interiors/tv.mdl CRT TV
+models/props_lab/monitor01a.mdl CRT Monitor
+models/props_lab/monitor02.mdl CRT Monitor 2
+models/props_office/computer_monitor_01.mdl Flat Screen Monitor
+models/props_unique/jukebox01.mdl Jukebox Records
+models/props_unique/jukebox01_body.mdl Jukebox Body
+models/props_unique/jukebox01_menu.mdl Jukebox Menu
+models/props_interiors/vcr.mdl VCR
+models/props_interiors/dvd_player.mdl DVD Player
+models/props/cs_assault/washer_box.mdl Washing Machine Cardboard Box
+models/props_c17/consolebox01a.mdl computer console box
+models/props/cs_office/radio.mdl Radio (Complete)
+models/props/cs_office/radio_p1.mdl Radio (Body)
+models/props/cs_office/radio_p2.mdl Radio (Handle)
+models/props/cs_office/radio_p3.mdl Radio (Antennae)
+models/props_interiors/alarm_clock.mdl Alarm Clock
+models/props_interiors/phone.mdl Phone (Complete)
+models/props_interiors/phone_p1.mdl Phone (Base)
+models/props_interiors/phone_p2.mdl Phone (Handset)
+models/props_equipment/fountain_drinks.mdl Fountain Drink Dispenser
+models/props_downtown/atm.mdl Full Size ATM
+models/props_unique/atm01.mdl Small ATM

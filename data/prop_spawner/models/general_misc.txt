@@ -1,0 +1,57 @@
+Weapons & Survivors
+models/props/de_prodigy/ammo_can_02.mdl ammo box model
+models/props_unique/spawn_apartment/coffeeammo.mdl Coffee Can Ammo
+models/props/terror/ammo_stack.mdl Ammo Pile
+models/props/terror/exploding_ammo.mdl Explosive Ammo Deployed Box
+models/props/terror/hamradio.mdl Ham Radio
+models/props/terror/incendiary_ammo.mdl Fire Ammo Box
+models/w_models/weapons/w_smg_uzi.mdl Uzi machine gun model
+models/w_models/weapons/w_shotgun.mdl Wooden shotgun model
+models/w_models/weapons/w_rifle_m16a2.mdl M16 rifle model
+models/w_models/weapons/w_autoshot_m4super.mdl automatic shotgun model
+models/w_models/weapons/w_sniper_mini14.mdl Shotgun model
+models/w_models/weapons/w_eq_Medkit.mdl treatment kit model
+models/w_models/weapons/w_eq_painpills.mdl Painpill model
+models/w_models/weapons/w_eq_pipebomb.mdl home-made bomb model
+models/w_models/weapons/w_eq_molotov.mdl Flame bottle model
+models/w_models/weapons/w_pistol_B.mdl L4D2 pistol model
+models/w_models/weapons/w_desert_eagle.mdl Desert Eagle model
+models/w_models/weapons/w_smg_a.mdl Silencer machine gun model
+models/w_models/weapons/w_pumpshotgun_A.mdl iron shotgun model
+models/w_models/weapons/w_shotgun_spas.mdl Combat shotgun model
+models/w_models/weapons/w_sniper_military.mdl military sniper rifle model
+models/w_models/weapons/w_desert_rifle.mdl Three-shot rifle model
+models/w_models/weapons/w_rifle_ak47.mdl AK47 rifle model
+models/w_models/weapons/w_smg_mp5.mdl MP5 submachine gun model
+models/w_models/weapons/w_sniper_scout.mdl SCOUT sniper rifle model
+models/w_models/weapons/w_sniper_awp.mdl AWP sniper rifle model
+models/w_models/weapons/w_rifle_sg552.mdl SG552 rifle model
+models/w_models/weapons/w_m60.mdl M60 machine gun model
+models/w_models/weapons/w_grenade_launcher.mdl grenade launcher model
+models/w_models/weapons/w_eq_defibrillator.mdl defib unit model
+models/w_models/weapons/w_eq_adrenaline.mdl Adrenaline model
+models/w_models/weapons/w_eq_bile_flask.mdl bile bottle model
+models/weapons/melee/w_cricket_bat.mdl cricket bat model
+models/weapons/melee/w_crowbar.mdl crowbar model
+models/weapons/melee/w_electric_guitar.mdl electric guitar model
+models/weapons/melee/w_katana.mdl Katana model
+models/weapons/melee/w_machete.mdl model
+models/weapons/melee/w_tonfa.mdl baton model
+models/weapons/melee/w_frying_pan.mdl Pan model
+models/weapons/melee/w_fireaxe.mdl axe model
+models/weapons/melee/w_bat.mdl bat model
+models/weapons/melee/w_golfclub.mdl golf club models
+models/w_models/weapons/w_knife_t.mdl knife model
+models/weapons/melee/w_pitchfork.mdl Pitchfork model
+models/weapons/melee/w_shovel.mdl shovel model
+models/weapons/melee/w_chainsaw.mdl chainsaw model
+models/w_models/weapons/w_eq_explosive_ammopack.mdl High explosive model
+models/w_models/weapons/w_eq_incendiary_ammopack.mdl flame pack model
+models/survivors/survivor_coach.mdl Coach
+models/survivors/survivor_gambler.mdl Nick
+models/survivors/survivor_mechanic.mdl Ellis
+models/survivors/survivor_producer.mdl Rochelle 
+models/effects/urban_puddle_model01a.mdl Urban Puddle 1
+models/effects/urban_puddle_model02a.mdl Urban Puddle 2
+models/effects/urban_puddle_model03a.mdl Urban Puddle 3
+models/extras/info_speech.mdl Directory Commentary Speech Bubble

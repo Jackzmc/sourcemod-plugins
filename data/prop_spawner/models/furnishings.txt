@@ -1,0 +1,54 @@
+Furnishings
+models/props_urban/air_conditioner001.mdl Air Conditioner (No back)
+models/props_urban/ice_machine001.mdl Ice Machine
+models/props_equipment/security_desk1.mdl security desk & monitors (no back)
+models/props_c17/furniturefireplace001a.mdl Wood Burning stove
+models/props_c17/furnituresink001a.mdl Bathroom sink
+models/props_interiors/bathroomsink01.mdl bathroom sink
+models/props_interiors/sink_industrial01.mdl Large metal sink
+models/props_interiors/pedestal_sink.mdl Pedestal Sink
+models/props_interiors/sink_kitchen.mdl Kitchen Sink (just the sink)
+models/props_downtown/bathroom_vanity01.mdl downtown bathroom vanity
+models/props_downtown/bar.mdl Downtown Bar (Complete U shape)
+models/props_downtown/bar_long.mdl Downtown Bar (one side, no ends)
+models/props_downtown/bar_long_endcorner.mdl Downtown Bar Long Endcorner
+models/props_downtown/bar_short.mdl Downtown Bar Short end piece
+models/props_downtown/bar_short_endcorner.mdl Downtown Bar Short Endcorner
+models/props_downtown/booth01.mdl Downtown Booth 1 sided
+models/props_downtown/booth02.mdl Downtown Booth 2 sided
+models/props_downtown/booth_table.mdl Downtown Booth Table
+models/props/de_inferno/ceiling_fan.mdl ceiling fan engine
+models/props/de_inferno/ceiling_fan_blade.mdl ceiling fan blade
+models/props_downtown/fan_ceiling.mdl Downtown Ceiling Fan long hang (no collision)
+models/props_downtown/fan_ceiling32.mdl Downtown Ceiling Fan 32 unit hang (no collision)
+models/props_downtown/fan_ceiling_blade.mdl Downtown Ceiling FanBlade (no collision)
+models/props_furniture/cupboard1.mdl cupboard (
+models/props_furniture/fireplace2.mdl traditional fireplace
+models/props_interiors/bathtub01.mdl Square bathtub (no end)
+models/props_furniture/bathtub1.mdl Clawfoot round bathtub (dirty)
+models/props_interiors/clawfoot_tub.mdl Clawfoot Tub
+models/props_furniture/kitchen_cabinet1.mdl shelf cabinet-kitchen-double deck (no back)
+models/props_furniture/kitchen_countertop1.mdl kitchen countertop with cabinets (no back)
+models/props_furniture/kitchen_shelf1.mdl kitchen shelves (no back)
+models/props_furniture/cafe_cabinet1.mdl cafe cabinet (no back)
+models/props_furniture/inn_mailbox1.mdl Inn mailbox (no back)
+models/props_interiors/boothfastfood01.mdl Restaurant Booth
+models/props_interiors/drinking_fountain.mdl Drinking Fountain (no back)
+models/props_interiors/medicalcabinet02.mdl Medical supply cabinet (no back)
+models/props_interiors/medicinecabinet01_mirror.mdl Medicine Cabinet / Bathroom mirror
+models/props_urban/hotel_bathroom_mirror001.mdl Urban Hotel Bathroom Mirror (no back)
+models/props_interiors/prison_heater001a.mdl Prison Heater
+models/props_interiors/shelvinggrocery01.mdl Shelf Food Cabinet-7th Floor
+models/props_interiors/shelvingstore01.mdl Shelf Food Cabinet-4th Floor
+models/props/cs_militia/stove01.mdl Dirty Stove
+models/props_interiors/stove02.mdl Stove 2
+models/props_interiors/stove03_industrial.mdl Stove+Oven
+models/props_interiors/stove04_industrial.mdl Stacked Ovens
+models/props_interiors/stovehood01.mdl Stovehood
+models/props_furniture/kitchen_vent1.mdl industrial kitchen stove vent
+models/props_interiors/urinal01.mdl Urinal (no back)
+models/props_interiors/toilet.mdl toilet
+models/props_interiors/toilet_b.mdl Open toilet a
+models/props_interiors/toilet_c.mdl Open toilet b
+models/props_urban/closet_shelves001.mdl Urban Closet Shelves (no sides/back)
+models/props_misc/shelf-2.mdl Shelf 2

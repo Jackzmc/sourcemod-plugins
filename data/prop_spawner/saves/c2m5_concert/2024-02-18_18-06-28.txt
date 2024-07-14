@@ -1,0 +1,17 @@
+models/props_interiors/bed.mdl,0,-2549.50,2460.27,-350.45,0.00,-90.00,0.00,255,255,255,255
+models/props_interiors/desk_executive.mdl,0,-2312.74,2392.82,-222.95,0.00,270.00,0.00,255,255,255,255
+models/props_interiors/desk_executive.mdl,0,-2254.30,2216.09,-256.00,0.00,-92.36,0.00,255,255,255,255
+models/props_interiors/chair_office2.mdl,0,-2313.32,2355.96,-222.37,0.00,90.00,0.00,255,255,255,255
+models/props/cs_office/shelves_metal1.mdl,0,-2797.40,2454.69,-350.96,0.00,0.00,0.00,255,255,255,255
+models/props_office/file_cabinet_03.mdl,0,-2408.13,2415.01,-222.95,0.00,-90.00,0.00,255,255,255,255
+models/props/de_prodigy/ammo_can_02.mdl,0,-2625.26,2455.22,-351.71,0.00,0.00,0.00,255,255,255,255
+models/props/terror/hamradio.mdl,0,-2340.36,2388.69,-183.54,0.00,0.00,0.00,255,255,255,255
+models/props/terror/ammo_stack.mdl,0,-2650.04,2431.66,-350.80,0.00,0.00,0.00,255,255,255,255
+models/w_models/weapons/w_grenade_launcher.mdl,0,-2542.43,2443.21,-349.84,0.00,0.00,90.00,255,255,255,255
+models/w_models/weapons/w_shotgun.mdl,0,-2622.84,2434.81,-339.68,0.00,90.00,90.00,255,255,255,255
+models/w_models/weapons/w_shotgun.mdl,0,-2621.03,2429.68,-336.00,0.00,90.00,90.00,255,255,255,255
+models/props_doors/shackwall01.mdl,0,-2657.16,2397.85,-342.31,0.00,90.00,0.00,255,255,255,255
+models/props_doors/shackwall01.mdl,0,-2596.89,2398.90,-342.31,0.00,90.00,0.00,255,255,255,255
+models/props_doors/shackwall01.mdl,0,-2596.89,2398.90,-342.31,0.00,90.00,0.00,255,255,255,255
+models/props_doors/shackwall01.mdl,0,-2584.30,2495.96,-284.54,-60.00,180.00,0.00,255,255,255,255
+models/props_doors/shackwall01.mdl,0,-2572.83,2433.92,-279.65,-60.00,180.00,0.00,255,255,255,255

@@ -1,0 +1,64 @@
+Generic
+models/npcs/rescue_pilot_01.mdl Rescue Pilot (no collision)
+models/deadbodies/default/barricade_a.mdl Generic Body Pile 1 (no collision)
+models/deadbodies/default/barricade_b.mdl Generic Body Pile 2 (no collision)
+models/deadbodies/default/barricade_c.mdl Generic Body Pile 3 (no collision)
+models/deadbodies/default/corner_a.mdl Generic Body Pile 4 (no collision)
+models/deadbodies/default/corner_b.mdl Generic Body Pile 5 (no collision)
+models/deadbodies/default/corner_c.mdl Generic Body Pile 6 (no collision)
+models/deadbodies/default/oval_128_a.mdl Generic Body Pile 128 Units - 1 (no collision)
+models/deadbodies/default/oval_128_b.mdl Generic Body Pile 128 Units - 2 (no collision)
+models/deadbodies/default/oval_128_c.mdl Generic Body Pile 128 Units - 3 (no collision)
+models/deadbodies/default/oval_192_a.mdl Generic Body Pile 192 Units - 1 (no collision)
+models/deadbodies/default/oval_192_b.mdl Generic Body Pile 192 Units - 2 (no collision)
+models/deadbodies/default/oval_192_b_burnt.mdl Generic Body Pile 2-1 Burned
+models/deadbodies/default/wall_192_a.mdl Generic Long Body Pile 192 Units 1 (no collision)
+models/deadbodies/default/wall_192_b.mdl Generic Long Body Pile 192 Units 2 (no collision)
+models/deadbodies/default/wall_192_c.mdl Generic Long Body Pile 192 Units 3 (no collision)
+models/deadbodies/default/fence_a.mdl Generic Hanging Over Wall 1 (no collision)
+models/deadbodies/default/fence_b.mdl Generic Hanging Over Wall 2 (no collision)
+models/deadbodies/default/fence_c.mdl Generic Hanging Over Wall 3 (no collision)
+models/deadbodies/default/pose_a.mdl Generic FCivilian Facedown (no collision)
+models/deadbodies/default/pose_b.mdl Generic MCivilian Curled (no collision)
+models/deadbodies/default/pose_c.mdl Generic FCivilian Curled (no collision)
+models/deadbodies/default/pose_d.mdl Generic MCivilian Facedown (no collision)
+models/deadbodies/human/barricade_c.mdl Human Body Pile 1
+models/deadbodies/human/fence_a.mdl Human Hanging Over Fence (no collision)
+models/deadbodies/bodies128_a.mdl Human Body pile 128 Units 1
+models/deadbodies/bodies128_b.mdl Human Body pile 128 Units 2 
+models/deadbodies/human/oval_128_a.mdl Human Body pile 128 Units 3
+models/deadbodies/human/oval_192_b.mdl Human Body pile 192 Units 1
+models/deadbodies/human/oval_192_c.mdl Human Body pile 192 Units 2 
+models/deadbodies/human/pose_a.mdl Pose 1
+models/deadbodies/human/pose_b.mdl Pose 2
+models/props_misc/bodybag_01/bodybag_01.mdl Bodybag 1
+models/props_misc/bodybag_02/bodybag_02.mdl Bodybag 2
+models/props_misc/bodybag_03/bodybag_03.mdl Bodybag 3
+models/props_misc/bodybag_04/bodybag_04.mdl Bodybag 4
+models/props_misc/bodybag_05/bodybag_05.mdl Bodybag 5
+models/deadbodies/riot/riot_msgboard_a.mdl Riot Officer Hanging over message board
+models/deadbodies/riot/riot_table_a.mdl Riot Officer On Table 1
+models/deadbodies/riot/riot_table_b.mdl Riot Officer On Table 2
+models/deadbodies/riot/riot_truck_a.mdl Riot Officer On Truck 1
+models/deadbodies/riot/riot_truck_b.mdl  TAG-Riot Officer On Truck 2 
+models/deadbodies/dead_male_civilian_body.mdl MArmy Body Sitting Up
+models/deadbodies/dead_male_civilian_draped_01.mdl Dead MCivilian Draped1
+models/deadbodies/dead_male_legs_01.mdl Male Legs
+models/deadbodies/dead_male_torso_01.mdl Male Torso
+models/deadbodies/dead_female_civilian_01.mdl Dead FCivilian01 Face Down
+models/deadbodies/dead_female_civilian_draped_01.mdl Dead FCivilian Draped1
+models/deadbodies/dead_female_civilian_draped_02.mdl Dead FCivilian Draped2
+models/deadbodies/dead_male_civilian_01.mdl Dead MCivilian 1 Sitting Up
+models/deadbodies/dead_male_civilian_02.mdl Dead MCivilian 2
+models/deadbodies/chm_fallensurvivor.mdl fallen survivor standing
+models/deadbodies/parachutist.mdl Parachutist (No parachute)
+models/deadbodies/ceda/ceda_msgboard_a.mdl CEDA 1 (no collision)
+models/deadbodies/ceda/ceda_table_a.mdl CEDA 2 (no collision)
+models/deadbodies/ceda/ceda_table_b.mdl CEDA 3 (no collision)
+models/deadbodies/ceda/ceda_truck_a.mdl CEDA 4 (no collision)
+models/deadbodies/ceda/ceda_truck_b.mdl CEDA 5 (no collision)
+models/deadbodies/dead_pilot.mdl Pilot corpse lying down
+models/deadbodies/dead_military_male01.mdl Soldier Corpse-Standing (No Collision)
+models/deadbodies/dead_male_suit_01.mdl Male Suit Corpse-Standing (No Collision)
+models/props_debris/dead_cow.mdl Dead Cow
+models/props_debris/dead_cow_smallpile.mdl a bunch of dead cows

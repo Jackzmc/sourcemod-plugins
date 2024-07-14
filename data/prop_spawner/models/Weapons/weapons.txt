@@ -1,0 +1,25 @@
+Weapon Spawns
+Type:weapon
+weapon_ammo_spawn Ammo
+weapon_grenade_launcher_spawn Grenade Launcher
+weapon_hunting_rifle_spawn Hunting Rifle
+weapon_pistol_magnum_spawn Magnum
+weapon_pistol_spawn Pistol
+weapon_pumpshotgun_spawn Pump Shotgun
+weapon_rifle_ak47_spawn AK-47
+weapon_rifle_desert_spawn Desert Rifle
+weapon_rifle_m60_spawn M60 Rifle
+weapon_rifle_sg552_spawn SG-552 Rifle
+weapon_rifle_spawn M16 Rifle
+weapon_shotgun_chrome_spawn Shotgun (Chrome)
+weapon_shotgun_spas_spawn Shotgun (Spas)
+weapon_autoshotgun_spawn Autoshotgun
+weapon_smg_mp5_spawn MP5
+weapon_smg_silenced_spawn SMG (Silenced)
+weapon_smg_spawn SMG
+weapon_sniper_awp_spawn AWP Sniper
+weapon_sniper_military_spawn Military Sniper
+weapon_sniper_scout_spawn Scout Sniper
+weapon_upgradepack_explosive_spawn Explosive Ammo Pack
+weapon_upgradepack_incendiary_spawn Incendiary Ammo Pack
+weapon_chainsaw_spawn Chainsaw

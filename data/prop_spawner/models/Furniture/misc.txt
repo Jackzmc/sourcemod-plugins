@@ -1,0 +1,41 @@
+Misc
+models/props/de_train/lockers001a.mdl De Train 4 Lockers
+models/props_c17/furnituredrawer001a_shard01.mdl wood splinter
+models/props_c17/furnituredresser001a.mdl c17 Wood Wardrobe Closet
+models/props_downtown/dresser.mdl downtown dresser 3 level long
+models/props_furniture/drawer1.mdl furniture 3 drawer dresser (breakable)
+models/props_furniture/dresser1.mdl Furniture wardrobe
+models/props_interiors/dresser_short.mdl Drawer chest-three layers
+models/props_interiors/dresser_tall.mdl Chest of drawers-5 layers
+models/props/cs_militia/footlocker01_open.mdl militia metal footlocker open
+models/props/cs_militia/footlocker01_closed.mdl militia metal footlocker closed
+models/props_furniture/cafe_barstool1.mdl cafe barstool (breakable)
+models/props/cs_militia/barstool01.mdl militia wood barstool
+models/props/cs_office/file_cabinet1.mdl office 1 filing cabinet
+models/props/cs_office/file_cabinet3.mdl cs_office file cabinet single (3 drawers)
+models/props_office/file_cabinet_03.mdl office 2 file cabinets
+models/props_interiors/file_cabinet1_group.mdl 3 Metal filing cabinets
+models/props/cs_office/file_cabinet2.mdl file drawer cabinet-4 layers
+models/props_office/desk_01.mdl office metal desk 01
+models/props_furniture/desk1.mdl furniture Dark Wood desk table
+models/props_interiors/furniture_desk01a.mdl Light Wood desk table(breakable)
+models/props_interiors/desk_metal.mdl interior Metal Desk
+models/props_interiors/desk_executive.mdl Large darkwood desk
+models/props_wasteland/controlroom_desk001b.mdl dirty metal long desk
+models/props/cs_office/shelves_metal.mdl cs office shelf (Empty)
+models/props/cs_office/shelves_metal1.mdl cs office Shelf Full 1
+models/props/cs_office/shelves_metal2.mdl cs office Shelf Full 2
+models/props_downtown/bed_motel01.mdl downtown motel bed
+models/props_interiors/bed.mdl Messy bed
+models/props_interiors/bed_motel.mdl Hotel Bed
+models/props_interiors/bed_houseboat.mdl Houseboat Bed (No bed frame)
+models/props_interiors/kids_bed.mdl Single kids bed
+models/props_unique/hospital/hospital_bed.mdl hospital bed
+models/props_interiors/baby_crib.mdl Baby Crib
+models/props_furniture/piano.mdl piano
+models/props_interiors/mounteddeerhead01.mdl Deer head specimen
+models/props_unique/guncabinet_no_door_static.mdl wooden gun cabinet (solid state)
+models/props_unique/guncabinet01_main.mdl Metal gun cabinet
+models/props_unique/guncabinet01_ldoor.mdl Metal Gun Cabinet Left Door
+models/props_unique/guncabinet01_rdoor.mdl Metal Gun Cabinet Right Door
+models/lighthouse/props/wooden_cabinet.mdl Wooden cabinet cabin

@@ -1,0 +1,208 @@
+Fairgrounds
+models/props_fairgrounds/amp_plexi.mdl Amp Plexi
+models/props_fairgrounds/amp_stack_small.mdl Medium Speaker
+models/props_fairgrounds/amp_stack.mdl large speakers
+models/props_fairgrounds/bass_amp.mdl Bass amplifier
+models/props_fairgrounds/bass_monitor.mdl Bass Controller
+models/props_fairgrounds/bass_case.mdl subwoofer
+models/props_fairgrounds/hanging_amp.mdl Hanging Amp
+models/props_fairgrounds/hanging_corner_amp.mdl Corner Amp
+models/props_fairgrounds/front_speaker.mdl Front Amp
+models/props_fairgrounds/anvil_case_32.mdl Anvil Case 32 Units
+models/props_fairgrounds/anvil_case_64.mdl Anvil Case 64 Units
+models/props_fairgrounds/anvil_case_casters_32.mdl Anvil Case Caster 32 Units
+models/props_fairgrounds/anvil_case_casters_64.mdl Anvil Case Casters 64 Units
+models/props_fairgrounds/lighting_board.mdl Lighting Board
+models/props_fairgrounds/mic_stand.mdl Mic Stand
+models/props_fairgrounds/mortar_rack.mdl Mortar Rack
+models/props_fairgrounds/pyrotechnics_launcher.mdl Pyrotechnics Launcher
+models/props_fairgrounds/pyrotechnics_switch.mdl Pyrotechnics Switch
+models/props_fairgrounds/single_light.mdl Single Light
+models/props_fairgrounds/front_light.mdl Front Light
+models/props_fairgrounds/four_lights.mdl Four Lights 1
+models/props_fairgrounds/four_lights_b.mdl Four Lights 2
+models/props_fairgrounds/quad_light.mdl Quad Lights
+models/props_fairgrounds/six_lights.mdl Six Lights
+models/props_fairgrounds/monitor_speaker.mdl Monitor Speaker
+models/props_fairgrounds/sound_board.mdl Sound Board 1
+models/props_fairgrounds/sound_board2.mdl Sound Board 2
+models/props_fairgrounds/sound_board_base.mdl Sound Board Base
+models/props_fairgrounds/sound_board_corner.mdl Sound Board Corner
+models/props_fairgrounds/arcadegame01.mdl Fairgrounds Arcade Game
+models/props_fairgrounds/arcadegame01_glasswhole.mdl Fairgrounds Arcade Game Glass
+models/props_fairgrounds/arcadegame01_glassbroken.mdl Fairgrounds Arcade Game Broken Glass
+models/props_fairgrounds/arcadegame01_panel.mdl Fairgrounds Arcade Game Panel
+models/props_fairgrounds/arcadegame01_screen.mdl Fairgrounds Arcade Game Screen
+models/props_fairgrounds/arcadegame01_wheel.mdl Fairgrounds Arcade Game Wheel
+models/props_misc/fairground_banner001.mdl Fairgrounds Banner 1
+models/props_misc/fairground_banner002.mdl Fairgrounds Banner 2
+models/props_fairgrounds/fairgrounds_banner01.mdl Fairgrounds Banner 3
+models/props_fairgrounds/fairgrounds_banner02.mdl Fairgrounds Banner 4
+models/props_fairgrounds/barn_truss_01.mdl Fairgrounds Barn Truss 1
+models/props_fairgrounds/barn_truss_02.mdl Fairgrounds Barn Truss 2
+models/props_fairgrounds/building_support_128.mdl Building Support 128 Units
+models/props_fairgrounds/building_support_32.mdl Building Support 32 Units
+models/props_fairgrounds/building_support_64.mdl Building Support 64 Units
+models/props_fairgrounds/building_support_cornera.mdl Building Support Corner 1
+models/props_fairgrounds/building_support_cornerb.mdl Building Support Corner 2
+models/props_fairgrounds/bumpercar.mdl Bumpercar
+models/props_fairgrounds/bumpercar_wpole.mdl Bumpercar w/Attenae
+models/props_fairgrounds/bumpercar_pole.mdl Bumpercar Pole
+models/props_fairgrounds/bumper_car01.mdl Bumpercar (No texture)
+models/props_fairgrounds/bumper_car01_pole.mdl Bumpercar01 Pole (No texture)
+models/props_fairgrounds/carousel_structure.mdl Carousel Structure
+models/props_fairgrounds/coaster_boardwalk.mdl Coaster Boardwalk
+models/props_fairgrounds/coaster_car01.mdl Rollercoaster Car
+models/props_unique/coaster_car01.mdl Coaster Car No Texture
+models/props_fairgrounds/coaster_frame01.mdl Rollercoaster Frame 1 (Purple/Black Checkered)
+models/props_fairgrounds/coaster_frame02.mdl Rollercoaster Frame 2(Purple/Black Checkered)
+models/props_fairgrounds/coaster_frame03.mdl Rollercoaster Frame 3(Purple/Black Checkered)
+models/props_fairgrounds/coaster_frame04.mdl Rollercoaster Frame 4(Purple/Black Checkered)
+models/props_fairgrounds/coaster_frame05.mdl Rollercoaster Frame 5(Purple/Black Checkered)
+models/props_fairgrounds/coaster_gate.mdl Coaster gate (No Collision)
+models/props_fairgrounds/coaster_railing_01.mdl Rollercoaster Railing
+models/props_fairgrounds/coaster_rails.mdl Rollercoaster track rails
+models/props_fairgrounds/coaster_sidewalk.mdl Rollercoaster sidewalk
+models/props_fairgrounds/coaster_structure.mdl Rollercoaster Structure
+models/props_fairgrounds/coaster_support_01.mdl Rollercoaster Support 1
+models/props_fairgrounds/coaster_support_02.mdl Rollercoaster Support 2
+models/props_fairgrounds/coaster_support_03.mdl Rollercoaster Support 3
+models/props_fairgrounds/coaster_support_04.mdl Rollercoaster Support 4
+models/props_fairgrounds/coaster_ties.mdl Coaster Ties
+models/props_fairgrounds/coaster_tracks.mdl Coaster Tracks
+models/props_fairgrounds/coaster_tunnel_roof.mdl Coaster Tunnel Roof
+models/props_fairgrounds/coaster_tunnel_structure.mdl Coaster Tunnel Structure
+models/props_fairgrounds/coaster_tunnel_trim.mdl Coaster Tunnel Trim
+models/props_fairgrounds/concession_sign_01.mdl Concession Sign 1
+models/props_fairgrounds/concession_sign_02.mdl Concession Sign 2
+models/props_fairgrounds/drum_case.mdl Drum Case
+models/props_fairgrounds/drum_case_stack.mdl Drum Case Stack
+models/props_fairgrounds/drum_riser.mdl Drum Riser
+models/props_fairgrounds/entrance_sign.mdl oversized sign-entrance to amusement park
+models/props_fairgrounds/entrance_structure.mdl Entrance Structure
+models/props_fairgrounds/fairgrounds_ashtray001.mdl Fairgrounds Outdoor Ashtray
+models/props_fairgrounds/fairgrounds_electric_box001.mdl Electric Box
+models/props_fairgrounds/fairgrounds_electric_box001_frame.mdl Electric Box Frame
+models/props_fairgrounds/fairgrounds_flagpole01.mdl Flagpole
+models/props_fairgrounds/fairgrounds_information_frame001.mdl Information Frame
+models/props_fairgrounds/fairgrounds_light001.mdl Fairgrounds Light
+models/props_fairgrounds/ferris_wheel_01.mdl Ferris Wheel
+models/props_fairgrounds/gallery_button.mdl Shooting Gallery Button
+models/props_fairgrounds/gallery_gnome_sign.mdl Shooting Gallery Gnome Sign
+models/props_fairgrounds/gnome_closet.mdl Gnome Closet
+models/props_fairgrounds/gallery_panel_back.mdl Shooting Gallery Panel Back
+models/props_fairgrounds/gallery_panel_climber.mdl Shooting Gallery Climber
+models/props_fairgrounds/gallery_panel_front.mdl Shooting Gallery Panel Front
+models/props_fairgrounds/gallery_panel_middle.mdl Shooting Gallery Panel Middle
+models/props_fairgrounds/gallery_sign.mdl Shooting Gallery Sign
+models/props_fairgrounds/gallery_target_lilpeanut.mdl Shooting Gallery Lil Peanut
+models/props_fairgrounds/gallery_target_moustachio.mdl Shooting Gallery Moustachio
+models/props_fairgrounds/gallery_target_skeleton.mdl Shooting Gallery Skeleton
+models/props_fairgrounds/garbage_drinks_container.mdl Garbage Drink Can
+models/props_fairgrounds/garbage_drinks_container_crushed.mdl Garbage Drink Can Crushed
+models/props_fairgrounds/garbage_hamburger_container.mdl Garbage Hamburger Contain
+models/props_fairgrounds/garbage_paper_plate.mdl Garbage Paper Plate
+models/props_fairgrounds/garbage_pile01.mdl Garbage Pile 1
+models/props_fairgrounds/garbage_pile02.mdl Garbage Pile 2
+models/props_fairgrounds/garbage_pile03.mdl Garbage Pile 3
+models/props_fairgrounds/garbage_pile_corner01.mdl Garbage Pile Corner 1
+models/props_fairgrounds/garbage_pile_corner02.mdl Garbage Pile Corner 2
+models/props_fairgrounds/garbage_pile_straight01.mdl Garbage Pile Straight 1
+models/props_fairgrounds/garbage_pile_straight02.mdl Garbage Pile Straight 2
+models/props_fairgrounds/garbage_pizza_box.mdl Garbage Pizza Box
+models/props_fairgrounds/garbage_popcorn_box.mdl Garbage Popcorn Box
+models/props_fairgrounds/kiddyland_ridecar.mdl Kiddyland Car
+models/props_fairgrounds/kiddyland_riderocket.mdl Kiddyland Rocket
+models/props_fairgrounds/kiddyland_riderocket_small.mdl Kiddyland Small Rocket
+models/props_fairgrounds/kiddyland_ridetrain.mdl Kiddyland Train Ride
+models/props_fairgrounds/kiddyland_ridestructure.mdl Kiddyland Ride Structure
+models/props_fairgrounds/kiddyland_ridestructure_closed.mdl closed amusement park riding shed
+models/props_fairgrounds/ride_rotato.mdl Ride Rotato
+models/props_fairgrounds/lil'peanut_cutout001.mdl Lil' Peanut Cutout
+models/props_fairgrounds/lil'peanut_cutout001_dmg001.mdl Lil' Peanut Cutout Damage 1
+models/props_fairgrounds/lil'peanut_cutout001_dmg002.mdl Lil' Peanut Cutout Damage 2
+models/props_fairgrounds/lil'peanut_cutout001_dmg003.mdl Lil' Peanut Cutout Damage 3
+models/props_fairgrounds/lil'peanut_cutout001_dmg004.mdl Lil' Peanut Cutout Damage 4
+models/props_fairgrounds/lil'peanut_cutout001_dmg005.mdl Lil' Peanut Cutout Damage 5
+models/props_fairgrounds/lil'peanut_sign001.mdl Lil' Peanut Sign
+models/props_fairgrounds/metal_cart.mdl Metal Cart 1
+models/props_fairgrounds/metal_cart2.mdl Metal Cart 2
+models/props_fairgrounds/metal_cart3.mdl Metal Cart 3
+models/props_fairgrounds/milk_bottle.mdl Fairgrounds Game Milk Bottle
+models/props_fairgrounds/monorail_column_01.mdl Monorail Column
+models/props_fairgrounds/monorail_curve_01.mdl Monorail Curve 1
+models/props_fairgrounds/monorail_curve_02.mdl Monorail Curve 2
+models/props_fairgrounds/monorail_straight_512.mdl Monorail Straight 512 Units
+models/props_misc/fairground_awning.mdl Fairground Swing
+models/props_fairgrounds/slide.mdl Amusement Park Slide (Large)
+models/props_fairgrounds/mr_mustachio.mdl Mr Mustachio
+models/props_fairgrounds/scaffold_arch.mdl Concert Scaffold Arch
+models/props_fairgrounds/stadium_bench.mdl Stadium Bench 1
+models/props_fairgrounds/stadium_bench3.mdl Stadium Bench 2 
+models/props_fairgrounds/stadium_bench4.mdl Stadium Bench 3
+models/props_fairgrounds/stadium_bench5.mdl Stadium Bench 3
+models/props_fairgrounds/stadium_bench6.mdl Stadium Bench 4
+models/props_fairgrounds/stadium_bench7.mdl Stadium Bench 5
+models/props_fairgrounds/stadium_bench7_left.mdl Stadium Bench 5 Left
+models/props_fairgrounds/stadium_bench8.mdl Stadium Bench 6
+models/props_fairgrounds/stadium_bench8_left.mdl Stadium Bench 6 Left
+models/props_fairgrounds/stadium_bench_customa.mdl Stadium Bench 7
+models/props_fairgrounds/stadium_bench_customb.mdl Stadium Bench 8
+models/props_fairgrounds/stadium_bench_customc.mdl Stadium Bench 9
+models/props_fairgrounds/stadium_bench_customd.mdl Stadium Bench 10
+models/props_fairgrounds/stadium_bench_custome.mdl Stadium Bench 11
+models/props_fairgrounds/stadium_bench_customf.mdl Stadium Bench 12
+models/props_fairgrounds/stadium_bench_customg.mdl Stadium Bench 13
+models/props_fairgrounds/stadium_bench_customh.mdl Stadium Bench 14
+models/props_fairgrounds/stadium_bench_customi.mdl Stadium Bench 15
+models/props_fairgrounds/stadium_bench_customj.mdl Stadium Bench 16
+models/props_fairgrounds/stadium_truss.mdl Stadium Truss
+models/props_fairgrounds/stage_cable1.mdl Stadium Cable 
+models/props_fairgrounds/stage_drapery.mdl Stadium Drapery
+models/props_fairgrounds/stage_roof_structure.mdl Stage Roof Structure 1
+models/props_fairgrounds/stage_roof_structureb.mdl Stage Roof Structure 2
+models/props_fairgrounds/stage_scaffold_32.mdl Stage Scaffold 32 Units
+models/props_fairgrounds/stage_scaffold_64.mdl Stage Scaffold 64 Units
+models/props_fairgrounds/stage_scaffold_128.mdl Stage Scaffold 128 Units
+models/props_fairgrounds/stage_structure.mdl Stage Structure
+models/props_fairgrounds/stair_cascade.mdl Stair Cascade
+models/props_fairgrounds/alligator.mdl Alligator toys
+models/props_fairgrounds/elephant.mdl Elephant toy
+models/props_fairgrounds/giraffe.mdl Giraffe toy
+models/props_fairgrounds/snake.mdl Snake Toy
+models/props_fairgrounds/strongmangame_bell.mdl Strongman Game Bell
+models/props_fairgrounds/strongmangame_button.mdl Strongman Game Button
+models/props_fairgrounds/strongmangame_puck.mdl Strongman Game Puck
+models/props_fairgrounds/strongmangame_puck_phys.mdl Strongman Game (Physics)
+models/props_fairgrounds/strongmangame_tower.mdl Strongman Game Tower
+models/props_fairgrounds/strongman_almondo.mdl Strongman Almondo Rating
+models/props_fairgrounds/strongman_baby.mdl Strongman Baby Rating
+models/props_fairgrounds/strongman_cashew.mdl Strongman Cashew Rating
+models/props_fairgrounds/strongman_lilpeanut.mdl Strongman Lil' Peanut Rating
+models/props_fairgrounds/strongman_moustachio.mdl Strongman Moustachio
+models/props_fairgrounds/strongman_moustachio_cutout001.mdl Strongman Moustachio Cutout
+models/props_fairgrounds/swan_boat.mdl Tunnel of Love Swan
+models/props_misc/fairground_tent_board.mdl Tent Board
+models/props_misc/fairground_tent_closed.mdl Fairgrounds Tent Closed
+models/props_misc/fairground_tent_open.mdl Fairgrounds Tent Open
+models/props_fairgrounds/ticketbooth_01.mdl Ticketbooth 1
+models/props_fairgrounds/ticketbooth_02.mdl Ticketbooth 2
+models/props_fairgrounds/toggle_switch.mdl Switch Toggle
+models/props_fairgrounds/tol_boarding_rail.mdl Tunnel of Love Boarding Rail
+models/props_fairgrounds/tol_sideroom_painting.mdl Tunnel of Love Sideroom Painting
+models/props_fairgrounds/tol_sideroom_props.mdl Tunnel of Love Sideroom Props
+models/props_fairgrounds/tol_sign.mdl Tunnel of Love Sign 1
+models/props_fairgrounds/tol_sign002.mdl Tunnel of Love Sign 2
+models/props_fairgrounds/tol_tunnel_heart.mdl Tunnel of Love Heart
+models/props_fairgrounds/track_column_01.mdl Track Column
+models/props_fairgrounds/track_column_base.mdl Track Column Base
+models/props_fairgrounds/track_curve_01.mdl Track Curve 1
+models/props_fairgrounds/track_curve_02.mdl Track Curve 2
+models/props_fairgrounds/track_straight_128.mdl Track Straight 128 Units
+models/props_fairgrounds/track_straight_192.mdl Track Straight 192 Units
+models/props_fairgrounds/track_straight_320.mdl Track Straight 320 Units
+models/props_fairgrounds/track_straight_512.mdl Track Straight 512 Units
+models/props_fairgrounds/traffic_barrel.mdl Fairgrounds Traffic Barrel
+models/props_fairgrounds/trailermessageboard.mdl Fairgrounds Trailer Messageboard
+models/props_fairgrounds/walkway_structure.mdl Fairgrounds Walkway Structure
+models/rollercoaster/coaster_debris.mdl Coaster Debris

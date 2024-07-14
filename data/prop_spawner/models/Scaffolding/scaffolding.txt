@@ -1,0 +1,90 @@
+Scaffolding
+models/props_unique/airport_greenhouse.mdl The huge greenhouse skeleton of the first level of the airport
+models/props_unique/airport/line_post.mdl Airport Line Post
+models/props_highway/scaffolding_320.mdl Highway Scaffolding (320u)
+models/props_highway/scaffolding_320_base.mdl Highway Scaffolding Base (320u)
+models/props_highway/scaffolding_320_railing.mdl Highway Scaffolding Railing (320u)
+models/props_highway/scaffolding_96_railing.mdl Highway Scaffolding Railing (96u)
+models/props_highway/scaffolding_railing_end.mdl Highway Scaffolding Railing End
+models/props_highway/scaffolding_base_end.mdl Highway Scaffolding Base End
+models/props_highway/scaffolding_bracing_long.mdl Highway Scaffolding Bracing (Long)
+models/props_highway/scaffolding_bracing_medium.mdl Highway Scaffolding Bracing (Medium)
+models/props_highway/scaffolding_bracing_short.mdl Highway Scaffolding Bracing (Short)
+models/props_highway/scaffolding_cantilever.mdl Highway Scaffolding Cantilever
+models/props_highway/scaffolding_cantilever_end.mdl Highway Scaffolding Cantilever End
+models/props_highway/scaffolding_end.mdl Highway Scaffolding End
+models/props_equipment/scaffolding.mdl Airport construction scaffold
+models/props_equipment/scaffolding_norails.mdl airport construction scaffold - no rails
+models/props_c17/truss02h.mdl Building iron support frame - 1 wide
+models/props_c17/truss02g.mdl Building iron support frame - 2 wide
+models/props_c17/truss02e.mdl Building iron support frame - 4 wide
+models/props_c17/truss02d.mdl Building iron support frame - 5 wide
+models/props_rooftop/scaffolding01a.mdl Rooftop Scaffolding 1
+models/props_downtown/trim_exterior_edge_128.mdl Downtown Exterior Edge Trim (No Back) (128u)
+models/props_downtown/trim_exterior_edge_160.mdl Downtown Exterior Edge Trim (No Back) (160u)
+models/props_downtown/trim_exterior_edge_192.mdl Downtown Exterior Edge Trim (No Back) (192u)
+models/props_downtown/trim_roof01_128.mdl Downtown Exterior Trim (No Back) (128u)
+models/props_downtown/trim_roof01_16.mdl Downtown Exterior Trim (No Back) (16u)
+models/props_downtown/trim_roof01_24.mdl Downtown Exterior Trim (No Back) (24u)
+models/props_downtown/trim_roof01_256.mdl Downtown Exterior Trim (No Back) (256u)
+models/props_downtown/trim_roof01_40.mdl Downtown Exterior Trim (No Back) (40u)
+models/props_downtown/trim_roof01_48.mdl Downtown Exterior Trim (No Back) (48u)
+models/props_downtown/trim_roof01_64_01.mdl Downtown Exterior Trim (No Back) (64u)
+models/props_downtown/trim_roof01_corner01.mdl Downtown Exterior Trim Corner 1 (No Back)
+models/props_downtown/trim_roof01_corner02.mdl Downtown Exterior Trim Corner 2 (No Back)
+models/props_downtown/column_base.mdl Downtown Column Base
+models/props_downtown/column_base_16.mdl Downtown Column Base 16 (No Top)
+models/props_downtown/column_top_16.mdl Downtown Column Top 16 (No Bottom/Top)
+models/props_downtown/column_top_corner.mdl Downtown Column Top Corner (No Back)
+models/props_downtown/column_top_double.mdl Downtown Column Top Double (No Back)
+models/props_downtown/column_top_double_right.mdl Downtown Column Top Double Right (No Back)
+models/props_downtown/column_top_straight.mdl Downtown Column Top Straight (No Back)
+models/props_downtown/balcony_edge_trim01_128.mdl Downtown Balcony Edge Trim 128 units (No Back)
+models/props_downtown/balcony_edge_trim01_32.mdl Downtown Balcony Edge Trim 32 units (No Back)
+models/props_downtown/balcony_edge_trim01_64.mdl Downtown Balcony Edge Trim 64 units (No Back)
+models/props_downtown/balcony_edge_trim01_corner.mdl Downtown Balcony Edge Trim Corner (No Back)
+models/props_downtown/balcony_post_base01_186.mdl Downtown Balcony Post Base 1 (186u)
+models/props_downtown/balcony_post_base02_154.mdl Downtown Balcony Post Base 2 (154u)
+models/props_downtown/balcony_post_base03_154.mdl Downtown Balcony Post Base 3 (154u)
+models/props_downtown/balcony_post_base04_154.mdl Downtown Balcony Post Base 4 (154u)
+models/props_downtown/balcony_post_upper01_154.mdl Downtown Balcony Post Upper 1 (154u)
+models/props_downtown/balcony_post_upper02_144.mdl Downtown Balcony Post Upper 2 (144u)
+models/props_downtown/balcony_underside_left01.mdl Downtown Balcony Underside left 1 (No Side)
+models/props_downtown/balcony_underside_left02.mdl Downtown Balcony Underside left 2 (No Side)
+models/props_downtown/balcony_underside_right01.mdl Downtown Balcony Underside Right1 (No Side)
+models/props_downtown/balcony_underside_right02.mdl Downtown Balcony Underside Right2 (No Side)
+models/props_downtown/balcony_underside_middle01.mdl Downtown Balcony Middle 1 (No Side)
+models/props_downtown/balcony_underside_middle02.mdl Downtown Balcony Middle 2 (No Side)
+models/props_downtown/balcony_underside_middle03.mdl Downtown Balcony Middle 3 (No Side)
+models/props_downtown/balcony_underside_middle04.mdl Downtown Balcony Middle 4 (No Side)
+models/props_downtown/balcony_underside_62_middle02.mdl Downtown Balcony Underside middle (No Side)
+models/props_street/building_trim_piece01_128.mdl Street Building Trim 128 units (No Back)
+models/props_street/building_trim_piece01_128_corner.mdl Street Building Trim Corner 128 units
+models/props_street/building_trim_piece02_128.mdl Street Building Trim Piece 2 (No Back) (128u)
+models/props_street/building_trim_piece02_128_corner.mdl Street Building Trim Piece 2 Corner (128u)
+models/props_street/building_trim_piece02_512_damaged.mdl Street Building Trim Piece 2 Damaged (512u)
+models/props_street/building_trim_piece02_64.mdl Street Building Trim Piece 2 (No Back) (64u)
+models/props_shacks/instance_prop_swamphouse1.mdl Swamphouse Scaffolding (No collision)
+models/props_shacks/instance_prop_swamphouse2.mdl Swamphouse Scaffolding 2 (No collision)
+models/props_shacks/instance_prop_swamphouse2a.mdl Swamphouse Scaffolding 2a (No collision)
+models/props_shacks/instance_prop_swamphouse3.mdl Swamphouse Scaffolding 3 (No collision)
+models/props_shacks/instance_prop_swamphouse3b.mdl Swamphouse Scaffolding 3b (No collision)
+models/props_shacks/instance_prop_swamphouse4.mdl Swamphouse Scaffolding 4
+models/props_shacks/instance_prop_swamphouse4b.mdl Swamphouse Scaffolding 4b
+models/props_shacks/instance_prop_swamphouse4c.mdl Swamphouse Scaffolding 4c
+models/props_shacks/instance_prop_swamphouse4d.mdl Swamphouse Scaffolding 4d
+models/props_shacks/instance_prop_swamphouse4e.mdl Swamphouse Scaffolding 4e
+models/props_shacks/shack_deck01.mdl Shack Deck Swamphouse Scaffolding
+models/props_shacks/shack_porch01.mdl Shack Porch Swamphouse Scaffolding 
+models/props_shacks/shack_porch02.mdl Shack Porch Swamphouse Scaffolding 2
+models/props_shacks/shack_ramp01.mdl Shack Unfinished Ramp (Half railing)
+models/props_shacks/shack_ramp01a.mdl Shack Unfinished Ramp
+models/props_shacks/shack_roof01b.mdl Shack Roof Swamphouse Scaffolding
+models/props_shacks/shack_roof02b.mdl Shack Roof Swamphouse Scaffolding 2
+models/props_shacks/shack_roof03b.mdl Shack Roof Swamphouse Scaffolding 3
+models/props_shacks/shack_small_beams01.mdl Shack Small beams (Partial Collision)
+models/props_fortifications/guard_tower.mdl Guard Tower Frame
+models/props_unique/barn_structure.mdl Barn Structure
+models/props_windows/brick_window03_pillar.mdl marble pillar
+models/props_interiors/concretepillar01.mdl basement cement steel bar (Tank can be interrupted)
+models/props_interiors/concretepiller01_dm01.mdl Basement Cement Rebar-Fracture

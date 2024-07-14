@@ -1,0 +1,505 @@
+{
+    "saferoom": {
+        "chance": 0.4,
+        "variants": [
+            {
+                "weight": 2,
+                "entities": [
+                    {
+                        "model": "models/props_street/police_barricade2.mdl",
+                        "origin": [12103.81, 4766.83, 17.05],
+                        "angles": [0.00, 89.94, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_fortifications/barricade001_64_reference.mdl",
+                        "origin": [11255.51, 4667.18, 14.88],
+                        "angles": [0.00, 179.23, 0.00]
+                    }
+                ]
+            },
+            {
+                "weight": 2,
+                "entities": [
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [12011.10, 4663.61, 12.26],
+                        "angles": [0.00, 0.42, 0.00]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [12009.93, 4664.93, 51.20],
+                        "angles": [0.00, -0.10, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [11277.82, 4664.75, 16.03],
+                        "angles": [0.00, -177.94, 0.00]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [11275.65, 4666.43, 55.06],
+                        "angles": [0.00, -2.69, 0.00]
+                    }
+                ]
+            },
+            { 
+                "entities": [
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [11242.83, 5285.18, 15.70],
+                        "angles": [0.00, -44.98, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [11240.59, 5282.62, 68.42],
+                        "angles": [0.00, -44.22, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "saferoom-alt": {
+        "chance": 0.4,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [12144.72, 5414.99, 69.06],
+                        "angles": [0.00, -41.81, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [12083.18, 5420.02, 17.09],
+                        "angles": [0.00, -104.31, 0.00]
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    { "hammerid": 502676, "input": "Kill" },
+                    { "hammerid": 3219153, "input": "Kill" }
+                ],
+                "entities": [
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [12144.72, 5414.99, 69.06],
+                        "angles": [0.00, -41.81, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [12083.18, 5420.02, 17.09],
+                        "angles": [0.00, -104.31, 0.00]
+                    },
+                    {
+                        "model": "models/props_junk/dumpster.mdl",
+                        "origin": [11308.87, 5440.96, 60.49],
+                        "angles": [360.00, 270.00, -90.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "truckblock": {
+        "chance": 0.2,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_street/police_barricade_368in.mdl",
+                        "origin": [11689.12, 6554.52, 17.32],
+                        "angles": [0.00, -64.07, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_street/police_barricade_368in.mdl",
+                        "origin": [11689.12, 6554.52, 17.32],
+                        "angles": [0.00, -64.07, 0.00]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "scale": [50.00, 60.00, 10.00],
+                        "origin": [11066.82, 6062.03, 103.38],
+                        "angles": [0.00, 166.05, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "liftskip": {
+        "chance": 0.25,
+        "variants": [
+            {
+                "inputs": [
+                    { "targetname": "warehouse_door", "input": "Break" }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [11807.18, 6619.71, 16.03],
+                        "angles": [0.00, 151.75, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [11900.01, 7286.40, 135.49],
+                        "angles": [0.00, 87.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [11897.07, 7290.61, 188.29],
+                        "angles": [0.00, 171.23, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [11898.12, 7215.57, 139.82],
+                        "angles": [0.00, -99.91, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [11807.18, 6619.71, 16.03],
+                        "angles": [0.00, 151.75, 0.00]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [11901.06, 7239.87, 141.79],
+                        "angles": [0.00, -99.91, 0.00]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [11901.86, 7300.96, 137.48],
+                        "angles": [0.00, 87.38, 0.00]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [11899.33, 7302.97, 176.57],
+                        "angles": [0.00, 171.22, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props/de_prodigy/concretebags3.mdl",
+                        "origin": [11894.10, 6532.30, 16.03],
+                        "angles": [0.00, -97.94, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [11900.01, 7286.40, 135.49],
+                        "angles": [0.00, 87.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [11897.07, 7290.61, 188.29],
+                        "angles": [0.00, 171.23, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [11898.12, 7215.57, 139.82],
+                        "angles": [0.00, -99.91, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [11807.18, 6619.71, 16.03],
+                        "angles": [0.00, 151.75, 0.00]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [11901.06, 7239.87, 141.79],
+                        "angles": [0.00, -99.91, 0.00]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [11901.86, 7300.96, 137.48],
+                        "angles": [0.00, 87.38, 0.00]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [11899.33, 7302.97, 176.57],
+                        "angles": [0.00, 171.22, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "shelfforce": {
+        "chance": 0.25,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_industrial/warehouse_shelf003.mdl",
+                        "origin": [10822.72, 6830.48, 294.17],
+                        "angles": [0.00, -151.02, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_industrial/warehouse_shelf004.mdl",
+                        "origin": [10929.63, 7282.66, 295.85],
+                        "angles": [0.00, -2.96, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/warehouse_shelf004.mdl",
+                        "origin": [10918.07, 7084.04, 296.83],
+                        "angles": [0.00, 1.84, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "officeblock": {
+        "chance": 0.25,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_interiors/desk_metal.mdl",
+                        "origin": [10575.66, 7632.80, 192.80],
+                        "angles": [0.00, 87.35, 0.00]
+                    },
+                    {
+                        "model": "models/props_interiors/desk_metal.mdl",
+                        "origin": [10574.95, 7631.25, 160.72],
+                        "angles": [0.00, -101.58, 0.00]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "scale": [50.00, 10.00, 50.00],
+                        "origin": [10569.78, 7658.25, 225.14]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props/cs_assault/forklift.mdl",
+                        "origin": [10938.45, 7659.19, 15.15],
+                        "angles": [0.00, -2.03, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_interiors/desk_metal.mdl",
+                        "origin": [10642.26, 7502.89, 158.67],
+                        "angles": [0.00, 4.51, 0.00]
+                    },
+                    {
+                        "model": "models/props_interiors/desk_metal.mdl",
+                        "origin": [10656.39, 7506.54, 191.01],
+                        "angles": [0.00, -5.45, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "warehouse": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props/cs_assault/forklift.mdl",
+                        "origin": [11330.68, 7947.40, 24.37],
+                        "angles": [0.00, -56.01, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props/cs_assault/forklift.mdl",
+                        "origin": [11424.16, 7689.89, 17.41],
+                        "angles": [0.00, -1.23, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "manholeblock": {
+        "chance": 0.35,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_mill/brickwall_broken03.mdl",
+                        "origin": [13684.50, 8166.23, -254.96],
+                        "angles": [0.00, 2.46, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "sewer": {
+        "chance": 0.25,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_mill/pipeset32d_256a.mdl",
+                        "origin": [14122.62, 8887.39, -370.95],
+                        "angles": [0.00, -176.14, 0.00]
+                    },
+                    {
+                        "model": "models/props_mill/pipeset08d_512_001a.mdl",
+                        "origin": [14086.80, 8898.75, -419.74],
+                        "angles": [0.00, -178.02, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_mill/pipeset32d_256a.mdl",
+                        "origin": [14122.62, 8887.39, -370.95],
+                        "angles": [0.00, -176.14, 0.00]
+                    },
+                    {
+                        "model": "models/props_mill/pipeset08d_512_001a.mdl",
+                        "origin": [14086.80, 8898.75, -419.74],
+                        "angles": [0.00, -178.02, 0.00]
+                    },
+                    {
+                        "model": "models/props_debris/concrete_debris128pile001b.mdl",
+                        "origin": [14115.65, 8918.82, -490.36],
+                        "angles": [0.00, 114.26, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "sewer2": {
+        "chance": 0.25,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [13011.15, 11044.94, -463.96],
+                        "angles": [0.00, 0.63, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_downtown/bollards_ornate.mdl",
+                        "origin": [13011.15, 11044.94, -463.96],
+                        "angles": [0.00, 92.63, 0.00]
+                    },
+                    {
+                        "model": "models/lighthouse/props/wooden_gate.mdl",
+                        "origin": [12906.39, 11536.93, -501.09],
+                        "angles": [0.00, 10.07, 0.00]
+                    },
+                    {
+                        "model": "models/lighthouse/props/wooden_gate.mdl",
+                        "origin": [12907.83, 11538.57, -424.81],
+                        "angles": [0.00, -3.11, 0.00]
+                    },
+                    {
+                        "model": "models/lighthouse/props/wooden_gate.mdl",
+                        "origin": [12906.96, 11537.70, -373.40],
+                        "angles": [0.00, -3.13, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "policebarriers": {
+        "chance": 0.15,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [14068.70, 11434.97, 8.28],
+                        "angles": [0.00, 1.78, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [14054.96, 11595.83, 8.03],
+                        "angles": [0.00, 8.09, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [13993.58, 11817.81, 8.03],
+                        "angles": [0.00, -2.82, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [14026.95, 11977.10, 8.03],
+                        "angles": [0.00, -9.50, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [14001.45, 12338.83, 8.03],
+                        "angles": [0.00, 3.05, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "ambulance": {
+        "chance": 0.4,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/ambulance.mdl",
+                        "origin": [13319.67, 12081.39, 8.03],
+                        "angles": [0.00, 144.60, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "saferoomdesk": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "inputs": [
+                    {"hammerid": 2553264, "input": "Kill"}
+                ],
+                "entities": [
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12685.19, 12389.61, 11.44],
+                        "angles": [0.00, -178.42, 0.00]
+                    },          
+                    {
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [12656.90, 12238.82, 18.04],
+                        "angles": [0.00, 149.67, 0.00]
+                    }
+                ]
+            }
+        ]
+    }
+}

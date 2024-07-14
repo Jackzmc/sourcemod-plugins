@@ -1,0 +1,11 @@
+Breakables
+Classname:prop_wall_breakable
+models/props_doors/shackwall01.mdl Shack Wall
+models/props_doors/shackwall01_dmg01.mdl Shack Wall (25% Damaged)
+models/props_doors/shackwall01_dmg02.mdl Shack Wall (50% Damaged)
+models/props_doors/shackwall01_dmg03.mdl Shack Wall (75% Damaged)
+models/props_doors/shackwall01_dmg04.mdl Shack Wall (100% Damaged)
+models/props_unique/zombiebreakwallexteriorairport01_main.mdl Airport Wall
+models/props_unique/zombiebreakwallhospitalexterior01_main.mdl Hospital Exterior Wall
+models/props_debris/wood_board04a.mdl Wood Board
+models/props_debris/wood_board05a.mdl Wood Board 2

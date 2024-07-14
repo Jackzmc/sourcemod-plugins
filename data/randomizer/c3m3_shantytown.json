@@ -1,0 +1,794 @@
+{
+    "saferoom-alt": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_urban/outhouse001.mdl",
+                        "origin": [
+                            -4980.677734375,
+                            949.0848388671875,
+                            150.5641326904297
+                        ],
+                        "angles": [
+                            60,
+                            -30,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_urban/oil_drum001.mdl",
+                        "origin": [
+                            -4930.6962890625,
+                            980.0726318359375,
+                            131.46682739257812
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_interiors/couch.mdl",
+                        "origin": [
+                            -5002.01953125,
+                            965.5624389648438,
+                            126.3619155883789
+                        ],
+                        "angles": [
+                            0,
+                            60,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_interiors/dresser_tall.mdl",
+                        "origin": [
+                            -5059.2333984375,
+                            501.9996032714844,
+                            148.4117431640625
+                        ],
+                        "angles": [
+                            0,
+                            -60,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_furniture/dresser1.mdl",
+                        "origin": [
+                            -5034.21826171875,
+                            632.9756469726562,
+                            188.55780029296875
+                        ],
+                        "angles": [
+                            0,
+                            -180,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_interiors/bench01a.mdl",
+                        "origin": [
+                            -5041.11279296875,
+                            461.3111267089844,
+                            183.89794921875
+                        ],
+                        "angles": [
+                            0,
+                            -270,
+                            90
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "mainarea-block": {
+        "chance": 0.699999988079071,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/pickup_truck_78.mdl",
+                        "origin": [
+                            -5505.10107421875,
+                            1198.4400634765625,
+                            124.751953125
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_vehicles/floodlight_generator_nolight_static.mdl",
+                        "origin": [
+                            -5348.919921875,
+                            1269.849609375,
+                            128.42794799804688
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "bridge-alt": {
+        "chance": 0.4000000059604645,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_unique/wooden_barricade_break1.mdl",
+                        "origin": [
+                            -3297.003662109375,
+                            275.88671875,
+                            -4.653392791748047
+                        ],
+                        "angles": [
+                            0,
+                            -90,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/lighthouse/props/wooden_gate.mdl",
+                        "origin": [
+                            -3232.390625,
+                            164.357421875,
+                            17.62588882446289
+                        ],
+                        "angles": [
+                            0,
+                            30,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/lighthouse/props/wooden_gate.mdl",
+                        "origin": [
+                            -3233.338623046875,
+                            163.86415100097656,
+                            73.71609497070312
+                        ],
+                        "angles": [
+                            0,
+                            30,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_unique/wooden_barricade_break1.mdl",
+                        "origin": [
+                            -3218.4638671875,
+                            63.1107063293457,
+                            -3.85980224609375
+                        ],
+                        "angles": [
+                            0,
+                            -150,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_unique/wooden_barricade_break1.mdl",
+                        "origin": [
+                            -3269.106201171875,
+                            -34.5698127746582,
+                            -7.432075500488281
+                        ],
+                        "angles": [
+                            0,
+                            -90,
+                            0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "3576525",
+                        "origin": [
+                            -3314.616455078125,
+                            -116.93585205078125,
+                            -9.387371063232422
+                        ],
+                        "angles": [
+                            0.7761260271072388,
+                            -75.0199966430664,
+                            -2.8979599475860596
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "3572997",
+                        "origin": [
+                            -3301.697265625,
+                            -185.60537719726562,
+                            8.341651916503906
+                        ],
+                        "angles": [
+                            357.0556640625,
+                            192.216796875,
+                            359.47265625
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "3573767",
+                        "origin": [
+                            -3278.60107421875,
+                            -245.614013671875,
+                            7.031715393066406
+                        ],
+                        "angles": [
+                            317.6806640625,
+                            197.40234375,
+                            0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "rockjump-block": {
+        "chance": 0.6000000238418579,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_foliage/swamp_cluster01.mdl",
+                        "origin": [
+                            -4680.08203125,
+                            -2140.746337890625,
+                            -17.020801544189453
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_swamp/boardwalk_rail_256_break.mdl",
+                        "origin": [
+                            -4807.966796875,
+                            -2242.364990234375,
+                            124.48727416992188
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "itemhut-alt": {
+        "chance": 0.4000000059604645,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_unique/wooden_barricade_break2.mdl",
+                        "origin": [
+                            -4247.08447265625,
+                            -2852.78173828125,
+                            75.88138580322266
+                        ],
+                        "angles": [
+                            0,
+                            60,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_junk/wheebarrow01a.mdl",
+                        "origin": [
+                            -4037.0322265625,
+                            -2994.776123046875,
+                            80.08740234375
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props/de_prodigy/wood_pallet_01.mdl",
+                        "origin": [
+                            -3974.26513671875,
+                            -2993.3671875,
+                            90.08248901367188
+                        ],
+                        "angles": [
+                            -180,
+                            -300,
+                            -60
+                        ]
+                    },
+                    {
+                        "model": "models/props/de_prodigy/wood_pallet_01.mdl",
+                        "origin": [
+                            -3977.592529296875,
+                            -3038.728271484375,
+                            88.97019958496094
+                        ],
+                        "angles": [
+                            -180,
+                            -270,
+                            -60
+                        ]
+                    },
+                    {
+                        "model": "models/props/cs_militia/shelves_wood.mdl",
+                        "origin": [
+                            -3794.25341796875,
+                            -3145.6279296875,
+                            63.573360443115234
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "prerun-block": {
+        "chance": 0.4000000059604645,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_foliage/fallentree01.mdl",
+                        "origin": [
+                            -928.72265625,
+                            -2563.155517578125,
+                            43.405086517333984
+                        ],
+                        "angles": [
+                            0,
+                            -180,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_rock01.mdl",
+                        "origin": [
+                            -1042.55615234375,
+                            -2596.759521484375,
+                            -13.022880554199219
+                        ],
+                        "angles": [
+                            0,
+                            30,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cluster01.mdl",
+                        "origin": [
+                            -961.88330078125,
+                            -2735.929443359375,
+                            -9.02508544921875
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_large01.mdl",
+                        "origin": [
+                            -1161.0135498046875,
+                            -2463.456787109375,
+                            -14.649921417236328
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "runskip": {
+        "chance": 0.20000000298023224,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_swamp/boardwalk_tall_384.mdl",
+                        "origin": [
+                            1412.1405029296875,
+                            -4351.91015625,
+                            135.56173706054688
+                        ],
+                        "angles": [
+                            0,
+                            60,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_swamp/boardwalk_tall_384.mdl",
+                        "origin": [
+                            1078.3272705078125,
+                            -4244.4384765625,
+                            193.13587951660156
+                        ],
+                        "angles": [
+                            0,
+                            90,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_swamp/boardwalk_tall_256.mdl",
+                        "origin": [
+                            239.72869873046875,
+                            -4394.72412109375,
+                            200.46890258789062
+                        ],
+                        "angles": [
+                            0,
+                            -90,
+                            0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "run-porta-block": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [
+                            1797.4052734375,
+                            -4518.84765625,
+                            47.64799499511719
+                        ],
+                        "angles": [
+                            0,
+                            -30,
+                            -90
+                        ]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [
+                            1953.6759033203125,
+                            -4486.6240234375,
+                            67.56024169921875
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_large01_grnd.mdl",
+                        "origin": [
+                            1990.705078125,
+                            -4375.66162109375,
+                            13.4808349609375
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_dry02.mdl",
+                        "origin": [
+                            1795.40869140625,
+                            -4544.65185546875,
+                            16.661270141601562
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss01.mdl",
+                        "origin": [
+                            1855.5579833984375,
+                            -4577.2998046875,
+                            71.11968994140625
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_dry01.mdl",
+                        "origin": [
+                            1833.10498046875,
+                            -4634.837890625,
+                            33.6879768371582
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss05.mdl",
+                        "origin": [
+                            1865.896728515625,
+                            -4766.06689453125,
+                            47.88426208496094
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_shrubwall_block_128_deep.mdl",
+                        "origin": [
+                            1923.33935546875,
+                            -5038.8369140625,
+                            -5.3646697998046875
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_shrubwall_block_128_deep.mdl",
+                        "origin": [
+                            2060.984619140625,
+                            -4809.42529296875,
+                            6.388557434082031
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_shrubwall_block_128_deep.mdl",
+                        "origin": [
+                            1932.8892822265625,
+                            -4653.31201171875,
+                            20.342758178710938
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_shrubwall_block_128_deep.mdl",
+                        "origin": [
+                            1692.090576171875,
+                            -5047.0087890625,
+                            3.4129104614257812
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_dry02.mdl",
+                        "origin": [
+                            2176.104248046875,
+                            -4979.45263671875,
+                            31.916088104248047
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_dry02.mdl",
+                        "origin": [
+                            2210.40673828125,
+                            -4702.78955078125,
+                            6.418952941894531
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_shrubwall_256_deep.mdl",
+                        "origin": [
+                            2137.482666015625,
+                            -4293.81494140625,
+                            -2.5102195739746094
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_knee02.mdl",
+                        "origin": [
+                            2316.197998046875,
+                            -4339.716796875,
+                            -9.895637512207031
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_shrubwall_block_128_deep.mdl",
+                        "origin": [
+                            2134.565673828125,
+                            -4522.650390625,
+                            4.828575134277344
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_stump01.mdl",
+                        "origin": [
+                            1939.9476318359375,
+                            -4617.55859375,
+                            20.8411865234375
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_dry01.mdl",
+                        "origin": [
+                            1934.5028076171875,
+                            -4714.67626953125,
+                            26.616500854492188
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_dry02.mdl",
+                        "origin": [
+                            1968.79931640625,
+                            -5105.3330078125,
+                            -12.724136352539062
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_shrubwall_256_deep.mdl",
+                        "origin": [
+                            2079.72265625,
+                            -4383.05712890625,
+                            12.709331512451172
+                        ],
+                        "angles": [
+                            0,
+                            -60,
+                            0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "saferoom-shrubwall": {
+        "chance": 0.7599999904632568,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_foliage/swamp_shrubwall_512_deep.mdl",
+                        "origin": [
+                            3521.270751953125,
+                            -3716.91845703125,
+                            9.61224365234375
+                        ],
+                        "angles": [
+                            0,
+                            30,
+                            0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_shrubwall_256b.mdl",
+                        "origin": [
+                            3476.312744140625,
+                            -3225.2568359375,
+                            32.58015441894531
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_foliage/swamp_shrubwall_512_deep.mdl",
+                        "origin": [
+                            3946.483642578125,
+                            -4641.2421875,
+                            86.8662109375
+                        ],
+                        "angles": [
+                            0,
+                            30,
+                            0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

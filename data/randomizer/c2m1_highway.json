@@ -1,0 +1,474 @@
+{
+    "bus": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+
+                    {
+                        "model": "models/props_vehicles/bus01_2.mdl",
+                        "origin": [9340.55, 7863.68, -520.65],
+                        "angles": [0.00, -176.84, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "preskip": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/deliveryvan.mdl",
+                        "origin": [5938.53, 7845.30, -698.72],
+                        "angles": [0.00, 141.92, 0.00]
+                    }
+                ]
+            },
+            {
+                "weight": 3,
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/news_van.mdl",
+                        "origin": [5971.11, 7821.71, -692.81],
+                        "angles": [0.00, -132.26, 0.00]
+                    },
+                    {
+                        "model": "models/props_vehicles/van_glass.mdl",
+                        "origin": [5971.11, 7821.71, -692.81],
+                        "angles": [0.00, -132.26, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "skipblock": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_foliage/tree_city01.mdl",
+                        "origin": [4577.54, 7472.64, -752.53],
+                        "angles": [0.00, -152.23, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "bridge": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/suv_2001.mdl",
+                        "origin": [4225.25, 7152.90, -706.86],
+                        "angles": [0.00, 123.42, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_urban/fence002_256.mdl",
+                        "origin": [3713.50, 7007.50, -706.36],
+                        "angles": [0.00, -164.60, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/fence002_64.mdl",
+                        "origin": [3751.20, 6857.83, -706.04],
+                        "angles": [0.00, 10.15, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "hallway": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_downtown/dresser.mdl",
+                        "origin": [1262.76, 5023.55, -809.65],
+                        "angles": [0.00, -83.92, 0.00]
+                    },
+                    {
+                        "model": "models/props_downtown/dresser.mdl",
+                        "origin": [1265.40, 5034.58, -774.49],
+                        "angles": [0.00, -87.50, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/cara_84sedan.mdl",
+                        "origin": [1211.36, 3629.09, -968.11],
+                        "angles": [0.00, -177.49, 0.00]
+                    },
+                    {
+                        "model": "models/props_vehicles/cara_84sedan_glass.mdl",
+                        "origin": [1211.36, 3629.09, -968.11],
+                        "angles": [0.00, -177.49, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [1265.29, 3631.60, -967.96],
+                        "angles": [0.00, -165.60, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "hallwayskip": {
+        "chance": 0.1,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_urban/fence_cover001_64.mdl",
+                        "origin": [1954.54, 3763.97, -911.23],
+                        "angles": [60.00, -4.33, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "hwend": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/hmmwv.mdl",
+                        "origin": [3003.56, 3422.34, -967.53],
+                        "angles": [0.00, 111.72, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/hmmwv.mdl",
+                        "origin": [3003.56, 3422.34, -967.53],
+                        "angles": [0.00, 249.72, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "hillfence": {
+        "chance": 0.26,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_exteriors/wood_railing001.mdl",
+                        "origin": [2126.43, 2681.44, -1015.73],
+                        "angles": [0.00, -87.78, 0.00]
+                    },
+                    {
+                        "type": "",
+                        "scale": [0.00, 0.00, 0.00],
+                        "origin": [1966.13, 2728.19, -1015.46],
+                        "angles": [0.00, -90.56, 0.00]
+                    },
+                    {
+                        "model": "models/props_exteriors/wood_railing001.mdl",
+                        "origin": [1807.01, 2665.68, -1013.35],
+                        "angles": [0.00, -95.64, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "valleyhill": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                
+                    {
+                        "model": "models/props/cs_militia/militiarock06.mdl",
+                        "origin": [733.37, 1864.12, -1747.81],
+                        "angles": [0.00, 178.12, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "valleyuphill": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [-423.15, 1120.06, -1790.24],
+                        "angles": [0.00, -105.87, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [-500.38, 1247.74, -1793.48],
+                        "angles": [0.00, -142.13, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-545.50, 1214.06, -1789.35],
+                        "angles": [0.00, -130.56, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "rocks": {
+        "chance": 0.2,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-958.64, 599.03, -1621.60],
+                        "angles": [0.00, -79.86, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-1019.25, 530.55, -1623.71],
+                        "angles": [0.00, -91.67, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [-1082.22, 641.94, -1598.58],
+                        "angles": [0.00, -23.66, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [-1141.92, 522.94, -1636.98],
+                        "angles": [0.00, -63.62, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss01.mdl",
+                        "origin": [-1248.78, 484.65, -1566.88],
+                        "angles": [0.00, -69.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss03.mdl",
+                        "origin": [-1333.51, 475.09, -1522.29],
+                        "angles": [0.00, -78.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-1416.47, 449.34, -1625.31],
+                        "angles": [0.00, 124.39, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-958.64, 599.03, -1621.60],
+                        "angles": [0.00, -79.86, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-1019.25, 530.55, -1623.71],
+                        "angles": [0.00, -91.67, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [-1082.22, 641.94, -1598.58],
+                        "angles": [0.00, -23.66, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [-1141.92, 522.94, -1636.98],
+                        "angles": [0.00, -63.62, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss01.mdl",
+                        "origin": [-1248.78, 484.65, -1566.88],
+                        "angles": [0.00, -69.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss03.mdl",
+                        "origin": [-1333.51, 475.09, -1522.29],
+                        "angles": [0.00, -78.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-1416.47, 449.34, -1625.31],
+                        "angles": [0.00, 124.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-1490.60, 403.96, -1560.65],
+                        "angles": [0.00, -55.99, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-958.64, 599.03, -1621.60],
+                        "angles": [0.00, -79.86, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-1019.25, 530.55, -1623.71],
+                        "angles": [0.00, -91.67, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [-1082.22, 641.94, -1598.58],
+                        "angles": [0.00, -23.66, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [-1141.92, 522.94, -1636.98],
+                        "angles": [0.00, -63.62, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss01.mdl",
+                        "origin": [-1248.78, 484.65, -1566.88],
+                        "angles": [0.00, -69.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss03.mdl",
+                        "origin": [-1333.51, 475.09, -1522.29],
+                        "angles": [0.00, -78.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-1416.47, 449.34, -1625.31],
+                        "angles": [0.00, 124.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-892.46, 579.18, -1601.30],
+                        "angles": [0.00, -93.30, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-958.64, 599.03, -1621.60],
+                        "angles": [0.00, -79.86, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-1019.25, 530.55, -1623.71],
+                        "angles": [0.00, -91.67, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [-1082.22, 641.94, -1598.58],
+                        "angles": [0.00, -23.66, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [-1141.92, 522.94, -1636.98],
+                        "angles": [0.00, -63.62, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss01.mdl",
+                        "origin": [-1248.78, 484.65, -1566.88],
+                        "angles": [0.00, -69.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss03.mdl",
+                        "origin": [-1333.51, 475.09, -1522.29],
+                        "angles": [0.00, -78.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-1416.47, 449.34, -1625.31],
+                        "angles": [0.00, 124.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-892.46, 579.18, -1601.30],
+                        "angles": [0.00, -93.30, 0.00]
+                    },
+                    {
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [-892.46, 579.18, -1601.30],
+                        "angles": [0.00, -93.30, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "saferoom": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_urban/fence002_256.mdl",
+                        "origin": [-914.05, -1979.78, -1086.70],
+                        "angles": [0.00, -119.77, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/fence002_256.mdl",
+                        "origin": [-699.15, -2113.80, -1086.25],
+                        "angles": [0.00, -123.33, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/fence002_128.mdl",
+                        "origin": [-595.78, -2179.14, -1086.70],
+                        "angles": [0.00, 44.39, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_urban/fence002_256.mdl",
+                        "origin": [-914.05, -1979.78, -1086.70],
+                        "angles": [0.00, -119.77, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/fence002_256.mdl",
+                        "origin": [-699.15, -2113.80, -1086.25],
+                        "angles": [0.00, -123.33, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/fence002_128.mdl",
+                        "origin": [-595.78, -2179.14, -1086.70],
+                        "angles": [0.00, 44.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [-512.92, -2346.49, -1086.76],
+                        "angles": [0.00, 176.01, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "saferoom2": {
+        "chance": 0.2,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [-1037.46, -2394.61, -1088.00],
+                        "angles": [0.00, -96.25, 0.00]
+                    }
+                ]
+            }
+        ]
+    }
+}

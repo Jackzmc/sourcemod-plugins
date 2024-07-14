@@ -1,0 +1,1753 @@
+{
+    "mansion-ent-alt": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            1582.585693359375,
+                            -1131.2296142578125,
+                            175.52247619628906
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_exteriors/roadsidefence_512.mdl",
+                        "origin": [
+                            1675.9185791015625,
+                            -1166.551025390625,
+                            170.65721130371094
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            1807.994873046875,
+                            -1134.41015625,
+                            174.17741394042969
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/fallentree01.mdl",
+                        "origin": [
+                            2125.347900390625,
+                            -1239.6627197265625,
+                            154.29945373535156
+                        ],
+                        "angles": [
+                            0.0,
+                            60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_vehicles/floodlight_generator_nolight_static.mdl",
+                        "origin": [
+                            2246.93017578125,
+                            -1194.48681640625,
+                            164.97900390625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_small_grnd01.mdl",
+                        "origin": [
+                            2271.41845703125,
+                            -1149.1588134765625,
+                            170.91317749023438
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/tree_trunk_fallen.mdl",
+                        "origin": [
+                            2371.810791015625,
+                            -1143.2723388671875,
+                            241.47587585449219
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            -150.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/fallentree_dry01.mdl",
+                        "origin": [
+                            2641.731201171875,
+                            -1162.1463623046875,
+                            156.83050537109375
+                        ],
+                        "angles": [
+                            -30.0,
+                            30.0,
+                            30.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_small_grnd01.mdl",
+                        "origin": [
+                            2607.462646484375,
+                            -1418.0787353515625,
+                            155.84840393066406
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_small_grnd01.mdl",
+                        "origin": [
+                            2707.38330078125,
+                            -1316.3115234375,
+                            153.38516235351562
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_dry01.mdl",
+                        "origin": [
+                            2713.154296875,
+                            -1173.6575927734375,
+                            164.66096496582031
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_dry01.mdl",
+                        "origin": [
+                            2498.70849609375,
+                            -1519.497802734375,
+                            148.28057861328125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/fallentree_dry02.mdl",
+                        "origin": [
+                            2411.048828125,
+                            -1516.709228515625,
+                            112.41016387939453
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_small_grnd01.mdl",
+                        "origin": [
+                            2223.256103515625,
+                            -1599.196533203125,
+                            118.25999450683594
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/Swamp_FallenTree01_bare.mdl",
+                        "origin": [
+                            2026.5625,
+                            -1555.03125,
+                            146.96875
+                        ],
+                        "angles": [
+                            294.0380859375,
+                            244.2919921875,
+                            176.2646484375
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_fallentree01.mdl",
+                        "origin": [
+                            1989.9444580078125,
+                            -1789.5657958984375,
+                            89.751266479492188
+                        ],
+                        "angles": [
+                            0.0,
+                            150.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_small_grnd_grass01.mdl",
+                        "origin": [
+                            2554.69482421875,
+                            -1521.80810546875,
+                            134.02183532714844
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_rock01_grass.mdl",
+                        "origin": [
+                            2617.76708984375,
+                            -1519.8251953125,
+                            98.994239807128906
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_medium_grnd_grass01.mdl",
+                        "origin": [
+                            2198.401611328125,
+                            -1217.185791015625,
+                            151.76266479492188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_large_grnd_grass01.mdl",
+                        "origin": [
+                            2489.193359375,
+                            -1164.8043212890625,
+                            149.06712341308594
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_rock01_grass.mdl",
+                        "origin": [
+                            1356.325927734375,
+                            -1272.903076171875,
+                            114.44271087646484
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_rock01_grass.mdl",
+                        "origin": [
+                            1372.8084716796875,
+                            -1704.5941162109375,
+                            100.69783020019531
+                        ],
+                        "angles": [
+                            0.0,
+                            60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_rock01_grass.mdl",
+                        "origin": [
+                            1972.515869140625,
+                            -2057.377197265625,
+                            56.958549499511719
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "tractor-alt": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_foliage/Swamp_FallenTree01_bare.mdl",
+                        "origin": [
+                            758.13397216796875,
+                            -3083.398681640625,
+                            53.394134521484375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_vehicles/tractor01.mdl",
+                        "origin": [
+                            964.7733154296875,
+                            -3302.9248046875,
+                            67.481796264648438
+                        ],
+                        "angles": [
+                            0.0,
+                            62.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "fence-alt": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_exteriors/fence002.mdl",
+                        "origin": [
+                            -1474.306640625,
+                            -2551.00830078125,
+                            4.2233142852783203
+                        ],
+                        "angles": [
+                            0.0,
+                            80.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_exteriors/fence002_end.mdl",
+                        "origin": [
+                            -1787.4840087890625,
+                            -2507.564453125,
+                            1.5476112365722656
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "village-alt": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_unique/wooden_barricade_break1.mdl",
+                        "origin": [
+                            -2335.44384765625,
+                            -1302.38037109375,
+                            2.8190715312957764
+                        ],
+                        "angles": [
+                            0.0,
+                            255.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/deadbodies/human/fence_a.mdl",
+                        "origin": [
+                            -2373.283935546875,
+                            -1213.1104736328125,
+                            67.682525634765625
+                        ],
+                        "angles": [
+                            0.0,
+                            45.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "village-wall": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_exteriors/fence002.mdl",
+                        "origin": [
+                            -1219.39013671875,
+                            -1254.442138671875,
+                            8.4657115936279297
+                        ],
+                        "angles": [
+                            0.0,
+                            -81.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_exteriors/fence002.mdl",
+                        "origin": [
+                            -1574.6123046875,
+                            -1341.4786376953125,
+                            2.0026836395263672
+                        ],
+                        "angles": [
+                            0.0,
+                            -75.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_exteriors/fence002_end.mdl",
+                        "origin": [
+                            -1834.647705078125,
+                            -1409.56396484375,
+                            4.41461181640625
+                        ],
+                        "angles": [
+                            0.0,
+                            -60.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "log-block": {
+        "chance": 0.60000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props/cs_militia/logpile2.mdl",
+                        "origin": [
+                            -762.62640380859375,
+                            -3141.975830078125,
+                            1.8769723176956177
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "fin-stairsblock": {
+        "chance": 0.60000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_doors/shackwall01.mdl",
+                        "origin": [
+                            2178.30810546875,
+                            -49.284843444824219,
+                            417.01971435546875
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_doors/shackwall01.mdl",
+                        "origin": [
+                            2269.07275390625,
+                            -50.998970031738281,
+                            418.67022705078125
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_doors/shackwall01.mdl",
+                        "origin": [
+                            2414.052001953125,
+                            -69.1561279296875,
+                            425.68307495117188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_doors/shackwall01.mdl",
+                        "origin": [
+                            2411.033935546875,
+                            -160.86541748046875,
+                            232.28948974609375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_doors/shackwall01.mdl",
+                        "origin": [
+                            2593.205322265625,
+                            53.492172241210938,
+                            232.16996765136719
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "fin-dropdown-alt": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_doors/shackwall01.mdl",
+                        "origin": [
+                            1793.608642578125,
+                            -416.815185546875,
+                            228.88337707519531
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "hedgemaze": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            794.66192626953125,
+                            1379.5732421875,
+                            121.005615234375
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            620.61419677734375,
+                            1344.8876953125,
+                            132.5494384765625
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            557.357666015625,
+                            1391.191162109375,
+                            126.45433044433594
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            473.10433959960938,
+                            1277.3223876953125,
+                            133.62147521972656
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            446.449951171875,
+                            1395.3023681640625,
+                            116.89141845703125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            600.4013671875,
+                            1203.985595703125,
+                            123.92544555664062
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            478.6502685546875,
+                            1139.6124267578125,
+                            133.71768188476562
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            310.55807495117188,
+                            1249.8428955078125,
+                            137.20822143554688
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            315.2777099609375,
+                            1126.5870361328125,
+                            124.21961975097656
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            326.95559692382812,
+                            1010.9213256835938,
+                            143.37786865234375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            458.41812133789062,
+                            974.4715576171875,
+                            131.07530212402344
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            573.1424560546875,
+                            918.39141845703125,
+                            121.52572631835938
+                        ],
+                        "angles": [
+                            0.0,
+                            -45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            610.9837646484375,
+                            1065.257568359375,
+                            124.19234466552734
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1308.3037109375,
+                            1006.8056030273438,
+                            129.11178588867188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1397.4805908203125,
+                            999.874755859375,
+                            130.64151000976562
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1376.2584228515625,
+                            1175.7308349609375,
+                            121.80836486816406
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1511.1583251953125,
+                            1065.24609375,
+                            126.90097045898438
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1550.213623046875,
+                            1164.3629150390625,
+                            120.46086120605469
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1594.48046875,
+                            1778.7608642578125,
+                            123.68377685546875
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1720.79833984375,
+                            1774.7276611328125,
+                            120.69569396972656
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            1622.0169677734375,
+                            1282.147705078125,
+                            119.95688629150391
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            1729.8924560546875,
+                            1282.8870849609375,
+                            126.63848876953125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2206.020751953125,
+                            1795.5218505859375,
+                            114.08795928955078
+                        ],
+                        "angles": [
+                            0.0,
+                            315.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2184.123291015625,
+                            1894.9591064453125,
+                            120.68225860595703
+                        ],
+                        "angles": [
+                            0.0,
+                            225.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1992.0679931640625,
+                            1915.7496337890625,
+                            118.25269317626953
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1998.42431640625,
+                            1973.7578125,
+                            117.44937896728516
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2371.6318359375,
+                            1920.2874755859375,
+                            120.23720550537109
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2283.956787109375,
+                            1931.25244140625,
+                            120.36063385009766
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2376.39501953125,
+                            1733.388427734375,
+                            121.79879760742188
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2312.595458984375,
+                            1591.0341796875,
+                            127.39186096191406
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2527.716552734375,
+                            1691.476318359375,
+                            121.23351287841797
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2526.921142578125,
+                            1599.9822998046875,
+                            115.27500152587891
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2568.361083984375,
+                            1900.837158203125,
+                            124.35507965087891
+                        ],
+                        "angles": [
+                            0.0,
+                            225.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2674.525146484375,
+                            1925.934326171875,
+                            124.29917144775391
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2800.23486328125,
+                            1923.7774658203125,
+                            123.62982177734375
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2697.23974609375,
+                            1770.4559326171875,
+                            122.53188323974609
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2688.679931640625,
+                            1726.48095703125,
+                            123.62155151367188
+                        ],
+                        "angles": [
+                            0.0,
+                            -45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            2829.168701171875,
+                            1782.51904296875,
+                            121.98040771484375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2566.703369140625,
+                            1367.6995849609375,
+                            118.51946258544922
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2467.2890625,
+                            1399.7459716796875,
+                            112.72032165527344
+                        ],
+                        "angles": [
+                            0.0,
+                            -45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2428.86083984375,
+                            1416.4720458984375,
+                            122.83907318115234
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2717.69580078125,
+                            1305.3656005859375,
+                            115.40290069580078
+                        ],
+                        "angles": [
+                            0.0,
+                            -270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2667.630859375,
+                            1346.663330078125,
+                            110.07720184326172
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2804.379638671875,
+                            1353.5198974609375,
+                            117.05010223388672
+                        ],
+                        "angles": [
+                            0.0,
+                            -360.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2866.937255859375,
+                            1411.8472900390625,
+                            113.624755859375
+                        ],
+                        "angles": [
+                            0.0,
+                            -45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2878.0654296875,
+                            1462.4364013671875,
+                            128.33741760253906
+                        ],
+                        "angles": [
+                            0.0,
+                            -405.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2944.297119140625,
+                            1246.700439453125,
+                            122.20639038085938
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/swamp_cypress_stump01.mdl",
+                        "origin": [
+                            2867.6953125,
+                            1255.5567626953125,
+                            81.633041381835938
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2802.26171875,
+                            1223.635498046875,
+                            118.90359497070312
+                        ],
+                        "angles": [
+                            0.0,
+                            -315.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2944.923095703125,
+                            1365.22802734375,
+                            126.54624938964844
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2947.600341796875,
+                            1084.9835205078125,
+                            123.02244567871094
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2834.375732421875,
+                            1068.7667236328125,
+                            119.74336242675781
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2904.023193359375,
+                            1166.3035888671875,
+                            122.12471771240234
+                        ],
+                        "angles": [
+                            0.0,
+                            -270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2685.578369140625,
+                            1123.2955322265625,
+                            127.8094482421875
+                        ],
+                        "angles": [
+                            0.0,
+                            -45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2752.009033203125,
+                            1024.3072509765625,
+                            123.08711242675781
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2694.9306640625,
+                            948.69085693359375,
+                            131.53256225585938
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1812.50830078125,
+                            1218.5028076171875,
+                            110.67935943603516
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1979.044677734375,
+                            1103.5511474609375,
+                            118.16643524169922
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            2112.7802734375,
+                            1043.9244384765625,
+                            130.73834228515625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            1873.318359375,
+                            1067.7713623046875,
+                            119.53070068359375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/hedge_128.mdl",
+                        "origin": [
+                            1986.8575439453125,
+                            1065.7440185546875,
+                            132.27252197265625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            469.89779663085938,
+                            1233.7440185546875,
+                            126.27787780761719
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1673.6658935546875,
+                            1552.8228759765625,
+                            120.32746887207031
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1682.40185546875,
+                            1423.2811279296875,
+                            118.14118194580078
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1676.4564208984375,
+                            1747.3409423828125,
+                            112.95761871337891
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_256_128_high.mdl",
+                        "origin": [
+                            1313.1346435546875,
+                            1659.510498046875,
+                            88.315208435058594
+                        ],
+                        "angles": [
+                            0.0,
+                            -270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1277.891357421875,
+                            1958.342529296875,
+                            129.20938110351562
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_256_128_high.mdl",
+                        "origin": [
+                            1172.748046875,
+                            1840.7677001953125,
+                            65.659088134765625
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1174.8275146484375,
+                            1952.505615234375,
+                            130.2493896484375
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1094.039794921875,
+                            1918.238525390625,
+                            121.270263671875
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            927.55743408203125,
+                            1989.8275146484375,
+                            136.90902709960938
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_256_128_high.mdl",
+                        "origin": [
+                            1008.5306396484375,
+                            1771.3265380859375,
+                            96.223709106445312
+                        ],
+                        "angles": [
+                            0.0,
+                            -270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_256_128_high.mdl",
+                        "origin": [
+                            774.0997314453125,
+                            1883.7181396484375,
+                            116.89554595947266
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_256_128_high.mdl",
+                        "origin": [
+                            842.63983154296875,
+                            1776.7718505859375,
+                            130.77377319335938
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_256_128_high.mdl",
+                        "origin": [
+                            374.4332275390625,
+                            1660.46484375,
+                            110.02155303955078
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1063.708984375,
+                            1356.0364990234375,
+                            127.61222839355469
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            1300.026123046875,
+                            1130.138916015625,
+                            123.49366760253906
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_256_128_high.mdl",
+                        "origin": [
+                            545.292724609375,
+                            1876.17138671875,
+                            107.98950958251953
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            672.19024658203125,
+                            1751.739501953125,
+                            126.89882659912109
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            778.45892333984375,
+                            1755.392822265625,
+                            128.78485107421875
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
+                        "origin": [
+                            926.57513427734375,
+                            1971.93994140625,
+                            137.96925354003906
+                        ],
+                        "angles": [
+                            0.0,
+                            -135.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "stairs-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_exteriors/wood_stairs_120_swamp.mdl",
+                        "origin": [
+                            1191.8453369140625,
+                            -390.86361694335938,
+                            301.7550048828125
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_swamp/plank001a_192.mdl",
+                        "origin": [
+                            1179.9970703125,
+                            -535.0499267578125,
+                            417.6080322265625
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_swamp/plank001a_192.mdl",
+                        "origin": [
+                            1180.043212890625,
+                            -488.93951416015625,
+                            417.07125854492188
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_exteriors/wood_stairs_120_swamp.mdl",
+                        "origin": [
+                            1190.575927734375,
+                            -238.13136291503906,
+                            190.11982727050781
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            1596.1002197265625,
+                            -469.07989501953125,
+                            415.91036987304688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            1573.5079345703125,
+                            -476.77725219726562,
+                            454.92684936523438
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            1551.798095703125,
+                            -486.8494873046875,
+                            415.47015380859375
+                        ],
+                        "angles": [
+                            0.0,
+                            135.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

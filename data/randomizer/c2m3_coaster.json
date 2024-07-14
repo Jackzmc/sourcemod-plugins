@@ -1,0 +1,87 @@
+{
+    "kitarea": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_urban/fence001_256.mdl",
+                        "origin": [1916.42, 3295.80, -9.42],
+                        "angles": [0.00, 177.46, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [2009.20, 3731.19, -8.00],
+                        "angles": [0.00, 116.61, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "drop": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "inputs": [
+                    {"targetname": "breakwall", "input": "Break"}
+                ],
+                "entities": [
+                    {
+                        "model": "models/props_debris/concrete_debris256pile001a.mdl",
+                        "origin": [383.72, 3687.79, 220.48],
+                        "angles": [0.00, -6.38, 0.00]
+                    },
+                    {
+                        "model": "models/props_debris/concrete_debris128pile001b.mdl",
+                        "origin": [350.17, 3731.09, 194.16],
+                        "angles": [0.00, -4.28, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "building": {
+        "chance": 0.3,
+        "variants": [
+
+            {
+                "entities": [
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [-1417.13, 1872.68, 3.34],
+                        "angles": [0.00, -1.77, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [-1419.98, 1743.87, -0.34],
+                        "angles": [0.00, -1.77, 0.00]
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    {"hammerid": 1865168, "input": "Close"},
+                    {"hammerid": 1865168, "input": "Lock"},
+                    {"hammerid": 645443, "input": "_allow_ladder"}
+                ],
+                "entities": [
+                    {
+                        "model": "models/props_urban/fence_cover001_64.mdl",
+                        "origin": [-1296.89, 1165.62, 68.21],
+                        "angles": [0.00, -360.00, -90.00]
+                    },
+                    {
+                        "model": "models/props_urban/fence_cover001_64.mdl",
+                        "origin": [-1295.90, 1353.19, 71.39],
+                        "angles": [0.00, -360.00, -90.00]
+                    }
+                ]
+
+            }
+        ]
+    }
+}

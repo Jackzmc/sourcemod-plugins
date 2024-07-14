@@ -1,0 +1,248 @@
+{
+    "saferoomS": {
+        "chance": 0.23,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "type": "hammerid",
+                        "model": "5725089",
+                        "origin": [-5068.85, -2876.10, 16.28],
+                        "angles": [0.00, -91.08, 0.00]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "1999136",
+                        "origin": [-5157.49, -2875.04, 16.28],
+                        "angles": [0.00, -90.11, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "startCar": {
+        "chance": 0.4,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "type": "targetname",
+                        "model": "car_sedan09-car_physics",
+                        "origin": [-5064.15, -2459.90, 15.18],
+                        "angles": [360.00, 89.95, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "scaffold": {
+        "chance": 0.12,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [-5793.24, -1625.29, 222.65],
+                        "angles": [0.00, 168.75, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [-5791.05, -1628.50, 275.57],
+                        "angles": [0.00, 23.13, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [-5748.58, -1700.04, 256.05],
+                        "angles": [0.00, -150.47, 0.00]
+                    },
+                    {
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [-5755.88, -1710.74, 216.36],
+                        "angles": [0.00, 51.53, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/oil_drum001.mdl",
+                        "origin": [-5697.14, -1721.42, 216.03],
+                        "angles": [0.00, -153.88, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/oil_drum001.mdl",
+                        "origin": [-5693.00, -1720.45, 264.06],
+                        "angles": [0.00, 10.08, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/oil_drum001.mdl",
+                        "origin": [-5640.41, -1706.82, 264.86],
+                        "angles": [0.00, 12.82, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/oil_drum001.mdl",
+                        "origin": [-5638.80, -1710.05, 216.83],
+                        "angles": [0.00, -156.10, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/oil_drum001.mdl",
+                        "origin": [-5675.44, -1691.63, 218.71],
+                        "angles": [0.00, 125.47, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/oil_drum001.mdl",
+                        "origin": [-5673.90, -1691.67, 266.74],
+                        "angles": [0.00, 122.76, 0.00]
+                    },
+                    {
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [-7165.69, -1102.23, 24.60],
+                        "angles": [0.00, 45.07, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "scaffoldalt": {
+        "chance": 0.15,
+        "variants": [
+            {
+                "entities": [
+                    
+                    {
+                        "model": "models/props_equipment/scaffolding_norails.mdl",
+                        "origin": [-6612.62, -1838.12, 16.88],
+                        "angles": [0.00, -81.81, 0.00]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "5497878",
+                        "origin": [-6381.72, -1800.12, 221.03],
+                        "angles": [0.0, 0.0, 0.0] 
+                    }
+                ]
+            }
+        ]
+    },
+    "electrical": {
+        "chance": 0.2,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [-4426.48, 2076.72, 48.28],
+                        "angles": [0.00, -91.24, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [-4120.98, 1370.67, 52.11],
+                        "angles": [0.00, -90.93, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "hole": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "inputs": [
+                    {"targetname": "door_exitl", "input": "Open"},
+                    {"targetname": "door_exitr", "input": "Open"}
+                ],
+                "entities": [
+                    {
+                        "model": "models/lighthouse/props/brick_broken_wall_debris.mdl",
+                        "origin": [-2317.08, 2033.99, 68.90],
+                        "angles": [0.00, -90.72, 0.00]
+                    },
+                    {
+                        "model": "models/lighthouse/props/brick_broken_wall_debris.mdl",
+                        "origin": [-2321.84, 2027.78, 68.02],
+                        "angles": [0.00, 73.88, 0.00]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "6864462",
+                        "origin": [-2308.44, 2086.80, 33.82],
+                        "angles": [0.00, -96.26, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "parking": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "type": "_caralarm",
+                        "model": "models/props_vehicles/cara_95sedan.mdl",
+                        "origin": [-2658.07, 3641.82, 18.29],
+                        "angles": [0.00, 344.88, 0.00]
+                    },
+                    {
+                        "type": "_caralarmglass",
+                        "model": "models/props_vehicles/cara_95sedan_glass_alarm.mdl",
+                        "origin": [-2658.07, 3641.82, 18.29],
+                        "angles": [0.00, 344.88, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "type": "targetname",
+                        "model": "InstanceAuto1-caralarm_car1",
+                        "origin": [-2658.07, 3641.82, 18.29],
+                        "angles": [0.00, 344.88, 0.00]
+                    },
+                    {
+                        "type": "targetname",
+                        "model": "InstanceAuto1-caralarm_glass1",
+                        "origin": [-2658.07, 3641.82, 18.29],
+                        "angles": [0.00, 344.88, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "garagealt": {
+        "chance": 0.2,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [-2626.76, 4970.86, 147.42],
+                        "angles": [0.00, 141.65, 0.00]
+                    },
+                    {
+                        "model": "models/props_vehicles/hmmwv.mdl",
+                        "origin": [-2636.90, 4855.33, 149.79],
+                        "angles": [0.00, 127.86, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [-2764.90, 4857.27, 153.47],
+                        "angles": [0.00, 125.01, 0.00]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "scale": [20.00, 20.00, 40.00],
+                        "origin": [-2575.41, 4960.43, 218.90],
+                        "angles": [0.00, 134.77, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/traffic_barrier001.mdl",
+                        "origin": [-2716.86, 4806.07, 199.93],
+                        "angles": [0.00, -34.52, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/traffic_barrier001.mdl",
+                        "origin": [-2710.23, 4841.08, 203.05],
+                        "angles": [0.00, -53.48, 0.00]
+                    }
+                ]
+            }
+        ]
+    }
+}

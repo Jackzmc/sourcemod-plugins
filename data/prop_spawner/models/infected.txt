@@ -1,0 +1,50 @@
+Infected
+models/deadbodies/charger/charger_lynched.mdl Charger Lynched (Swamp)
+models/props_unique/zombiebreakwallcore01_main.mdl 
+models/props_unique/zombiebreakwallcoreframe01_dm.mdl 
+models/props_unique/zombiebreakwallinterior01_brick_dm_11.mdl 
+models/props_unique/zombiebreakwallinterior01_brick_dm_12.mdl 
+models/props_unique/zombiebreakwallinterior01_concrete_dm_frame.mdl 
+models/props_unique/infectedbreakwall01_2x4core_main.mdl 
+models/props_unique/infectedbreakwall01_2x4mainframe01_dm.mdl 
+models/infected/cim_faceplate.mdl 
+models/infected/cim_fallen_survivor_pocket01.mdl Fallen Survivor Pocket 1
+models/infected/cim_fallen_survivor_pocket02.mdl Fallen Survivor Pocket 2
+models/infected/cim_fallen_survivor_pocket03.mdl Fallen Survivor Pocket 3
+models/infected/cim_riot_faceplate.mdl Riot Facemask
+models/infected/common_female_tanktop_jeans.mdl common_female_tanktop_jeans
+models/infected/common_female_tanktop_jeans_rain.mdl common_female_tanktop_jeans_rain
+models/infected/common_female_tanktop_jeans_swamp.mdl common_female_tanktop_jeans_swamp
+models/infected/common_female_tshirt_skirt.mdl common_female_tshirt_skirt
+models/infected/common_female_tshirt_skirt_swamp.mdl common_female_tshirt_skirt_swamp
+models/infected/common_male_ceda.mdl common_male_ceda
+models/infected/common_male_clown.mdl common_male_clown
+models/infected/common_male_dressshirt_jeans.mdl common_male_dressshirt_jeans
+models/infected/common_male_fallen_survivor.mdl Fallen Survivor
+models/infected/common_male_jimmy.mdl Jimmy Gibbs Jr
+models/infected/common_male_mud.mdl Mud Man
+models/infected/common_male_riot.mdl Riot Officer
+models/infected/common_male_roadcrew.mdl Roadcrew
+models/infected/common_male_roadcrew_rain.mdl Roadcrew Rain
+models/infected/common_male_polo_jeans.mdl common_male_polo_jeans
+models/infected/common_male_tanktop_jeans.mdl common_male_tanktop_jeans
+models/infected/common_male_tanktop_jeans_rain.mdl common_male_tanktop_jeans_rain
+models/infected/common_male_tanktop_jeans_swamp.mdl common_male_tanktop_jeans_swamp
+models/infected/common_male_tanktop_overalls.mdl common_male_tanktop_overalls
+models/infected/common_male_tanktop_overalls_rain.mdl common_male_tanktop_overalls_rain
+models/infected/common_male_tanktop_overalls_swamp.mdl common_male_tanktop_overalls_swamp
+models/infected/common_male_tshirt_cargos.mdl common_male_tshirt_cargos
+models/infected/common_male_tshirt_cargos_swamp.mdl common_male_tshirt_cargos_swamp
+models/infected/boomer.mdl Boomer (No Collision)
+models/infected/boomette.mdl Boomette (No Collision)
+models/infected/charger.mdl Charger (No Collision)
+models/infected/hunter.mdl Hunter (No Collision)
+models/infected/jockey.mdl Jockey (No Collision)
+models/infected/smoker.mdl Smoker (No Collision)
+models/infected/smoker_tongue_attach.mdl Smoker Tongue (No Collision)
+models/infected/spitter.mdl Spitter (No Collision)
+models/infected/hulk.mdl Tank (No Collision)
+models/infected/hulk_l4d1.mdl L4D1 Tank (No Collision)
+models/infected/witch.mdl Witch model (No Collision)
+models/infected/witch_bride.mdl Witch model-bridal outfit (No Collision)
+models/infected/gibs/gibs.mdl Gibs (No Collision)

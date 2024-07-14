@@ -1,0 +1,32 @@
+Tables
+models/props_interiors/entertainment_unit.mdl Entertainment Unit
+models/props_c17/furnituretable001a.mdl c17 round wood table
+models/props/cs_italy/it_mkt_table2.mdl cs italy long wood table
+models/props_furniture/heavy_table.mdl medium long dark wood table 1
+models/props/cs_militia/table_shed.mdl cs militia 2 layer wood workshop table
+models/props_interiors/table_kitchen.mdl white workshop table
+models/props/de_inferno/tableantique.mdl de inferno antique wood table
+models/props_furniture/it_mkt_table2.mdl long table (wood green paint peeling)
+models/props_downtown/side_table.mdl downtown bedside cube wood table
+models/props_equipment/tablegreenhouse01.mdl Long iron rack table-c11m1
+models/props_interiors/coffee_table_oval.mdl coffee table-oval
+models/props_interiors/coffee_table_rectangular.mdl coffee table-rectangular
+models/props_interiors/industrial_table01.mdl Iron Table-Industrial-Long
+models/props_interiors/dining_table_round.mdl round dining table
+models/props_interiors/dinning_table_oval.mdl oval dining table
+models/props_interiors/ceda_easel01.mdl CEDA easel
+models/props_interiors/ceda_table_maps.mdl CEDA table maps
+models/props_interiors/gun_cabinet.mdl Gun cabinet
+models/props_interiors/side_table_square.mdl small table-square
+models/props_interiors/table_bedside.mdl small table-rectangle
+models/props_interiors/table_console.mdl long wooden table-with drawer
+models/props_interiors/table_end.mdl small table-square corner
+models/props_urban/hotel_halfmoon_table001.mdl halfmoon wood table hotel
+models/props_interiors/table_cafeteria.mdl square cafeteria table
+models/props_interiors/table_folding.mdl Folding tables
+models/props_interiors/table_folding_folded.mdl Folding table-put away (breakable)
+models/props_interiors/table_motel.mdl round restaurant table (breakable)
+models/props_urban/round_table001.mdl round white metal outdoor table
+models/props_urban/round_table_umbrella001.mdl outdoor table umbrella stand
+models/props_urban/round_table_umbrella002.mdl outdoor table umbrella
+models/props_downtown/pooltable.mdl downtown pooltable

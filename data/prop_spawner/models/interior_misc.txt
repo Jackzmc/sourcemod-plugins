@@ -1,0 +1,149 @@
+Misc (Interior)
+models/props_interiors/bottles_shelf.mdl Row of Bottles 
+models/props_interiors/bottles_shelf_break01.mdl Bar Bottle 1
+models/props_interiors/bottles_shelf_break02.mdl Bar Bottle 2
+models/props_interiors/bottles_shelf_break03.mdl Bar Bottle 3
+models/props_interiors/bottles_shelf_break04.mdl Bar Bottle 4
+models/props_interiors/bottles_shelf_break05.mdl Bar Bottle 5
+models/props_interiors/bottles_shelf_break06.mdl Bar Bottle 6
+models/props_interiors/bottles_shelf_break07.mdl Bar Bottle 7
+models/props_interiors/bottles_shelf_break08.mdl Bar Bottle 8
+models/props_interiors/bottles_shelf_break09.mdl Bar Bottle 9
+models/props_interiors/bottles_shelf_break10.mdl Bar Bottle 10
+models/props_interiors/bottles_shelf_break11.mdl Bar Bottle 11
+models/props_interiors/bottles_shelf_break12.mdl Bar Bottle 12
+models/props_interiors/door_sliding_breakable01.mdl Iron rolling door (breakable)
+models/lighthouse/checkpoint_door_lighthouse01.mdl start security door-lighthouse map
+models/lighthouse/checkpoint_door_lighthouse02.mdl terminal security door-lighthouse map
+models/lighthouse/checkpoint_door_lighthouse01_plank.mdl c14 security door plank
+models/props_downtown/iron.mdl Iron
+models/props_downtown/ironing_board.mdl Ironing Board Opened
+models/props_downtown/ironing_board_flat.mdl Ironing Board Collapsed
+models/props_urban/plastic_icechest001_static.mdl Ice Chest Complete
+models/props_urban/plastic_icechest_lid001.mdl Ice Chest Lid
+models/props_urban/plastic_icechest001.mdl Ice Chest Basin
+models/props_equipment/cooler.mdl Cooler
+models/props_interiors/paper_towel_dispenser.mdl toilet paper dispenser
+models/props_interiors/paper_tray.mdl Paper Tray
+models/props_interiors/phone_motel.mdl phone
+models/props_interiors/pot01a.mdl Teapot
+models/props_misc/tea_pot-1.mdl Tea Pot 2
+models/props_interiors/shelf1_clutter01d.mdl Bookcase item placement
+models/props_interiors/magazine_rack.mdl Magazine Rack
+models/props_interiors/luggagecarthotel01.mdl Hotel luggage rack
+models/props_urban/ashtray_stand001.mdl Standing Ashtray
+models/props_c17/hospital_surgerytable01.mdl operating table
+models/props_unique/wheelchair01.mdl Wheelchair
+models/props_urban/picture_frame001.mdl Picture Frame 1
+models/props_urban/picture_frame002.mdl Picture Frame 2
+models/props_furniture/picture_frame1.mdl Picture Frame 3
+models/props_furniture/picture_frame10.mdl Picture Frame 4
+models/props_furniture/picture_frame4.mdl Picture Frame 5
+models/props_interiors/painting_landscape01.mdl Landscape Painting
+models/props_interiors/painting_portrait01.mdl Portrait Painting
+models/lighthouse/book_roku.mdl Book-Doodle
+models/props_unique/processor_tank.mdl boiler
+models/props_equipment/oxygentank01.mdl oxygen tank model
+models/props_interiors/makeshift_stove_battery.mdl Temporary stove battery
+models/props_collectables/mushrooms_glowing.mdl Glowing Mushroom
+models/props_interiors/ac_wallunit.mdl Air Conditioner
+models/props_interiors/airportdeparturerampcontrol01.mdl Instruments
+models/props_wasteland/prison_sprinkler001a.mdl TAG-water pipe-sprinklerFFur
+models/props_wasteland/prison_switchbox001a.mdl TAG-water pipe-converter
+models/props_fortifications/orange_cone001_reference.mdl triangle cone
+models/props_unique/mopbucket01.mdl Bucket-Mop for squeezing water
+models/props/cs_militia/caseofbeer01.mdl beer box
+models/props_urban/plastic_bucket001.mdl white bucket
+models/props/de_nuke/electricalbox01.mdl Two large electrical boxes-only half
+models/props/de_nuke/electricalbox02.mdl Two small electrical boxes-only half
+models/props_interiors/closet_clothes.mdl hanger-with clothes
+models/props_buildings/warehouse_roofbeams.mdl roof beam
+models/props_rooftop/satellitedish_large01.mdl satellite antenna
+models/props_wasteland/prison_conduit001a.mdl High Voltage Tower-Wire
+models/lighthouse/mate/mate_sanclemente.mdl tea bowl
+models/lighthouse/mate/mate_termo.mdl tea water bottle
+models/lighthouse/mate/mate_yerba.mdl tea bag
+models/extras/info_speech_australium.mdl Golden Speech Tips (No Collision)
+models/props_interiors/dish_soap_static.mdl Dishwashing agent (solid)
+models/props_interiors/dish_soap.mdl Dishsoap
+models/props_interiors/soap_dispenser.mdl Soap Dispenser
+models/props_interiors/soap_dispenser_static.mdl soap dispenser (solid)
+models/props_misc/mirror-1_static.mdl Magic Mirror (Solid State)
+models/props_misc/mirror-1.mdl Mirror 
+models/props_misc/mirror-1_gib1.mdl Broken Mirror 1
+models/props_misc/mirror-1_gib2.mdl Broken Mirror 2
+models/props_misc/mirror-1_gib3.mdl Broken Mirror 3
+models/props_street/garbage_can_static.mdl trash can (solid state)
+models/props_urban/buoy001.mdl Buoy 
+models/props_urban/buoy002.mdl Buoy 2
+models/props_urban/buoy003.mdl Buoy 3
+models/props_unique/small_town/swimming_buoy001b.mdl Buoy 4
+models/props_vehicles/carparts_axel01a_static.mdl car parts-axe (solid)
+models/props_vehicles/carparts_door01a_static.mdl car parts-car door (solid state)
+models/props_vehicles/carparts_tire01a_static.mdl car parts-hollow tire (solid)
+models/props_vehicles/carparts_wheel01a_static.mdl car parts-solid tires (solid)
+models/props_c17/pottery02a.mdl Pottery 1
+models/props_c17/pottery02a_break01.mdl Broken Pottery 1-1
+models/props_c17/pottery02a_break02.mdl Broken Pottery 1-2
+models/props_c17/pottery02a_break03.mdl Broken Pottery 1-3
+models/props_c17/pottery02a_break04.mdl Broken Pottery 1-4
+models/props_c17/pottery04a.mdl Pottery 2
+models/props_c17/pottery04a_break01.mdl Broken Pottery 2-1
+models/props_c17/pottery04a_break02.mdl Broken Pottery 2-2
+models/props_c17/pottery04a_break03.mdl Broken Pottery 2-3
+models/props_c17/pottery04a_break04.mdl Broken Pottery 2-4
+models/props_c17/pottery08a.mdl Pottery 3
+models/props_plants/claypot03.mdl Pottery 4
+models/props_plants/claypot03_damage_01.mdl Broken Pottery 4-1
+models/props_plants/claypot03_damage_02.mdl Broken Pottery 4-2
+models/props_plants/claypot03_damage_03.mdl Broken Pottery 4-3
+models/props_plants/claypot03_damage_04.mdl Broken Pottery 4-4
+models/props_plants/claypot03_damage_05.mdl Broken Pottery 4-5
+models/props_plants/claypot03_damage_06.mdl Broken Pottery 4-6
+models/props_interiors/luggagescale.mdl Luggage Scale
+models/props_interiors/sheetrock_leaning.mdl long iron plate-push stack
+models/props_urban/hotel_bathroom_light001.mdl Bathroom Light
+models/props_urban/hotel_bathroom_showerhead001.mdl Bathroom Showerhead
+models/props_urban/hotel_bathroom_showerrod001.mdl Bathroom Showerrod
+models/props_downtown/robe_hanging.mdl Hanging Robe
+models/props_interiors/towel_rack.mdl Towel Rack
+models/props_urban/hotel_ceiling_firealarm001.mdl Ceiling Fire Alarm
+models/props_interiors/hotel_smoke_detector.mdl Hotel Smoke Detector
+models/props_equipment/firehosebox01.mdl Emergency Firehose Box
+models/props_urban/hotel_ceiling_vent001.mdl Ceiling Vent
+models/props_urban/hotel_curtain001.mdl Hotel Curtain
+models/props_urban/hotel_curtain_rod001.mdl Hotel Curtain Rod
+models/props_urban/hotel_sconce001.mdl Hotel Sconce
+models/props_urban/hotel_support001.mdl Hotel Support 1
+models/props_urban/hotel_support003.mdl Hotel Support 2
+models/props_urban/elevator_buttons001.mdl Elevator Buttons
+models/props_equipment/elevator_buttons.mdl Elevator Buttons 2
+models/props_interiors/elevator_arrows.mdl Elevator Arrows
+models/props_unique/elevator_pulley01.mdl Elevator Pully
+models/props_interiors/books01.mdl Books 1
+models/props_interiors/books02.mdl Books 2
+models/props_interiors/book_gib01.mdl Damaged Books 1
+models/props_interiors/book_gib02.mdl Damaged Books 2
+models/props_interiors/book_gib03.mdl Damaged Books 3
+models/props_interiors/book_gib04.mdl Damaged Books 4
+models/props_interiors/book_gib05.mdl Damaged Books 5
+models/props_interiors/book_gib06.mdl Damaged Books 6
+models/props_interiors/book_gib07.mdl Damaged Books 7
+models/props_equipment/surgicaltray_01.mdl Surgical Tray
+models/props_unique/hospital/iv_pole.mdl Hospital IV Pole
+models/props_c17/hospital_cart01.mdl Hospital Cart
+models/props_unique/hospitalcurtain01.mdl Hospital Curtain
+models/props_equipment/turnstile01.mdl Subway Turnstile
+models/props_downtown/horse_statue.mdl Horse Statue
+models/props_downtown/keycard_reader.mdl Keycard Reader
+models/props_equipment/intercom.mdl Intercom
+models/props_interiors/hotel_cart.mdl Hotel Cart
+models/props/de_prodigy/pushcart.mdl Pushcart
+models/props_c17/metalpot001a.mdl Metal Pot
+models/props_misc/pot-1.mdl Pot 1
+models/props_misc/pot-2.mdl Pot 2
+models/props_urban/ceiling_bubble001.mdl Ceiling Bubble
+models/props_rooftop/cupola_01.mdl Cupola
+models/props_interiors/breakwall_interior.mdl Breakable Wall
+models/props_interiors/trashcan01.mdl Trashcan
+models/props_interiors/trashcankitchen01.mdl Kitchen Trashcan

@@ -1,0 +1,172 @@
+{
+    "saferoom": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_urban/fence_cover001_64.mdl",
+                        "origin": [5130.25, -261.70, 682.93],
+                        "angles": [0.00, -179.96, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/fence_cover001_64.mdl",
+                        "origin": [5124.62, -405.15, 681.80],
+                        "angles": [0.00, -178.28, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_urban/fence_cover001_256.mdl",
+                        "origin": [5127.70, -856.25, 672.03],
+                        "angles": [0.00, 177.92, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "rooment": {
+        "chance": 0.3,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_furniture/shelf1.mdl",
+                        "origin": [4311.49, 702.47, 572.35],
+                        "angles": [0.00, 176.64, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_interiors/bookcase_48_96.mdl",
+                        "origin": [3361.20, 310.19, 528.26],
+                        "angles": [0.00, 11.63, 0.00]
+                    },
+                    {
+                        "model": "models/props_interiors/sofa_chair01.mdl",
+                        "origin": [3378.01, 192.85, 527.32],
+                        "angles": [0.00, 15.83, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "ladder": {
+        "chance": 0.12,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_interiors/ottoman01.mdl",
+                        "origin": [3151.90, 479.38, 578.72],
+                        "angles": [0.00, 32.13, 0.00]
+                    },
+                    {
+                        "model": "models/props_interiors/bookcase_48_96.mdl",
+                        "origin": [3203.22, 414.14, 445.50],
+                        "angles": [-16.00, -93.40, -2.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "dropblock": {
+        "chance": 0.1,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_urban/fence002_128.mdl",
+                        "origin": [3201.02, 1143.32, 638.46],
+                        "angles": [0.00, 91.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/fence002_64.mdl",
+                        "origin": [3171.54, 1145.45, 638.67],
+                        "angles": [0.00, -92.79, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_urban/fence002_128.mdl",
+                        "origin": [3201.02, 1143.32, 638.46],
+                        "angles": [0.00, 91.39, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/fence002_64.mdl",
+                        "origin": [3171.54, 1145.45, 638.67],
+                        "angles": [0.00, -92.79, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/fence001_64.mdl",
+                        "origin": [3357.35, 1141.38, 452.70],
+                        "angles": [0.00, 89.28, 0.00]
+                    },
+                    {
+                        "model": "models/props_urban/fence001_64.mdl",
+                        "origin": [3354.06, 1130.44, 578.50],
+                        "angles": [0.00, 90.93, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "window": {
+        "chance": 0.1,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [3514.91, 2260.16, 183.24],
+                        "angles": [0.00, 74.65, 0.00]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [3514.91, 2260.16, 183.24],
+                        "angles": [0.00, 74.65, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [3610.48, 2195.91, 180.75],
+                        "angles": [0.00, -6.29, 0.00]
+                    }
+                ]
+            }
+        ]
+    },
+    "saferoome": {
+        "chance": 0.13,
+        "variants": [
+            {
+                "entities": [
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [4274.16, 2573.08, 15.97],
+                        "angles": [0.00, 177.31, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [4257.72, 2466.75, 16.28],
+                        "angles": [0.00, -179.55, 0.00]
+                    },
+                    {
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [4259.77, 2360.15, 16.03],
+                        "angles": [0.00, -175.10, 0.00]
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,10 @@
+Items
+Type:weapon
+weapon_gascan_spawn Gascan
+weapon_defibrillator_spawn Defib
+weapon_first_aid_kit_spawn First Aid Kit
+weapon_pipe_bomb_spawn Pipe Bomb
+weapon_molotov_spawn Molotov
+weapon_vomitjar_spawn Bile Jar
+weapon_pain_pills_spawn Pills
+weapon_adrenaline_spawn Adrendaline

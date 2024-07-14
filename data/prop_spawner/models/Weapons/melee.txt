@@ -1,0 +1,15 @@
+Melee Spawns
+Classname:weapon_melee_spawn
+baseball_bat Baseball Bat
+cricket_bat Cricket Bat
+crowbar Crowbar
+electric_guitar Guitar
+fireaxe Fireaxe
+frying_pan Frying Pan
+golfclub Golf Club
+katana Katana
+knife Knife
+machete Machete
+pitchfork Pitchfork
+shovel Shovel
+tonfa Tonfa

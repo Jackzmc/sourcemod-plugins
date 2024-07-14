@@ -1,0 +1,46 @@
+Stairs
+models/props_exteriors/wood_stairs_swamp.mdl swamp wooden stairs-5 steps
+models/props_exteriors/wood_stairs_120_swamp.mdl swamp wooden stairs-15 steps
+models/props_exteriors/wood_stairs_40.mdl Wooden stairs-5 steps (easy to use)
+models/props_exteriors/wood_stairs_wide_48.mdl wide wooden stairs-6 steps
+models/props_exteriors/wood_porchsteps_01.mdl Wooden stairs-10 steps (easy to use)
+models/props_exteriors/wood_porchsteps_02.mdl Wood Porchsteps 2
+models/props_exteriors/wood_stairs_120.mdl Wooden stairs-15 steps (easy to use)
+models/props_exteriors/wood_post001.mdl wooden post
+models/props_buildings/barn_steps.mdl wooden stairs-15 steps-with handrails
+models/props_c17/metalladder001.mdl Ladder-8th order
+models/props/cs_office/ladder1.mdl Ladder-9th order
+models/props_exteriors/stairs_house_01.mdl Stairs in the house-18th steps
+models/lighthouse/props/wooden_steps_a.mdl hollow wooden steps-4th steps
+models/lighthouse/props/wooden_steps_b.mdl hollow wooden steps-5 steps
+models/lighthouse/props/wooden_bridge_b.mdl Wooden bridge stairs-4th floor
+models/props_exteriors/concrete_plant01_stairs_platform.mdl stairs platform-12th floor
+models/props_exteriors/stairs_house_01.mdl House Stairs 
+models/props_downtown/staircase01.mdl Downtown Staircase
+models/props_interiors/stair_metal_01.mdl Interior Metal Stairs 1
+models/props_interiors/stair_metal_02.mdl Interior Metal Stairs 2
+models/props_interiors/stair_metal_03.mdl Interior Metal Stairs 3
+models/props_unique/impound_stair_connection.mdl Impound Stair Connection
+models/props/de_inferno/handrailstairs01.mdl De Inferno Handrail Stairs
+models/props_interiors/stair_opening_straight.mdl Stair Opening Straight
+models/props_interiors/stair_treads_single.mdl Stair Treads Single
+models/props_interiors/stair_treads_straight.mdl Stair Treads Straight
+models/props_urban/stair_tread_concrete_01.mdl Stair Tred Concrete
+models/props_urban/fire_escape_wide_lower.mdl Urban Fire Escape Wide Lower
+models/props_urban/fire_escape_wide_upper.mdl Urban Fire Escape Wide Upper
+models/props_misc/fire_exit_crushed.mdl Crashed escape ladder + rubble, earth and stone-c8m1 (No Collision)
+models/props/cs_assault/ladderaluminium128.mdl CS Assault Alumnium Ladder 128 Units
+models/props/cs_assault/ladder_tall.mdl CS Assault Ladder Tall
+models/props/cs_militia/ladderrung.mdl CS Assault Ladder Rungs 
+models/props/cs_militia/ladderwood.mdl CS Assault Wood Ladder
+models/props_urban/pool_ladder001.mdl Pool Ladder
+models/props/cs_office/ladder1.mdl Office Ladder
+models/props/de_train/ladderaluminium.mdl DE Train Aluminum Ladder
+models/props_equipment/metalladder002.mdl Metal Ladder
+models/props_urban/stoop001_64.mdl Urban Stoop 64 units
+models/props_urban/stoop001_64_32.mdl Urban Stoop 64x32 units
+models/props_urban/stoop001_96.mdl Urban Stoop 96 units
+models/props_urban/stoop001_96_32.mdl Urban Stoop 96x32 units
+models/props_urban/stoop002_128.mdl Urban Stoop2 128 units
+models/props_urban/stoop002_96.mdl Urban Stoop2 96 units
+models/props_urban/stoop003_48.mdl Urban Stoop2 48 units

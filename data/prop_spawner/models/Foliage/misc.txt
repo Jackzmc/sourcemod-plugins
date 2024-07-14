@@ -1,0 +1,90 @@
+Shrubs & Rocks
+models/props_foliage/flower_barrel.mdl flower barrel
+models/props_foliage/mall_bigleaves_plant01.mdl mall plant a (No Collision)
+models/props_foliage/mall_bigleaves_plant01_medium.mdl mall plant a-shorter (No Collision)
+models/props_foliage/mall_bigleaves_plant02.mdl mall plant b (No Collision)
+models/props_foliage/mall_bigleaves_plant02_medium.mdl mall plant b-shorter (No Collision)
+models/props_foliage/mall_bigleaves_plant03.mdl mall plant c (No Collision)
+models/props_foliage/mall_bigleaves_plant03_dirt.mdl mall plants c-soil (No Collision)
+models/props_foliage/mall_bigleaves_plant03_medium.mdl mall plant c-shorter (No Collision)
+models/props_foliage/mall_big_plant01.mdl mall plant d (No Collision)
+models/props_foliage/mall_big_plant01_dirt.mdl mall plants d-soil (No Collision)
+models/props_foliage/mall_small_palm01.mdl mall plants e (No Collision)
+models/props_foliage/mall_small_palm01_medium.mdl mall plants e-shorter (No Collision)
+models/props_foliage/mall_small_palm01_cluster.mdl mall plant e-three (No Collision)
+models/props_foliage/mall_small_palm01_cluster_medium.mdl mall plant e-three-shorter (No Collision)
+models/props_foliage/mall_grass_bush01.mdl mall grass (No Collision)
+models/props_foliage/mall_grass_bush01_dirt.mdl mall grass-soil (No Collision)
+models/props_foliage/mall_fern01.mdl mall bushes-small (No Collision)
+models/props_foliage/mall_bush01.mdl Mall Bushes-Medium (No Collision)
+models/props_foliage/mall_bush02.mdl mall bushes-large (No Collision)
+models/props_foliage/mall_pot_large01.mdl mall potted plant soil large 
+models/props_foliage/mall_pot_large02.mdl mall potted plant soil large  2
+models/props_foliage/mall_pot_xlarge01.mdl mall potted plant xlarge1
+models/props_foliage/mall_pot_xlarge02.mdl mall pot plant xlarge2
+models/props_foliage/mall_pot_square01.mdl mall potted plant soil large rectangle
+models/props_foliage/mall_pot_square02.mdl mall potted plant soil large rectangle 2
+models/props_foliage/mall_pot_squarexl01.mdl mall potted plant soil rectangle xlarge 
+models/props_foliage/swamp_shrubwall_block_128_deep.mdl swamp shrub block 128
+models/props_foliage/swamp_shrubwall_block_256.mdl  swamp shrub block 256
+models/props_foliage/swamp_shrubwall_block_256_deep.mdl swamp shrub block 256 more sticks
+models/props_foliage/hedge_128.mdl Hedge-128 units
+models/props_foliage/hedge_256_128high.mdl Hedge-256x128 units
+models/props_foliage/swamp_shrubwall_256_deep.mdl Swamp Shrubwall 1-256 Units-Straight
+models/props_foliage/swamp_shrubwall_256a.mdl Swamp Shrubwall-256 Units-Arc
+models/props_foliage/swamp_shrubwall_256b.mdl  Swamp Shrubwall-256 Units-Arc 2
+models/props_foliage/swamp_shrubwall_512.mdl Swamp Shrubwall-512 Units-Arc 
+models/props_foliage/swamp_shrubwall_512_deep.mdl Swamp Shrubwall-512 Units-Arc 2
+models/props_foliage/swamp_shrubwall_block_512.mdl Swamp Shrubwall-512 Units-Round
+models/props_foliage/swamp_shrubwall_block_512_deep.mdl Swamp Shrubwall-512 Units Round 2
+models/props_foliage/swampcl_animatedleaves01.mdl swamp hanging moss/leaves
+models/props_foliage/swamp_grass01.mdl swamp grass (No collision)
+models/props_foliage/swamp_grass_row01.mdl swamp grass 2 (No collision)
+models/props_foliage/swamp_rock01.mdl 3 swamp rocks
+models/props_foliage/swamp_rock01_grass.mdl Grass around 3 swamp rocks (No collision)
+models/props_foliage/swamp_rock02.mdl 2 swamp rock 2
+models/props_foliage/swamp_rock02_grass.mdl grass around 2 swamp rocks (No collision)
+models/props_foliage/swamp_cypress_large_grnd_grass01.mdl Crypress Swamp Grass - Large
+models/props_foliage/swamp_cypress_medium_grnd_grass01.mdl Cypress Swamp Grass - Medium
+models/props_foliage/swamp_cypress_small_grnd_grass01.mdl Cypress Swamp Grass - Small
+models/props_foliage/swamp_waterplant01.mdl swamp waterplant
+models/props_foliage/shrub_small.mdl bushes-small-paper shape (No Collision)
+models/props_foliage/urban_pot_bigplant01.mdl Urban Potted plants
+models/props_foliage/urban_pot_clay01.mdl Urban Potted Plants
+models/props_foliage/urban_pot_clay02.mdl Urban Potted plants 2
+models/props_foliage/urban_pot_clay03.mdl Urban Potted plants 3
+models/props_foliage/urban_pot_fancy01.mdl Urban Potted plants 4
+models/props_foliage/urban_pot_large01.mdl  Urban Potted plants Large 5
+models/props_foliage/urban_pot_xlarge01.mdl Urban Potted Plants xlarge
+models/props_foliage/urban_pot_square01.mdl Urban Potted Plants Square
+models/props_foliage/urban_pot_xlsquare01.mdl Urban potted plants xlarge square
+models/props_foliage/urban_fern01.mdl urban bushes-small (No Collision)
+models/props_foliage/urban_bush01.mdl Urban Bush-Medium (No Collision)
+models/props_foliage/urban_bush02.mdl urban bushes-large (No Collision)
+models/props_foliage/urban_balcony_planter01.mdl balcony planter
+models/props_foliage/urban_balcony_planter02.mdl balcony planter 2
+models/props_foliage/urban_bigplant01.mdl urban big plant (No Collision)
+models/props_foliage/urban_bush01.mdl urban bush (No Collision)
+models/props_foliage/urban_bush02.mdl urban bush 2 (No Collision)
+models/props_foliage/urban_bush_angled_64.mdl urban bush angled 64 units (No Collision) 
+models/props_foliage/urban_bush_angled_128.mdl urban bush angled 128 units (No Collision)
+models/props_foliage/urban_bush_angled_256.mdl urban bush angled 256 units (No Collision) 
+models/props_foliage/urban_fern01.mdl urban furn (No Collision) 
+models/props_foliage/urban_grass_bush01.mdl urban grass bush (No Collision) 
+models/props_foliage/urban_hedge_128_64_high.mdl Urban Hedge-128x64 height
+models/props_foliage/urban_hedge_256_128_seethrough.mdl Urban Hedge-256x128 see thru
+models/props_foliage/urban_hedge_256_128_high.mdl Urban Hedge-256x128 height
+models/props_foliage/urban_vine01.mdl Urban Vines (2D Flat texture, no collision)
+models/props_foliage/urban_vine02.mdl Urban Vines 2 (2D Flat texture, no collision)
+models/props_foliage/urban_vine03.mdl Urban Vines 3 (2D Flat texture, no collision)
+models/props_foliage/urban_vine04.mdl Urban Vines 4 (2D Flat texture, no collision)
+models/props_foliage/cane_field_split02.mdl Sugar Cane Field Split 1 (No Collision)
+models/props_foliage/cane_field_split03.mdl  Sugar Cane Field Split 2 (No Collision)
+models/props_foliage/cane_field_split04.mdl Sugar Cane Field Split 3 (No Collision)
+models/props_foliage/cane_field_split05.mdl Sugar Cane Field Split 4 (No Collision) 
+models/props_unique/haybails_single.mdl Hay Bail single
+models/props_unique/haybails_farmhouse.mdl a large pile of straw bales (no model on back half)
+models/props/de_inferno/hay_bail_stack.mdl hay bail stack
+models/props_plants/corndry_split02.mdl corn rice field-c12m5 (No Collision)
+models/props_plants/corndry_split01.mdl corn paddy field-flattened-c12m5 (No Collision)
+models/props_plants/planthanging01.mdl hanging plant

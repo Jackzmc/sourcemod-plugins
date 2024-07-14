@@ -1,0 +1,22 @@
+Trailer
+models/props_trailers/gutter01.mdl Trailer Gutter
+models/props_trailers/roof02.mdl Trailer Roof
+models/props_trailers/roof02_end.mdl Trailer Roof End
+models/props_trailers/roof03_endl.mdl Trailer Roof End Left
+models/props_trailers/roof03_endr.mdl Trailer Roof End Right
+models/props_trailers/roof03_middle.mdl Trailer Roof Middle
+models/props_trailers/roof_overhang_trim01.md Trailer Roof Overhang
+models/props_trailers/trailer_couch.mdl Trailer Couch
+models/props_trailers/trailer_hitch.mdl Trailer Hitch
+models/props_trailers/trailer_instance01.mdl Trailer Instance
+models/props_trailers/trailer_skirting01.mdl Trailer Skirting
+models/props_trailers/trailer_small01.mdl Trailer Small
+models/props_trailers/trailer_stand.mdl Trailer Stand
+models/props_trailers/trailer_wheels02.mdl Trailer Wheels
+models/props_trailers/trim_end_window.mdl Trailer Trim Window End
+models/props_trailers/window05.mdl Trailer Window 1
+models/props_trailers/window06.mdl Trailer Window 2
+models/props_trailers/window07.mdl Trailer Window 3
+models/props_trailers/window08.mdl Trailer Window 4
+models/props_trailers/steps01.mdl Trailer Steps
+models/props_trailers/steps02.mdl Trailer Steps 2

@@ -1,0 +1,32 @@
+Chairs
+models/props_interiors/bench01a.mdl Wooden bench
+models/props_interiors/bench_subway.mdl stone subway bench
+models/props_interiors/picnic_bench_toddler.mdl child's bench
+models/props_trainstation/bench_indoor001a.mdl trainstation bench
+models/props_furniture/chair2.mdl Chair (breakable)
+models/props_furniture/chair2_gib1.mdl chair gib1
+models/props_furniture/chair2_gib2.mdl chair gib2
+models/props_furniture/chair2_gib3.mdl chair gib3
+models/props_furniture/chair2_gib5.mdl chair gib5
+models/props_c17/chair_office01a.mdl c17 Dirty Office Chair
+models/props_interiors/chair_office2.mdl Office chair
+models/props/cs_office/chair_office.mdl cs_office high back office chair
+models/props_c17/furniturechair001a.mdl c17 Wood chair
+models/props_c17/furniturechair001a_chunk01.mdl c17 chair chunk1
+models/props_c17/furniturechair001a_chunk02.mdl c17 chair chunk2
+models/props_c17/furniturechair001a_chunk03.mdl c17 chair chunk3
+models/props_interiors/chair01.mdl Light wood chair
+models/props_interiors/chairlobby01.mdl interior Red felt wood chair
+models/props_urban/hotel_chair001.mdl hotel lobby chair 
+models/props_interiors/chair_cafeteria.mdl Blue plastic & metal cafeteria chair
+models/props_furniture/hotel_chair.mdl red & brass hotel chairs
+models/props_interiors/chair_thonet.mdl fancy wood chair
+models/props_interiors/patio_chair2_white.mdl White European Chair
+models/props_urban/plastic_chair001.mdl White plastic patio chair
+models/props_interiors/sofa_chair.mdl sofa chair (brown padded)
+models/props_interiors/sofa_chair01.mdl sofa chair
+models/props_interiors/sofa_chair02.mdl sofa chair 2 (feet covered)
+models/props_interiors/couch.mdl Couch interior
+models/props_interiors/sofa.mdl sofa 1
+models/props_interiors/sofa01.mdl sofa 2
+models/props_interiors/ottoman01.mdl Chair cushion

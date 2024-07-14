@@ -1,0 +1,107 @@
+Signs
+models/props_unique/airportdeparturescreen01.mdl Airport screen
+models/props_urban/gas_sign001.mdl Gas Sign
+models/props_urban/gas_sign002.mdl Gas Sign 2
+models/props_urban/hotel_sign001.mdl Hotel Sign
+models/props_cemetery/cemetery_sign.mdl Cemetary Sign
+models/props_doors/emergency_exit_sign.mdl Emergency Exit Sign
+models/props_downtown/sign_donotenter.mdl Do Not Enter Sign
+models/props_downtown/sign_noparking.mdl No Parking Sign
+models/props_downtown/sign_oneway.mdl One Way Sign
+models/props_downtown/sign_post.mdl Post Sign
+models/props_downtown/sign_stop.mdl Stop Sign
+models/props_highway/highway_sign001.mdl Highway Sign 1
+models/props_highway/highway_sign001b.mdl Highway Sign 1a 
+models/props_highway/highway_sign002.mdl Highway Sign 2 
+models/props_highway/highway_sign002b.mdl Highway Sign 2a 
+models/props_highway/highway_sign003.mdl Highway Sign 3 
+models/props_highway/highway_sign003b.mdl Highway Sign 3a 
+models/props_highway/highway_sign004.mdl Highway Sign 4 
+models/props_highway/highway_sign005.mdl Highway Sign 5 
+models/props_highway/highway_sign006.mdl Highway Sign 6
+models/props_highway/highway_sign007.mdl Highway Sign 7 
+models/props_highway/highway_sign008b.mdl Highway Sign 8
+models/props_highway/highway_sign009.mdl Highway Sign 9 
+models/props_highway/highway_sign009b.mdl Highway Sign 9a
+models/props_highway/highway_sign_post001.mdl Post Sign 2
+models/props_highway/highway_sign_post002.mdl Post Sign 3
+models/props_mill/company_sign01.mdl Company Sign
+models/props_mill/company_sign02.mdl Company Sign 2
+models/props_misc/military_sign01.mdl TAG-Military sign 1
+models/props_misc/military_sign01_2.mdl military sign 2
+models/props_misc/military_sign02.mdl TAG-Military sign 3
+models/props_misc/military_sign02_2.mdl Military sign 4
+models/props_misc/wrongway_sign01.mdl Wrong way sign
+models/props_signs/beef_boy_stew.mdl Beef Boy Stew Sign (No back)
+models/props_signs/big_fashion_girl.mdl Big Fashion Girl Sign (No back)
+models/props_rooftop/billboard01.mdl Billboard (Paper ripped off)
+models/props_rooftop/billboard03.mdl Burger Tank Billboard (Destroy your hunger!)
+models/props_rooftop/billboard06.mdl Money Bank Billboard
+models/props_signs/burgersign_beacon.mdl Burger Tank Business Sign Light Off (No Collision)
+models/props_signs/burgersign.mdl Burger Tank Business Sign Light On (No Collision)
+models/props_signs/raisedbillboard.mdl Tall Ripped Burger Tank Billboard
+models/props_signs/clipps_classic_cuts.mdl Clipps Classic Cuts Sign
+models/props_signs/disco_pants.mdl Disco Pants Sign
+models/props_signs/fancy_tramp.mdl Fancy Tramp Sign
+models/props_signs/game_country.mdl Game Country Sign
+models/props_signs/gas_station_banner.mdl Gas Station Banner
+models/props_signs/georgia_pork_barrell.mdl Georgia Pork Barrel Sign
+models/props_signs/jazz_club.mdl Jazz Club Sign
+models/props_signs/just_4_kidz.mdl Just 4 Kidz Sign
+models/props_signs/just_4_kidz_small.mdl Just 4 Kidz Small Sign
+models/props_signs/kappels_store_128.mdl Kappels Store 128units
+models/props_signs/kappels_store_exterior.mdl Kappels Store Exterior
+models/props_signs/ladyshoes.mdl Ladyshoes Sign
+models/props_signs/leamington_diamonds.mdl Leamington Diamonds Sign
+models/props_signs/liberty_mall.mdl Liberty Mall Outdoor Concrete Sign
+models/props_signs/liberty_mall_interior_128.mdl Liberty Mall Interior Sign 128units
+models/props_signs/liberty_mall_interior_64.mdl Liberty Mall Interior Sign 64units
+models/props_signs/lynns_cards_gifts.mdl Lyns Cards Gifts Sign
+models/props_signs/pole_horizontal_01.mdl Sign Pole 1
+models/props_signs/pole_horizontal_02.mdl Sign Pole 2
+models/props_signs/pole_horizontal_03.mdl Sign Pole 3
+models/props_signs/pole_horizontal_04.mdl Sign Pole 4
+models/props_signs/pole_horizontal_05.mdl Sign Pole 5
+models/props_signs/potato_safari.mdl Potato Safari Sign
+models/props_signs/sign_diner01.mdl Diner Sign
+models/props_signs/sign_horizontal_01.mdl Horizontal Sign 1
+models/props_signs/sign_horizontal_02.mdl Horizontal Sign 2
+models/props_signs/sign_horizontal_03.mdl Horizontal Sign 3
+models/props_signs/sign_horizontal_04.mdl Horizontal Sign 4
+models/props_signs/sign_horizontal_05.mdl Horizontal Sign 5
+models/props_signs/sign_horizontal_09.mdl Horizontal Sign 6
+models/props_signs/sign_horizontal_10.mdl Horizontal Sign 7
+models/props_signs/sign_quarter_02.mdl Quarter Sign
+models/props_signs/sign_street_01.mdl Street Sign 1
+models/props_signs/sign_street_02.mdl Street Sign 2
+models/props_signs/sign_street_03.mdl Street Sign 3
+models/props_signs/sign_street_04.mdl Street Sign 4
+models/props_signs/sign_street_05.mdl Street Sign 5
+models/props_signs/sign_truckstop_01.mdl Truck Stop GAS Sign
+models/props_signs/sign_truckstop_01_lettera.mdl neon light letter A (No Collision)
+models/props_signs/sign_vannah_hotel.mdl Vannah Hotel Sign (Exterior, No back)
+models/props_signs/sign_vannah_hotel_256.mdl Vannah Hotel (Exterior Smaller, No back)
+models/props_signs/sign_vannah_hotel_interior.mdl Vannah Hotel Interior Sign (No back)
+models/props_signs/sign_wall_01.mdl Wall Sign
+models/props_signs/taco_bucket.mdl Taco Bucket Sign
+models/props_signs/trebled_times_music.mdl Trebled Times Music Sign
+models/props_signs/waterfront_market.mdl Waterfront Market Sign
+models/props_signs/wok_on_the_wild_side.mdl Wok on the Wild Side sign
+models/props_street/rent_sign.mdl Rent Sign
+models/props_street/rent_sign2.mdl Rent Sign 2
+models/props_street/sign_broken2_frame.mdl Broken Sign
+models/props_street/stopsign01.mdl Stop Sign w/rebar post (Dirty)
+models/props_exteriors/park_sign.mdl park sign
+models/props_swamp/river_sign01.mdl River Sign
+models/props_urban/exit_sign001.mdl Exit Sign 
+models/props_urban/exit_sign002.mdl Exit Sign 2
+models/props/cs_office/exit_ceiling.mdl Exit Ceiling
+models/props/cs_office/exit_wall.mdl Exit Wall
+models/props_urban/carnival_sign001.mdl Carnival Sign
+models/props_urban/carnival_sign002.mdl Carnival Sign 2
+models/props_urban/carnival_sign003.mdl Carnival Sign 3
+models/props_swamp/swamp_banner01.mdl Swamp banner
+models/props_urban/street_banner01.mdl Street Banner
+models/props_misc/ceda_banner.mdl CEDA Banner
+models/props_highway/billboard_01.mdl Billboard Frame
+models/props_highway/billboard_ladder.mdl Billboard Ladder

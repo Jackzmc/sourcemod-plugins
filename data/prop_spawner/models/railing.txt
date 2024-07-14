@@ -1,0 +1,117 @@
+Railing & Bridges
+models/props_swamp/boardwalk_128.mdl Pier wooden bridge-swamp-128 units
+models/props_swamp/boardwalk_256.mdl Pier wooden bridge-swamp-256 units
+models/props_swamp/boardwalk_384.mdl Pier wooden bridge-swamp-384 units
+models/props_swamp/boardwalk_tall_128.mdl Boardwalk Tall 128
+models/props_swamp/boardwalk_tall_256.mdl Boardwalk Tall 256
+models/props_swamp/boardwalk_tall_384.mdl Boardwalk Tall 384
+models/props_swamp/boardwalk_rail_256_break.mdl Boardwalk 256 Broken 1
+models/props_swamp/boardwalk_rail_256_break_a.mdl Boardwalk 256 Broken 2
+models/props_swamp/boardwalk_rail_256_break_b.mdl Boardwalk 256 Broken 3
+models/props_swamp/boardwalk_rail_chunk01.mdl Boardwalk Railing Piece 1
+models/props_swamp/boardwalk_rail_chunk02.mdl Boardwalk Railing Piece 2
+models/props_swamp/boardwalk_rail_chunk03.mdl Boardwalk Railing Piece 3
+models/props_swamp/boardwalk_rail_chunk04.mdl Boardwalk Railing Piece 4
+models/props_swamp/boardwalk_rail_chunk05.mdl Boardwalk Railing Piece 5
+models/props_exteriors/wood_railing001.mdl Wooden railing-white trapezoid (breakable)
+models/props_exteriors/wood_railing001_dm.mdl Wood Railing White Damage 1-1
+models/props_exteriors/wood_railing001c.mdl Wood Railing White Damage 1-2
+models/props_exteriors/wood_railing001d.mdl Wood Railing White Damage 1-3
+models/props_exteriors/wood_railing001e.mdl Wood Railing White Damage 1-4
+models/props_exteriors/wood_railing001f.mdl Wood Railing White Damage 1-5
+models/props_exteriors/wood_railing001g.mdl Wood Railing White Damage 1-6
+models/props_exteriors/wood_railing001h.mdl Wood Railing White Damage 1-7
+models/props_exteriors/wood_railing001i.mdl Wood Railing White Damage 1-8
+models/props_exteriors/wood_railing002.mdl Wooden railing-white corner
+models/props_exteriors/wood_railing003b.mdl Wood Railing White Corner 1
+models/props_exteriors/wood_railing003d.mdl Wood Railing White Corner 2
+models/props_exteriors/wood_railing004c.mdl Wooden railing-straight
+models/props_exteriors/wood_railing004d.mdl Wooden railing-large corner
+models/props_downtown/railing01_128.mdl Downtown Railing 128 Units - 1
+models/props_downtown/railing01_256.mdl Downtown Railing 256 Units - 1
+models/props_downtown/railing01_256_broken.mdl Downtown Railing 256 Units Broken - 1
+models/props_downtown/railing01_62.mdl Downtown Railing 62 Units - 1 
+models/props_downtown/railing01_94.mdl Downtown Railing 94 Units - 1
+models/props_downtown/railing02_256.mdl Downtown Railing 256 Units - 2
+models/props_downtown/railing02_broken.mdl Downtown Railing Broken - 2
+models/props_downtown/railing03_128.mdl Downtown Railing 128 Units - 3
+models/props_downtown/railing03_128_broken.mdl Downtown Railing 128 Units Broken - 3
+models/props_downtown/railing03_256.mdl Downtown Railing 256 Units - 3
+models/props_downtown/railing03_62.mdl Downtown Railing 62 Units - 3
+models/props_downtown/railing03_94.mdl Downtown Railing 94 Units - 3
+models/props_downtown/railing04_128.mdl Downtown Railing 128 Units - 4
+models/props_downtown/railing04_256.mdl Downtown Railing 256 Units - 4
+models/props_downtown/railing04_62.mdl Downtown Railing 62 Units - 4
+models/props_downtown/railing04_94.mdl Downtown Railing 94 Units - 4
+models/props_downtown/railing_04_256_broken.mdl Downtown Railing 256 Units Broken - 4
+models/props_downtown/railing_154_left.mdl Downtown Railing 154 Units Left
+models/props_downtown/railing_154_right.mdl Downtown Railing 154 Units RIght?
+models/props_downtown/railing_brace.mdl Downtown Railing Brace 1
+models/props_downtown/railing_brace01.mdl Downtown Railing Brace 2
+models/props_downtown/railing_brace02.mdl Downtown Railing Brace 3
+models/props_downtown/railing_brace03.mdl Downtown Railing Brace 4
+models/props_downtown/railing_edge_broken.mdl Downtown Railing Edge Broken
+models/props_downtown/railing_frame_154.mdl Downtown Railing Frame 154
+models/props_downtown/railing_frame_154_94.mdl Downtown Railing Frame 154x94
+models/props_downtown/railing_frame_curved.mdl Downtown Railing Frame Curved
+models/props_downtown/railing_mansion01.mdl Downtown Mansion Railing
+models/props_downtown/railing_mansion_steps01.mdl Downtown Mansion Steps 
+models/props_downtown/railing_mansion_steps01_left.mdl Downtown Mansion Steps Left
+models/props_downtown/railing_mansion_steps01_right.mdl Downtown Mansion Steps Right?
+models/props_c17/handrail04_brokencorner.mdl c17 Handrail Broken Corner
+models/props_c17/handrail04_brokenlong.mdl c17 Handrail Broken
+models/props_c17/handrail04_corner.mdl c17 Handrail Corner
+models/props_c17/handrail04_doublerise.mdl c17 Handrail Double Level
+models/props_c17/handrail04_singlerise.mdl c17 Handrail Single Level
+models/props_c17/handrail04_long.mdl c17 Handrail Long
+models/props_c17/handrail04_medium.mdl c17 Handrail Medium
+models/props_c17/handrail04_short.mdl c17 Handrail Short
+models/props_interiors/stair_railing_single.mdl Stair Railing Single
+models/props_interiors/stair_railing_straight.mdl Stair Railing Straight
+models/props_interiors/stair_railing_damage_01.mdl Stair Railing Damage 1
+models/props_interiors/stair_railing_damage_02.mdl Stair Railing Damage 2
+models/props_interiors/stair_railing_damage_03.mdl Stair Railing Damage 3
+models/props_interiors/stair_railing_damage_04.mdl Stair Railing Damage 4
+models/props_urban/hotel_stair_rail001.mdl Hotel Stair Rail 1
+models/props_urban/hotel_stair_rail002.mdl Hotel Stair Rail 2
+models/props_urban/hotel_stair_rail003.mdl Hotel Stair Rail 3
+models/props_urban/hotel_stair_trim001.mdl Hotel Stair Trim
+models/props_interiors/railing_128.mdl Railing 128 Units
+models/props_interiors/railing_32.mdl Railing 32 Units
+models/props_interiors/railing_64.mdl Railing 64 Units
+models/props_interiors/railing_post.mdl Railing Post
+models/props_interiors/railing_post_bottom.mdl Railing Post Bottom
+models/props_interiors/railing_post_top.mdl Railing Post Top
+models/props_interiors/railing_trim_64.mdl Railing Trim 64 Units
+models/props_mill/mill_railing_128.mdl Mill Railing 128 Units
+models/props_mill/mill_railing_36.mdl Mill Railing 36 Units
+models/props_mill/mill_railing_64.mdl Mill Railing 64 Units
+models/props_mill/mill_railing_corner.mdl Mill Railing Corner
+models/props_mill/mill_railing_sloped.mdl Mill Railing Sloped
+models/props_mill/silo_railing_01.mdl Silo Railing 1
+models/props_mill/silo_railing_02.mdl Silo Railing 2
+models/props_mill/stair_railing_long.mdl Mill Stair Railing Long
+models/props_mill/stair_railing_medium.mdl Mill Stair Railing Medium
+models/props_mill/stair_railing_short.mdl Mill Stair Railing Short
+models/props_street/stair_rails_park01.mdl Street Stair Rails Park
+models/props_urban/elevator_rail001.mdl Elevator Rail
+models/props_urban/hotel_balcony_rail001.mdl Hotel Balcony Rail
+models/props_urban/hotel_balcony_divider001.mdl Hotel Balcony Divider
+models/props_urban/hotel_balcony_trim001.mdl Hotel Balcony Trim
+models/props_urban/hotel_railing001.mdl Hotel Railing 1
+models/props_urban/wood_railing001_128.mdl Wood Railing 128 Units - 1
+models/props_urban/wood_railing001_64.mdl Wood Railing 64 Units - 1
+models/props_urban/wood_railing002_128.mdl Wood Railing 128 Units - 2
+models/props_urban/wood_railing002_64.mdl Wood Railing 64 Units - 2
+models/props_urban/wood_railing_post001.mdl Wood Railing Post 1
+models/props_urban/wood_railing_post002.mdl Wood Railing Post 2
+models/props_urban/guardrail001_128.mdl Guard Rail 128 Units
+models/props_urban/guardrail001_256.mdl Guard Rail 256 Units
+models/props_urban/guardrail001_512.mdl Guard Rail 512 Units
+models/props_urban/guardrail001_corner.mdl Guard Rail Corner 1
+models/props_urban/guardrail002_corner.mdl Guard Rail Corner 2
+models/props_interiors/handrail_hospital01_16.mdl wooden slats-shorter
+models/props_interiors/handrail_hospital01_32.mdl wooden slats-short
+models/props_interiors/handrail_hospital01_64.mdl wooden slats-medium
+models/props_interiors/handrail_hospital01_128.mdl wooden slats-long
+models/props_interiors/handrail_hospital01_256.mdl wooden slats-very long

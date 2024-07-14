@@ -1,0 +1,61 @@
+Office
+models/props_interiors/computer_keyboard.mdl Computer Keyboard
+models/props_interiors/copymachine01.mdl Copy Machine
+models/props_interiors/water_cooler.mdl TAG-water Cooler
+models/props_interiors/corkboardverticle01.mdl bulletin board
+models/props/cs_office/file_box.mdl File Box 1
+models/props/cs_office/file_box_gib1.mdl File Box Piece 1
+models/props/cs_office/file_box_gib2.mdl File Box Piece 2
+models/props/cs_office/file_box_p1.mdl File Box 2
+models/props/cs_office/file_box_p1a.mdl File Box Piece 2-1
+models/props/cs_office/file_box_p1b.mdl File Box Piece 2-2
+models/props/cs_office/file_box_p1c.mdl File Box Piece 2-3
+models/props/cs_office/file_box_p1d.mdl File Box Piece 2-4
+models/props/cs_office/file_box_p2.mdl File Box 3
+models/props/cs_office/file_box_p2a.mdl File Box Piece 3-1
+models/props/cs_office/file_box_p2b.mdl File Box Piece 3-2
+models/props/cs_office/file_box_p2c.mdl File Box Piece 3-3
+models/props/cs_office/file_box_p2d.mdl File Box Piece 3-4
+models/props/cs_office/projector_gib1.mdl Projector Piece 1
+models/props/cs_office/projector_gib3.mdl Projector Piece 2
+models/props/cs_office/trash_can.mdl Office Trash Can 
+models/props/cs_office/trash_can_p.mdl Office Trash Can Broken
+models/props/cs_office/trash_can_p1.mdl Office Trash Can Piece 1
+models/props/cs_office/trash_can_p2.mdl Office Trash Can Piece 2
+models/props/cs_office/trash_can_p3.mdl Office Trash Can Piece 3
+models/props/cs_office/trash_can_p4.mdl Office Trash Can Piece 4
+models/props/cs_office/trash_can_p5.mdl Office Trash Can Piece 5
+models/props/cs_office/trash_can_p6.mdl Office Trash Can Piece 6
+models/props/cs_office/trash_can_p7.mdl Office Trash Can Piece 7
+models/props/cs_office/trash_can_p8.mdl Office Trash Can Piece 8
+models/props/cs_office/computer_caseb.mdl Computer Case 1
+models/props/cs_office/computer_caseb_gib1.mdl Computer Case Piece 1
+models/props/cs_office/computer_caseb_gib2.mdl Computer Case Piece 2
+models/props/cs_office/computer_caseb_p1.mdl Computer Case 2-1
+models/props/cs_office/computer_caseb_p1a.mdl Computer Case 2-2
+models/props/cs_office/computer_caseb_p2.mdl Computer Case 3-1
+models/props/cs_office/computer_caseb_p2a.mdl Computer Case 3-2
+models/props/cs_office/computer_caseb_p3.mdl Computer Case 4-1
+models/props/cs_office/computer_caseb_p3a.mdl Computer Case 4-2
+models/props/cs_office/computer_caseb_p4.mdl Computer Case 5-1
+models/props/cs_office/computer_caseb_p4a.mdl Computer Case 5-2
+models/props/cs_office/computer_caseb_p4b.mdl Computer Case 5-3
+models/props/cs_office/computer_caseb_p5.mdl Computer Case 6-1
+models/props/cs_office/computer_caseb_p5a.mdl Computer Case 6-2
+models/props/cs_office/computer_caseb_p5b.mdl Computer Case 6-3
+models/props/cs_office/computer_caseb_p6.mdl Computer Case 7-1
+models/props/cs_office/computer_caseb_p6a.mdl Computer Case 7-2
+models/props/cs_office/computer_caseb_p6b.mdl Computer Case 7-3
+models/props/cs_office/computer_caseb_p7.mdl Computer Case 8-1
+models/props/cs_office/computer_caseb_p7a.mdl Computer Case 8-2
+models/props/cs_office/computer_caseb_p8.mdl Computer Case 9-1
+models/props/cs_office/computer_caseb_p8a.mdl Computer Case 9-2
+models/props/cs_office/computer_caseb_p9.mdl Computer Case 10-1
+models/props/cs_office/computer_caseb_p9a.mdl Computer Case 10-2
+models/props/cs_office/computer_mouse.mdl Computer Mouse
+models/props_interiors/printer.mdl Printer
+models/props_c17/computer01_keyboard.mdl keyboard
+models/props/cs_office/fire_extinguisher.mdl fire extinguisher
+models/props_downtown/notepad.mdl Notepad
+models/props_interiors/clipboard01.mdl Clipboard
+models/props_lab/harddrive02.mdl Computer Hard Drive
