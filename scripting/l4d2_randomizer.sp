@@ -16,7 +16,7 @@
 #include <jutils>
 #include <entitylump>
 #undef REQUIRE_PLUGIN
-#include <hats_editor>
+#include <editor>
 
 int g_iLaserIndex;
 #if defined DEBUG_BLOCKERS

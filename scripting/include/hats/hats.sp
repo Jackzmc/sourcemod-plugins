@@ -320,12 +320,6 @@ Action Command_DoAHat(int client, int args) {
 					PrintToChat(client, "[Hats] Placed hat in front of you.");
 				}
 			}
-		} else if(arg[0] == 'd') {
-			// Use the new wall editor
-			Editor[client].Reset();
-			Editor[client].entity = EntIndexToEntRef(entity);
-			Editor[client].SetMode(MOVE_ORIGIN);
-			PrintToChat(client, "\x04[Hats] \x01Beta Prop Mover active for \x04%d", entity);
 		} else {
 			PrintToChat(client, "[Hats] Restored hat to its original position.");
 		}
@@ -345,7 +339,8 @@ Action Command_DoAHat(int client, int args) {
 		if(entity <= 0) {
 			PrintCenterText(client, "[Hats] No entity found");
 			return Plugin_Handled;
-		} else if(entity == EntRefToEntIndex(Editor[client].entity)) {
+		} else if(false) {
+			// TODO: editor API call to check
 			// Prevent making an entity you editing a hat
 			return Plugin_Handled;
 		} else if(!isForced && cvar_sm_hats_max_distance.FloatValue > 0.0 && entity >= MaxClients) {
@@ -378,7 +373,8 @@ Action Command_DoAHat(int client, int args) {
 			} else if(!isForced && GetClientTeam(entity) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
 				PrintToChat(client, "[Hats] Cannot make enemy a hat... it's dangerous");
 				return Plugin_Handled;
-			} else if(entity == EntRefToEntIndex(Editor[client].entity)) {
+			} else if(false) {
+				// TODO: use editor API to check
 				// Old check left in in case you hatting child entity
 				PrintToChat(client, "[Hats] You are currently editing this entity");
 				return Plugin_Handled;
