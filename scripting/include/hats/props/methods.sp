@@ -378,9 +378,7 @@ ArrayList SearchItems(const char[] query) {
 	SearchData data;
 	for(int i = 0; i < results.Length; i++) {
 		results.GetArray(i, data);
-		PrintToConsoleAll("%d | data=\"%s\"", i, data.model);
 		item.FromSearchData(data);
-		PrintToConsoleAll("%d | item=\"%s\"", i, item.model);
 		items.PushArray(item);
 	}
 	delete results;
@@ -446,26 +444,28 @@ bool RemoveSpawnedProp(int ref) {
 	return false;
 }
 
-void EndDeleteTool(int client, bool deleteEntities = false) {
-	if(g_PropData[client].markedProps != null) {
-		int count;
-		for(int i = 0; i < g_PropData[client].markedProps.Length; i++) {
-			int ref = g_PropData[client].markedProps.Get(i);
-			if(IsValidEntity(ref)) {
-				count++;
-				if(deleteEntities) {
-					RemoveSpawnedProp(ref);
-					RemoveEntity(ref);
-				}
-				else L4D2_RemoveEntityGlow(EntRefToEntIndex(ref));
-			}
+void OnDeleteToolEnd(int client, ArrayList entities) {
+	int count;
+	for(int i = 0; i < entities.Length; i++) {
+		int ref = entities.Get(i);
+		if(IsValidEntity(ref)) {
+			count++;
+			RemoveSpawnedProp(ref);
+			RemoveEntity(ref);
 		}
-		delete g_PropData[client].markedProps;
-		if(deleteEntities)
-			PrintToChat(client, "\x04[Editor]\x01 \x05%d\x01 entities deleted", count);
-		else
-			PrintToChat(client, "\x04[Editor]\x01 Delete tool cancelled");
 	}
+	delete entities;
+	PrintToChat(client, "\x04[Editor]\x01 \x05%d\x01 entities deleted", count);
+}
+
+void OnManagerSelectorEnd(int client, ArrayList entities) {
+	// TODO: implement manager selector cb
+	ReplyToCommand(client, "Not Implemented");
+	delete entities;
+}
+void OnManagerSelectorSelect(int client, int entity) {
+	// update entity count
+	ShowManagerSelectorMenu(client);
 }
 
 int DeleteAll(int onlyPlayer = 0) {

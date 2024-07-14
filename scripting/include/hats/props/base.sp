@@ -25,6 +25,8 @@ enum SaveType {
 	Save_Schematic
 }
 
+int GLOW_MANAGER[3] = { 52, 174, 235 };
+
 enum struct Schematic {
 	char name[64];
 	char creatorSteamid[32];
@@ -134,6 +136,197 @@ public any Native_SpawnSchematic(Handle plugin, int numParams) {
 	delete list;
 	return true;
 }
+
+enum struct PropSelectorIterator {
+	ArrayList _list;
+	int _index;
+	int Entity;
+
+	void _Init(ArrayList list) {
+		this._list = list;
+		this._index = -1;
+	}
+
+	bool Next() {
+		this._index++;
+		return this._index + 1 < this._list.Length;
+	}
+
+}
+
+
+enum struct PropSelector {
+	int selectColor[3];
+	int limit;
+	ArrayList list;
+	PrivateForward endCallback;
+	PrivateForward selectPreCallback;
+	PrivateForward selectPostCallback;
+	PrivateForward unSelectCallback;
+	int _client;
+
+	PropSelectorIterator Iter() {
+		PropSelectorIterator iter;
+		iter._Init(this.list);
+		return iter;
+	}
+
+	void Reset() {
+		if(this.endCallback) delete this.endCallback;
+		if(this.selectPreCallback) delete this.selectPreCallback;
+		if(this.selectPostCallback) delete this.selectPostCallback;
+		if(this.unSelectCallback) delete this.unSelectCallback;
+		if(this.list) delete this.list;
+	}
+	
+	void Start(int color[3], int flags = 0, int limit = 0) {
+		this.selectColor = color;
+		this.limit = 0;
+		this.list = new ArrayList();
+		SendEditorMessage(this._client, "Left click to select, right click to unselect");
+		SendEditorMessage(this._client, "Press WALK+USE to confirm, DUCK+USE to cancel");
+	}
+
+	void SetOnEnd(PrivateForward callback) {
+		this.endCallback = callback;
+	}
+	void SetOnPreSelect(PrivateForward callback) {
+		this.selectPreCallback = callback;
+	}
+	void SetOnPostSelect(PrivateForward callback) {
+		this.selectPostCallback = callback;
+	}
+	void SetOnUnselect(PrivateForward callback) {
+		this.unSelectCallback = callback;
+	}
+
+	void StartDirect(int color[3], SelectDoneCallback callback, int limit = 0) {
+		PrivateForward fwd = new PrivateForward(ET_Ignore, Param_Cell, Param_Cell); 
+		fwd.AddFunction(INVALID_HANDLE, callback);
+		this.Start(color, 0, limit);
+		this.SetOnEnd(fwd);
+	}
+
+	bool IsActive() {
+		return this.list != null;
+	}
+
+	void End() {
+		if(this.list == null) return;
+		SendEditorMessage(this._client, "Selection completed");
+		// Reset glows, remove selection from our spawned props
+		for(int i = 0; i < this.list.Length; i++) {
+			int ref = this.list.Get(i);
+			if(IsValidEntity(ref)) {
+				L4D2_RemoveEntityGlow(ref);
+				RemoveSpawnedProp(ref);
+			}
+		}
+		if(this.endCallback) {
+			if(GetForwardFunctionCount(this.endCallback) == 0) {
+				PrintToServer("[Editor] Warn: Selector.End(): callback has no functions assigned to it.");
+			}
+			Call_StartForward(this.endCallback);
+			Call_PushCell(this._client);
+			Call_PushCell(this.list.Clone());
+			int result = Call_Finish();
+			if(result != SP_ERROR_NONE) {
+				PrintToServer("[Editor] Warn: Selector.End() forward error: %d", result);
+			}
+		} else {
+			PrintToServer("[Editor] Warn: Selector.End() called but no callback assigned, voiding list");
+		}
+		this.Reset();
+	}
+
+	void Cancel() {
+		if(this.endCallback) {
+			Call_StartForward(this.endCallback);
+			Call_PushCell(this._client);
+			Call_PushCell(INVALID_HANDLE);
+			Call_Finish();
+		}
+		if(this.list) {
+			for(int i = 0; i < this.list.Length; i++) {
+				int ref = this.list.Get(i);
+				L4D2_RemoveEntityGlow(ref);
+			}
+		}
+		PrintToChat(this._client, "\x04[Editor]\x01 Selection cancelled.");
+		this.Reset();
+	}
+	
+	int GetEntityRefIndex(int ref) {
+		int index = this.list.FindValue(ref);
+		if(index > -1) {
+			return index;
+		}
+		return -1;
+	}
+
+	/** Removes entity from list
+	 * @return returns entity ref of entity removed
+	 */
+	int RemoveEntity(int entity) {
+		if(this.list == null) return -2;
+
+		L4D2_RemoveEntityGlow(entity);
+		int ref = EntIndexToEntRef(entity);
+		int index = this.GetEntityRefIndex(ref);
+		if(index > -1) {
+			this.list.Erase(index);
+			if(this.unSelectCallback != null) {
+				Call_StartForward(this.unSelectCallback)
+				Call_PushCell(this._client);
+				Call_PushCell(EntRefToEntIndex(ref));
+				Call_Finish();
+			}
+			return ref;
+		}
+		return INVALID_ENT_REFERENCE;
+	}
+
+	/**
+	 * Adds entity to list
+	 * @return index into list of entity
+	 * @return -1 if already added
+	 * @return -2 if callback rejected
+	 */
+	int AddEntity(int entity, bool useCallback = true) {
+		if(this.list == null) return -2;
+
+		int ref = EntIndexToEntRef(entity);
+		if(this.GetEntityRefIndex(ref) == -1) {
+			PrintToServer("Selector.AddEntity: PRE CALLBACK");
+			// FIXME: crashes server, sourcemod bug
+			/*if(this.selectPreCallback != null && useCallback) {
+				Call_StartForward(this.selectPreCallback)
+				Call_PushCell(this._client);
+				Call_PushCell(entity);
+				bool allowed = true;
+			PrintToServer("Selector.AddEntity: PRE CALLBACK pre finish");
+				Call_Finish(allowed);
+			PrintToServer("Selector.AddEntity: PRE CALLBACK pre result %b", allowed);
+				if(!allowed) return -2;
+			}*/
+
+			L4D2_SetEntityGlow(entity, L4D2Glow_Constant, 10000, 0, this.selectColor, false);
+			int index = this.list.Push(ref);
+			PrintToServer("Selector.AddEntity: post CALLBACK pre");
+			//FIXME: crashes server, sourcemod bug
+			/*if(this.selectPostCallback != null && useCallback) {
+				Call_StartForward(this.selectPostCallback)
+				Call_PushCell(this._client);
+				Call_PushCell(entity);
+				//Call_PushCell(index);
+				Call_Finish();
+			}*/
+			PrintToServer("Selector.AddEntity: post CALLBACK post");
+			return index;
+		}
+		return -1;
+	}
+}
 enum struct PlayerPropData {
 	ArrayList categoryStack;
 	ArrayList itemBuffer;
@@ -144,14 +337,19 @@ enum struct PlayerPropData {
 	int lastActiveTime;
 	char classnameOverride[64];
 	ChatPrompt chatPrompt;
-	ArrayList markedProps;
+	PropSelector Selector;
 	SaveType pendingSaveType;
 
 	Schematic schematic;
+	int highlightedEntityRef;
+	int managerEntityRef;
 
+	void Init(int client) {
+		this.Selector._client = client;
+	}
 	// Called on PlayerDisconnect
 	void Reset() {
-		if(this.markedProps != null) delete this.markedProps;
+		if(this.Selector.IsActive()) this.Selector.Cancel();
 		this.chatPrompt = Prompt_None;
 		this.clearListBuffer = false;
 		this.lastCategoryIndex = 0;
@@ -161,6 +359,19 @@ enum struct PlayerPropData {
 		this.CleanupBuffers();
 		this.pendingSaveType = Save_None;
 		this.schematic.Reset();
+		this.managerEntityRef = INVALID_ENT_REFERENCE;
+		this.StopHighlight();
+	}
+
+	void StartHighlight(int entity) {
+		this.highlightedEntityRef = EntIndexToEntRef(entity);
+		L4D2_SetEntityGlow(entity, L4D2Glow_Constant, 10000, 0, GLOW_MANAGER, false);
+	}
+	void StopHighlight() {
+		if(IsValidEntity(this.highlightedEntityRef)) {
+			L4D2_RemoveEntityGlow(this.highlightedEntityRef);
+		}
+		this.highlightedEntityRef = INVALID_ENT_REFERENCE;
 	}
 
 	void StartSchematic(int client, const char[] name) {

@@ -8,6 +8,8 @@ public void OnAdminMenuReady(Handle topMenuHandle) {
 			topMenu.AddItem("editor_edit", AdminMenu_Edit, g_propSpawnerCategory, "sm_prop");
 			topMenu.AddItem("editor_delete", AdminMenu_Delete, g_propSpawnerCategory, "sm_prop");
 			topMenu.AddItem("editor_saveload", AdminMenu_SaveLoad, g_propSpawnerCategory, "sm_prop");
+			topMenu.AddItem("editor_manager", AdminMenu_Manager, g_propSpawnerCategory, "sm_prop");
+			topMenu.AddItem("editor_selector", AdminMenu_Selector, g_propSpawnerCategory, "sm_prop");
 		}
 		g_topMenu = topMenu;
 	}
@@ -23,6 +25,15 @@ void Category_Handler(TopMenu topmenu, TopMenuAction action, TopMenuObject topob
 		Format(buffer, maxlength, "Spawn Props");
 	}
 }
+
+void AdminMenu_Selector(TopMenu topmenu, TopMenuAction action, TopMenuObject object_id, int param, char[] buffer, int maxlength) {
+	if(action == TopMenuAction_DisplayOption) {
+		Format(buffer, maxlength, "Selector");
+	} else if(action == TopMenuAction_SelectOption) {
+		ShowManagerSelectorMenu(param);
+	}
+}
+
 
 void AdminMenu_Spawn(TopMenu topmenu, TopMenuAction action, TopMenuObject object_id, int param, char[] buffer, int maxlength) {
 	if(action == TopMenuAction_DisplayOption) {
@@ -79,6 +90,14 @@ void AdminMenu_SaveLoad(TopMenu topmenu, TopMenuAction action, TopMenuObject obj
 	}
 }
 
+void AdminMenu_Manager(TopMenu topmenu, TopMenuAction action, TopMenuObject object_id, int param, char[] buffer, int maxlength) {
+	if(action == TopMenuAction_DisplayOption) {
+		Format(buffer, maxlength, "Manager (ALPHA)");
+	} else if(action == TopMenuAction_SelectOption) {
+		Spawn_ShowManagerMainMenu(param);
+	}
+}
+
 int SaveLoadMainMenuHandler(Menu menu, MenuAction action, int client, int param2) {
 	if (action == MenuAction_Select) {
 		char info[2];
@@ -87,7 +106,7 @@ int SaveLoadMainMenuHandler(Menu menu, MenuAction action, int client, int param2
 		ShowSaves(client, type);
 	} else if (action == MenuAction_Cancel) {
 		if(param2 == MenuCancel_ExitBack) {
-			Spawn_ShowSaveLoadMainMenu(client);
+			DisplayTopMenuCategory(g_topMenu, g_propSpawnerCategory, client);
 		} 
 	} else if (action == MenuAction_End)	
 		delete menu;
@@ -126,6 +145,7 @@ int SaveLoadSceneHandler(Menu menu, MenuAction action, int client, int param2) {
 		delete menu;
 	return 0;
 }
+
 
 int SaveLoadSchematicHandler(Menu menu, MenuAction action, int client, int param2) {
 	if (action == MenuAction_Select) {
@@ -189,40 +209,160 @@ int SaveLoadConfirmHandler(Menu menu, MenuAction action, int client, int param2)
 		delete menu;
 	return 0;
 }
-
-int DeleteHandler(Menu menu, MenuAction action, int client, int param2) {
+int ManagerHandler(Menu menu, MenuAction action, int client, int param2) {
 	if (action == MenuAction_Select) {
 		char info[8];
 		menu.GetItem(param2, info, sizeof(info));
-		int index = StringToInt(info);
-		if(index == -1) {
+		if(info[0] != '\0') {
+			int index = StringToInt(info);
+			int ref = g_spawnedItems.Get(index);
+			// TODO: add delete confirm
+			if(!IsValidEntity(ref)) {
+				SendEditorMessage(client, "Entity has disappeared");
+			} else {
+				int entity = EntRefToEntIndex(ref);
+				g_PropData[client].managerEntityRef = ref;
+				g_PropData[client].StartHighlight(entity);
+				ShowManagerEntityMenu(client, entity);
+			}
+		}
+	} else if (action == MenuAction_Cancel) {
+		if(param2 == MenuCancel_ExitBack) {
+			Spawn_ShowSaveLoadMainMenu(client);
+		} 
+	} else if (action == MenuAction_End)	
+		delete menu;
+	return 0;
+}
+int ManagerEntityHandler(Menu menu, MenuAction action, int client, int param2) {
+	if (action == MenuAction_Select) {
+		g_PropData[client].StopHighlight();
+		char info[32];
+		menu.GetItem(param2, info, sizeof(info));
+		int ref = g_PropData[client].managerEntityRef;
+		if(!IsValidEntity(ref)) {
+			SendEditorMessage(client, "Entity disappeared");
+			return 0;
+		}
+		if(StrEqual(info, "edit")) {
+			Editor[client].ImportEntity(EntRefToEntIndex(ref), Edit_Manager);
+			Spawn_ShowManagerMainMenu(client);
+		} else if(StrEqual(info, "delete")) {
+			for(int i = 0; i < g_spawnedItems.Length; i++) {
+				int spawnedRef = g_spawnedItems.Get(i);
+				if(spawnedRef == ref) {
+					g_spawnedItems.Erase(i);
+					break;
+				}
+			}
+			if(IsValidEntity(ref)) {
+				RemoveEntity(ref);
+			}
+			Spawn_ShowManagerMainMenu(client);
+		} else if(StrEqual(info, "view")) {
+			ReplyToCommand(client, "Maybe soon.");
+		} else if(StrEqual(info, "select")) {
+			ShowManagerSelectorMenu(client);
+			int entity = EntRefToEntIndex(ref);
+			g_PropData[client].Selector.AddEntity(entity);
+		} else {
+			SendEditorMessage(client, "Unknown option / not implemented");
+		}
+	} else if (action == MenuAction_Cancel) {
+		g_PropData[client].StopHighlight();
+		if(param2 == MenuCancel_ExitBack) {
+			Spawn_ShowManagerMainMenu(client);
+		} 
+	} else if (action == MenuAction_End)	
+		delete menu;
+	return 0;
+}
+int ManagerSelectorMainMenuHandler(Menu menu, MenuAction action, int client, int param2) {
+	if (action == MenuAction_Select) {
+		if(!EntitySelector.FromClient(client).Active) {
+			return 0;
+		}
+		char info[32];
+		menu.GetItem(param2, info, sizeof(info));
+		if(StrEqual(info, "list")) {
+			SendEditorMessage(client, "Not implemented");
+		} else if(StrEqual(info, "actions")) {
+			ShowManagerSelectorActionsMenu(client);
+		} else if(StrEqual(info, "cancel")) {
+			g_PropData[client].Selector.Cancel();
+		}
+	} else if (action == MenuAction_Cancel) {
+		g_PropData[client].Selector.Cancel();
+	} else if (action == MenuAction_End)	
+		delete menu;
+	return 0;
+}
+int ManagerSelectorActionHandler(Menu menu, MenuAction action, int client, int param2) {
+	if (action == MenuAction_Select) {
+		if(!g_PropData[client].Selector.IsActive()) {
+			return 0;
+		}
+		char info[32];
+		menu.GetItem(param2, info, sizeof(info));
+		if(StrEqual(info, "delete")) {
+			for(int i = 0; i < g_PropData[client].Selector.list.Length; i++) {
+				int ref = g_PropData[client].Selector.list.Get(i);
+				if(IsValidEntity(ref)) {
+					RemoveEntity(ref);
+				}
+			}
+			g_PropData[client].Selector.End();
+			Spawn_ShowManagerMainMenu(client);
+		} else if(StrEqual(info, "save")) {
+			// TODO: implement 
+			SendEditorMessage(client, "Not implemented");
+		} else {
+			SendEditorMessage(client, "Unknown option / not implemented");
+		}
+	} else if (action == MenuAction_Cancel) {
+		if(param2 == MenuCancel_ExitBack) {
+			Spawn_ShowSaveLoadMainMenu(client);
+		} 
+	} else if (action == MenuAction_End)	
+		delete menu;
+	return 0;
+}
+int COLOR_DELETE[3] = { 255, 0, 0 }
+
+int DeleteHandler(Menu menu, MenuAction action, int client, int param2) {
+	if (action == MenuAction_Select) {
+		char info[128];
+		menu.GetItem(param2, info, sizeof(info));
+		int ref = StringToInt(info[2]);
+		int option = StringToInt(info);
+		if(option == -1) {
 			// Delete all (everyone)
 			int count = DeleteAll();
 			PrintToChat(client, "\x04[Editor]\x01 Deleted \x05%d\x01 items", count);
 			ShowDeleteList(client);
-		} else if(index == -2) {
+		} else if(option == -2) {
 			// Delete all (mine only)
 			int count = DeleteAll(client);
 			PrintToChat(client, "\x04[Editor]\x01 Deleted \x05%d\x01 items", count);
 			ShowDeleteList(client);
-		} else if(index == -3) {
-			if(g_PropData[client].markedProps != null) {
-				EndDeleteTool(client, false);
+		} else if(option == -3) {
+			if(g_PropData[client].Selector.IsActive()) {
+				g_PropData[client].Selector.End();
+				PrintToChat(client, "\x04[Editor]\x01 Delete tool cancelled");
 			} else {
-				g_PropData[client].markedProps = new ArrayList();
+				g_PropData[client].Selector.StartDirect(COLOR_DELETE, OnDeleteToolEnd);
 				PrintToChat(client, "\x04[Editor]\x01 Delete tool active. Press \x05Left Mouse\x01 to mark props, \x05Right Mouse\x01 to undo. SHIFT+USE to spawn, CTRL+USE to cancel");
 			}
 			ShowDeleteList(client);
 		} else {
-			int ref = g_spawnedItems.Get(index);
-			// TODO: add delete confirm
+			int index = g_spawnedItems.FindValue(ref);
 			if(IsValidEntity(ref)) {
 				RemoveEntity(ref);
 			}
-			g_spawnedItems.Erase(index);
-			if(index > 0) {
+			if(index > -1) {
+				g_spawnedItems.Erase(index);
 				index--;
-			}
+			} else { index = 0; }
 			ShowDeleteList(client, index);
 		}
 	} else if (action == MenuAction_Cancel) {
@@ -317,16 +457,18 @@ int EditHandler(Menu menu, MenuAction action, int client, int param2) {
 	if (action == MenuAction_Select) {
 		char info[8];
 		menu.GetItem(param2, info, sizeof(info));
-		int index = StringToInt(info);
-		int ref = g_spawnedItems.Get(index);
+		int ref = StringToInt(info);
+		int index = g_spawnedItems.FindValue(ref);
 		int entity = EntRefToEntIndex(ref);
 		if(entity > 0) {
 			Editor[client].Import(entity, false);
 			PrintToChat(client, "\x04[Editor]\x01 Editing entity \x05%d", entity);
 		} else {
 			PrintToChat(client, "\x04[Editor]\x01 Entity disappeared.");
-			g_spawnedItems.Erase(index);
-			index--;
+			if(index > -1) {
+				g_spawnedItems.Erase(index);
+				index--;
+			} else { index = 0; }
 		}
 		ShowEditList(client, index);
 	} else if (action == MenuAction_Cancel) {

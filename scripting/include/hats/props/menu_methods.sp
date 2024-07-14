@@ -3,11 +3,11 @@
 /////////////
 void ShowSpawnRoot(int client) {
 	Menu menu = new Menu(Spawn_RootHandler);
-	menu.SetTitle("Choose list:");
-	menu.AddItem("f", "Favorites (WIP)");
-	menu.AddItem("r", "Recents");
-	menu.AddItem("s", "Search");
-	menu.AddItem("n", "Prop List");
+	menu.SetTitle("Choose spawn list:");
+	menu.AddItem("f", "Favorites (Broken :D)");
+	menu.AddItem("r", "Recently Spawned Props");
+	menu.AddItem("s", "Search for Props");
+	menu.AddItem("n", "Browse Props");
 	menu.ExitBackButton = true;
 	menu.ExitButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
@@ -17,6 +17,7 @@ void Spawn_ShowRecents(int client) {
 	ArrayList items = GetRecentsItemList();
 	if(items.Length == 0) {
 		CReplyToCommand(client, "\x04[Editor] \x01No recent props spawned.");
+		DisplayTopMenuCategory(g_topMenu, g_propSpawnerCategory, client);
 		return;
 	}
 	ShowTempItemMenu(client, items, "Recents");
@@ -26,6 +27,11 @@ void Spawn_ShowSearch(int client) {
 	CReplyToCommand(client, "\x04[Editor] \x01Please enter search query in chat:");
 }
 void ShowDeleteList(int client, int index = -3) {
+	if(g_spawnedItems.Length == 0) {
+		SendEditorMessage(client, "No spawned items to delete");
+		DisplayTopMenuCategory(g_topMenu, g_propSpawnerCategory, client);
+		return;
+	}
 	Menu menu = new Menu(DeleteHandler);
 	menu.SetTitle("Delete Props");
 
@@ -38,7 +44,7 @@ void ShowDeleteList(int client, int index = -3) {
 	for(int i = 0; i < g_spawnedItems.Length; i++) {
 		int ref = GetSpawnedItem(i);
 		if(ref == -1) continue;
-		IntToString(i, info, sizeof(info));
+		Format(info, sizeof(info), "0|%d", ref);
 		GetEntPropString(ref, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
 		index = FindCharInString(buffer, '/', true);
 		if(index != -1)
@@ -52,6 +58,11 @@ void ShowDeleteList(int client, int index = -3) {
 	menu.DisplayAt(client, 0, MENU_TIME_FOREVER);
 }
 void ShowEditList(int client, int index = 0) {
+	if(g_spawnedItems.Length == 0) {
+		SendEditorMessage(client, "No spawned items to edit");
+		DisplayTopMenuCategory(g_topMenu, g_propSpawnerCategory, client);
+		return;
+	}
 	Menu menu = new Menu(EditHandler);
 	menu.SetTitle("Edit Prop");
 
@@ -60,7 +71,7 @@ void ShowEditList(int client, int index = 0) {
 	for(int i = 0; i < g_spawnedItems.Length; i++) {
 		int ref = GetSpawnedItem(i);
 		if(ref == -1) continue;
-		IntToString(i, info, sizeof(info));
+		Format(info, sizeof(info), "%d", ref);
 		GetEntPropString(ref, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
 		index = FindCharInString(buffer, '/', true);
 		if(index != -1)
@@ -104,6 +115,8 @@ void _showItemMenu(int client, ArrayList items, const char[] title = "", bool cl
 		items = g_PropData[client].itemBuffer;
 		if(items == null) {
 			LogError("Previous list does not exist and no new list was provided ShowItemMenu(%N)", client);
+			PrintToChat(client, "\x04[Editor]\x01 An error occurred (no list)");
+			return;
 		}
 	} else {
 		// Populate the buffer with this list
@@ -189,6 +202,81 @@ void Spawn_ShowSaveLoadMainMenu(int client) {
 	// Id is SaveType
 	menu.AddItem("1", "Map Scenes");
 	menu.AddItem("2", "Schematics");
+	menu.ExitBackButton = true;
+	menu.ExitButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+
+void Spawn_ShowManagerMainMenu(int client, int index = 0) {
+	if(g_spawnedItems.Length == 0) {
+		SendEditorMessage(client, "No spawned items to manage");
+		DisplayTopMenuCategory(g_topMenu, g_propSpawnerCategory, client);
+		return;
+	}
+	Menu menu = new Menu(ManagerHandler);
+	menu.SetTitle("Manager");
+	// Id is SaveType
+	char info[8];
+	char buffer[128];
+	for(int i = 0; i < g_spawnedItems.Length; i++) {
+		int ref = GetSpawnedItem(i);
+		if(ref == -1) continue;
+		IntToString(i, info, sizeof(info));
+		GetEntPropString(ref, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
+		index = FindCharInString(buffer, '/', true);
+		if(index != -1)
+			menu.AddItem(info, buffer[index + 1]);
+	}
+
+	menu.ExitBackButton = true;
+	menu.ExitButton = true;
+	menu.DisplayAt(client, index, MENU_TIME_FOREVER);
+}
+void ShowManagerEntityMenu(int client, int entity) {
+	if(!IsValidEntity(entity)) {
+		SendEditorMessage(client, "Item has vanished");
+		Spawn_ShowManagerMainMenu(client);
+		return;
+	}
+	Menu menu = new Menu(ManagerEntityHandler);
+	menu.SetTitle("Manage %d", entity);
+	menu.AddItem("edit", "Edit");
+	menu.AddItem("delete", "Delete");
+	menu.AddItem("select", "Select");
+	menu.AddItem("view", "View");
+	menu.ExitBackButton = true;
+	menu.ExitButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+void ShowManagerSelectorMenu(int client) {
+	EntitySelector sel = EntitySelector.FromClient(client);
+	if(!sel.Active) {
+		sel.Start(GLOW_MANAGER);
+		sel.SetOnEnd(OnManagerSelectorEnd);
+		sel.SetOnPostSelect(OnManagerSelectorSelect);
+		sel.SetOnUnselect(OnManagerSelectorSelect);
+	}
+	Menu menu = new Menu(ManagerSelectorMainMenuHandler);
+	menu.SetTitle("Selector");
+	menu.AddItem("list", "> List Entities");
+	menu.AddItem("actions", "> Actions");
+	menu.AddItem("add-self", "Add All Self-Spawned");
+	menu.AddItem("add-all", "Add All Spawned");
+	menu.ExitBackButton = false;
+	menu.ExitButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+void ShowManagerSelectorActionsMenu(int client) {
+	Menu menu = new Menu(ManagerSelectorActionHandler);
+	menu.SetTitle("Selector: Select action");
+	char display[32];
+	Format(display, sizeof(display), "Entities: %d", g_PropData[client].Selector.list.Length);
+	menu.AddItem("", display, ITEMDRAW_DISABLED);
+
+	// menu.AddItem("edit", "Edit");
+	menu.AddItem("delete", "Delete");
+	// menu.AddItem("select", "Select");
+	menu.AddItem("save", "Save");
 	menu.ExitBackButton = true;
 	menu.ExitButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);

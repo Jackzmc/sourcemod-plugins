@@ -50,7 +50,9 @@ stock void EntFire(const char[] name, const char[] input) {
 	}
 }
 
-
+void CreateCoinEntity(float pos[3]) {
+	// int ent = CreateProp("prop_dynamic", "")
+}
 
 void SetupEntities(bool blockers = true, bool props = true, bool portals = true) {
 	#if defined DEBUG_BLOCKERS

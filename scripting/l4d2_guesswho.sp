@@ -213,6 +213,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		HookEvent("player_bot_replace", Event_PlayerToBot);
 		HookEvent("player_ledge_grab", Event_LedgeGrab);
 		AddCommandListener(OnGoAwayFromKeyboard, "go_away_from_keyboard");
+		InitGamemode();
 	} else if(!lateLoaded) {
 		cvarStorage.Restore();
 		delete cvarStorage;
@@ -462,7 +463,8 @@ Action Timer_SpawnBots(Handle h, int max) {
 		if(AddSurvivor()) {
 			count++;
 			return Plugin_Continue;
-		} else {
+		} else if(count < 0) {
+			// Fail if we couldnt make enough bots
 			PrintToChatAll("GUESS WHO: FATAL ERROR: AddSurvivor() failed");
 			LogError("Guess Who: Fatal Error: AddSurvivor() failed");
 			count = 0;
@@ -561,6 +563,7 @@ Action Timer_WaitForStart(Handle h) {
 		Game.State = State_Starting;
 		Game.Tick = 0;
 		Game.MapTime = RoundFloat(seedTime);
+		Game.PopulateCoins();
 		CreateTimer(seedTime, Timer_StartSeeker);
 		return Plugin_Stop;
 	}
@@ -585,6 +588,7 @@ Action Timer_StartSeeker(Handle h) {
 Action Timer_TimesUp(Handle h) {
 	Game.Broadcast("The seeker ran out of time. Hiders win!");
 	Game.End(State_HidersWin);
+	timesUpTimer = null;
 	return Plugin_Handled;
 }
 

@@ -36,7 +36,7 @@ int g_BeamSprite;
 int g_HaloSprite;
 int g_iLaserIndex;
 
-#define MAX_FORBIDDEN_CLASSNAMES 9
+#define MAX_FORBIDDEN_CLASSNAMES 10
 static char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	// "env_physics_blocker",
 	// "env_player_blocker",
@@ -49,7 +49,8 @@ static char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"func_tracktrain",
 	// "infected",
 	"func_lod",
-	"prop_ragdoll"
+	"prop_ragdoll",
+	"move_rope"
 };
 
 #define MAX_FORBIDDEN_MODELS 2
@@ -65,9 +66,11 @@ static char HIGHLIGHTED_CLASSNAMES[MAX_HIGHLIGHTED_CLASSNAMES][] = {
 	"func_brush"
 }
 
+ConVar g_cvarEnabled;
 
 public void OnPluginStart()
 {
+	g_cvarEnabled = CreateConVar("sm_grabent_allow", "1", "Is grabent allowed", FCVAR_NONE, true, 0.0, true, 1.0);
 	RegAdminCmd("sm_grabent_freeze", Cmd_ReleaseFreeze, ADMFLAG_CHEATS, "<0/1> - Toggle entity freeze/unfreeze on release.");
 	RegAdminCmd("sm_grab", Cmd_Grab, ADMFLAG_CHEATS, "Toggle Grab the entity in your crosshair.");
 	RegAdminCmd("+grabent", Cmd_Grab, ADMFLAG_CHEATS, "Grab the entity in your crosshair.");
@@ -131,11 +134,13 @@ public Action Cmd_ReleaseFreeze(client, args)
 //============================================================================
 //							GRAB ENTITY COMMAND								//
 //============================================================================
-public Action Cmd_Grab(client, args) {
-	if (client < 1 || client > MaxClients || !IsClientInGame(client)) 
+Action Cmd_Grab(int client, int args) {
+	if(!g_cvarEnabled.BoolValue) {
+		ReplyToCommand(client, "[SM] Grabent is disabled");
 		return Plugin_Handled;
-	
-	if (g_pGrabbedEnt[client] > 0 && IsValidEntity(g_pGrabbedEnt[client])) {
+	} else if (client < 1 || client > MaxClients || !IsClientInGame(client)) {
+		return Plugin_Handled;
+	} else if (g_pGrabbedEnt[client] > 0 && IsValidEntity(g_pGrabbedEnt[client])) {
 		Cmd_Release(client, 0);
 		return Plugin_Handled;
 	}
@@ -572,6 +577,7 @@ bool Filter_IgnoreForbidden(int entity, int mask, int data) {
 }
 
 bool CheckBlacklist(int entity) {
+	if(entity == 0) return false;
 	static char buffer[64];
 	GetEntityClassname(entity, buffer, sizeof(buffer));
 	for(int i = 0; i < MAX_FORBIDDEN_CLASSNAMES; i++) {
@@ -591,5 +597,6 @@ bool CheckBlacklist(int entity) {
 	if(StrEqual(buffer, "l4d2_randomizer")) {
 		return false;
 	}
+	GetEntityClassname(entity, buffer, sizeof(buffer));
 	return true;
 }

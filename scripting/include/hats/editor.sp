@@ -1,7 +1,6 @@
 int BUILDER_COLOR[4] = { 0, 255, 0, 235 };
 int GLOW_BLUE[4] = { 3, 148, 252 };
 int GLOW_RED_ALPHA[4] = { 255, 0, 0, 235 };
-int GLOW_RED[3] = { 255, 0, 0};
 int GLOW_WHITE[4] = { 255, 255, 255, 255 };
 int GLOW_GREEN[4] = { 3, 252, 53 };
 float ORIGIN_SIZE[3] = { 2.0, 2.0, 2.0 };
@@ -27,26 +26,21 @@ char MODE_NAME[5][] = {
 	"Freelook"
 }
 
-enum editFlag {
+enum {
 	Edit_None,
 	Edit_Copy = 1,
 	Edit_Preview = 2,
-	Edit_WallCreator = 4
+	Edit_WallCreator = 4,
+	Edit_Manager = 8
 }
 
 enum buildType {
 	Build_Solid,
 	Build_Physics,
 	Build_NonSolid,
+	// TODO: Build_Weapon (spawn as weapon?)
 }
 
-enum CompleteType {
-	Complete_WallSuccess,
-	Complete_WallError,
-	Complete_PropSpawned,
-	Complete_PropError,
-	Complete_EditSuccess
-}
 
 enum StackerDirection {
 	Stack_Off,
@@ -88,6 +82,7 @@ enum struct EditorData {
 	int colorIndex;
 	int axis;
 	int snapAngle;
+	float rotateSpeed;
 	int moveSpeed;
 	float moveDistance;
 	int entity;
@@ -97,11 +92,14 @@ enum struct EditorData {
 
 	editMode mode;
 	buildType buildType;
-	editFlag flags;
+	int flags;
+
+	PrivateForward callback;
+	bool isEditCallback;
 
 	void Reset(bool initial = false) {
 		// Clear preview entity
-		if(this.entity != INVALID_ENT_REFERENCE && this.flags & Edit_Preview && IsValidEntity(this.entity)) {
+		if(this.entity != INVALID_ENT_REFERENCE && (this.flags & Edit_Preview) && IsValidEntity(this.entity)) {
 			RemoveEntity(this.entity);
 		}
 		this.stackerDirection = Stack_Off;
@@ -111,12 +109,13 @@ enum struct EditorData {
 		this.size[0] = this.size[1] = this.size[2] = 5.0;
 		this.angles[0] = this.angles[1] = this.angles[2] = 0.0;
 		this.colorIndex = 0;
-		this.axis = 1;
+		this.axis = 0;
 		this.moveDistance = 200.0;
 		this.flags = Edit_None;
 		this.classname[0] = '\0';
 		this.CalculateMins();
 		this.SetMode(INACTIVE);
+		this.rotateSpeed = 0.1;
 		// Settings that don't get reset on new spawns:
 		if(initial) {
 			this.color[0] = this.color[1] = this.color[2] = this.color[3] = 255;
@@ -138,6 +137,12 @@ enum struct EditorData {
 		if(this.flags & Edit_WallCreator || this.entity == INVALID_ENT_REFERENCE) {
 			Effect_DrawBeamBoxRotatableToAll(this.origin, this.mins, this.size, this.angles, g_iLaserIndex, 0, 0, 30, lifetime, 0.4, 0.4, 0, amplitude, color, 0);
 		} else {
+			if(this.snapAngle != 1) {
+				this.angles[0] = RoundToNearestInterval(this.angles[0], this.snapAngle);
+				this.angles[1] = RoundToNearestInterval(this.angles[1], this.snapAngle);
+				this.angles[2] = RoundToNearestInterval(this.angles[2], this.snapAngle);
+
+			}
 			TeleportEntity(this.entity, this.origin, this.angles, NULL_VECTOR);
 		}
 		Effect_DrawAxisOfRotationToAll(this.origin, this.angles, ORIGIN_SIZE, g_iLaserIndex, 0, 0, 30, 0.2, 0.1, 0.1, 0, 0.0, 0);
@@ -147,9 +152,6 @@ enum struct EditorData {
 	void UpdateEntity() {
 		int alpha = this.color[3];
 		// Keep previews transparent
-		if(this.flags & Edit_Preview) {
-			alpha = 200;
-		}
 		SetEntityRenderColor(this.entity, this.color[0], this.color[1], this.color[2], alpha);
 	}
 
@@ -177,6 +179,10 @@ enum struct EditorData {
 	}
 	void SetName(const char[] name) {
 		strcopy(this.name, sizeof(this.name), name);
+	}
+	void SetCallback(PrivateForward callback, bool isEditCallback) {
+		this.callback = callback;
+		this.isEditCallback = isEditCallback;
 	}
 
 	void CycleMode() {
@@ -210,43 +216,43 @@ enum struct EditorData {
 		PrintToChat(this.client, "\x04[Editor]\x01 Mode: \x05%s\x01 (Press \x04RELOAD\x01 to change)", MODE_NAME[this.mode]);
 	}
 
-	void CycleStacker(float tick) {
-		if(tick - cmdThrottle[this.client] <= 0.10) return;
+	void CycleStacker() {
 		int newDirection = view_as<int>(this.stackerDirection) + 1;
 		if(newDirection == view_as<int>(Stack_Down)) newDirection = 0;
 		this.stackerDirection = view_as<StackerDirection>(newDirection);
 		
 		PrintToChat(this.client, "\x04[Editor]\x01 Stacker: %s\x01", STACK_DIRECTION_NAME[this.stackerDirection]);
-		cmdThrottle[this.client] = tick;
 	}
 
-	void ToggleCollision(float tick) {
-		if(tick - cmdThrottle[this.client] <= 0.25) return;
+	void ToggleCollision() {
 		this.hasCollision = !this.hasCollision
 		PrintToChat(this.client, "\x04[Editor]\x01 Collision: %s", ON_OFF_STRING[view_as<int>(this.hasCollision)]);
-		cmdThrottle[this.client] = tick;
 	}
 
-	void ToggleCollisionRotate(float tick) {
-		if(tick - cmdThrottle[this.client] <= 0.20) return;
+	void ToggleCollisionRotate() {
 		this.hasCollisionRotate = !this.hasCollisionRotate
 		PrintToChat(this.client, "\x04[Editor]\x01 Rotate with Collision: %s", ON_OFF_STRING[view_as<int>(this.hasCollisionRotate)]);
-		cmdThrottle[this.client] = tick;
 	}
 
-	void CycleAxis(float tick) {
-		if(tick - cmdThrottle[this.client] <= 0.1) return;
+	void CycleAxis() {
+		// if(tick - cmdThrottle[this.client] <= 0.1) return;
 		if(this.axis == 0) {
 			this.axis = 1;
-			PrintToChat(this.client, "\x04[Editor]\x01 Rotate Axis: \x05HEADING (Y)\x01");
-		} else if(this.axis == 1) {
-			this.axis = 2;
-			PrintToChat(this.client, "\x04[Editor]\x01 Rotate Axis: \x05PITCH (X)\x01");
+			PrintToChat(this.client, "\x04[Editor]\x01 Rotate Axis: \x05ROLL (Z)\x01");
 		} else {
 			this.axis = 0;
-			PrintToChat(this.client, "\x04[Editor]\x01 Rotate Axis: \x05ROLL (Z)\x01");
+			PrintToChat(this.client, "\x04[Editor]\x01 Rotate Axis: \x05PITCH AND HEADING (X, Y)\x01");
 		}
-		cmdThrottle[this.client] = tick;
+		// cmdThrottle[this.client] = tick;
+	}
+
+	void IncrementAxis(int axis, int mouse) {
+		if(this.snapAngle == 1) {
+			this.angles[axis] += mouse * this.rotateSpeed;
+		} else {
+			if(mouse > 0) this.angles[axis] += this.snapAngle;
+			else if(mouse < 0) this.angles[axis] -= this.snapAngle;
+		}
 	}
 
 	void CycleSnapAngle(float tick) {
@@ -328,18 +334,38 @@ enum struct EditorData {
 
 	// Complete the edit, wall creation, or spawning
 	CompleteType Done(int& entity) {
+		CompleteType type;
 		if(this.flags & Edit_WallCreator) {
-			return this._FinishWall(entity) ? Complete_WallSuccess : Complete_WallError;
+			type = this._FinishWall(entity) ? Complete_WallSuccess : Complete_WallError;
 		} else if(this.flags & Edit_Preview) {
-			return this._FinishPreview(entity) ? Complete_PropSpawned : Complete_PropError;
+			type = this._FinishPreview(entity) ? Complete_PropSpawned : Complete_PropError;
 		} else {
 			// Is edit, do nothing, just reset
 			PrintHintText(this.client, "Edit Complete");
 			this.Reset();
 			entity = 0;
 
-			return Complete_EditSuccess;
+			type = Complete_EditSuccess;
 		}
+		if(this.callback) {
+			Call_StartForward(this.callback);
+			Call_PushCell(this.client);
+			Call_PushCell(entity);
+			Call_PushCell(type);
+			bool result;
+			Call_Finish(result);
+			// Cancel menu:
+			if(this.isEditCallback) delete this.callback;
+			if(this.isEditCallback || !result) {
+				// No native way to close a menu, so open a dummy menu and close it:
+				// Handler doesn't matter, no options are added
+				Menu menu = new Menu(Spawn_RootHandler);
+				menu.Display(this.client, 1);
+			} else {
+				delete this.callback;
+			}
+		}
+		return type;
 	}
 
 	bool _FinishWall(int& id) {
@@ -569,7 +595,7 @@ enum struct EditorData {
 		DispatchKeyValue(entity, "targetname", "prop_preview");
 		DispatchKeyValue(entity, "solid", "0");
 		DispatchKeyValue(entity, "rendercolor", "255 128 255");
-		DispatchKeyValue(entity, "renderamt", "200");
+		DispatchKeyValue(entity, "renderamt", "255");
 		DispatchKeyValue(entity, "rendermode", "1");
 		TeleportEntity(entity, this.origin, NULL_VECTOR, NULL_VECTOR);
 		if(!DispatchSpawn(entity)) {
@@ -583,8 +609,11 @@ enum struct EditorData {
 		return IsValidEntity(entity);
 	}
 
-	// Adds an existing entity to the editor, to move it.
-	// asWallCopy: to instead copy the wall's size and position (walls only)
+	/**
+	 *  Adds an existing entity to the editor, to move it.
+	 * asWallCopy: to instead copy the wall's size and position (walls only)
+	 * @deprecated
+	 */
 	void Import(int entity, bool asWallCopy = false, editMode mode = SCALE) {
 		this.Reset();
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", this.origin);
@@ -596,6 +625,22 @@ enum struct EditorData {
 		if(!asWallCopy) {
 			this.entity = entity;
 		}
+		this.SetMode(mode);
+	}
+
+	/**
+	 * Imports an entity
+	 */
+	void ImportEntity(int entity, int flags = 0, editMode mode = SCALE) {
+		this.Reset();
+		this.flags = flags;
+		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", this.origin);
+		GetEntPropVector(entity, Prop_Send, "m_angRotation", this.angles);
+		this.prevOrigin = this.origin;
+		this.prevAngles = this.angles;
+		GetEntPropVector(entity, Prop_Send, "m_vecMins", this.mins);
+		GetEntPropVector(entity, Prop_Send, "m_vecMaxs", this.size);
+		this.entity = entity;
 		this.SetMode(mode);
 	}
 
@@ -611,8 +656,21 @@ enum struct EditorData {
 		}
 		this.SetMode(INACTIVE);
 		PrintHintText(this.client, "Cancelled");
+		if(this.callback) {
+			delete this.callback;
+		}
 		// CPrintToChat(this.client, "\x04[Editor]\x01 Cancelled.");
 	}
+}
+
+void SendEditorMessage(int client, const char[] format, any ...) {
+	char message[256];
+	VFormat(message, sizeof(message), format, 3);	
+	CPrintToChat(client, "\x04`[Editor]\x01 %s", message);
+}
+
+stock float RoundToNearestInterval(float value, int interval) {
+  return float(RoundFloat(value / float(interval)) * interval);
 }
 EditorData Editor[MAXPLAYERS+1];
 

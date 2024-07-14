@@ -2,21 +2,50 @@
 	#endinput
 #endif
 #define _overlay_included
-#include <ripext>
 
-native bool SendTempUI(int client, const char[] id, int lifetime, JSONObject element);
+public SharedPlugin __pl_overlay = {
+	name = "overlay",
+	file = "overlay.smx",
+#if defined REQUIRE_PLUGIN
+	required = 1,
+#else
+	required = 0,
+#endif
+};
 
-native bool ShowUI(int client, const char[] elemNamespace, const char[] elemId, JSONObject variables);
+#define ACTION_ARG_LENGTH 128 // The length each arg (separated by space) can be
 
-native bool HideUI(int client, const char[] elemNamespace, const char[] elemId);
+// typedef ActionFallbackHandlerCallback = function void (const char[] actionName, const char[][] args, int numArgs);
+// typedef ActionHandlerCallback = function void (const char[][] args, int numArgs);
+typedef ActionFallbackHandlerCallback = function void (const char[] actionName, UIActionEvent event, int client);
+typedef ActionHandlerCallback = function void (UIActionEvent event, int client);
 
-native bool PlayAudio(int client, const char[] url);
 
 native bool IsOverlayConnected();
 
-forward void OnUIAction(const char[] elemNamespace, const char[] elemId, const char[] action);
+// myplugin:action_name
+// Handles any action for actionNamespace and actionName
+native void RegisterActionHandler(const char[] actionNamespace, const char[] actionName, ActionFallbackHandlerCallback cb);
+// Handles all actions for namespace that were not caught by RegisterActionHandler
+native void RegisterActionAnyHandler(const char[] actionNamespace, ActionHandlerCallback cb);
 
-typedef UIActionCallback = function void (const char[][] args, int numArgs);
+methodmap UIActionEvent {
+    public UIActionEvent(ArrayList list) {
+        return view_as<UIActionEvent>(list);   
+    }
+
+    public void GetArg(int argNum, char[] output, int maxlen) {
+        view_as<ArrayList>(this).GetString(argNum, output, maxlen);
+    }
+
+    public void _Delete() {
+        delete view_as<ArrayList>(this);
+    }
+
+    property int Args {
+        public get() { return view_as<ArrayList>(this).Length; }
+    }
+}
 
 methodmap UIElement < JSONObject {
     public UIElement(const char[] elemNamespace, const char[] elemId) {
@@ -24,6 +53,7 @@ methodmap UIElement < JSONObject {
         obj.SetString("namespace", elemNamespace);
         obj.SetString("elem_id", elemId);
         obj.SetBool("visibility", false);
+        obj.Set("steamids", new JSONArray());
         obj.Set("variables", new JSONObject());
 
         return view_as<UIElement>(obj);
@@ -35,16 +65,6 @@ methodmap UIElement < JSONObject {
         }
         public set(bool value) {
             view_as<JSONObject>(this).SetBool("visibility", value);
-            this.Send();
-        }
-    }
-
-    /** Is the UI element globally sent to all connected players?
-    *  Specify players with .AddClient() or clear with .ClearClients()
-    */
-    property bool Global {
-        public get() {
-            return !view_as<JSONObject>(this).HasKey("steamids")
         }
     }
 
@@ -68,35 +88,13 @@ methodmap UIElement < JSONObject {
         view_as<JSONObject>(this).SetBool(id, value);
     }
 
-    public void SetActionCallback(UIActionCallback callback) {}
-
-    public void AddClient(const char[] steamid) {
-        // if(!IsClientInGame(client) || steamidCache[client][0] == '\0') ThrowError("Client %d is not connected, ingame, or authorized");
-        JSONObject obj = view_as<JSONObject>(this);
-        JSONArray steamids = view_as<JSONArray>(obj.Get("steamids"));
-        if(steamids == null) {
-            steamids = new JSONArray();
-            obj.Set("steamids", steamids)
+    public native bool SendAll();
+    public native bool SendTo(int client);
+    public bool SendToMultiple(int[] clientIds, int numClients) {
+        for(int i = 0; i < numClients; i++) {
+            this.SendTo(clientIds[i]);
         }
-        steamids.PushString(steamid);
     }
-
-    public void ClearClients() {
-        view_as<JSONObject>(this).Remove("steamids");
-    }
-
-    public void Clear() {
-        view_as<JSONObject>(this).Clear();
-    }
-
-    public void Hide() {
-        this.Visibility = false;
-    }
-    public void Show() {
-        this.Visibility = true;
-    }
-
-    public native bool Send();
 }
 
 methodmap UIPosition < JSONObject {
@@ -115,6 +113,25 @@ methodmap UIPosition < JSONObject {
     property int Y {
         public get() { return view_as<JSONObject>(this).GetInt("y"); }
         public set(int coord) { view_as<JSONObject>(this).SetInt("y", coord); }
+    }
+}
+
+methodmap UISize < JSONObject {
+    public UISize(int width, int height) {
+        JSONObject obj = new JSONObject();
+        obj.SetInt("width", width);
+        obj.SetInt("height", height);
+        return view_as<UISize>(obj);
+    }
+
+    property int Width {
+        public get() { return view_as<JSONObject>(this).GetInt("width"); }
+        public set(int value) { view_as<JSONObject>(this).SetInt("height", value); }
+    }
+
+    property int Height {
+        public get() { return view_as<JSONObject>(this).GetInt("height"); }
+        public set(int value) { view_as<JSONObject>(this).SetInt("height", value); }
     }
 }
 
@@ -168,11 +185,15 @@ methodmap TempUIElementDefaults < JSONObject {
     }
     property UIPosition Position {
         public get() { return view_as<UIPosition>(view_as<JSONObject>(this).Get("position")); }
-        public set(UIPosition pos) { view_as<JSONObject>(this).Set("position", view_as<JSON>(pos)); }
+        // public set(UIPosition pos) { view_as<JSONObject>(this).Set("position", view_as<JSON>(pos)); }
     }
     property UIColor BackgroundColor {
         public get() { return view_as<UIColor>(view_as<JSONObject>(this).Get("bgColor")); }
-        public set(UIColor color) { view_as<JSONObject>(this).Set("bgColor", view_as<JSON>(color)); }
+        // public set(UIColor color) { view_as<JSONObject>(this).Set("bgColor", view_as<JSON>(color)); }
+    }
+    property UISize Size {
+        public get() { return view_as<UISize>(view_as<JSONObject>(this).Get("size")); }
+        // public set(UISize size) { view_as<JSONObject>(this).Set("size", view_as<JSON>(size)); }
     }
     /// Returns or sets opacity, -1 is not set
     property int Opacity {
@@ -203,6 +224,7 @@ enum UIType {
     Element_Unknown = -1,
     Element_Text,
     Element_List,
+    Element_Audio
 }
 enum UIFlags {
     Element_None
@@ -287,9 +309,21 @@ methodmap TempUI {
     public TempUI(const char[] elemId, const char[] type, int lifetime = 0) {
         JSONObject obj = new JSONObject();
         obj.SetString("elem_id", elemId);
+        obj.Set("steamids", new JSONArray());
+        obj.SetInt("expires_seconds", 0);
         TempUIElement element = new TempUIElement(type);
         obj.Set("element", element);
         return view_as<TempUI>(obj);
+    }
+
+    /// How long the temp UI lasts, 0 for never.
+    property int Duration {
+		public get() {
+            return view_as<JSONObject>(this).GetInt("expires_seconds");
+        }
+        public set(int value) {
+            view_as<JSONObject>(this).SetInt("expires_seconds", value);
+        }
     }
 
     property bool Visible {
@@ -298,16 +332,6 @@ methodmap TempUI {
         }
         public set(bool value) {
             view_as<JSONObject>(this).SetBool("visibility", value);
-            this.Send();
-        }
-    }
-
-    /** Is the UI element globally sent to all connected players?
-    *  Specify players with .AddClient() or clear with .ClearClients()
-    */
-    property bool Global {
-        public get() {
-            return !view_as<JSONObject>(this).HasKey("steamids")
         }
     }
 
@@ -316,38 +340,127 @@ methodmap TempUI {
             return view_as<TempUIElement>(view_as<JSONObject>(this).Get("element"));
         }
         public set(TempUIElement newElement) {
+            // Delete old element
+            JSON elem = view_as<JSONObject>(this).Get("element");
+            if(elem != null) delete elem;
+
             view_as<JSONObject>(this).Set("element", view_as<JSON>(newElement));
         }
-    }
-
-    public void SetActionCallback(UIActionCallback callback) {}
-
-    public void AddClient(const char[] steamid) {
-        // if(!IsClientInGame(client) || steamidCache[client][0] == '\0') ThrowError("Client %d is not connected, ingame, or authorized");
-        JSONObject obj = view_as<JSONObject>(this);
-        JSONArray steamids = view_as<JSONArray>(obj.Get("steamids"));
-        if(steamids == null) {
-            steamids = new JSONArray();
-            obj.Set("steamids", steamids)
-        }
-        steamids.PushString(steamid);
-    }
-
-    public void ClearClients() {
-        view_as<JSONObject>(this).Remove("steamids");
     }
 
     public void Clear() {
         view_as<JSONObject>(this).Clear();
     }
 
-    public void Hide() {
-        this.Visibility = false;
+     public void Hide() {
+        this.Visible = false;
     }
     public void Show() {
-        this.Visibility = true;
+        this.Visible = true;
     }
 
-    public native bool Send();
-
+    public native bool SendAll();
+    public native bool SendTo(int client);
+    public bool SendToMultiple(int[] clientIds, int numClients) {
+        for(int i = 0; i < numClients; i++) {
+            this.SendTo(clientIds[i]);
+        }
+    }
 }
+
+enum AudioState {
+    // Audio stopped, reset to startTime
+    Audio_Stopped,
+    // Pauses audio at current time
+    Audio_Paused,
+    Audio_Play
+}
+
+methodmap ClientList < JSONArray {
+    public ClientList() {
+        return view_as<ClientList>(new JSONArray());
+    }
+
+    property int Length {
+        public get() { return view_as<JSONArray>(this).Length; }
+    }
+
+    public native void AddClient(int client);
+
+    public native bool HasClient(int client);
+
+    public void Clear() {
+        view_as<JSONArray>(this).Clear();
+    }
+}
+
+methodmap AudioResource < JSONObject {
+    public AudioResource(const char[] url, float volume = 0.5) {
+        JSONObject obj = new JSONObject();
+        obj.SetString("source", url);
+        obj.SetFloat("volume", volume);
+        obj.SetInt("state", 0);
+        obj.Set("steamids", new JSONArray());
+        obj.SetBool("repeat", false)
+        return view_as<AudioResource>(obj);
+    }
+
+    property AudioState State {
+        public get() {
+            return view_as<AudioState>(view_as<JSONObject>(this).GetInt("state"));
+        }
+        public set(AudioState state) {
+            view_as<JSONObject>(this).SetInt("state", view_as<int>(state));
+        }
+    }
+
+    property float Volume {
+        public get() {
+            return view_as<JSONObject>(this).GetFloat("volume");
+        }
+        public set(float volume) {
+            view_as<JSONObject>(this).SetFloat("volume", volume);
+        }
+    }
+
+    property bool Repeat {
+        public get() {
+            return view_as<JSONObject>(this).GetBool("repeat");
+        }
+        public set(bool repeat) {
+            view_as<JSONObject>(this).SetBool("repeat", repeat);
+        }
+    }
+
+    property ClientList Clients {
+        public get() {
+            return view_as<ClientList>(view_as<JSONObject>(this).Get("steamids"));
+        }
+    } 
+    /// Plays or resumes playing
+    public native void Play();
+    /// Stops playing audio, clients will reset to beginning
+    public native void Stop();
+    /// Pauses audio, resuming to current play duration
+    public native void Pause();
+
+    public void Clear() {
+        view_as<JSONObject>(this).Clear();
+    }
+}
+
+#if !defined REQUIRE_PLUGIN
+public void __pl_overlay_SetNTVOptional() {
+	MarkNativeAsOptional("IsOverlayConnected");
+    MarkNativeAsOptional("RegisterActionAnyHandler");
+    MarkNativeAsOptional("RegisterActionHandler");
+
+	MarkNativeAsOptional("UIElement.SendAll");
+	MarkNativeAsOptional("UIElement.SendTo");
+	MarkNativeAsOptional("TempUI.SendAll");
+	MarkNativeAsOptional("TempUI.SendTo");
+    MarkNativeAsOptional("AudioResource.Play");
+    MarkNativeAsOptional("AudioResource.Stop");
+    MarkNativeAsOptional("AudioResource.Pause");
+}
+#endif

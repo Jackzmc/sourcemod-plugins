@@ -461,6 +461,10 @@ Action Command_SetClientModel(int client, int args) {
 
 void SetCharacter(int target, int survivorIndex, L4DModelId modelIndex, bool keepModel) {
 	SetEntProp(target, Prop_Send, "m_survivorCharacter", survivorIndex);
+	if(!PrecacheModel(MODELS[view_as<int>(modelIndex)])) {
+		LogError("SetCharacter: INVALID MODEL: %s", MODELS[view_as<int>(modelIndex)]);
+		return;
+	}
 	SetEntityModel(target, MODELS[view_as<int>(modelIndex)]);
 	if (IsFakeClient(target)) {
 		char name[32];
@@ -629,6 +633,9 @@ public void OnMapStart() {
 		PrecacheSound(PRECACHE_SOUNDS[i]);
 	}
 	#endif
+	for(int i = 0; i < 8; i++) {
+		PrecacheModel(MODELS[i]);
+	}
 	
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);

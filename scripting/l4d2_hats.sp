@@ -46,6 +46,8 @@ char g_currentMap[64];
 #include <hats/hats.sp>
 #include <hats/hat_presets.sp>
 #include <hats/props/base.sp>
+#include <hats/natives.sp>
+#include <hats_editor>
 
 public Plugin myinfo = {
 	name =  "L4D2 Hats & Editor", 
@@ -56,6 +58,32 @@ public Plugin myinfo = {
 };
 
 ArrayList NavAreas;
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
+	RegPluginLibrary("editor");
+	// CreateNative("SpawnSchematic", Native_SpawnSchematic);
+	CreateNative("StartEdit", Native_StartEdit);
+	CreateNative("StartSpawner", Native_StartSpawner);
+	CreateNative("CancelEdit", Native_CancelEdit);
+	CreateNative("IsEditorActive", Native_IsEditorActive);
+
+
+	CreateNative("StartSelector", Native_StartSelector);
+	CreateNative("CancelSelector", Native_CancelSelector);
+	CreateNative("IsSelectorActive", Native_IsSelectorActive);
+
+	CreateNative("EntitySelector.Start", Native_Selector_Start);
+	CreateNative("EntitySelector.Count.get", Native_Selector_GetCount);
+	CreateNative("EntitySelector.Active.get", Native_Selector_GetActive);
+	CreateNative("EntitySelector.SetOnEnd", Native_Selector_SetOnEnd);
+	CreateNative("EntitySelector.SetOnPreSelect", Native_Selector_SetOnPreSelect);
+	CreateNative("EntitySelector.SetOnPostSelect", Native_Selector_SetOnPostSelect);
+	CreateNative("EntitySelector.SetOnUnselect", Native_Selector_SetOnUnselect);
+	CreateNative("EntitySelector.AddEntity", Native_Selector_AddEntity);
+	CreateNative("EntitySelector.RemoveEntity", Native_Selector_RemoveEntity);
+	CreateNative("EntitySelector.Cancel", Native_Selector_Cancel);
+	CreateNative("EntitySelector.End", Native_Selector_End);
+	return APLRes_Success;
+}
 
 
 public void OnPluginStart() {
@@ -116,6 +144,7 @@ public void OnPluginStart() {
 	for(int i = 1; i <= MaxClients; i++) {
 		Editor[i].client = i;
 		Editor[i].Reset(true);
+		g_PropData[i].Init(i);
 		hatData[i].yeetGroundTimer = null;
 	}
 
@@ -456,6 +485,7 @@ ArrayList GetSpawnLocations() {
 	return newList;
 }
 
+
 void ChooseRandomPosition(float pos[3], int ignoreClient = 0) {
 	if(NavAreas.Length > 0 && GetURandomFloat() > 0.5) {
 		int nav = NavAreas.Get(GetURandomInt() % (NavAreas.Length - 1));
@@ -578,34 +608,34 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		if(g_PropData[client].pendingSaveType == Save_Schematic) {
 			// move cursor? or should be editor anyway
 		}
-	} else if(g_PropData[client].markedProps != null) {
+	} else if(g_PropData[client].Selector.IsActive()) {
 		SetWeaponDelay(client, 0.5);
 		if(tick - cmdThrottle[client] >= 0.20) {
 			if(buttons & IN_ATTACK) {
 				int entity = GetLookingEntity(client, Filter_ValidHats);
 				if(entity > 0) {
-					g_PropData[client].markedProps.Push(EntIndexToEntRef(entity));
-					GlowEntity(entity, 0.0, GLOW_RED);
+					if(g_PropData[client].Selector.AddEntity(entity) != -1) {
+						PrecacheSound("ui/beep07.wav");
+						EmitSoundToClient(client, "ui/beep07.wav", entity, SND_CHANGEVOL, .volume = 0.5);
+					}
 				} else {
 					PrintHintText(client, "No entity found");
 				}
 			} else if(buttons & IN_ATTACK2) {
 				int entity = GetLookingEntity(client, Filter_ValidHats);
 				if(entity > 0) {
-					int ref = EntIndexToEntRef(entity);
-					int index = g_PropData[client].markedProps.FindValue(ref);
-					if(index > -1) {
-						g_PropData[client].markedProps.Erase(index);
-						L4D2_RemoveEntityGlow(entity);
+					if(g_PropData[client].Selector.RemoveEntity(entity)) {
+						PrecacheSound("ui/beep22.wav");
+						EmitSoundToClient(client, "ui/beep22.wav", entity, SND_CHANGEVOL, .volume = 0.5);
 					}
 				}
 			} else if(buttons & IN_USE) {
 				if(buttons & IN_SPEED) {
 					//Delete
-					EndDeleteTool(client, true);
+					g_PropData[client].Selector.End();
 				} else if(buttons & IN_DUCK) {
 					//Cancel
-					EndDeleteTool(client, false);
+					g_PropData[client].Selector.Cancel();
 				}
 			}
 			cmdThrottle[client] = tick;
@@ -628,31 +658,37 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 					}
 					if(!(oldButtons & IN_JUMP) && (buttons & IN_JUMP)) {
 						buttons &= ~IN_JUMP;
-						Editor[client].CycleStacker(tick);
+						Editor[client].CycleStacker();
 					} else if(!(oldButtons & IN_SPEED) && (buttons & IN_SPEED)) {
-						Editor[client].ToggleCollision(tick);
+						Editor[client].ToggleCollision();
 						return Plugin_Handled; 
 					}  else if(!(oldButtons & IN_DUCK) && (buttons & IN_DUCK)) {
-						Editor[client].ToggleCollisionRotate(tick);
+						Editor[client].ToggleCollisionRotate();
 						return Plugin_Handled; 
 					} else {
 						PrintCenterText(client, "%.1f %.1f %.1f", Editor[client].angles[0], Editor[client].angles[1], Editor[client].angles[2]);
 						isRotate = true;
 						SetEntityFlags(client, flags |= FL_FROZEN);
-						if(!(oldButtons & IN_ATTACK) && (buttons & IN_ATTACK)) Editor[client].CycleAxis(tick);
-						else if(buttons & IN_ATTACK2) Editor[client].CycleSnapAngle(tick);
+						if(!(oldButtons & IN_ATTACK) && (buttons & IN_ATTACK)) Editor[client].CycleAxis();
+						else if(!(oldButtons & IN_ATTACK2) && (buttons & IN_ATTACK2))  Editor[client].CycleSnapAngle(tick);
 						
 						// Rotation control:
 						// Turn off rotate when player wants rotate
 						Editor[client].hasCollisionRotate = false;
 						if(tick - cmdThrottle[client] > 0.1) {
-							if(Editor[client].axis == 2) {
-								if(mouse[1] > 10) Editor[client].angles[2] += Editor[client].snapAngle;
-								else if(mouse[1] < -10) Editor[client].angles[2] -= Editor[client].snapAngle;
-							} else {
-								if(mouse[0] > 10) Editor[client].angles[Editor[client].axis] += Editor[client].snapAngle;
-								else if(mouse[0] < -10) Editor[client].angles[Editor[client].axis] -= Editor[client].snapAngle;
-								
+							if(Editor[client].axis == 0) {
+								int mouseXAbs = IntAbs(mouse[0]); 
+								int mouseYAbs = IntAbs(mouse[1]); 
+								bool XOverY = mouseXAbs > mouseYAbs;
+								if(mouseYAbs > 10 && !XOverY) {
+									Editor[client].IncrementAxis(0, mouse[1]);
+								} else if(mouseXAbs > 10 && XOverY) {
+									Editor[client].IncrementAxis(1, mouse[0]);
+								}
+							}
+							else if(Editor[client].axis == 1) {
+								if(mouse[0] > 10) Editor[client].angles[2] += Editor[client].snapAngle;
+								else if(mouse[0] < -10) Editor[client].angles[2] -= Editor[client].snapAngle;
 							}
 							cmdThrottle[client] = tick;
 						}
@@ -701,24 +737,27 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			}
 			case COLOR: {
 				SetWeaponDelay(client, 0.5);
-				PrintCenterText(client, "%d %d %d %d", Editor[client].color[0], Editor[client].color[1], Editor[client].color[2], Editor[client].color[3]);
+				PrintHintText(client, "%d %d %d %d", Editor[client].color[0], Editor[client].color[1], Editor[client].color[2], Editor[client].color[3]);
 				if(buttons & IN_USE) {
 					Editor[client].CycleColorComponent(tick);
-				} else if(buttons & IN_ATTACK) {
+				} else if(buttons & IN_ATTACK2) {
 					Editor[client].IncreaseColor(1);
 					allowMove = false;
-				} else if(buttons & IN_ATTACK2) {
+				} else if(buttons & IN_ATTACK) {
 					Editor[client].IncreaseColor(-1);
 					allowMove = false;
 				}
 			}
 		}
-		if(!(oldButtons & IN_USE) && buttons & IN_USE) {
+		if(buttons & IN_DUCK) {
+
+		}
+		if(Editor[client].mode != COLOR && !(oldButtons & IN_USE) && buttons & IN_USE) {
 			if(buttons & IN_SPEED) {
 				Editor[client].Cancel();
 			} else if(buttons & IN_DUCK) {
-				if(Editor[client].flags & Edit_Preview)
-						Editor[client].CycleBuildType();
+				Editor[client].CycleBuildType();
+				// Editor[client].ShowExtraOptions();
 			} else {
 				int entity;
 				Editor[client].Done(entity);
@@ -735,6 +774,12 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	return Plugin_Continue;
 }
 
+int IntAbs(int a) {
+	if(a < 0) {
+		return a * -1;
+	}
+	return a;
+}
 
 // Don't show real entity to hat wearer (Show for ALL but hat wearer)
 Action OnRealTransmit(int entity, int client) {
@@ -914,6 +959,7 @@ bool Filter_ValidHats(int entity, int mask, int data) {
 }
 
 bool CheckBlacklist(int entity) {
+	if(entity == 0) return false;
 	if(cvar_sm_hats_blacklist_enabled.BoolValue) {
 		static char buffer[64];
 		GetEntityClassname(entity, buffer, sizeof(buffer));

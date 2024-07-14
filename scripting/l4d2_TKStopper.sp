@@ -249,8 +249,8 @@ void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) 
 				CPrintChatToAdmins("{olive}%N{default} has been banned for %d minutes (marked as troll). If this was a mistake, you can discard their ban from the admin panel at {yellow}https://admin.jackz.me", client, hBanTime.IntValue);
 			else
 				CPrintChatToAdmins("{olive}%N{default} has been permanently banned (marked as troll). If this was a mistake, you can discard their ban from the admin panel at {yellow}https://admin.jackz.me", client);
-			pData[client].isTroll = false;
 		}
+		pData[client].isTroll = false;
 
 		if(!IsFakeClient(client)) {
 			float minutesSinceiLastFFTime = GetLastFFMinutes(client);

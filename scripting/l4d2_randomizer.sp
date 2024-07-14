@@ -11,9 +11,12 @@
 #include <sdktools>
 //#include <sdkhooks>
 #include <profiler>
-#include <json>
+// #include <json>
+#include <ripext>
 #include <jutils>
 #include <entitylump>
+#undef REQUIRE_PLUGIN
+#include <hats_editor>
 
 int g_iLaserIndex;
 #if defined DEBUG_BLOCKERS
@@ -27,6 +30,77 @@ int g_iLaserIndex;
 #define MAX_SCENE_NAME_LENGTH 32
 #define MAX_INPUTS_CLASSNAME_LENGTH 64
 
+
+ConVar cvarEnabled;
+enum struct ActiveSceneData {
+	char name[MAX_SCENE_NAME_LENGTH];
+	int variantIndex;
+}
+MapData g_MapData;
+BuilderData g_builder;
+char currentMap[64];
+
+enum struct BuilderData {
+	JSONObject mapData;
+
+	JSONObject selectedSceneData;
+	char selectedSceneId[64];
+
+	JSONObject selectedVariantData;
+	int selectedVariantIndex;
+
+	void Cleanup() {
+		this.selectedSceneData = null;
+		this.selectedVariantData = null;
+		this.selectedVariantIndex = -1;
+		this.selectedSceneId[0] = '\0';
+		if(this.mapData != null)
+			delete this.mapData;
+			// JSONcleanup_and_delete(this.mapData);
+	}
+
+	bool SelectScene(const char[] group) {
+		if(!g_builder.mapData.HasKey(group)) return false;
+		this.selectedSceneData = view_as<JSONObject>(g_builder.mapData.Get(group));
+		strcopy(this.selectedSceneId, sizeof(this.selectedSceneId), group);
+		return true;
+	}
+
+	/**
+	 * Select a variant, enter -1 to not select any (scene's entities)
+	 */
+	bool SelectVariant(int index = -1) {
+		if(this.selectedSceneData == null) LogError("SelectVariant called, but no group selected");
+		JSONArray variants = view_as<JSONArray>(this.selectedSceneData.Get("variants"));
+		if(index >= variants.Length) return false;
+		else if(index < -1) return false;
+		else if(index > -1) {
+			this.selectedVariantData = view_as<JSONObject>(variants.Get(index));
+		} else {
+			this.selectedVariantData = null;
+		}
+		this.selectedVariantIndex = index;
+		return true;
+	}
+
+	void AddEntity(int entity, ExportType exportType = Export_Model) {
+		JSONArray entities;
+		if(g_builder.selectedVariantData == null) {
+			// Create <scene>.entities if doesn't exist:
+			if(!g_builder.selectedSceneData.HasKey("entities")) {
+				g_builder.selectedSceneData.Set("entities", new JSONArray());
+			} 
+			entities = view_as<JSONArray>(g_builder.selectedSceneData.Get("entities")); 
+		} else {
+			entities = view_as<JSONArray>(g_builder.selectedVariantData.Get("entities"));
+		}
+		JSONObject entityData = ExportEntity(entity, Export_Model);
+		entities.Push(entityData);
+	}
+}
+
+#include <randomizer/rbuild.sp>
+
 public Plugin myinfo = 
 {
 	name =  "L4D2 Randomizer", 
@@ -36,13 +110,6 @@ public Plugin myinfo =
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
-ConVar cvarEnabled;
-enum struct ActiveSceneData {
-	char name[MAX_SCENE_NAME_LENGTH];
-	int variantIndex;
-}
-MapData g_MapData;
-
 public void OnPluginStart() {
 	EngineVersion g_Game = GetEngineVersion();
 	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2) {
@@ -51,15 +118,14 @@ public void OnPluginStart() {
 
 	RegAdminCmd("sm_rcycle", Command_CycleRandom, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_expent", Command_ExportEnt, ADMFLAG_GENERIC);
+	RegAdminCmd("sm_rbuild", Command_RandomizerBuild, ADMFLAG_CHEATS);
 
 	cvarEnabled = CreateConVar("sm_randomizer_enabled", "0");
 
 	g_MapData.activeScenes = new ArrayList(sizeof(ActiveSceneData));
 }
 
-char currentMap[64];
 
-bool hasRan;
 // TODO: on round start
 public void OnMapStart() {
 	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt", true);
@@ -69,6 +135,7 @@ public void OnMapStart() {
 }
 
 public void OnMapEnd() {
+	g_builder.Cleanup();
 	Cleanup();
 }
 
@@ -124,9 +191,7 @@ public Action Command_CycleRandom(int client, int args) {
 	if(args > 0) {
 		DeleteCustomEnts();
 
-		char arg1[8];
-		GetCmdArg(1, arg1, sizeof(arg1));
-		int flags = StringToInt(arg1) | view_as<int>(FLAG_REFRESH);
+		int flags = GetCmdArgInt(1) | view_as<int>(FLAG_REFRESH);
 		RunMap(currentMap, flags);
 		if(client > 0)
 			PrintCenterText(client, "Cycled flags=%d", flags);
@@ -141,7 +206,7 @@ public Action Command_CycleRandom(int client, int args) {
 	return Plugin_Handled;
 }
 
-public Action Command_ExportEnt(int client, int args) {
+Action Command_ExportEnt(int client, int args) {
 	float origin[3];
 	int entity = GetLookingPosition(client, Filter_IgnorePlayer, origin);
 	float angles[3];
@@ -188,6 +253,271 @@ public Action Command_ExportEnt(int client, int args) {
 	}
 	return Plugin_Handled;
 }
+Action Command_RandomizerBuild(int client, int args) {
+	char arg[64];
+	GetCmdArg(1, arg, sizeof(arg));
+	if(StrEqual(arg, "new")) {
+		JSONObject temp = LoadMapJson(currentMap);
+		GetCmdArg(2, arg, sizeof(arg));
+		if(temp != null && !StrEqual(arg, "confirm")) {
+			delete temp;
+			ReplyToCommand(client, "Existing map data found, enter /rbuild new confirm to overwrite.");
+			return Plugin_Handled;
+		}
+		g_builder.Cleanup();
+		g_builder.mapData = new JSONObject();
+		SaveMapJson(currentMap, g_builder.mapData);
+		ReplyToCommand(client, "Started new map data for %s", currentMap);
+	} else if(StrEqual(arg, "load")) {
+		if(args >= 2) {
+			GetCmdArg(2, arg, sizeof(arg));
+		} else {
+			strcopy(arg, sizeof(arg), currentMap);
+		}
+		g_builder.Cleanup();
+		g_builder.mapData = LoadMapJson(arg);
+		if(g_builder.mapData != null) {
+			ReplyToCommand(client, "Loaded map data for %s", arg);
+		} else {
+			ReplyToCommand(client, "No map data found for %s", arg);
+		}
+	} else if(StrEqual(arg, "menu")) {
+		OpenMainMenu(client);	
+	} else if(g_builder.mapData == null) {
+		ReplyToCommand(client, "No map data for %s, either load with /rbuild load, or start new /rbuild new", currentMap);
+		return Plugin_Handled;
+	} else if(StrEqual(arg, "save")) {
+		SaveMapJson(currentMap, g_builder.mapData);
+		ReplyToCommand(client, "Saved %s", currentMap);
+	} else if(StrEqual(arg, "scenes")) {
+		Command_RandomizerBuild_Scenes(client, args);
+	} else if(StrEqual(arg, "sel") || StrEqual(arg, "selector")) {
+		if(g_builder.selectedVariantData == null) {
+			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
+			return Plugin_Handled;
+		}
+		StartSelector(client, OnSelectorDone);
+	} else if(StrEqual(arg, "spawner")) {
+		if(g_builder.selectedVariantData == null) {
+			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
+			return Plugin_Handled;
+		}
+		StartSpawner(client, OnSpawnerDone);
+		ReplyToCommand(client, "Spawn props to add to variant");	
+	} else if(StrEqual(arg, "cursor")) {
+		if(g_builder.selectedVariantData == null) {
+			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
+			return Plugin_Handled;
+		}
+		float origin[3];
+		char arg1[32];
+		int entity = GetLookingPosition(client, Filter_IgnorePlayer, origin);
+		GetCmdArg(2, arg1, sizeof(arg1));
+		ExportType exportType = Export_Model;
+		if(StrEqual(arg1, "hammerid")) {
+			exportType = Export_HammerId;
+		} else if(StrEqual(arg1, "targetname")) {
+			exportType = Export_TargetName;
+		}
+		if(entity > 0) {
+			g_builder.AddEntity(entity, exportType);
+			ReplyToCommand(client, "Added entity #%d to variant #%d", entity, g_builder.selectedVariantIndex);
+		} else {
+			ReplyToCommand(client, "No entity found");
+		}
+	} else if(StrEqual(arg, "entityid")) {
+		char arg1[32];
+		int entity = GetCmdArgInt(2);
+		GetCmdArg(3, arg1, sizeof(arg));
+		ExportType exportType = Export_Model;
+		if(StrEqual(arg1, "hammerid")) {
+			exportType = Export_HammerId;
+		} else if(StrEqual(arg1, "targetname")) {
+			exportType = Export_TargetName;
+		}
+		if(entity > 0) {
+			g_builder.AddEntity(entity, exportType);
+			ReplyToCommand(client, "Added entity #%d to variant #%d", entity, g_builder.selectedVariantIndex);
+		} else {
+			ReplyToCommand(client, "No entity found");
+		}
+	} else {
+		ReplyToCommand(client, "Unknown arg. Try: new, load, save, scenes, cursor");
+	}
+	return Plugin_Handled;
+}
+
+enum ExportType {
+	Export_HammerId,
+	Export_TargetName,
+	Export_Model
+}
+JSONObject ExportEntity(int entity, ExportType exportType = Export_Model) {
+	float origin[3], angles[3], size[3];
+	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", origin);
+	GetEntPropVector(entity, Prop_Send, "m_angRotation", angles);
+	GetEntPropVector(entity, Prop_Send, "m_vecMaxs", size);
+
+	char model[64];
+	JSONObject entityData = new JSONObject();
+	GetEntityClassname(entity, model, sizeof(model));
+	if(StrContains(model, "prop_") == -1) {
+		entityData.Set("scale", VecToArray(size));
+	}
+	if(exportType == Export_HammerId) {
+		int hammerid = GetEntProp(entity, Prop_Data, "m_iHammerID");
+		entityData.SetString("type", "hammerid");
+		char id[16];
+		IntToString(hammerid, id, sizeof(id));
+		entityData.SetString("model", id);
+	} else if(exportType == Export_TargetName) {
+		GetEntPropString(entity, Prop_Data, "m_iName", model, sizeof(model));
+		entityData.SetString("type", "targetname");
+		entityData.SetString("model", model);
+	} else {
+		GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
+		entityData.SetString("model", model);
+	}
+	entityData.Set("origin", VecToArray(origin));
+	entityData.Set("angles", VecToArray(angles));
+	return entityData;
+}
+
+bool OnSpawnerDone(int client, int entity, CompleteType result) {
+	PrintToServer("Randomizer OnSpawnerDone");
+	if(result == Complete_PropSpawned && entity > 0) {
+		JSONObject entityData = ExportEntity(entity, Export_Model);
+		JSONArray entities = view_as<JSONArray>(g_builder.selectedVariantData.Get("entities"));
+		entities.Push(entityData);
+		ReplyToCommand(client, "Added entity to variant");
+		RemoveEntity(entity);
+	} 
+	return result == Complete_PropSpawned;
+}
+void OnSelectorDone(int client, ArrayList entities) {
+	JSONArray entArray = view_as<JSONArray>(g_builder.selectedVariantData.Get("entities"));
+	if(entities != null) {
+		JSONObject entityData;
+		for(int i = 0; i < entities.Length; i++) {
+			int ref = entities.Get(i);
+			entityData = ExportEntity(ref, Export_Model);
+			entArray.Push(entityData);
+			delete entityData; //?
+			RemoveEntity(ref);
+		}
+		PrintToChat(client, "Added %d entities to variant", entities.Length);
+		delete entities;
+	}
+}
+
+JSONArray VecToArray(float vec[3]) {
+	JSONArray arr = new JSONArray();
+	arr.PushFloat(vec[0]);
+	arr.PushFloat(vec[1]);
+	arr.PushFloat(vec[2]);
+	return arr;
+}
+
+void Command_RandomizerBuild_Scenes(int client, int args) {
+	char arg[16];
+	GetCmdArg(2, arg, sizeof(arg));
+	if(StrEqual(arg, "new")) {
+		if(args < 4) {
+			ReplyToCommand(client, "Syntax: /rbuild scenes new <name> <chance 0.0-1.0>");
+		} else {
+			char name[64];
+			GetCmdArg(3, name, sizeof(name));
+			GetCmdArg(4, arg, sizeof(arg));
+			float chance = StringToFloat(arg);
+			JSONObject scene = new JSONObject();
+			scene.SetFloat("chance", chance);
+			scene.Set("variants", new JSONArray());
+			g_builder.mapData.Set(name, scene);
+			g_builder.SelectScene(name);
+			JSONArray variants = view_as<JSONArray>(g_builder.selectedSceneData.Get("variants"));
+
+			JSONObject variantObj = new JSONObject();
+			variantObj.SetInt("weight", 1);
+			variantObj.Set("entities", new JSONArray());
+			variants.Push(variantObj);
+			g_builder.SelectVariant(0);
+			ReplyToCommand(client, "Created & selected scene & variant %s#0", name);
+			StartSelector(client, OnSelectorDone);
+		}
+	} else if(StrEqual(arg, "select") || StrEqual(arg, "load") || StrEqual(arg, "choose")) {
+		GetCmdArg(3, arg, sizeof(arg));
+		if(g_builder.SelectScene(arg)) {
+			int variantIndex;
+			if(GetCmdArgIntEx(4, variantIndex)) {
+				if(g_builder.SelectVariant(variantIndex)) {
+					ReplyToCommand(client, "Selected scene: %s#%d", arg, variantIndex);
+				} else {
+					ReplyToCommand(client, "Unknown variant for scene");
+				}
+			} else {
+				ReplyToCommand(client, "Selected scene: %s", arg);
+			}
+		} else {
+			ReplyToCommand(client, "No scene found");
+		}
+	} else if(StrEqual(arg, "variants")) {
+		Command_RandomizerBuild_Variants(client, args);
+	} else if(args > 1) {
+		ReplyToCommand(client, "Unknown argument, try: new, select, variants");
+	} else {
+		ReplyToCommand(client, "Scenes:");
+		JSONObjectKeys iterator = g_builder.mapData.Keys();
+		while(iterator.ReadKey(arg, sizeof(arg))) {
+			if(StrEqual(arg, g_builder.selectedSceneId)) {
+				ReplyToCommand(client, "\t%s (selected)", arg);
+			} else {
+				ReplyToCommand(client, "\t%s", arg);
+			}
+		}
+	}
+}
+
+void Command_RandomizerBuild_Variants(int client, int args) {
+	if(g_builder.selectedSceneId[0] == '\0') {
+		ReplyToCommand(client, "No scene selected, select with /rbuild groups select <group>");
+		return;
+	}
+	char arg[16];
+	GetCmdArg(3, arg, sizeof(arg));
+	if(StrEqual(arg, "new")) {
+		// /rbuild group variants new [weight]
+		int weight;
+		if(!GetCmdArgIntEx(4, weight)) {
+			weight = 1;
+		}
+		JSONArray variants = view_as<JSONArray>(g_builder.selectedSceneData.Get("variants"));
+		JSONObject variantObj = new JSONObject();
+		variantObj.SetInt("weight", weight);
+		variantObj.Set("entities", new JSONArray());
+		int index = variants.Push(variantObj);
+		g_builder.SelectVariant(index);
+		ReplyToCommand(client, "Created variant #%d", index);
+	} else if(StrEqual(arg, "select")) {
+		int index = GetCmdArgInt(4);
+		if(g_builder.SelectVariant(index)) {
+			ReplyToCommand(client, "Selected variant: %s#%d", g_builder.selectedSceneId, index);
+		} else {
+			ReplyToCommand(client, "No variant found");
+		}
+	} else {
+		ReplyToCommand(client, "Variants:");
+		JSONObject variantObj;
+		JSONArray variants = view_as<JSONArray>(g_builder.selectedSceneData.Get("variants"));
+		for(int i = 0; i < variants.Length; i++) {
+			variantObj = view_as<JSONObject>(variants.Get(i));
+			int weight = 1;
+			if(variantObj.HasKey("weight"))
+				weight = variantObj.GetInt("weight");
+			JSONArray entities = view_as<JSONArray>(variantObj.Get("entities"));
+			ReplyToCommand(client, "  #%d. [W:%d] [#E:%d]", i, weight, entities.Length);
+		}
+	}
+}
 
 
 enum struct SceneData {
@@ -211,10 +541,12 @@ enum struct SceneVariantData {
 	int weight;
 	ArrayList inputsList;
 	ArrayList entities;
+	ArrayList forcedScenes;
 
 	void Cleanup() {
 		delete this.inputsList;
 		delete this.entities;
+		delete this.forcedScenes;
 	}
 }
 
@@ -366,6 +698,7 @@ enum struct LumpEditData {
 }
 
 enum struct MapData {
+	StringMap scenesKv;
 	ArrayList scenes;
 	ArrayList lumpEdits;
 	ArrayList activeScenes;
@@ -376,30 +709,40 @@ enum loadFlags {
 	FLAG_ALL_SCENES = 1, // Pick all scenes, no random chance
 	FLAG_ALL_VARIANTS = 2, // Pick all variants (for debug purposes),
 	FLAG_REFRESH = 4, // Load data bypassing cache
+	FLAG_FORCE_ACTIVE = 8 // Similar to ALL_SCENES, bypasses % chance
 }
 
 // Reads (mapname).json file and parses it
-public bool LoadMapData(const char[] map, int flags) {
+public JSONObject LoadMapJson(const char[] map) {
 	Debug("Loading config for %s", map);
 	char filePath[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, filePath, sizeof(filePath), "data/randomizer/%s.json", map);
 	if(!FileExists(filePath)) {
 		Log("[Randomizer] No map config file (data/randomizer/%s.json), not loading", map);
-		return false;
+		return null;
 	}
 
-	char buffer[65536];
-	File file = OpenFile(filePath, "r");
-	if(file == null) {
-		LogError("Could not open map config file (data/randomizer/%s.json)", map);
-		return false;
-	}
-	file.ReadString(buffer, sizeof(buffer));
-	JSON_Object data = json_decode(buffer);
+	JSONObject data = JSONObject.FromFile(filePath);
 	if(data == null) {
-		json_get_last_error(buffer, sizeof(buffer));
-		LogError("Could not parse map config file (data/randomizer/%s.json): %s", map, buffer);
-		delete file;
+		LogError("Could not parse map config file (data/randomizer/%s.json)", map);
+		return null;
+	}
+	return data;
+}
+public void SaveMapJson(const char[] map, JSONObject json) {
+	Debug("Saving config for %s", map);
+	char filePath[PLATFORM_MAX_PATH], filePathTemp[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, filePathTemp, sizeof(filePath), "data/randomizer/%s.json.tmp", map);
+	BuildPath(Path_SM, filePath, sizeof(filePath), "data/randomizer/%s.json", map);
+
+	json.ToFile(filePathTemp, JSON_INDENT(4));
+	RenameFile(filePath, filePathTemp);
+	SetFilePermissions(filePath, FPERM_U_WRITE | FPERM_U_READ | FPERM_G_WRITE | FPERM_G_READ | FPERM_O_READ);
+}
+
+public bool LoadMapData(const char[] map, int flags) {
+	JSONObject data = LoadMapJson(map);
+	if(data == null) {
 		return false;
 	}
 
@@ -407,51 +750,51 @@ public bool LoadMapData(const char[] map, int flags) {
 
 	Cleanup();
 	g_MapData.scenes = new ArrayList(sizeof(SceneData));
+	g_MapData.scenesKv = new StringMap();
 	g_MapData.lumpEdits = new ArrayList(sizeof(LumpEditData));
 	g_MapData.activeScenes.Clear();
 
 	Profiler profiler = new Profiler();
 	profiler.Start();
 
-	int length = data.Length;
+	JSONObjectKeys iterator = data.Keys();
 	char key[32];
-	for (int i = 0; i < length; i += 1) {
-		data.GetKey(i, key, sizeof(key));
-
+	while(iterator.ReadKey(key, sizeof(key))) {
 		if(key[0] == '_') {
 			if(StrEqual(key, "_lumps")) {
-				JSON_Array lumpsList = view_as<JSON_Array>(data.GetObject(key));
+				JSONArray lumpsList = view_as<JSONArray>(data.Get(key));
 				if(lumpsList != null) {
 					for(int l = 0; l < lumpsList.Length; l++) {
-						loadLumpData(g_MapData.lumpEdits, lumpsList.GetObject(l));
+						loadLumpData(g_MapData.lumpEdits, view_as<JSONObject>(lumpsList.Get(l)));
 					}
 				}
 			} else {
 				Debug("Unknown special entry \"%s\", skipping", key);
 			}
 		} else {
-			if(data.GetType(key) != JSON_Type_Object) {
-				Debug("Invalid normal entry \"%s\" (not an object), skipping", key);
-				continue;
-			}
-			JSON_Object scene = data.GetObject(key);
+			// if(data.GetType(key) != JSONType_Object) {
+			// 	Debug("Invalid normal entry \"%s\" (not an object), skipping", key);
+			// 	continue;
+			// }
+			JSONObject scene = view_as<JSONObject>(data.Get(key));
 			// Parses scene data and inserts to scenes
 			loadScene(key, scene);
 		}
 	}
 
-	json_cleanup_and_delete(data);
+	delete data;
 	profiler.Stop();
 	Log("Parsed map file for %s(%d) and found %d scenes in %.4f seconds", map, flags, g_MapData.scenes.Length, profiler.Time);
 	delete profiler;
-	delete file;
 	return true;
 }
 
 // Calls LoadMapData (read&parse (mapname).json) then select scenes
 public bool RunMap(const char[] map, int flags) {
 	if(g_MapData.scenes == null || flags & view_as<int>(FLAG_REFRESH)) {
-		LoadMapData(map, flags);
+		if(!LoadMapData(map, flags)) {
+			return false;
+		}
 	}
 	Profiler profiler = new Profiler();
 
@@ -463,7 +806,7 @@ public bool RunMap(const char[] map, int flags) {
 	return true;
 }
 
-void loadScene(const char key[MAX_SCENE_NAME_LENGTH], JSON_Object sceneData) {
+void loadScene(const char key[MAX_SCENE_NAME_LENGTH], JSONObject sceneData) {
 	SceneData scene;
 	scene.name = key;
 	scene.chance = sceneData.GetFloat("chance");
@@ -471,38 +814,73 @@ void loadScene(const char key[MAX_SCENE_NAME_LENGTH], JSON_Object sceneData) {
 		LogError("Scene \"%s\" has invalid chance (%f)", scene.name, scene.chance);
 		return;
 	}
+	// TODO: load "entities", merge with choice.entities
 	sceneData.GetString("group", scene.group, sizeof(scene.group));
 	scene.variants = new ArrayList(sizeof(SceneVariantData));
-	JSON_Array variants = view_as<JSON_Array>(sceneData.GetObject("variants"));
+	if(!sceneData.HasKey("variants")) {
+		ThrowError("Failed to load: Scene \"%s\" has missing \"variants\" array", scene.name);
+		return;
+	}
+	JSONArray entities;
+	if(sceneData.HasKey("entities")) {
+		entities = view_as<JSONArray>(sceneData.Get("entities"));
+	}
+
+	JSONArray variants = view_as<JSONArray>(sceneData.Get("variants"));
 	for(int i = 0; i < variants.Length; i++) {
 		// Parses choice and loads to scene.choices
-		loadChoice(scene, variants.GetObject(i));
+		loadChoice(scene, view_as<JSONObject>(variants.Get(i)), entities);
 	}
 	g_MapData.scenes.PushArray(scene);
+	g_MapData.scenesKv.SetArray(scene.name, scene, sizeof(scene));
 }
 
-void loadChoice(SceneData scene, JSON_Object choiceData) {
+void loadChoice(SceneData scene, JSONObject choiceData, JSONArray extraEntities) {
 	SceneVariantData choice;
-	choice.weight = choiceData.GetInt("weight", 1);
+	choice.weight = 1;
+	if(choiceData.HasKey("weight"))
+		choice.weight = choiceData.GetInt("weight");
 	choice.entities = new ArrayList(sizeof(VariantEntityData));
 	choice.inputsList = new ArrayList(sizeof(VariantInputData));
-	JSON_Array entities = view_as<JSON_Array>(choiceData.GetObject("entities"));
-	if(entities != null) {
+	choice.forcedScenes = new ArrayList(ByteCountToCells(MAX_SCENE_NAME_LENGTH));
+	// Load in any variant-based entities
+	if(choiceData.HasKey("entities")) {
+		JSONArray entities = view_as<JSONArray>(choiceData.Get("entities"));
 		for(int i = 0; i < entities.Length; i++) {
 			// Parses entities and loads to choice.entities
-			loadChoiceEntity(choice.entities, entities.GetObject(i));
+			loadChoiceEntity(choice.entities, view_as<JSONObject>(entities.Get(i)));
 		}
+		delete entities;
 	}
-	JSON_Array inputsList = view_as<JSON_Array>(choiceData.GetObject("inputs"));
-	if(inputsList != null) {
-		for(int i = 0; i < inputsList.Length; i++) {
-			loadChoiceInput(choice.inputsList, inputsList.GetObject(i));
+	// Load in any entities that the scene has
+	if(extraEntities != null) {
+		for(int i = 0; i < extraEntities.Length; i++) {
+			// Parses entities and loads to choice.entities
+			loadChoiceEntity(choice.entities, view_as<JSONObject>(extraEntities.Get(i)));
 		}
+		delete extraEntities;
+	}
+	// Load all inputs
+	if(choiceData.HasKey("inputs")) {
+		JSONArray inputsList = view_as<JSONArray>(choiceData.Get("inputs"));
+		for(int i = 0; i < inputsList.Length; i++) {
+			loadChoiceInput(choice.inputsList, view_as<JSONObject>(inputsList.Get(i)));
+		}
+		delete inputsList;
+	}
+	if(choiceData.HasKey("force_scenes")) {
+		JSONArray scenes = view_as<JSONArray>(choiceData.Get("force_scenes"));
+		char sceneId[32];
+		for(int i = 0; i < scenes.Length; i++) {
+			scenes.GetString(i, sceneId, sizeof(sceneId));
+			choice.forcedScenes.PushString(sceneId);
+		}
+		delete scenes;
 	}
 	scene.variants.PushArray(choice);
 }
 
-void loadChoiceInput(ArrayList list, JSON_Object inputData) {
+void loadChoiceInput(ArrayList list, JSONObject inputData) {
 	VariantInputData input;
 	// Check classname -> targetname -> hammerid
 	if(!inputData.GetString("classname", input.name, sizeof(input.name))) {
@@ -527,7 +905,7 @@ void loadChoiceInput(ArrayList list, JSON_Object inputData) {
 	list.PushArray(input);
 }
 
-void loadLumpData(ArrayList list, JSON_Object inputData) {
+void loadLumpData(ArrayList list, JSONObject inputData) {
 	LumpEditData input;
 	// Check classname -> targetname -> hammerid
 	if(!inputData.GetString("classname", input.name, sizeof(input.name))) {
@@ -553,7 +931,7 @@ void loadLumpData(ArrayList list, JSON_Object inputData) {
 	list.PushArray(input);
 }
 
-void loadChoiceEntity(ArrayList list, JSON_Object entityData) {
+void loadChoiceEntity(ArrayList list, JSONObject entityData) {
 	VariantEntityData entity;
 	entityData.GetString("model", entity.model, sizeof(entity.model));
 	if(!entityData.GetString("type", entity.type, sizeof(entity.type))) {
@@ -569,18 +947,20 @@ void loadChoiceEntity(ArrayList list, JSON_Object entityData) {
 	list.PushArray(entity);
 }
 
-void GetVector(JSON_Object obj, const char[] key, float out[3]) {
-	JSON_Array vecArray = view_as<JSON_Array>(obj.GetObject(key));
+bool GetVector(JSONObject obj, const char[] key, float out[3]) {
+	if(!obj.HasKey(key)) return false;
+	JSONArray vecArray = view_as<JSONArray>(obj.Get(key));
 	if(vecArray != null) {
 		out[0] = vecArray.GetFloat(0);
 		out[1] = vecArray.GetFloat(1);
 		out[2] = vecArray.GetFloat(2);
 	}
+	return true;
 }
 
-void GetColor(JSON_Object obj, const char[] key, int out[4]) {
-	JSON_Array vecArray = view_as<JSON_Array>(obj.GetObject(key));
-	if(vecArray != null) {
+void GetColor(JSONObject obj, const char[] key, int out[4], int defaultColor[4] = { 255, 255, 255, 255 }) {
+	if(obj.HasKey(key)) {
+		JSONArray vecArray = view_as<JSONArray>(obj.Get(key));
 		out[0] = vecArray.GetInt(0);
 		out[1] = vecArray.GetInt(1);
 		out[2] = vecArray.GetInt(2);
@@ -589,10 +969,7 @@ void GetColor(JSON_Object obj, const char[] key, int out[4]) {
 		else
 			out[3] = 255;
 	} else {
-		out[0] = 255;
-		out[1] = 255;
-		out[2] = 255;
-		out[3] = 255;
+		out = defaultColor;
 	}
 }
 
@@ -600,6 +977,8 @@ void selectScenes(int flags = 0) {
 	SceneData scene;
 	StringMap groups = new StringMap();
 	ArrayList list;
+	// Select and spawn non-group scenes
+	// TODO: refactor to use .scenesKv
 	for(int i = 0; i < g_MapData.scenes.Length; i++) {
 		g_MapData.scenes.GetArray(i, scene);
 		// TODO: Exclusions
@@ -607,6 +986,7 @@ void selectScenes(int flags = 0) {
 		if(scene.group[0] == '\0') {
 			selectScene(scene, flags);
 		} else {
+			// Load it into group list
 			if(!groups.GetValue(scene.group, list)) {
 				list = new ArrayList();
 			}
@@ -615,25 +995,61 @@ void selectScenes(int flags = 0) {
 		}
 	}
 
+	// Iterate through groups and select a random scene:
 	StringMapSnapshot snapshot = groups.Snapshot();
 	char key[MAX_SCENE_NAME_LENGTH];
 	for(int i = 0; i < snapshot.Length; i++) {
 		snapshot.GetKey(i, key, sizeof(key));
 		groups.GetValue(key, list);
+		// Select a random scene from the group:
 		int index = GetURandomInt() % list.Length;
 		index = list.Get(index);
 		g_MapData.scenes.GetArray(index, scene);
+
 		Debug("Selected scene \"%s\" for group %s (%d members)", scene.name, key, list.Length);
 		selectScene(scene, flags);
 		delete list;
 	}
+	// Traverse active scenes, loading any other scene it requires (via .force_scenes)
+	ActiveSceneData aScene;
+	SceneVariantData choice;
+	ArrayList forcedScenes = new ArrayList(ByteCountToCells(MAX_SCENE_NAME_LENGTH));
+	for(int i = 0; i < g_MapData.activeScenes.Length; i++) {
+		g_MapData.activeScenes.GetArray(i, aScene);
+		g_MapData.scenes.GetArray(i, scene);
+		scene.variants.GetArray(aScene.variantIndex, choice);
+		if(choice.forcedScenes != null) {
+			for(int j = 0; j < choice.forcedScenes.Length; j++) {
+				choice.forcedScenes.GetString(j, key, sizeof(key));
+				forcedScenes.PushString(key);
+			}
+		}
+	}
+	// Iterate and activate any forced scenes
+	for(int i = 0; i < forcedScenes.Length; i++) {
+		forcedScenes.GetString(i, key, sizeof(key));
+		// Check if scene was already loaded
+		bool isSceneAlreadyLoaded = false;
+		for(int j = 0; j < g_MapData.activeScenes.Length; i++) {
+			g_MapData.activeScenes.GetArray(j, aScene);
+			if(StrEqual(aScene.name, key)) {
+				isSceneAlreadyLoaded = true;
+				break;
+			}
+		}
+		if(isSceneAlreadyLoaded) continue;
+		g_MapData.scenesKv.GetArray(key, scene, sizeof(scene));
+		selectScene(scene, flags | view_as<int>(FLAG_FORCE_ACTIVE));
+	}
+
+	delete forcedScenes;
 	delete snapshot;
 	delete groups;
 }
 
 void selectScene(SceneData scene, int flags) {
-	// Use the .chance field  unless FLAG_ALL_SCENES is set
-	if(~flags & view_as<int>(FLAG_ALL_SCENES) && GetURandomFloat() > scene.chance) {
+	// Use the .chance field  unless FLAG_ALL_SCENES or FLAG_FORCE_ACTIVE is set
+	if(~flags & view_as<int>(FLAG_ALL_SCENES) && ~flags & view_as<int>(FLAG_FORCE_ACTIVE) && GetURandomFloat() > scene.chance) {
 		return;
 	}
 
@@ -645,20 +1061,26 @@ void selectScene(SceneData scene, int flags) {
 	ArrayList choices = new ArrayList();
 	SceneVariantData choice;
 	int index;
+	Debug("Scene %s has %d variants", scene.name, scene.variants.Length);
 	// Weighted random: Push N times dependent on weight
 	for(int i = 0; i < scene.variants.Length; i++) {
 		scene.variants.GetArray(i, choice);
 		if(flags & view_as<int>(FLAG_ALL_VARIANTS)) {
 			spawnVariant(choice);
 		} else {
+			if(choice.weight <= 0) {
+				PrintToServer("Warn: Variant %d in scene %s has invalid weight", i, scene.name);
+				continue;
+			}
 			for(int c = 0; c < choice.weight; c++) {
 				choices.Push(i);
 			}
 		}
 	}
+	Debug("Total choices: %d", choices.Length);
 	if(flags & view_as<int>(FLAG_ALL_VARIANTS)) {
 		delete choices;
-	} else {
+	} else if(choices.Length > 0) {
 		index = GetURandomInt() % choices.Length;
 		index = choices.Get(index);
 		delete choices;
@@ -666,7 +1088,6 @@ void selectScene(SceneData scene, int flags) {
 		scene.variants.GetArray(index, choice);
 		spawnVariant(choice);
 	}
-
 	ActiveSceneData aScene;
 	strcopy(aScene.name, sizeof(aScene.name), scene.name);
 	aScene.variantIndex = index;

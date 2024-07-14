@@ -90,7 +90,7 @@ ConVar cvEPICommonCountScale, cvEPICommonCountScaleMax;
 ConVar g_ffFactorCvar, hExtraTankThreshold;
 
 
-ConVar cvZCommonLimit; int zCommonLimitPrevValue; 
+ConVar cvZCommonLimit; int commonLimitBase; bool isSettingLimit; 
 
 int g_extraKitsAmount, g_extraKitsStart, g_saferoomDoorEnt, g_prevPlayerCount;
 bool g_forcedSurvivorCount, g_extraKitsSpawnedFinale;
@@ -306,25 +306,29 @@ public void OnPluginStart() {
 
 	hExtraItemBasePercentage  = CreateConVar("epi_item_chance", "0.034", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
 	hExtraSpawnBasePercentage = CreateConVar("epi_spawn_chance", "0.01", "The base chance (multiplied by player count) of an extra item spawner being created.", FCVAR_NONE, true, 0.0, true, 1.0);
-	hAddExtraKits 			 = CreateConVar("epi_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits\n1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
-	hUpdateMinPlayers		 = CreateConVar("epi_updateminplayers", "1", "Should the plugin update abm\'s cvar min_players convar to the player count?\n 0 -> NO\n1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
-	hMinPlayersSaferoomDoor  = CreateConVar("epi_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
-	hSaferoomDoorWaitSeconds = CreateConVar("epi_doorunlock_wait", "25", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
-	hSaferoomDoorAutoOpen 	 = CreateConVar("epi_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
-	hEPIHudState 			 = CreateConVar("epi_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 3.0);
-	hExtraFinaleTank 		 = CreateConVar("epi_extra_tanks", "3", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 3.0);
-	hExtraTankThreshold 	 = CreateConVar("epi_extra_tanks_min_players", "6", "The minimum number of players for extra tanks to spawn. When disabled, normal 5+ tank health applies", FCVAR_NONE, true, 0.0);
-	hSplitTankChance 		 = CreateConVar("epi_splittank_chance", "0.65", "The % chance of a split tank occurring in non-finales", FCVAR_NONE, true, 0.0, true, 1.0);
-	cvDropDisconnectTime     = CreateConVar("epi_disconnect_time", "120.0", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
-	cvFFDecreaseRate         = CreateConVar("epi_ff_decrease_rate", "0.3", "The friendly fire factor is subtracted from the formula (playerCount-4) * this rate. Effectively reduces ff penalty when more players. 0.0 to subtract none", FCVAR_NONE, true, 0.0);
-	cvEPIHudFlags 			 = CreateConVar("epi_hud_flags", "3", "Add together.\n1 = Scrolling hud, 2 = Show ping", FCVAR_NONE, true, 0.0);
-	cvEPISpecialSpawning     = CreateConVar("epi_sp_spawning", "2", "Determines what specials are spawned. Add bits together.\n1 = Normal specials\n2 = Witches\n4 = Tanks", FCVAR_NONE, true, 0.0);
-	cvEPITankHealth			 = CreateConVar("epi_tank_chunkhp", "2500", "The amount of health added to tank, for each extra player", FCVAR_NONE, true, 0.0);
-	cvEPIGamemodes           = CreateConVar("epi_gamemodes", "coop,realism,versus", "Gamemodes where plugin is active. Comma-separated", FCVAR_NONE);
-	cvEPIEnabledMode		 = CreateConVar("epi_enabled", "1", "Is EPI enabled?\n0=OFF\n1=Auto (Official Maps Only)(5+)\n2=Auto (Any map) (5+)\n3=Forced on", FCVAR_NONE, true, 0.0, true, 3.0);
-	cvEPICommonCountScale    = CreateConVar("epi_commons_scale_multiplier", "0", "This value is multiplied by the number of extra players playing. It's then added to z_common_limit. 5 players with value 5 would be z_common_limit + ", FCVAR_NONE, true, 0.0);
-	cvEPICommonCountScaleMax = CreateConVar("epi_commons_scale_max", "60", "The maximum amount that z_common_limit can be scaled to.", FCVAR_NONE, true, 0.0);
+	hAddExtraKits 			  = CreateConVar("epi_kitmode", "0", "Decides how extra kits should be added.\n0 -> Overwrites previous extra kits\n1 -> Adds onto previous extra kits", FCVAR_NONE, true, 0.0, true, 1.0);
+	hUpdateMinPlayers		  = CreateConVar("epi_updateminplayers", "1", "Should the plugin update abm\'s cvar min_players convar to the player count?\n 0 -> NO\n1 -> YES", FCVAR_NONE, true, 0.0, true, 1.0);
+	hMinPlayersSaferoomDoor   = CreateConVar("epi_doorunlock_percent", "0.75", "The percent of players that need to be loaded in before saferoom door is opened.\n 0 to disable", FCVAR_NONE, true, 0.0, true, 1.0);
+	hSaferoomDoorWaitSeconds  = CreateConVar("epi_doorunlock_wait", "25", "How many seconds after to unlock saferoom door. 0 to disable", FCVAR_NONE, true, 0.0);
+	hSaferoomDoorAutoOpen 	  = CreateConVar("epi_doorunlock_open", "0", "Controls when the door automatically opens after unlocked. Add bits together.\n0 = Never, 1 = When timer expires, 2 = When all players loaded in", FCVAR_NONE, true, 0.0);
+	hEPIHudState 			  = CreateConVar("epi_hudstate", "1", "Controls when the hud displays.\n0 -> OFF, 1 = When 5+ players, 2 = ALWAYS", FCVAR_NONE, true, 0.0, true, 3.0);
+	hExtraFinaleTank 		  = CreateConVar("epi_extra_tanks", "3", "Add bits together. 0 = Normal tank spawning, 1 = 50% tank split on non-finale (half health), 2 = Tank split (full health) on finale ", FCVAR_NONE, true, 0.0, true, 3.0);
+	hExtraTankThreshold 	  = CreateConVar("epi_extra_tanks_min_players", "6", "The minimum number of players for extra tanks to spawn. When disabled, normal 5+ tank health applies", FCVAR_NONE, true, 0.0);
+	hSplitTankChance 		  = CreateConVar("epi_splittank_chance", "0.65", "The % chance of a split tank occurring in non-finales", FCVAR_NONE, true, 0.0, true, 1.0);
+	cvDropDisconnectTime      = CreateConVar("epi_disconnect_time", "120.0", "The amount of seconds after a player has actually disconnected, where their character slot will be void. 0 to disable", FCVAR_NONE, true, 0.0);
+	cvFFDecreaseRate          = CreateConVar("epi_ff_decrease_rate", "0.3", "The friendly fire factor is subtracted from the formula (playerCount-4) * this rate. Effectively reduces ff penalty when more players. 0.0 to subtract none", FCVAR_NONE, true, 0.0);
+	cvEPIHudFlags 			  = CreateConVar("epi_hud_flags", "3", "Add together.\n1 = Scrolling hud, 2 = Show ping", FCVAR_NONE, true, 0.0);
+	cvEPISpecialSpawning      = CreateConVar("epi_sp_spawning", "2", "Determines what specials are spawned. Add bits together.\n1 = Normal specials\n2 = Witches\n4 = Tanks", FCVAR_NONE, true, 0.0);
+	cvEPITankHealth			  = CreateConVar("epi_tank_chunkhp", "2500", "The amount of health added to tank, for each extra player", FCVAR_NONE, true, 0.0);
+	cvEPIGamemodes            = CreateConVar("epi_gamemodes", "coop,realism,versus", "Gamemodes where plugin is active. Comma-separated", FCVAR_NONE);
+	cvEPIEnabledMode		  = CreateConVar("epi_enabled", "1", "Is EPI enabled?\n0=OFF\n1=Auto (Official Maps Only)(5+)\n2=Auto (Any map) (5+)\n3=Forced on", FCVAR_NONE, true, 0.0, true, 3.0);
+	cvEPICommonCountScale     = CreateConVar("epi_commons_scale_multiplier", "0", "This value is multiplied by the number of extra players playing. It's then added to z_common_limit. 5 players with value 5 would be z_common_limit + ", FCVAR_NONE, true, 0.0);
+	cvEPICommonCountScaleMax  = CreateConVar("epi_commons_scale_max", "60", "The maximum amount that z_common_limit can be scaled to.", FCVAR_NONE, true, 0.0);
 	cvZCommonLimit = FindConVar("z_common_limit");
+
+	cvEPICommonCountScale.AddChangeHook(Cvar_CommonScaleChange);
+	cvEPICommonCountScaleMax.AddChangeHook(Cvar_CommonScaleChange);
+	cvZCommonLimit.AddChangeHook(Cvar_CommonScaleChange);
 	
 	// TODO: hook flags, reset name index / ping mode
 	cvEPIHudFlags.AddChangeHook(Cvar_HudStateChange);
@@ -428,6 +432,7 @@ public void OnPluginEnd() {
 	delete weaponMaxClipSizes;
 	delete g_ammoPacks;
 	L4D2_ExecVScriptCode(HUD_SCRIPT_CLEAR);
+	_UnsetCommonLimit();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -481,6 +486,19 @@ void Cvar_HudStateChange(ConVar convar, const char[] oldValue, const char[] newV
 	} else {
 		TryStartHud();
 	}
+}
+void Cvar_CommonScaleChange(ConVar convar, const char[] oldValue, const char[] newValue) {
+	if(convar == cvZCommonLimit) {
+		PrintToServer("z_common_limit changed [value=%d] [isSettingLimit=%b]", convar.IntValue, isSettingLimit);
+		// Ignore our own changes:
+		if(isSettingLimit) {
+			isSettingLimit = false;
+			return;
+		}
+		commonLimitBase = convar.IntValue;
+	}
+	_SetCommonLimit();
+	
 }
 void TryStartHud() {
 	int threshold = 0;
@@ -572,6 +590,7 @@ Action Command_EpiVal(int client, int args) {
 		PrintToConsole(client, "restCount = %d", g_restCount);
 		PrintToConsole(client, "extraFinaleTankEnabled = %b", g_extraFinaleTankEnabled);
 		PrintToConsole(client, "g_areItemsPopulated = %b", g_areItemsPopulated);
+		PrintToConsole(client, "commonLimitBase = %d", commonLimitBase);
 		ReplyToCommand(client, "Values printed to console");
 		return Plugin_Handled;
 	}
@@ -1343,7 +1362,7 @@ public void OnMapStart() {
 	if(L4D_IsMissionFinalMap()) {
 		// Disable tank split on hard rain finale
 		g_extraFinaleTankEnabled = true;
-		if(StrEqual(map, "c4m5_milltown_escape")) {
+		if(StrEqual(map, "c4m5_milltown_escape") || StrEqual(map, "c14m2_lighthouse")) {
 			g_extraFinaleTankEnabled = false;
 		}
 	}
@@ -1454,6 +1473,7 @@ public void OnConfigsExecuted() {
 	if(hUpdateMinPlayers.BoolValue && hMinPlayers != null) {
 		hMinPlayers.IntValue = g_realSurvivorCount;
 	}
+	_SetCommonLimit();
 }
 
 public void OnMapEnd() {
@@ -2102,28 +2122,41 @@ void UpdateSurvivorCount() {
 	} else if(wasActive) {
 		OnEPIInactive();
 	}
-	
-	if(isActive)
-	SetFFFactor(g_epiEnabled);
+	if(isActive) {
+		SetFFFactor(g_epiEnabled);
+		_SetCommonLimit();
+	}
 }
 
 
 void OnEPIActive()  {
-	zCommonLimitPrevValue = cvZCommonLimit.IntValue;
+	_SetCommonLimit();
+}
+
+void OnEPIInactive() {
+	_UnsetCommonLimit();
+}
+
+void _UnsetCommonLimit() {
+	if(commonLimitBase > 0) {
+		cvZCommonLimit.IntValue = commonLimitBase;
+	}
+	commonLimitBase = 0;
+}
+void _SetCommonLimit() {
+	if(!g_epiEnabled || commonLimitBase <= 0) return;
 	// TODO: lag check for common limit
-	if(cvEPICommonCountScale.IntValue > 0) {
-		int newLimit = zCommonLimitPrevValue + RoundFloat(cvEPICommonCountScale.FloatValue * float(g_realSurvivorCount));
+	if(cvEPICommonCountScale.IntValue > 0 && commonLimitBase > 0) {
+		int newLimit = commonLimitBase + RoundFloat(cvEPICommonCountScale.FloatValue * float(g_realSurvivorCount - 4));
+		PrintDebug(DEBUG_INFO, "Setting common scale: %d + (%f * %d) [max=%d] = %d", commonLimitBase, cvEPICommonCountScale.FloatValue, g_realSurvivorCount - 4, cvEPICommonCountScaleMax.IntValue, newLimit);
 		if(newLimit > 0) {
 			if(newLimit > cvEPICommonCountScaleMax.IntValue) {
 				newLimit = cvEPICommonCountScaleMax.IntValue;
 			}
+			isSettingLimit = true;
+			cvZCommonLimit.IntValue = newLimit;
 		}
-		cvZCommonLimit.IntValue = newLimit;
 	}
-}
-
-void OnEPIInactive() {
-	cvZCommonLimit.IntValue = zCommonLimitPrevValue;
 }
 void SetFFFactor(bool enabled) {
 	static float prevValue;

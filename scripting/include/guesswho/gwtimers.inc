@@ -13,13 +13,18 @@ Action Timer_RecordPoints(Handle h, int i) {
 			vecLastLocation[i] = meta.pos;
 		}
 	}
+	Game.MapTime++;
 	PrintHintText(i, "Points: %d / %d", movePoints.Length, MAX_VALID_LOCATIONS);
 	return Plugin_Continue;
 }
 
+
 bool firstCheckDone = false;
 Action Timer_WaitForPlayers(Handle h) {
-	if(!isEnabled) return Plugin_Stop;
+	if(!isEnabled) {
+		waitTimer = null; 
+		return Plugin_Stop;
+	}
 	if(!ArePlayersJoining()) {
 		Game.Debug("No players pending, ready to go");
 		if(!firstCheckDone) {
@@ -28,6 +33,7 @@ Action Timer_WaitForPlayers(Handle h) {
 		} else {
 			firstCheckDone = false;
 			InitGamemode();
+			waitTimer = null; 
 			return Plugin_Stop;
 		}
 	}

@@ -242,15 +242,12 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			PrintToChat(client, "Note cancelled.");
 		} else {
 			int size = 2 * strlen(sArgs) + 1;
-			char[] sArgsTrimmed = new char[size];
-			DB.Escape(sArgs, sArgsTrimmed, size);
-			TrimString(sArgsTrimmed);
 			char buffer[32];
 			GetClientAuthId(client, AuthId_Steam2, buffer, sizeof(buffer));
 			// TODO: escape content
-			DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", menuNoteTarget, buffer, sArgsTrimmed);
+			DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", menuNoteTarget, buffer, sArgs);
 			DB.Query(DB_AddNote, query);
-			LogAction(client, -1, "added note for \"%s\" (%s): \"%s\"", client, menuNoteTargetName, menuNoteTarget, sArgsTrimmed);
+			LogAction(client, -1, "added note for \"%s\" (%s): \"%s\"", client, menuNoteTargetName, menuNoteTarget, sArgs);
 			Format(buffer, sizeof(buffer), "%N: ", client);
 			CShowActivity2(client, buffer, "added a note for {green}%s: {default}\"%s\"", menuNoteTargetName, sArgs);
 		}
@@ -310,10 +307,7 @@ public Action Command_AddNote(int client, int args) {
 		char authMarker[32];
 		if(client > 0)
 			GetClientAuthId(client, AuthId_Steam2, authMarker, sizeof(authMarker));
-		int size = 2 * strlen(reason) + 1;
-		char[] content = new char[size];
-		DB.Escape(reason, content, size);
-		DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", auth, authMarker, content);
+		DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", auth, authMarker, reason);
 		DB.Query(DB_AddNote, query);
 		LogAction(client, target_list[0], "\"%L\" added note for \"%L\": \"%s\"", client, target_list[0], reason);
 		CShowActivity(client, "added a note for {green}%N: {default}\"%s\"", target_list[0], reason);

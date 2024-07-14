@@ -125,6 +125,12 @@ methodmap GuessWhoGame < BaseGame {
 		}
 	}
 
+	property int TargetCoinCount {
+		public get() {
+			return 8;
+		}
+	}
+
 	public void Start() {
 
 	}
@@ -300,6 +306,14 @@ methodmap GuessWhoGame < BaseGame {
 	public void UnsetupPlayer(int client) {
 		SDKUnhook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 		SDKUnhook(client, SDKHook_WeaponEquip, OnWeaponEquip);
+	}
+
+	public void PopulateCoins() {
+		float pos[3];
+		for(int i = 0; i < this.TargetCoinCount; i++) {
+			movePoints.GetRandomPoint(pos);
+			
+		}
 	}
 }
 

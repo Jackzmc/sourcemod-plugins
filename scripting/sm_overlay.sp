@@ -20,6 +20,9 @@ int connectAttempts;
 authState g_authState;
 JSONObject g_globalVars;
 
+StringMap actionFallbackHandlers; // namespace -> action name has no handler, falls to this.
+StringMap actionNamespaceHandlers; // { namespace: { [action name] -> handler } }
+
 enum authState {
 	AuthError = -1,
 	NotAuthorized,
@@ -53,8 +56,16 @@ char OUT_EVENT_IDS[view_as<int>(Event_Invalid)][] = {
 char steamidCache[MAXPLAYERS+1][32];
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
-	CreateNative("UIElement.Send", Native_UpdateUI);
-	CreateNative("TempUI.Send", Native_UpdateTempUI);
+	RegPluginLibrary("overlay");
+
+	CreateNative("IsOverlayConnected", Native_IsOverlayConnected);
+	CreateNative("RegisterActionAnyHandler", Native_ActionHandler);
+	CreateNative("RegisterActionHandler", Native_ActionHandler);
+
+	CreateNative("UIElement.SendAll", Native_UpdateUI);
+	CreateNative("UIElement.SendTo", Native_UpdateUI);
+	CreateNative("TempUI.SendAll", Native_UpdateTempUI);
+	CreateNative("TempUI.SendTo", Native_UpdateTempUI);
 	return APLRes_Success;
 }
 
@@ -63,6 +74,9 @@ public void OnPluginStart() {
 	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
+
+	actionFallbackHandlers = new StringMap();
+	actionNamespaceHandlers = new StringMap();
 
 	g_globalVars = new JSONObject();
 
@@ -171,6 +185,7 @@ void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) 
 	if(GetClientCount(false) == 0) {
 		DisconnectManager();
 	}
+	steamidCache[client][0] = '\0';
 }
 
 void OnWSConnect(WebSocket ws, any arg) {
@@ -210,10 +225,76 @@ void OnWSJson(WebSocket ws, JSON message, any data) {
 		message.ToString(buffer, sizeof(buffer));
 		PrintToServer("[Overlay] Error: %s", buffer);
 	} else {
+		char type[32];
+		obj.GetString("type", type, sizeof(type));
+		if(StrEqual(type, "action")) {
+			OnAction(obj);
+		}
+
 		char buffer[2048];
 		message.ToString(buffer, sizeof(buffer));
 		PrintToServer("[Overlay] Got JSON: %s", buffer);
 	}
+}
+
+stock int ExplodeStringToArrayList(const char[] text, const char[] split, ArrayList buffers, int maxStringLength) {
+	int reloc_idx, idx, total;
+	
+	if (buffers == null || !split[0]) {
+		return 0;
+	}
+	
+	char[] item = new char[maxStringLength];
+	while ((idx = SplitString(text[reloc_idx], split, item, maxStringLength)) != -1) {
+		reloc_idx += idx;
+		++total;
+		buffers.PushString(item);
+	}
+	++total;
+	buffers.PushString(text[reloc_idx]);
+	
+	return buffers.Length;
+}
+
+void OnAction(JSONObject obj) {
+	char steamid[32];
+	obj.GetString("steamid", steamid, sizeof(steamid));
+	char ns[64];
+	obj.GetString("namespace", ns, sizeof(ns));
+	char id[64];
+	obj.GetString("elem_id", id, sizeof(id));
+	char action[256];
+	obj.GetString("action", action, sizeof(action));
+
+	int client = FindClientBySteamId2(steamid);
+
+	StringMap nsHandler;
+	PrivateForward fwd;
+	if(!actionNamespaceHandlers.GetValue(ns, nsHandler) || !nsHandler.GetValue(id, fwd)) {
+		if(!actionFallbackHandlers.GetValue(ns, fwd)) {
+			// No handler or catch all namespace handler
+			return;
+		}
+	}
+
+	ArrayList args = new ArrayList(ACTION_ARG_LENGTH);
+	ExplodeStringToArrayList(action, " ", args, ACTION_ARG_LENGTH);
+	UIActionEvent event = UIActionEvent(args);
+
+	Call_StartForward(fwd);
+	Call_PushCell(event);
+	Call_PushCell(client);
+	Call_Finish();
+	event._Delete();
+}
+
+int FindClientBySteamId2(const char[] steamid) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(StrEqual(steamidCache[i], steamid)) {
+			return i;
+		}
+	}
+	return -1;
 }
 
 
@@ -281,11 +362,15 @@ void SendEvent_UpdateUI(const char[] elemNamespace, const char[] elemId, bool vi
 }
 
 //SendTempUI(int client, const char[] id, int lifetime, JSONObject element);
-bool Native_SendTempUI(Handle plugin, int numParams) {
+any Native_SendTempUI(Handle plugin, int numParams) {
 	if(!isManagerReady()) return false;
 
 	int client = GetNativeCell(1);
-	if(steamidCache[client][0] == '\0') return false;
+	if (client <= 0 || client > MaxClients) {
+		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%d)", client);
+	} else if (!IsClientConnected(client) || steamidCache[client][0] == '\0') {
+		return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not connected/authorized yet", client);
+	}
 
 	char id[64];
 	GetNativeString(2, id, sizeof(id));
@@ -299,7 +384,7 @@ bool Native_SendTempUI(Handle plugin, int numParams) {
 }
 
 //ShowUI(int client, const char[] elemNamespace, const char[] elemId, JSONObject variables);
-bool Native_ShowUI(Handle plugin, int numParams) {
+any Native_ShowUI(Handle plugin, int numParams) {
 	if(!isManagerReady()) return false;
 
 	char elemNamespace[64], id[64];
@@ -313,7 +398,7 @@ bool Native_ShowUI(Handle plugin, int numParams) {
 }
 
 //HideUI(int client, const char[] elemNamespace, const char[] elemId);
-bool Native_HideUI(Handle plugin, int numParams) {
+any Native_HideUI(Handle plugin, int numParams) {
 	if(!isManagerReady()) return false;
 
 	char elemNamespace[64], id[64];
@@ -325,7 +410,7 @@ bool Native_HideUI(Handle plugin, int numParams) {
 }
 
 //PlayAudio(int client, const char[] url);
-bool Native_PlayAudio(Handle plugin, int numParams) {
+any Native_PlayAudio(Handle plugin, int numParams) {
 	if(!isManagerReady()) return false;
 
 	char url[256];
@@ -335,27 +420,92 @@ bool Native_PlayAudio(Handle plugin, int numParams) {
 	return true;
 }
 
-bool Native_UpdateUI(Handle plugin, int numParams) {
+any Native_UpdateUI(Handle plugin, int numParams) {
 	if(!isManagerReady()) return false;
 
 	UIElement elem = GetNativeCell(1);
+	JSONObject obj = view_as<JSONObject>(elem);
+
+	JSONArray arr = view_as<JSONArray>(obj.Get("steamids"));
+	if(numParams == 0) {
+		arr.Clear();
+	} else if(numParams == 1) {
+		int client = GetNativeCell(2);
+		if (client <= 0 || client > MaxClients) {
+			return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%d)", client);
+		} else if (!IsClientConnected(client) || steamidCache[client][0] == '\0') {
+			return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not connected/authorized yet", client);
+		}
+		arr.PushString(steamidCache[client]);
+	}
 
 	g_ws.Write(view_as<JSON>(elem));
+	arr.Clear();
 
 	return true;
 }
 
-bool Native_UpdateTempUI(Handle plugin, int numParams) {
+any Native_UpdateTempUI(Handle plugin, int numParams) {
 	if(!isManagerReady()) return false;
 
 	TempUI elem = GetNativeCell(1);
+	JSONObject obj = view_as<JSONObject>(elem);
+
+	JSONArray arr = view_as<JSONArray>(obj.Get("steamids"));
+	if(numParams == 0) {
+		arr.Clear();
+	} else if(numParams == 1) {
+		int client = GetNativeCell(2);
+		if (client <= 0 || client > MaxClients) {
+			return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%d)", client);
+		} else if (!IsClientConnected(client) || steamidCache[client][0] == '\0') {
+			return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not connected/authorized yet", client);
+		}
+		arr.PushString(steamidCache[client]);
+	}
 
 	g_ws.Write(view_as<JSON>(elem));
+	arr.Clear();
 
 	return true;
 }
 
 //IsOverlayConnected();
-bool Native_IsOverlayConnected(Handle plugin, int numParams) {
+any Native_IsOverlayConnected(Handle plugin, int numParams) {
 	return isManagerReady();
+}
+
+//RegisterActionHandler
+//RegisterActionAnyHandler
+any Native_ActionHandler(Handle plugin, int numParams) {
+	char ns[64];
+	GetNativeString(1, ns, sizeof(ns));
+
+	if(numParams == 3) {
+		// RegisterActionHandler
+		StringMap nsHandlers;
+		if(!actionNamespaceHandlers.GetValue(ns, nsHandlers)) {
+			nsHandlers = new StringMap();
+		}
+
+		char actionId[64];
+		GetNativeString(2, actionId, sizeof(actionId));
+
+		PrivateForward fwd;
+		if(!nsHandlers.GetValue(actionId, fwd)) {
+			fwd = new PrivateForward(ET_Ignore, Param_Cell);
+		}
+		fwd.AddFunction(INVALID_HANDLE, GetNativeFunction(3));
+		nsHandlers.SetValue(actionId, fwd);
+	} else {
+		// RegisterActionAnyHandler
+
+		PrivateForward fwd;
+		if(!actionFallbackHandlers.GetValue(ns, fwd)) {
+			fwd = new PrivateForward(ET_Ignore, Param_Cell);
+		}
+		fwd.AddFunction(INVALID_HANDLE, GetNativeFunction(2));
+		actionFallbackHandlers.SetValue(ns, fwd);
+	}
+	return 1;
 }

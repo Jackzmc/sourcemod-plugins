@@ -43,7 +43,7 @@ int lastHatRequestTime[MAXPLAYERS+1];
 HatInstance hatData[MAXPLAYERS+1];
 StringMap g_HatPresets;
 
-#define MAX_FORBIDDEN_CLASSNAMES 14
+#define MAX_FORBIDDEN_CLASSNAMES 15
 char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"prop_door_rotating_checkpoint",
 	"env_physics_blocker",
@@ -59,7 +59,8 @@ char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	// "infected",
 	"func_lod",
 	"func_door",
-	"prop_ragdoll"
+	"prop_ragdoll",
+	"move_rope"
 };
 
 #define MAX_FORBIDDEN_MODELS 2
@@ -73,7 +74,7 @@ char FORBIDDEN_MODELS[MAX_FORBIDDEN_MODELS][] = {
 // Classnames that should automatically trigger reverse infected
 static char REVERSE_CLASSNAMES[MAX_REVERSE_CLASSNAMES][] = {
 	"infected",
-	"func_movelinear"
+	"func_movelinear",
 };
 
 Action Command_DoAHat(int client, int args) {

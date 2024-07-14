@@ -14,7 +14,8 @@
 #include <multicolors>
 #include <jutils>
 #include <socket>
-#include <SteamWorks>
+#undef REQUIRE_PLUGIN
+#tryinclude <SteamWorks>
 
 #pragma newdecls required
 
@@ -85,7 +86,7 @@ public void OnPluginStart() {
 	g_socket.SetOption(SocketSendBuffer, BUFFER_SIZE);
 
 	uptime = GetTime();
-	cvar_debug = CreateConVar("sm_adminpanel_debug", "1", "Turn on debug mode", FCVAR_DONTRECORD, true, 0.0, true, 1.0);
+	cvar_debug = CreateConVar("sm_adminpanel_debug", "0", "Turn on debug mode", FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 
 	cvar_authToken = CreateConVar("sm_adminpanel_authtoken", "", "The token for authentication", FCVAR_PROTECTED);
 	cvar_authToken.AddChangeHook(OnCvarChanged);
@@ -172,10 +173,7 @@ void OnSocketError(Socket socket, int errorType, int errorNumber, int any) {
 }
 
 void SendFullSync() {
-	PrintToServer("SendFullSync");
 	if(StartPayload(true)) {
-		PrintToServer("SendFullSync : Started");
-
 		AddGameRecord();
 		int stage = L4D2_GetCurrentFinaleStage();
 		if(stage != 0)
@@ -254,15 +252,19 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 }
 
 void ProcessCommand(int id, const char[] command, const char[] cmdNamespace = "") {
-	char output[128];
+	char output[1024];
 	if(!StartPayload(true)) return;
 	if(cmdNamespace[0] == '\0' || StrEqual(cmdNamespace, "default")) {
-		SplitString(command, " ", output, sizeof(output));
+		// If command has no spaces, we need to manually copy the command to the split part
+		if(SplitString(command, " ", output, sizeof(output)) == -1) {
+			strcopy(output, sizeof(output), command);
+		}
 		if(CommandExists(output)) {
 			ServerCommandEx(output, sizeof(output), "%s", command);
 			AddCommandResponseRecord(id, Result_Boolean, 1, output);
 		} else {
-			AddCommandResponseRecord(id, Result_Error, -1, "Command does not exist");
+			Format(output, sizeof(output), "Command \"%s\" does not exist", output);
+			AddCommandResponseRecord(id, Result_Error, -1, output);
 		}
 	} else if(StrEqual(cmdNamespace, "builtin")) {
 		CommandResultType type;

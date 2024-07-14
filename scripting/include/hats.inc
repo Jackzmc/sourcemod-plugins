@@ -1,1 +1,0 @@
-native bool SpawnSchematic(const char name[32], const float pos[3], const float angles[3] = NULL_VECTOR);
