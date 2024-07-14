@@ -30,7 +30,8 @@ Useful things:
   * [l4d2_vocalize_control](#l4d2_vocalize_control) - Allows you to locally mute someone from vocalizing
   * [l4d2_guesswho](#l4d2_guesswho) - Garry's Mod's Guess Who in l4d2, inspired by hide and seek
   * [l4d2_hideandseek](#l4d2_hideandseek) - An enhancement to the base hide and seek mutation
-  * [l4d2_hats](#l4d2_hats) - Entity Hats & Entity editing
+  * [l4d2_hats](#l4d2_hats) - Make any prop or player your personal hat.
+  * [l4d2_editor](#l4d2_editor) - Entity editing, prop spawning, and invisible wall creation tool.
   * [l4d2_prophunt](#l4d2_prophunt) - Garry's Mod inspired prop hunt, inspired by hide and seek
   * [sm_namespamblock](#sm_namespamblock) - Basic plugin that bans players if they change their name in rapid succession 
   * [l4d2-stats-plugin](https://github.com/jackzmc/l4d2-stats-plugin) - Custom stats recorder, see https://stats.jackz.me
@@ -422,25 +423,27 @@ Vscript required for hud & mutation
 
 Requires l4dtoolz and left4dhooks, and optionally skip intro cutscene
 
-### l4d2_hats (Hats & Editor)
+### l4d2_hats
 
-Lets you hat any entity (has blacklist support), including players. Yeet, place, restore, and more with the hats. Also includes an entire prop editor that replaces any other prop spawner. You can create custom invisible walls and spawn props (In the future, may become a separate plugin.)
-
-[Prop Spawner Cheatsheat](https://admin.jackz.me/docs/props)
-
-The prop spawner includes:
-
-* Recents (recently spawned props)
-* Spawn Previews
-* Manual Placement (Move prop with cursor before spawning)
-* Prop Search
-* Better prop categories
-* Item spawning
-* Schematics (in early development)
-* Favorited props (in alpha)
+Lets you hat any entity (has blacklist support), including players. Yeet, place, restore, and more with the hats.
 
 > [!WARNING]
 > **Be warned, hatting can in rare cases cause crashes.** It's a LOT more stable now, but some features are disabled by default (reverse hats, visible hats) as they caused too many crashes. The majority of crashes are caused by hats and ladders, but the default settings prevent it.
+
+### l4d2_editor
+
+Let's you move around entities, spawn props, create invisible walls and more. The prop spawner includes an entire preview system, allowing you to easily place props exactly how you want them with ease.
+
+The prop spawner includes:
+
+* Quick access to recently spawned props
+* Spawning preview, letting you rotate and position perfectly
+* Prop model search
+* Better and organized prop categories
+* Item & weapon spawning
+* An API for other plugins to use
+
+[Prop Spawner Cheatsheat](https://admin.jackz.me/docs/props)
 
 ### sm_namespamblock
 
