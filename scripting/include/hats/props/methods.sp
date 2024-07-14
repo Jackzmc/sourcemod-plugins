@@ -465,7 +465,7 @@ void OnManagerSelectorEnd(int client, ArrayList entities) {
 }
 void OnManagerSelectorSelect(int client, int entity) {
 	// update entity count
-	ShowManagerSelectorMenu(client);
+	// ShowManagerSelectorMenu(client);
 }
 
 int DeleteAll(int onlyPlayer = 0) {

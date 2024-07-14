@@ -666,7 +666,7 @@ enum struct EditorData {
 void SendEditorMessage(int client, const char[] format, any ...) {
 	char message[256];
 	VFormat(message, sizeof(message), format, 3);	
-	CPrintToChat(client, "\x04`[Editor]\x01 %s", message);
+	CPrintToChat(client, "\x04[Editor]\x01 %s", message);
 }
 
 stock float RoundToNearestInterval(float value, int interval) {
