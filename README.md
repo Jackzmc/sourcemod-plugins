@@ -443,7 +443,7 @@ The prop spawner includes:
 * Item & weapon spawning
 * An API for other plugins to use
 
-[Prop Spawner Cheatsheat](https://admin.jackz.me/docs/props)
+[Editor Guide](/docs/l4d2_editor)
 
 ### sm_namespamblock
 
