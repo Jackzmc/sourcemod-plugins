@@ -14,6 +14,7 @@
 #include <smlib/effects>
 #include <multicolors>
 #include <adminmenu>
+#include <ripext>
 
 int g_iLaserIndex;
 
@@ -94,7 +95,7 @@ public void OnPluginStart() {
 	char targetName[32];
 	while((entity = FindEntityByClassname(entity, "func_brush")) != INVALID_ENT_REFERENCE) {
 		GetEntPropString(entity, Prop_Data, "m_iName", targetName, sizeof(targetName));
-		if(StrContains(targetName, "l4d2_hats_") == 0) {
+		if(StrContains(targetName, "editor") == 0) {
 			createdWalls.Push(EntIndexToEntRef(entity));
 			SDKHook(entity, SDKHook_Use, OnWallClicked);
 		}
@@ -200,7 +201,8 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			} else if(buttons & IN_USE) {
 				if(buttons & IN_SPEED) {
 					//Delete
-					g_PropData[client].Selector.End();
+					ArrayList items = g_PropData[client].Selector.End();
+					delete items;
 				} else if(buttons & IN_DUCK) {
 					//Cancel
 					g_PropData[client].Selector.Cancel();
@@ -406,7 +408,7 @@ public void OnPluginEnd() {
 	if(g_spawnedItems != null) {
 		delete g_spawnedItems;
 	}
-	TriggerInput("prop_preview", "Kill");
+	TriggerInput("editor_preview", "Kill");
 }
 
 public bool TraceEntityFilterPlayer(int entity, int contentsMask, any data) {
