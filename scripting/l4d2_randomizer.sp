@@ -219,7 +219,7 @@ Action Command_ExportEnt(int client, int args) {
 		GetEntPropVector(entity, Prop_Send, "m_angRotation", angles);
 		GetEntPropVector(entity, Prop_Send, "m_vecMaxs", size);
 
-		char model[64];
+		char model[128];
 		ReplyToCommand(client, "{");
 		GetEntityClassname(entity, model, sizeof(model));
 		if(StrContains(model, "prop_") == -1) {
@@ -358,7 +358,7 @@ JSONObject ExportEntity(int entity, ExportType exportType = Export_Model) {
 	GetEntPropVector(entity, Prop_Send, "m_angRotation", angles);
 	GetEntPropVector(entity, Prop_Send, "m_vecMaxs", size);
 
-	char model[64];
+	char model[128];
 	JSONObject entityData = new JSONObject();
 	GetEntityClassname(entity, model, sizeof(model));
 	if(StrContains(model, "prop_") == -1) {
@@ -552,7 +552,7 @@ enum struct SceneVariantData {
 
 enum struct VariantEntityData {
 	char type[32];
-	char model[64];
+	char model[128];
 	float origin[3];
 	float angles[3];
 	float scale[3];

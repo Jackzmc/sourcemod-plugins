@@ -6,7 +6,7 @@
                 "weight": 1,
                 "entities": [
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             1582.585693359375,
                             -1131.2296142578125,
@@ -32,7 +32,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             1807.994873046875,
                             -1134.41015625,
@@ -853,7 +853,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             1622.0169677734375,
                             1282.147705078125,
@@ -866,7 +866,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             1729.8924560546875,
                             1282.8870849609375,
@@ -1087,7 +1087,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2566.703369140625,
                             1367.6995849609375,
@@ -1100,7 +1100,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2467.2890625,
                             1399.7459716796875,
@@ -1113,7 +1113,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2428.86083984375,
                             1416.4720458984375,
@@ -1126,7 +1126,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2717.69580078125,
                             1305.3656005859375,
@@ -1139,7 +1139,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2667.630859375,
                             1346.663330078125,
@@ -1152,7 +1152,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2804.379638671875,
                             1353.5198974609375,
@@ -1165,7 +1165,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2866.937255859375,
                             1411.8472900390625,
@@ -1178,7 +1178,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2878.0654296875,
                             1462.4364013671875,
@@ -1191,7 +1191,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2944.297119140625,
                             1246.700439453125,
@@ -1217,7 +1217,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2802.26171875,
                             1223.635498046875,
@@ -1230,7 +1230,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2944.923095703125,
                             1365.22802734375,
@@ -1243,7 +1243,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2947.600341796875,
                             1084.9835205078125,
@@ -1256,7 +1256,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2834.375732421875,
                             1068.7667236328125,
@@ -1269,7 +1269,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2904.023193359375,
                             1166.3035888671875,
@@ -1282,7 +1282,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2685.578369140625,
                             1123.2955322265625,
@@ -1295,7 +1295,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2752.009033203125,
                             1024.3072509765625,
@@ -1308,7 +1308,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2694.9306640625,
                             948.69085693359375,
@@ -1347,7 +1347,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             2112.7802734375,
                             1043.9244384765625,
@@ -1360,7 +1360,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             1873.318359375,
                             1067.7713623046875,
@@ -1373,7 +1373,7 @@
                         ]
                     },
                     {
-                        "model": "models/props_foliage/hedge_128.mdl",
+                        "model": "models/props_foliage/urban_hedge_128_64_high.mdl",
                         "origin": [
                             1986.8575439453125,
                             1065.7440185546875,
