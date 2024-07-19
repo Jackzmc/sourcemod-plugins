@@ -8,6 +8,7 @@ models/props/de_prodigy/concretebags.mdl Concrete Bags 1
 models/props/de_prodigy/concretebags2.mdl Concrete Bags 2
 models/props/de_prodigy/concretebags3.mdl Concrete Bags 3
 models/props/de_prodigy/wood_pallet_01.mdl Wood Pallet 1
+models/props/cs_assault/acunit01.mdl Air Conditioner Unit
 models/props/de_prodigy/wood_pallet_debris_01.mdl Wood Pallet Piece 1-1
 models/props/de_prodigy/wood_pallet_debris_02.mdl Wood Pallet Piece 1-2
 models/props/de_prodigy/wood_pallet_debris_04.mdl Wood Pallet Piece 1-3
@@ -46,6 +47,14 @@ models/props_industrial/warehouse_shelf004.mdl Warehouse Shelves 4
 models/props_industrial/wire_spool_01.mdl cable coil
 models/props_industrial/wire_spool_02.mdl cable reel-no wire
 models/props_equipment/construction_lift.mdl construction lift
+models/props_pipes/pipeset32d_corner128r_001a.mdl Pipe Corner Horizontal (128u)
+models/props_pipes/pipeset32d_corner128d_001a.mdl Pipe Corner Vertical (128u)
+models/props_pipes/pipeset32d_bend256d_001a.mdl Pipe Corner Bend/Slide (256u)
+models/props_pipes/pipeset32d_128_001a.mdl Pipe (128u)
+models/props_pipes/pipeset32d_256_001a.mdl Pipe (256u)
+models/props_pipes/pipeset32d_512_001a.mdl Pipe (512u)
+models/props_pipes/concrete_pipe001a.mdl Concrete Pipe
+models/props_pipes/concrete_pipe_filler02.mdl Concrete Pipe Filler
 models/props_vents/ventbreakable01.mdl vent pipe window cover (breakable)
 models/props_vents/ventbreakable01_dm01_frame.mdl Vent Frame
 models/props_vents/ventbreakable01_dm01_part01.mdl Vent Piece 1

@@ -35,7 +35,7 @@ models/props_interiors/baby_crib.mdl Baby Crib
 models/props_furniture/piano.mdl piano
 models/props_interiors/mounteddeerhead01.mdl Deer head specimen
 models/props_unique/guncabinet_no_door_static.mdl wooden gun cabinet (solid state)
-models/props_unique/guncabinet01_main.mdl Metal gun cabinet
+models/props_unique/guncabinet01_main.mdl Metal Gun Cabinet
 models/props_unique/guncabinet01_ldoor.mdl Metal Gun Cabinet Left Door
 models/props_unique/guncabinet01_rdoor.mdl Metal Gun Cabinet Right Door
 models/lighthouse/props/wooden_cabinet.mdl Wooden cabinet cabin
