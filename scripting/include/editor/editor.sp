@@ -156,12 +156,11 @@ enum struct EditorData {
 	}
 
 	bool CheckEntity() {
-		if(this.entity != INVALID_ENT_REFERENCE) {
-			if(this.entity == -1 && !IsValidEntity(this.entity)) {
-				PrintToChat(this.client, "\x04[Editor]\x01 Entity has vanished, editing cancelled.");
-				this.Reset();
-				return false;
-			}
+		if(this.flags & Edit_WallCreator) return true;
+		if(this.entity == INVALID_ENT_REFERENCE || this.entity == -1 || !IsValidEntity(this.entity)) {
+			PrintToChat(this.client, "\x04[Editor]\x01 Entity has vanished, editing cancelled.");
+			this.Reset();
+			return false;
 		}
 		return true;
 	}
