@@ -294,14 +294,14 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 						Editor[client].size[0] += Editor[client].moveSpeed; 
 					}
 					if(buttons & IN_FORWARD) {
-						Editor[client].IncrementSize(0, 1.0);
+						Editor[client].IncrementSize(1, 1.0);
 					} else if(buttons & IN_BACK) {
-						Editor[client].IncrementSize(0, -1.0);
+						Editor[client].IncrementSize(1, -1.0);
 					}
 					if(buttons & IN_JUMP) {
-						Editor[client].IncrementSize(0, 1.0);
+						Editor[client].IncrementSize(2, 1.0);
 					} else if(buttons & IN_DUCK) {
-						Editor[client].IncrementSize(0, -1.0);
+						Editor[client].IncrementSize(2, -1.0);
 					}
 				}
 			}
@@ -577,8 +577,10 @@ stock bool CalculateEditorPosition(int client, TraceEntityFilter filter) {
 			TR_TraceRayFilter(clientEye, Editor[client].origin, MASK_OPAQUE, RayType_EndPoint, filter, client);
 			if (TR_DidHit(INVALID_HANDLE)) {
 				TR_GetEndPosition(Editor[client].origin);
-				GetEntPropVector(Editor[client].entity, Prop_Send, "m_vecMins", direction);
-				Editor[client].origin[2] -= direction[2];
+				if(~Editor[client].flags & Edit_WallCreator) {
+					GetEntPropVector(Editor[client].entity, Prop_Send, "m_vecMins", direction);
+					Editor[client].origin[2] -= direction[2];
+				}
 				if(Editor[client].hasCollisionRotate) {
 					TR_GetPlaneNormal(INVALID_HANDLE, Editor[client].angles);
 					GetVectorAngles(Editor[client].angles, Editor[client].angles);
