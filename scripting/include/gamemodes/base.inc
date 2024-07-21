@@ -209,12 +209,14 @@ methodmap PeekCamera {
 	}
 
 	public void Enable(int client = -1) {
+		if(seekerCam == -1) return;
 		AcceptEntityInput(seekerCam, "Enable", client);
 		if(client > 0) {
 			isViewingCam[client] = true;
 		}
 	}
 	public void Disable(int client = -1) {
+		if(seekerCam == -1) return;
 		AcceptEntityInput(seekerCam, "Disable", client);
 		if(client > 0) {
 			isViewingCam[client] = false;

@@ -30,8 +30,9 @@ enum {
 	Edit_None,
 	Edit_Copy = 1,
 	Edit_Preview = 2,
-	Edit_WallCreator = 4,
-	Edit_Manager = 8
+	Edit_WallCreator = 4, 
+	Edit_Manager = 8, // Edit started via manager
+	Edit_Grab = 16 // Edit started via +editor grab command
 }
 
 enum buildType {
@@ -141,7 +142,6 @@ enum struct EditorData {
 				this.angles[0] = RoundToNearestInterval(this.angles[0], this.snapAngle);
 				this.angles[1] = RoundToNearestInterval(this.angles[1], this.snapAngle);
 				this.angles[2] = RoundToNearestInterval(this.angles[2], this.snapAngle);
-
 			}
 			TeleportEntity(this.entity, this.origin, this.angles, NULL_VECTOR);
 		}
@@ -342,7 +342,7 @@ enum struct EditorData {
 			// Is edit, do nothing, just reset
 			PrintHintText(this.client, "Edit Complete");
 			this.Reset();
-			entity = 0;
+			this.entity = 0;
 
 			type = Complete_EditSuccess;
 		}
@@ -917,6 +917,35 @@ Action Command_Editor(int client, int args) {
 		PrintToConsole(client, "%s edit <id> - Edits wall id", arg1);
 		PrintToConsole(client, "%s copy [id] - If editing creates a new copy of wall/entity, else copies wall id", arg1);
 		PrintToConsole(client, "%s cursor - Starts editing the entity you looking at", arg1);
+	}
+	return Plugin_Handled;
+}
+
+
+Action Cmd_EditorGrab(int client, int args) {
+	int entity = GetLookingEntity(client, Filter_ValidHats);
+	if(entity > 0) {
+		int parent = GetEntPropEnt(entity, Prop_Data, "m_hParent");
+		if(parent > 0) {
+			entity = parent;
+		}
+		if(!CheckBlacklist(entity)) {
+			return Plugin_Handled;
+		}
+		Editor[client].ImportEntity(entity, view_as<int>(Edit_Grab), MOVE_ORIGIN);
+		char classname[64];
+		char targetname[32];
+		GetEntityClassname(entity, classname, sizeof(classname));
+		GetEntPropString(entity, Prop_Data, "m_target", targetname, sizeof(targetname));
+		PrintToChat(client, "\x04[Editor]\x01 Editing entity \x05%d (%s) [%s]\x01. End with \x05/edit done\x01", entity, classname, targetname);
+	}
+	return Plugin_Handled;
+}
+
+Action Cmd_EditorRelease(int client, int args) {
+	if(Editor[client].IsActive() && Editor[client].flags & Edit_Grab) {
+		int entity;
+		Editor[client].Done(entity);
 	}
 	return Plugin_Handled;
 }
