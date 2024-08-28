@@ -236,7 +236,7 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 				int client = GetClientOfUserId(userid);
 				if(client > 0 && StartPayload(true)) {
 					PrintToServer("[AdminPanel] Sync requested for #%d, performing", userid);
-					AddPlayerRecord(client);
+					AddPlayerRecord(client, Client_Normal);
 					SendPayload();
 				}
 			} else {
@@ -626,8 +626,8 @@ public void Event_BotToPlayer(Handle event, char[] name, bool dontBroadcast) {
 	int bot    = GetClientOfUserId(GetEventInt(event, "bot")); 
 	if(player > 0 && !IsFakeClient(player) && StartPayload(true)) {
 		// Bot is going away, remove it: (prob unnecessary OnClientDisconnect happens)
-		AddPlayerRecord(bot, false);
-		AddPlayerRecord(player);
+		AddPlayerRecord(bot, Client_Disconnected);
+		AddPlayerRecord(player, Client_Normal);
 		SendPayload();
 	}
 }
@@ -657,7 +657,7 @@ void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	RecalculatePlayerCount();
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && StartPayload()) {
-		AddPlayerRecord(client);
+		AddPlayerRecord(client, Client_Normal);
 		SendPayload();
 	}
 }
@@ -676,7 +676,7 @@ void SendPlayers() {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientInGame(i)) {
 			if(StartPayload(true)) {
-				AddPlayerRecord(i);
+				AddPlayerRecord(i, Client_Normal);
 				SendPayload();
 			}
 		}
@@ -805,7 +805,7 @@ void SendNewClient(int client) {
 	if(!IsClientInGame(client)) return;
 	if(StartPayload()) {
 		PrintToServer("SendNewClient(%N)", client);
-		AddPlayerRecord(client);
+		AddPlayerRecord(client, Client_Connected);
 		SendPayload();
 	}
 }
@@ -813,7 +813,7 @@ void SendNewClient(int client) {
 public void OnClientDisconnect(int client) {
 	if(StartPayload()) {
 		// hopefully userid is valid here?
-		AddPlayerRecord(client, false);
+		AddPlayerRecord(client, Client_Disconnected);
 		SendPayload();
 	}
 	steamidCache[client][0] = '\0';
@@ -931,27 +931,27 @@ int GetPlayerMovement(int client) {
 
 // TODO: pursued by witch
 enum {
-	pState_BlackAndWhite = 1,
-	pState_InSaferoom = 2,
-	pState_IsCalm = 4,
-	pState_IsBoomed = 8,
-	pState_IsPinned = 16,
-	pState_IsAlive = 32,
+	sState_BlackAndWhite = 1,
+	sState_InSaferoom = 2,
+	sState_IsCalm = 4,
+	sState_IsBoomed = 8,
+	sState_IsPinned = 16,
+	sState_IsAlive = 32,
 }
 
 stock bool IsPlayerBoomed(int client) {
 	return (GetEntPropFloat(client, Prop_Send, "m_vomitStart") + 20.1) > GetGameTime();
 }
 
-int GetPlayerStates(int client) {
+int GetSurvivorStates(int client) {
 	int state = 0;
 	if(L4D_IsInLastCheckpoint(client) || L4D_IsInFirstCheckpoint(client))
-		state |= pState_InSaferoom;
-	if(GetEntProp(client, Prop_Send, "m_bIsOnThirdStrike", 1)) state |= pState_BlackAndWhite;
-	if(GetEntProp(client, Prop_Send, "m_isCalm")) state |= pState_IsCalm;
-	if(IsPlayerBoomed(client)) state |= pState_IsBoomed;
-	if(IsPlayerAlive(client)) state |= pState_IsAlive;
-	if(L4D2_GetInfectedAttacker(client) > 0) state |= pState_IsPinned;
+		state |= sState_InSaferoom;
+	if(GetEntProp(client, Prop_Send, "m_bIsOnThirdStrike", 1)) state |= sState_BlackAndWhite;
+	if(GetEntProp(client, Prop_Send, "m_isCalm")) state |= sState_IsCalm;
+	if(IsPlayerBoomed(client)) state |= sState_IsBoomed;
+	if(IsPlayerAlive(client)) state |= sState_IsAlive;
+	if(L4D2_GetInfectedAttacker(client) > 0) state |= sState_IsPinned;
 	return state;
 }
 
@@ -970,6 +970,13 @@ enum CommandResultType {
 	Result_Boolean,
 	Result_Integer,
 	Result_Float
+}
+
+enum ClientState {
+	Client_Normal = 0,
+	Client_Connected = 1,
+	Client_Disconnected = 2,
+	Client_Idle = 3
 }
 
 enum LiveRecordType {
@@ -1088,29 +1095,27 @@ void AddFinaleRecord(int stage) {
 	EndRecord();
 }
 
-void AddPlayerRecord(int client, bool connected = true) {
+void AddPlayerRecord(int client, ClientState state) {
 	// fake bots are ignored:
 	if(steamidCache[client][0] == '\0') return;
 
-	bool isIdle = false;
 	StartRecord(Live_Player);
 	sendBuffer.WriteInt(GetClientUserId(client));
 	sendBuffer.WriteString(steamidCache[client]);
-	if(connected) {
-		sendBuffer.WriteByte(isIdle);
-		sendBuffer.WriteInt(playerJoinTime[client]);
-		sendBuffer.WriteString(nameCache[client]);
-		EndRecord();
+	sendBuffer.WriteByte(state);
+	sendBuffer.WriteInt(state == Client_Disconnected ? GetTime() : playerJoinTime[client]);
+	sendBuffer.WriteString(nameCache[client]);
+	EndRecord();
 
+	if(state != Client_Disconnected) {
 		if(GetClientTeam(client) == 2) {
 			AddSurvivorRecord(client);
 			AddSurvivorItemsRecord(client);
 		} else if(GetClientTeam(client) == 3) {
 			AddInfectedRecord(client);
 		}
-	} else {
-		EndRecord();
 	}
+	
 }
 
 void AddSurvivorRecord(int client) {
@@ -1134,7 +1139,7 @@ void AddSurvivorRecord(int client) {
 	int health = IsPlayerAlive(client) ? GetEntProp(client, Prop_Send, "m_iHealth"): 0;
 	sendBuffer.WriteByte(health); //perm health
 	sendBuffer.WriteByte(L4D2_GetVersusCompletionPlayer(client)); // flow%
-	sendBuffer.WriteInt(GetPlayerStates(client)); // state (incl. alive)
+	sendBuffer.WriteInt(GetSurvivorStates(client)); // state (incl. alive)
 	sendBuffer.WriteInt(GetPlayerMovement(client)); // move
 	sendBuffer.WriteInt(GetAction(client)); // action
 	EndRecord();
