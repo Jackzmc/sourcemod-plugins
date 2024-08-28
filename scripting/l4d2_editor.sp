@@ -84,6 +84,8 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_edit", Command_Editor, ADMFLAG_CUSTOM2);
 	RegAdminCmd("sm_wall", Command_Editor, ADMFLAG_CUSTOM2);
 	RegAdminCmd("sm_prop", Command_Props, ADMFLAG_CUSTOM2);
+	RegAdminCmd("+editor", Cmd_EditorGrab, ADMFLAG_CHEATS, "Grab the entity in your crosshair.");
+	RegAdminCmd("-editor", Cmd_EditorRelease, ADMFLAG_CHEATS, "Releases the entity you grabbed.");
 
 	if(SQL_CheckConfig(DATABASE_CONFIG_NAME)) {
 		if(!ConnectDB()) {
@@ -219,7 +221,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		switch(Editor[client].mode) {
 			case MOVE_ORIGIN: {
 				SetWeaponDelay(client, 0.5);
-
 				bool isRotate;
 				int flags = GetEntityFlags(client);
 				if(buttons & IN_RELOAD) {
@@ -267,8 +268,11 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 					if(g_inRotate[client]) {
 						g_inRotate[client] = false;
 					}
-					// Move position
-					float moveAmount = (buttons & IN_SPEED) ? 2.0 : 1.0;
+					float moveAmount = 1.0;
+					if(buttons & IN_SPEED) {
+						// If holding shift, move distance expoentionally faster the farther away
+						moveAmount += Pow(2.0, Editor[client].moveDistance / 200.0);
+					}
 					if(buttons & IN_ATTACK) Editor[client].moveDistance += moveAmount;
 					else if(buttons & IN_ATTACK2) Editor[client].moveDistance -= moveAmount;
 				}
@@ -278,8 +282,10 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 					flags = flags & ~FL_FROZEN;
 					SetEntityFlags(client, flags);
 				}
-				if(Editor[client].stackerDirection == Stack_Off)
+				// Update the position of entity to cursor
+				if(Editor[client].stackerDirection == Stack_Off) {
 					CalculateEditorPosition(client, Filter_IgnorePlayerAndWall);
+				}
 			}
 			case SCALE: {
 				SetWeaponDelay(client, 0.5);
@@ -561,6 +567,21 @@ stock void LookAtPoint(int entity, const float destination[3]){
 
 stock float SnapTo(const float value, const float degree) {
 	return float(RoundFloat(value / degree)) * degree;
+}
+
+// Taken from GrabEnt
+stock bool GetInitialRayPosition(int client, float endPos[3]) { 
+	if (client > 0 && client <= MaxClients && IsClientInGame(client)) {
+		float clientEye[3], clientAngle[3];
+		GetClientEyePosition(client, clientEye);
+		GetClientEyeAngles(client, clientAngle);
+
+		TR_TraceRayFilter(clientEye, clientAngle, MASK_SOLID, RayType_Infinite, Filter_IgnorePlayer, client);
+		if (TR_DidHit(INVALID_HANDLE))
+			TR_GetEndPosition(endPos);
+		return true;
+	}
+	return false;
 }
 
 stock bool CalculateEditorPosition(int client, TraceEntityFilter filter) {

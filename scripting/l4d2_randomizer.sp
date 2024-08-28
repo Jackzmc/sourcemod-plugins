@@ -1113,7 +1113,7 @@ void spawnVariant(SceneVariantData choice) {
 void spawnEntity(VariantEntityData entity) {
 	if(StrEqual(entity.type, "env_fire")) {
 		Debug("spawning \"%s\" at (%.1f %.1f %.1f) rot (%.0f %.0f %.0f)", entity.type, entity.origin[0], entity.origin[1], entity.origin[2], entity.angles[0], entity.angles[1], entity.angles[2]);
-		CreateFire(entity.origin, 20.0, 100.0, 0.0);
+		CreateFire(entity.origin, 20.0, 100.0, 1.0);
 	} else if(StrEqual(entity.type, "env_physics_blocker") || StrEqual(entity.type, "env_player_blocker")) {
 		CreateEnvBlockerScaled(entity.type, entity.origin, entity.scale);
 	} else if(StrEqual(entity.type, "infodecal")) {
