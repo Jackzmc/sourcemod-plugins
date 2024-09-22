@@ -1,0 +1,504 @@
+{
+    "semi-skip": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "inputs": [
+                    {
+                        "hammerid": 55220,
+                        "input": "_allow_ladder"
+                    },
+                    {
+                        "hammerid": 55148,
+                        "input": "_allow_ladder"
+                    }
+                ],
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            3793.525634765625,
+                            -308.44189453125,
+                            -62.157688140869141
+                        ],
+                        "angles": [
+                            0.0,
+                            -19.700000762939453,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            3879.13916015625,
+                            -358.6483154296875,
+                            -55.560436248779297
+                        ],
+                        "angles": [
+                            -3.5999999046325684,
+                            -32.400001525878906,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            3589.447021484375,
+                            -341.81204223632812,
+                            -172.47555541992188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            3584.012451171875,
+                            -342.64913940429688,
+                            -230.81228637695312
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            3530.643310546875,
+                            -259.70034790039062,
+                            -168.9732666015625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            3526.457275390625,
+                            -254.91879272460938,
+                            -220.84259033203125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer_freestanding.mdl",
+                        "origin": [
+                            3699.136962890625,
+                            -36.224365234375,
+                            -227.72334289550781
+                        ],
+                        "angles": [
+                            0.0,
+                            176.19999694824219,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            3711.4404296875,
+                            118.58720397949219,
+                            -95.429054260253906
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            3714.56982421875,
+                            186.07363891601562,
+                            -61.407173156738281
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_02.mdl",
+                        "origin": [
+                            3710.57666015625,
+                            184.14863586425781,
+                            0.51078051328659058
+                        ],
+                        "angles": [
+                            35.199996948242188,
+                            -76.899993896484375,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/flatnose_truck.mdl",
+                        "origin": [
+                            3691.6806640625,
+                            -266.49920654296875,
+                            -220.36700439453125
+                        ],
+                        "angles": [
+                            0.0,
+                            -103.19999694824219,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "peanut": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            4761.5625,
+                            2888.28125,
+                            -63.59375
+                        ],
+                        "angles": [
+                            0.0,
+                            54.0087890625,
+                            0.3515625
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "delivery-doors": {
+        "chance": 0.69999998807907104,
+        "variants": [
+            {
+                "weight": 1,
+                "inputs": [
+                    {
+                        "hammerid": 654024,
+                        "input": "break"
+                    },
+                    {
+                        "hammerid": 621021,
+                        "input": "break"
+                    },
+                    {
+                        "hammerid": 665800,
+                        "input": "break"
+                    }
+                ],
+                "entities": []
+            }
+        ]
+    },
+    "3way-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_doors/roll-up_door_full.mdl",
+                        "origin": [
+                            2070.6923828125,
+                            -374.97793579101562,
+                            -223.98489379882812
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_doors/roll-up_door_full.mdl",
+                        "origin": [
+                            2366.560791015625,
+                            117.58223724365234,
+                            -218.53596496582031
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "ladder-up": {
+        "chance": 0.69999998807907104,
+        "variants": [
+            {
+                "weight": 1,
+                "inputs": [
+                    {
+                        "hammerid": 37185,
+                        "input": "_allow_ladder"
+                    },
+                    {
+                        "hammerid": 222283,
+                        "input": "_allow_ladder"
+                    }
+                ],
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_c17/metalladder001.mdl",
+                        "origin": [
+                            3652.984375,
+                            3227.336181640625,
+                            -74.784149169921875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_c17/metalladder001.mdl",
+                        "origin": [
+                            3510.315673828125,
+                            3315.55859375,
+                            84.583740234375
+                        ],
+                        "angles": [
+                            -1.3999999761581421,
+                            -91.400001525878906,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            3572.427978515625,
+                            3259.145751953125,
+                            54.591609954833984
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            3563.036865234375,
+                            3213.2373046875,
+                            53.998668670654297
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "container-block": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_equipment/cargo_container01.mdl",
+                        "origin": [
+                            3233.559814453125,
+                            4165.6025390625,
+                            1.416229248046875
+                        ],
+                        "angles": [
+                            0.0,
+                            26.400001525878906,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence_cover001_64.mdl",
+                        "origin": [
+                            3384.270263671875,
+                            4088.225341796875,
+                            -30.631721496582031
+                        ],
+                        "angles": [
+                            -5.0999999046325684,
+                            -31.400001525878906,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "alt-warehouse": {
+        "chance": 0.69999999999999996,
+        "variants": [
+            {
+                "weight": 1,
+                "inputs": [
+                    {
+                        "hammerid": 663285,
+                        "input": "break"
+                    }
+                ],
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_doors/roll-up_door_full.mdl",
+                        "origin": [
+                            4353.25927734375,
+                            4855.75,
+                            48.046012878417969
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.299995422363281,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "container-danger": {
+        "chance": 0.60000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_equipment/cargo_container01.mdl",
+                        "origin": [
+                            4853.689453125,
+                            6209.517578125,
+                            92.42303466796875
+                        ],
+                        "angles": [
+                            0.0,
+                            208.20001220703125,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "infected-access": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "inputs": [
+                    {
+                        "targetname": "anv_mapfixes_commonhop_windowsa",
+                        "input": "kill"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_commonhop_windowsb",
+                        "input": "kill"
+                    },
+                    {
+                        "hammerid": 896507,
+                        "input": "_allow_ladder"
+                    },
+                    {
+                        "hammerid": 42691,
+                        "input": "_allow_ladder"
+                    }
+                ],
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/zombiebreakwallhospitalexterior01_main.mdl",
+                        "origin": [
+                            7533.03369140625,
+                            7244.62548828125,
+                            270.92254638671875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/zombiebreakwallhospitalexterior01_main.mdl",
+                        "origin": [
+                            6959.8349609375,
+                            7278.86181640625,
+                            245.17605590820312
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/bus01.mdl",
+                        "origin": [
+                            7007.01123046875,
+                            6723.58642578125,
+                            50.544933319091797
+                        ],
+                        "angles": [
+                            0.0,
+                            8.1000003814697266,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

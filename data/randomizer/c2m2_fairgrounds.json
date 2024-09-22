@@ -260,7 +260,8 @@
         "variants": [
             {
                 "inputs": [
-                    {"hammerid": 3331344, "input": "Break"}
+                    {"hammerid": 3331344, "input": "Break"},
+                    {"hammerid": 3331353, "input": "break"}
                 ]
             }
         ]

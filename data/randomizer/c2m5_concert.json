@@ -1,0 +1,576 @@
+{
+    "scaff-bridge-2": {
+        "chance": 0.4,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "name": "plywood_row_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -2536.224853515625,
+                            2479.3525390625,
+                            187.75991821289062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "name": "plywood_row_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -2416.224853515625,
+                            2479.3525390625,
+                            187.75991821289062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "name": "plywood_row_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -2296,
+                            2479.3525390625,
+                            187.75991821289062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "name": "plywood_row_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -2176,
+                            2479.3525390625,
+                            187.75991821289062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "name": "plywood_row_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -2056,
+                            2479.3525390625,
+                            187.75991821289062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "name": "plywood_row_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            -1984,
+                            2479.3525390625,
+                            187.75991821289062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "name": "plywood_row_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -2536.224853515625,
+                            2431.5,
+                            188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "name": "plywood_row_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -2416,
+                            2431.5,
+                            188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "name": "plywood_row_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -2296.224853515625,
+                            2431.5,
+                            188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "name": "plywood_row_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -2176.224853515625,
+                            2431.5,
+                            188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "name": "plywood_row_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -2056.224853515625,
+                            2431.5,
+                            188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "name": "plywood_row_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            -1984.224853515625,
+                            2431.5,
+                            188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "beamrow_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_256.mdl",
+                        "origin": [
+                            -2664.860595703125,
+                            2525.53955078125,
+                            182.70179748535156
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "beamrow_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_256.mdl",
+                        "origin": [
+                            -2409.860595703125,
+                            2525.53955078125,
+                            182.70179748535156
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "beamrow_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_128.mdl",
+                        "origin": [
+                            -2154,
+                            2525.53955078125,
+                            182.70179748535156
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "beamrow_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_64.mdl",
+                        "origin": [
+                            -2026,
+                            2525.53955078125,
+                            182.70179748535156
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "beamrow_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_256.mdl",
+                        "origin": [
+                            -2664.860595703125,
+                            2441.94921875,
+                            182.70179748535156
+                        ],
+                        "angles": [
+                            0.0,
+                            360.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "beamrow_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_256.mdl",
+                        "origin": [
+                            -2409.860595703125,
+                            2441.94921875,
+                            182.70179748535156
+                        ],
+                        "angles": [
+                            0.0,
+                            360.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "beamrow_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_128.mdl",
+                        "origin": [
+                            -2154.860595703125,
+                            2441.94921875,
+                            182.70179748535156
+                        ],
+                        "angles": [
+                            0.0,
+                            360.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "beamrow_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_64.mdl",
+                        "origin": [
+                            -2026.860595703125,
+                            2441.94921875,
+                            182.70179748535156
+                        ],
+                        "angles": [
+                            0.0,
+                            360.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
+                        "origin": [
+                            -2597.29443359375,
+                            2437.001220703125,
+                            189.39932250976562
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
+                        "origin": [
+                            -2471.29443359375,
+                            2437.001220703125,
+                            189.39932250976562
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
+                        "origin": [
+                            -2345.29443359375,
+                            2437.001220703125,
+                            189.39932250976562
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
+                        "origin": [
+                            -2219.29443359375,
+                            2437.001220703125,
+                            189.39932250976562
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
+                        "origin": [
+                            -2093.29443359375,
+                            2437.001220703125,
+                            189.39932250976562
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
+                        "origin": [
+                            -2597.29443359375,
+                            2522.9000000000001,
+                            189.39932250976562
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
+                        "origin": [
+                            -2471.29443359375,
+                            2522.9000000000001,
+                            189.39932250976562
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
+                        "origin": [
+                            -2345.29443359375,
+                            2522.9000000000001,
+                            189.39932250976562
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
+                        "origin": [
+                            -2219.29443359375,
+                            2522.9000000000001,
+                            189.39932250976562
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
+                        "origin": [
+                            -2093.29443359375,
+                            2522.9000000000001,
+                            189.39932250976562
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_2",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence_gate_post003.mdl",
+                        "origin": [
+                            -2030.9207763671875,
+                            2522.8330078125,
+                            186.94879150390625
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "group": "fencerow_1",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence_gate_post003.mdl",
+                        "origin": [
+                            -2030.9207763671875,
+                            2437.0,
+                            186.94879150390625
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_256.mdl",
+                        "origin": [
+                            -2416.064208984375,
+                            2440.26708984375,
+                            -61.955089569091797
+                        ],
+                        "angles": [
+                            -90.0,
+                            360.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_256.mdl",
+                        "origin": [
+                            -2416.064208984375,
+                            2524,
+                            -61.955089569091797
+                        ],
+                        "angles": [
+                            -90.0,
+                            360.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_256.mdl",
+                        "origin": [
+                            -2416.064208984375,
+                            2524,
+                            -317.955089569091797
+                        ],
+                        "angles": [
+                            -90.0,
+                            360.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_256.mdl",
+                        "origin": [
+                            -2162.39,
+                            2524,
+                            -61.955089569091797
+                        ],
+                        "angles": [
+                            -90.0,
+                            360.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_64.mdl",
+                        "origin": [
+                            -2162.39,
+                            2524,
+                            -110.955089569091797
+                        ],
+                        "angles": [
+                            -90.0,
+                            360.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/handrail_hospital01_256.mdl",
+                        "origin": [
+                            -2162.39,
+                            2440.26708984375,
+                            -61.955089569091797
+                        ],
+                        "angles": [
+                            -90.0,
+                            360.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

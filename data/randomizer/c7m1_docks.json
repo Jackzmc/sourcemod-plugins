@@ -1,0 +1,1624 @@
+{
+    "start": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/train_flatcar.mdl",
+                        "origin": [
+                            13524.8779296875,
+                            2522.342529296875,
+                            70.797508239746094
+                        ],
+                        "angles": [
+                            -8.8000001907348633,
+                            -13.399999618530273,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            13400.232421875,
+                            2492.879638671875,
+                            105.71292877197266
+                        ],
+                        "angles": [
+                            22.899999618530273,
+                            -14.59999942779541,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            13301.9541015625,
+                            2510.446533203125,
+                            146.53663635253906
+                        ],
+                        "angles": [
+                            20.80000114440918,
+                            -14.59999942779541,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_highway/plywood_02.mdl",
+                        "origin": [
+                            13309.0771484375,
+                            2513.419677734375,
+                            144.69120788574219
+                        ],
+                        "angles": [
+                            -49.400005340576172,
+                            -11.200000762939453,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_wasteland/exterior_fence002c.mdl",
+                        "origin": [
+                            13819.703125,
+                            2418.509033203125,
+                            105.08306884765625
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_wasteland/exterior_fence002b.mdl",
+                        "origin": [
+                            13914.97265625,
+                            2401.229248046875,
+                            101.30563354492188
+                        ],
+                        "angles": [
+                            -30.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            13077.904296875,
+                            2547.41552734375,
+                            180.48150634765625
+                        ],
+                        "angles": [
+                            0.0,
+                            85.200004577636719,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_highway/plywood_02.mdl",
+                        "origin": [
+                            13091.1328125,
+                            2405.152587890625,
+                            185.38920593261719
+                        ],
+                        "angles": [
+                            4.0999999046325684,
+                            -6.6999998092651367,
+                            -26.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_vehicles/train_box_small.mdl",
+                        "origin": [
+                            13031.466796875,
+                            2575.822021484375,
+                            35.884159088134766
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_vehicles/boat_ski.mdl",
+                        "origin": [
+                            13108.0849609375,
+                            2275.70849609375,
+                            -19.053918838500977
+                        ],
+                        "angles": [
+                            0.0,
+                            -169.69999694824219,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_vehicles/boat_trailer20ft.mdl",
+                        "origin": [
+                            13116.6484375,
+                            2256.276611328125,
+                            -13.847049713134766
+                        ],
+                        "angles": [
+                            0.0,
+                            -171.20001220703125,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_urban/boat001.mdl",
+                        "origin": [
+                            13453.2421875,
+                            1773.6513671875,
+                            -104.16077423095703
+                        ],
+                        "angles": [
+                            0.0,
+                            -57.299999237060547,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            13516.3583984375,
+                            1741.35595703125,
+                            -97.338203430175781
+                        ],
+                        "angles": [
+                            6.9000015258789062,
+                            60.300003051757812,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/lostcoast/props_wasteland/boat_wooden01a_static.mdl",
+                        "origin": [
+                            13341.39453125,
+                            1635.9674072265625,
+                            -56.168235778808594
+                        ],
+                        "angles": [
+                            27.400001525878906,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_urban/boat002.mdl",
+                        "origin": [
+                            13309.734375,
+                            1715.2852783203125,
+                            -116.60355377197266
+                        ],
+                        "angles": [
+                            0.0,
+                            -56.500003814697266,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_vehicles/boat_ski.mdl",
+                        "origin": [
+                            13156.685546875,
+                            2207.540771484375,
+                            -14.486090660095215
+                        ],
+                        "angles": [
+                            0.0,
+                            188.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_vehicles/boat_trailer20ft.mdl",
+                        "origin": [
+                            13159.5732421875,
+                            2212.509765625,
+                            -14.454076766967773
+                        ],
+                        "angles": [
+                            0.0,
+                            184.89999389648438,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "parking": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/cara_82hatchback_wrecked.mdl",
+                        "origin": [
+                            11969.1572265625,
+                            1772.0823974609375,
+                            130.50993347167969
+                        ],
+                        "angles": [
+                            -4.8000001907348633,
+                            62.700000762939453,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_vehicles/cara_82hatchback.mdl",
+                        "origin": [
+                            11875.2568359375,
+                            1410.94091796875,
+                            128.27044677734375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "parking-block": {
+        "chance": 0.60000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "inputs": [
+                    {
+                        "hammerid": 250055,
+                        "input": "Lock"
+                    }
+                ],
+                "entities": [
+                    {
+                        "model": "models/lighthouse/checkpoint_door_lighthouse01_plank.mdl",
+                        "origin": [
+                            12051.439453125,
+                            1779.4932861328125,
+                            203.45826721191406
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/lighthouse/checkpoint_door_lighthouse01_plank.mdl",
+                        "origin": [
+                            12053.9384765625,
+                            1779.8135986328125,
+                            224.60409545898438
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/lighthouse/checkpoint_door_lighthouse01_plank.mdl",
+                        "origin": [
+                            12054.6513671875,
+                            1781.166259765625,
+                            180.52227783203125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/lighthouse/checkpoint_door_lighthouse01_plank.mdl",
+                        "origin": [
+                            12056.0595703125,
+                            1781.382080078125,
+                            160.61082458496094
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_wasteland/exterior_fence002c.mdl",
+                        "origin": [
+                            11977.552734375,
+                            1299.7904052734375,
+                            199.46833801269531
+                        ],
+                        "angles": [
+                            0.0,
+                            95.600006103515625,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_wasteland/exterior_fence002d.mdl",
+                        "origin": [
+                            11787.3369140625,
+                            1304.3853759765625,
+                            199.70736694335938
+                        ],
+                        "angles": [
+                            0.0,
+                            87.900016784667969,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_wasteland/exterior_fence002d.mdl",
+                        "origin": [
+                            11532.51171875,
+                            1301.098388671875,
+                            202.2958984375
+                        ],
+                        "angles": [
+                            0.0,
+                            94.000007629394531,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "fuel-barrels": {
+        "chance": 0.80000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_fuel_barrel",
+                        "model": "models/props_industrial/barrel_fuel.mdl",
+                        "origin": [
+                            9955.6982421875,
+                            627.97161865234375,
+                            11.180092811584473
+                        ],
+                        "angles": [
+                            359.736328125,
+                            92.98828125,
+                            359.9560546875
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "fuel-barrels-2": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_fuel_barrel",
+                        "model": "models/props_industrial/barrel_fuel.mdl",
+                        "origin": [
+                            11679.177734375,
+                            -21.637161254882812,
+                            -8.919921875
+                        ],
+                        "angles": [
+                            2.8564453125,
+                            11.865234375,
+                            3.8671875
+                        ]
+                    },
+                    {
+                        "type": "prop_fuel_barrel",
+                        "model": "models/props_industrial/barrel_fuel.mdl",
+                        "origin": [
+                            11679.34375,
+                            -20.90625,
+                            -53.90625
+                        ],
+                        "angles": [
+                            0.263671875,
+                            345.673828125,
+                            0.52734375
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "fuel-barrels-3": {
+        "chance": 0.80000000000000004,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_fuel_barrel",
+                        "model": "models/props_industrial/barrel_fuel.mdl",
+                        "origin": [
+                            9929.875,
+                            646.90625,
+                            7.71875
+                        ],
+                        "angles": [
+                            357.8466796875,
+                            71.5869140625,
+                            358.6376953125
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "roomblock": {
+        "chance": 0.89999997615814209,
+        "variants": [
+            {
+                "weight": 1,
+                "inputs": [
+                    {
+                        "hammerid": 330025,
+                        "input": "Lock"
+                    }
+                ],
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/boat_trailer20ft.mdl",
+                        "origin": [
+                            10076.115234375,
+                            1080.318115234375,
+                            53.399791717529297
+                        ],
+                        "angles": [
+                            -3.0,
+                            90.20001220703125,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_vehicles/boat_ski.mdl",
+                        "origin": [
+                            10076.765625,
+                            1082.896240234375,
+                            50.822128295898438
+                        ],
+                        "angles": [
+                            0.0,
+                            94.300003051757812,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "car-attract": {
+        "chance": 0.89999997615814209,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props/de_prodigy/concretebags.mdl",
+                        "origin": [
+                            10272.0283203125,
+                            1818.6768798828125,
+                            132.29508972167969
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "truck-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/army_truck.mdl",
+                        "origin": [
+                            9725.4306640625,
+                            2097.9111328125,
+                            125.08763122558594
+                        ],
+                        "angles": [
+                            0.0,
+                            303.20001220703125,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "fire-remove": {
+        "chance": 0.40000000000000002,
+        "variants": [
+            {
+                "weight": 1,
+                "inputs": [
+                    {
+                        "hammerid": 1217504,
+                        "input": "stop",
+                        "_comment": "info_particle_system"
+                    },
+                    {
+                        "hammerid": 1217484,
+                        "input": "disable",
+                        "_comment": "trigger_hurt"
+                    },
+                    {
+                        "hammerid": 1226297,
+                        "input": "HideSprite",
+                        "_comment": "env_sprite"
+                    },
+                    {
+                        "hammerid": 1226300,
+                        "input": "HideSprite",
+                        "_comment": "env_sprite"
+                    },
+                    {
+                        "targetname": "target_barricadefire",
+                        "input": "Kill"
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "inputs": [
+                    {
+                        "hammerid": 1217504,
+                        "input": "stop",
+                        "_comment": "info_particle_system"
+                    },
+                    {
+                        "hammerid": 1217484,
+                        "input": "disable",
+                        "_comment": "trigger_hurt"
+                    },
+                    {
+                        "hammerid": 1226297,
+                        "input": "HideSprite",
+                        "_comment": "env_sprite"
+                    },
+                    {
+                        "hammerid": 1226300,
+                        "input": "HideSprite",
+                        "_comment": "env_sprite"
+                    },
+                    {
+                        "targetname": "target_barricadefire",
+                        "input": "Kill"
+                    }
+                ],
+                "entities": [
+                    {
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            9122.41015625,
+                            1776.7066650390625,
+                            136.25437927246094
+                        ],
+                        "angles": [
+                            0.0,
+                            45.200000762939453,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            9143.78125,
+                            1751.780517578125,
+                            136.25437927246094
+                        ],
+                        "angles": [
+                            0.0,
+                            -35.100002288818359,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            9167.7958984375,
+                            1772.8756103515625,
+                            136.25437927246094
+                        ],
+                        "angles": [
+                            0.0,
+                            9.3000001907348633,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            9197.3974609375,
+                            1777.8748779296875,
+                            136.25437927246094
+                        ],
+                        "angles": [
+                            0.0,
+                            -35.100002288818359,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            9193.9091796875,
+                            1755.3150634765625,
+                            181.53562927246094
+                        ],
+                        "angles": [
+                            0.0,
+                            -35.100002288818359,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            9142.3369140625,
+                            1748.527099609375,
+                            181.53562927246094
+                        ],
+                        "angles": [
+                            0.0,
+                            -35.100002288818359,
+                            0.0
+                        ]
+                    },
+                    {
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            9193.8193359375,
+                            1751.8516845703125,
+                            136.25437927246094
+                        ],
+                        "angles": [
+                            0.0,
+                            -35.100002288818359,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "train-debris": {
+        "chance": 0.60000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/train_enginecar.mdl",
+                        "origin": [
+                            6657.94140625,
+                            -693.86810302734375,
+                            107.51909637451172
+                        ],
+                        "angles": [
+                            0.0,
+                            -76.600006103515625,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "VIRGIL": {
+        "chance": 0.80000000000000004,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "model": "models/props_vehicles/boat_rescue_tug_sunshine.mdl",
+                        "origin": [
+                            8531.9716796875,
+                            -2513.3125,
+                            -98.5875244140625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "boatdock": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_vehicles/boat_smash.mdl",
+                        "origin": [
+                            7798.40625,
+                            -83.84375,
+                            29.5
+                        ],
+                        "angles": [
+                            38.84765625,
+                            166.3330078125,
+                            2.373046875
+                        ]
+                    },
+                    {
+                        "model": "models/props_equipment/cargo_container01.mdl",
+                        "origin": [
+                            7369.01416015625,
+                            710.28692626953125,
+                            8.117462158203125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "peanut": {
+        "chance": 0.80000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            2032.508056640625,
+                            658.3101806640625,
+                            296.71380615234375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "lizzboat": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [],
+                "inputs": [
+                    {
+                        "hammerid": 567848,
+                        "input": "color 255 128 255 255"
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [],
+                "inputs": [
+                    {
+                        "hammerid": 567848,
+                        "input": "color 128 128 255 255"
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [],
+                "inputs": [
+                    {
+                        "hammerid": 567848,
+                        "input": "color 0 100 100 255"
+                    }
+                ]
+            }
+        ]
+    },
+    "brick-block": {
+        "chance": 0.44999998807907104,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5157.271484375,
+                            -282.4029541015625,
+                            163.30923461914062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5191.6279296875,
+                            -278.85440063476562,
+                            225.05441284179688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5227.40869140625,
+                            -290.85165405273438,
+                            163.0067138671875
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5286.251953125,
+                            -227.886962890625,
+                            163.08807373046875
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5285.02099609375,
+                            -162.747802734375,
+                            163.23202514648438
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5284.390625,
+                            -98.255760192871094,
+                            164.33122253417969
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5278.22119140625,
+                            -235.05189514160156,
+                            226.08218383789062
+                        ],
+                        "angles": [
+                            0.0,
+                            45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5278.7177734375,
+                            -101.97312164306641,
+                            226.11715698242188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5219.1767578125,
+                            -166.37445068359375,
+                            225.9990234375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5219.6865234375,
+                            -166.89015197753906,
+                            163.58941650390625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "brick-block-up": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5345.0673828125,
+                            95.831039428710938,
+                            226.093994140625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "brickwall-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            3660.087646484375,
+                            -222.28642272949219,
+                            222.81326293945312
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            3665.769775390625,
+                            -157.1160888671875,
+                            158.899658203125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            3667.69873046875,
+                            -157.70631408691406,
+                            221.59579467773438
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            3663.652099609375,
+                            -93.46368408203125,
+                            222.7618408203125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            3664.48095703125,
+                            -92.008888244628906,
+                            161.11833190917969
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            3665.396728515625,
+                            -29.469736099243164,
+                            161.89141845703125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            3668.032470703125,
+                            -32.052642822265625,
+                            222.7796630859375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            3813.1083984375,
+                            288.66134643554688,
+                            165.29559326171875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            3894.574951171875,
+                            608.2164306640625,
+                            176.44406127929688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            3989.37109375,
+                            590.8572998046875,
+                            171.98574829101562
+                        ],
+                        "angles": [
+                            30.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            3939.00146484375,
+                            589.9468994140625,
+                            200.4859619140625
+                        ],
+                        "angles": [
+                            30.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "brick-block-alt": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            4236.3447265625,
+                            292.21588134765625,
+                            164.10494995117188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            4291.1279296875,
+                            349.21893310546875,
+                            148.32301330566406
+                        ],
+                        "angles": [
+                            135.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/debris_brick02.mdl",
+                        "origin": [
+                            4314.27490234375,
+                            251.149658203125,
+                            122.54148101806641
+                        ],
+                        "angles": [
+                            30.0,
+                            90.0,
+                            -15.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/debris_brick02.mdl",
+                        "origin": [
+                            4312.28173828125,
+                            241.62715148925781,
+                            122.68444061279297
+                        ],
+                        "angles": [
+                            30.0,
+                            120.0,
+                            -15.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/debris_brick02.mdl",
+                        "origin": [
+                            4271.177734375,
+                            297.99868774414062,
+                            114.25346374511719
+                        ],
+                        "angles": [
+                            0.0,
+                            60.0,
+                            -15.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "gravel-brick-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickstack10_b.mdl",
+                        "origin": [
+                            4809.56201171875,
+                            1055.28955078125,
+                            299.0316162109375
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickstack10_b.mdl",
+                        "origin": [
+                            4492.82568359375,
+                            865.140869140625,
+                            302.00491333007812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "gravel-path-alt": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5059.951171875,
+                            1146.4599609375,
+                            276.325927734375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5059.53759765625,
+                            1139.5584716796875,
+                            212.99029541015625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5053.447265625,
+                            716.2174072265625,
+                            200.5379638671875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            4981.72802734375,
+                            718.1419677734375,
+                            172.52073669433594
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5126.87060546875,
+                            716.018798828125,
+                            238.92776489257812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5191.791015625,
+                            790.75054931640625,
+                            271.136474609375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5192.529296875,
+                            791.3468017578125,
+                            299.65264892578125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            5195.76513671875,
+                            862.72955322265625,
+                            335.52099609375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "stairs-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            2992.59033203125,
+                            1116.954833984375,
+                            227.6839599609375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            3023.05224609375,
+                            1180.4437255859375,
+                            227.41983032226562
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            3019.723388671875,
+                            1185.91796875,
+                            176.90963745117188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            2994.6669921875,
+                            1123.9783935546875,
+                            177.42485046386719
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            2992.4375,
+                            1366.5,
+                            227.75
+                        ],
+                        "angles": [
+                            0.1318359375,
+                            356.748046875,
+                            0.3076171875
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            2404.322265625,
+                            451.97726440429688,
+                            211.82435607910156
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            2400.82080078125,
+                            451.33013916015625,
+                            179.32809448242188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            2388.829833984375,
+                            363.67562866210938,
+                            179.32716369628906
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            2455.683349609375,
+                            367.40548706054688,
+                            150.18098449707031
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            2468.9111328125,
+                            433.362060546875,
+                            175.76425170898438
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            2747.732177734375,
+                            890.9432373046875,
+                            423.70709228515625
+                        ],
+                        "angles": [
+                            -90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            2742.4345703125,
+                            777.99322509765625,
+                            426.48471069335938
+                        ],
+                        "angles": [
+                            -90.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
