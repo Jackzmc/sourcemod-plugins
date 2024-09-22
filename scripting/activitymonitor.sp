@@ -248,6 +248,14 @@ public void Event_L4D2_Death(Event event, const char[] name, bool dontBroadcast)
 			if(IsFakeClient(attacker)) GetClientName(attacker, attackerName, sizeof(attackerName));
 			else GetClientAuthId(attacker, AuthId_Steam2, attackerName, sizeof(attackerName));
 
+			if(GetClientTeam(attacker) == 2) {
+				char weaponName[32];
+				event.GetString("weapon", weaponName, sizeof(weaponName));
+				if(weaponName[0] != '\0') {
+					AddLogCustom("STATE", attackerName, victimName, "\"%L\" killed \"%L\" with \"%s\"", attacker, victim, weaponName);
+					return;
+				}
+			}
 			AddLogCustom("STATE", attackerName, victimName, "\"%L\" killed \"%L\"", attacker, victim);
 		} else {
 			AddLogCustom("STATE", "", victimName, "\"%L\" died", victim);
@@ -267,7 +275,15 @@ public void Event_L4D2_Incapped(Event event, const char[] name, bool dontBroadca
 		if(attacker > 0 && attacker != victim) {
 			if(IsFakeClient(attacker)) GetClientName(attacker, attackerName, sizeof(attackerName));
 			else GetClientAuthId(attacker, AuthId_Steam2, attackerName, sizeof(attackerName));
-
+			
+			if(GetClientTeam(attacker) == 2) {
+				char weaponName[32];
+				event.GetString("weapon", weaponName, sizeof(weaponName));
+				if(weaponName[0] != '\0') {
+					AddLogCustom("STATE", attackerName, victimName, "\"%L\" incapped \"%L\" with \"%s\"", attacker, victim, weaponName);
+					return;
+				}
+			}
 			AddLogCustom("STATE", attackerName, victimName, "\"%L\" incapped \"%L\"", attacker, victim);
 		} else {
 			AddLogCustom("STATE", "", victimName, "\"%L\" was incapped", victim);

@@ -22,9 +22,9 @@ int g_iLaserIndex;
 #if defined DEBUG_BLOCKERS
 #include <smlib/effects>
 #endif
-#define ENT_PROP_NAME "l4d2_randomizer"
-#define ENT_ENV_NAME "l4d2_randomizer"
-#define ENT_BLOCKER_NAME "l4d2_randomizer"
+#define ENT_PROP_NAME "randomizer"
+#define ENT_ENV_NAME "randomizer"
+#define ENT_BLOCKER_NAME "randomizer"
 #include <gamemodes/ents>
 
 #define MAX_SCENE_NAME_LENGTH 32
@@ -100,6 +100,7 @@ enum struct BuilderData {
 }
 
 #include <randomizer/rbuild.sp>
+#include <randomizer/caralarm.sp>
 
 public Plugin myinfo = 
 {
@@ -116,23 +117,39 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
+	HookEvent("round_start_post_nav", Event_RoundStartPosNav);
+
 	RegAdminCmd("sm_rcycle", Command_CycleRandom, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_expent", Command_ExportEnt, ADMFLAG_GENERIC);
 	RegAdminCmd("sm_rbuild", Command_RandomizerBuild, ADMFLAG_CHEATS);
 
 	cvarEnabled = CreateConVar("sm_randomizer_enabled", "0");
 
+	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
+
 	g_MapData.activeScenes = new ArrayList(sizeof(ActiveSceneData));
 }
 
+void Event_PlayerFirstSpawn(Event event, const char[] name ,bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(GetUserFlagBits(client) & ADMFLAG_CHAT) {
+		// If enabled but no map loaded:
+		if(cvarEnabled.BoolValue && g_MapData.scenes == null)
+			PrintToChat(client, "Randomizer Note: This map has no randomizer support at the moment.");
+	}
+}
+
+void Event_RoundStartPosNav(Event event, const char[] name ,bool dontBroadcast) {
+	if(cvarEnabled.BoolValue)
+		CreateTimer(5.0, Timer_Run);
+}
 
 // TODO: on round start
 public void OnMapStart() {
 	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt", true);
 	GetCurrentMap(currentMap, sizeof(currentMap));
-	if(cvarEnabled.BoolValue)
-		CreateTimer(5.0, Timer_Run);
 }
+
 
 public void OnMapEnd() {
 	g_builder.Cleanup();
@@ -196,7 +213,7 @@ public Action Command_CycleRandom(int client, int args) {
 		if(client > 0)
 			PrintCenterText(client, "Cycled flags=%d", flags);
 	} else {
-		ReplyToCommand(client, "Active Scenes:");
+		ReplyToCommand(client, "Active Scenes (%d/%d):", g_MapData.activeScenes.Length, g_MapData.scenes.Length);
 		ActiveSceneData scene;
 		for(int i = 0; i < g_MapData.activeScenes.Length; i++) {
 			g_MapData.activeScenes.GetArray(i, scene);
@@ -284,7 +301,7 @@ Action Command_RandomizerBuild(int client, int args) {
 	} else if(StrEqual(arg, "menu")) {
 		OpenMainMenu(client);	
 	} else if(g_builder.mapData == null) {
-		ReplyToCommand(client, "No map data for %s, either load with /rbuild load, or start new /rbuild new", currentMap);
+		ReplyToCommand(client, "No map data loaded for %s, either load with /rbuild load, or start new /rbuild new", currentMap);
 		return Plugin_Handled;
 	} else if(StrEqual(arg, "save")) {
 		SaveMapJson(currentMap, g_builder.mapData);
@@ -358,10 +375,10 @@ JSONObject ExportEntity(int entity, ExportType exportType = Export_Model) {
 	GetEntPropVector(entity, Prop_Send, "m_angRotation", angles);
 	GetEntPropVector(entity, Prop_Send, "m_vecMaxs", size);
 
-	char model[128];
+	char classname[128], model[128];
 	JSONObject entityData = new JSONObject();
-	GetEntityClassname(entity, model, sizeof(model));
-	if(StrContains(model, "prop_") == -1) {
+	GetEntityClassname(entity, classname, sizeof(classname));
+	if(StrContains(classname, "prop_") == -1) {
 		entityData.Set("scale", VecToArray(size));
 	}
 	if(exportType == Export_HammerId) {
@@ -376,6 +393,7 @@ JSONObject ExportEntity(int entity, ExportType exportType = Export_Model) {
 		entityData.SetString("model", model);
 	} else {
 		GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
+		entityData.SetString("type", classname);
 		entityData.SetString("model", model);
 	}
 	entityData.Set("origin", VecToArray(origin));
@@ -567,17 +585,18 @@ enum InputType {
 enum struct VariantInputData {
 	char name[MAX_INPUTS_CLASSNAME_LENGTH];
 	InputType type; 
-	char input[32];
+	char input[64];
 
 	void Trigger() {
 		int entity = -1;
 		switch(this.type) {
 			case Input_Classname: {
-				entity = FindEntityByClassname(entity, this.name);
-				this._trigger(entity);
+				while((entity = FindEntityByClassname(entity, this.name)) != INVALID_ENT_REFERENCE) {
+					this._trigger(entity);
+				}
 			}
 			case Input_Targetname: {
-				char targetname[32];
+				char targetname[64];
 				while((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_REFERENCE) {
 					GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
 					if(StrEqual(targetname, this.name)) {
@@ -613,14 +632,19 @@ enum struct VariantInputData {
 				AcceptEntityInput(entity, "Close");
 				AcceptEntityInput(entity, "Lock");
 				AcceptEntityInput(entity, "SetUnbreakable");
-			}else {
+			} else {
 				char cmd[32];
 				// Split input "a b" to a with variant "b"
 				int len = SplitString(this.input, " ", cmd, sizeof(cmd));
-				if(len > -1) SetVariantString(this.input[len]);
+				if(len > -1) {
+					SetVariantString(this.input[len]);
+					AcceptEntityInput(entity, cmd);
+					Debug("_trigger(%d): %s (v=%s)", entity, cmd, this.input[len]);
+				} else {
+					Debug("_trigger(%d): %s", entity, this.input);
+					AcceptEntityInput(entity, this.input);
+				}
 				
-				Debug("_trigger(%d): %s (v=%s)", entity, this.input, cmd);
-				AcceptEntityInput(entity, this.input);
 			}
 		}
 	}
@@ -858,7 +882,7 @@ void loadChoice(SceneData scene, JSONObject choiceData, JSONArray extraEntities)
 			// Parses entities and loads to choice.entities
 			loadChoiceEntity(choice.entities, view_as<JSONObject>(extraEntities.Get(i)));
 		}
-		delete extraEntities;
+		// delete extraEntities;
 	}
 	// Load all inputs
 	if(choiceData.HasKey("inputs")) {
@@ -874,6 +898,7 @@ void loadChoice(SceneData scene, JSONObject choiceData, JSONArray extraEntities)
 		for(int i = 0; i < scenes.Length; i++) {
 			scenes.GetString(i, sceneId, sizeof(sceneId));
 			choice.forcedScenes.PushString(sceneId);
+			Debug("scene %s: require %s", scene.name, sceneId);
 		}
 		delete scenes;
 	}
@@ -882,6 +907,7 @@ void loadChoice(SceneData scene, JSONObject choiceData, JSONArray extraEntities)
 
 void loadChoiceInput(ArrayList list, JSONObject inputData) {
 	VariantInputData input;
+	input.type = Input_Classname;
 	// Check classname -> targetname -> hammerid
 	if(!inputData.GetString("classname", input.name, sizeof(input.name))) {
 		if(inputData.GetString("targetname", input.name, sizeof(input.name))) {
@@ -936,10 +962,10 @@ void loadChoiceEntity(ArrayList list, JSONObject entityData) {
 	entityData.GetString("model", entity.model, sizeof(entity.model));
 	if(!entityData.GetString("type", entity.type, sizeof(entity.type))) {
 		entity.type = "prop_dynamic";
-	} else if(entity.type[0] == '_') { 
+	} /*else if(entity.type[0] == '_') { 
 		LogError("Invalid custom entity type \"%s\"", entity.type);
 		return;
-	}
+	}*/
 	GetVector(entityData, "origin", entity.origin);
 	GetVector(entityData, "angles", entity.angles);
 	GetVector(entityData, "scale", entity.scale);
@@ -1013,24 +1039,35 @@ void selectScenes(int flags = 0) {
 	// Traverse active scenes, loading any other scene it requires (via .force_scenes)
 	ActiveSceneData aScene;
 	SceneVariantData choice;
+	char sceneId[64];
+	// list of scenes that will need to be forced if not already:
 	ArrayList forcedScenes = new ArrayList(ByteCountToCells(MAX_SCENE_NAME_LENGTH));
 	for(int i = 0; i < g_MapData.activeScenes.Length; i++) {
 		g_MapData.activeScenes.GetArray(i, aScene);
-		g_MapData.scenes.GetArray(i, scene);
-		scene.variants.GetArray(aScene.variantIndex, choice);
-		if(choice.forcedScenes != null) {
-			for(int j = 0; j < choice.forcedScenes.Length; j++) {
-				choice.forcedScenes.GetString(j, key, sizeof(key));
-				forcedScenes.PushString(key);
+		// Load scene from active scene entry
+		if(!g_MapData.scenesKv.GetArray(aScene.name, scene, sizeof(scene))) {
+			// can't find scene, ignore
+			continue;
+		}
+		if(aScene.variantIndex < scene.variants.Length) {
+			scene.variants.GetArray(aScene.variantIndex, choice);
+			if(choice.forcedScenes != null) {
+				for(int j = 0; j < choice.forcedScenes.Length; j++) {
+					choice.forcedScenes.GetString(j, key, sizeof(key));
+					forcedScenes.PushString(key);
+				}
 			}
 		}
+	}
+	if(forcedScenes.Length > 0) {
+		Debug("Loading %d forced scenes", forcedScenes.Length);
 	}
 	// Iterate and activate any forced scenes
 	for(int i = 0; i < forcedScenes.Length; i++) {
 		forcedScenes.GetString(i, key, sizeof(key));
 		// Check if scene was already loaded
 		bool isSceneAlreadyLoaded = false;
-		for(int j = 0; j < g_MapData.activeScenes.Length; i++) {
+		for(int j = 0; j < g_MapData.activeScenes.Length; j++) {
 			g_MapData.activeScenes.GetArray(j, aScene);
 			if(StrEqual(aScene.name, key)) {
 				isSceneAlreadyLoaded = true;
@@ -1077,7 +1114,6 @@ void selectScene(SceneData scene, int flags) {
 			}
 		}
 	}
-	Debug("Total choices: %d", choices.Length);
 	if(flags & view_as<int>(FLAG_ALL_VARIANTS)) {
 		delete choices;
 	} else if(choices.Length > 0) {
@@ -1118,7 +1154,7 @@ void spawnEntity(VariantEntityData entity) {
 		CreateEnvBlockerScaled(entity.type, entity.origin, entity.scale);
 	} else if(StrEqual(entity.type, "infodecal")) {
 		CreateDecal(entity.model, entity.origin);
-	} else if(StrContains(entity.type, "prop_") == 0) {
+	} else if(StrContains(entity.type, "prop_") == 0 || StrEqual(entity.type, "prop_fuel_barrel")) {
 		if(entity.model[0] == '\0') {
 			LogError("Missing model for entity with type \"%s\"", entity.type);
 			return;
@@ -1165,6 +1201,8 @@ void spawnEntity(VariantEntityData entity) {
 		}
 		if(!found)
 			Debug("Warn: Could not find entity (classname=%s)", entity.model);
+	} else if(StrContains(entity.type, "_car") != -1) {
+		SpawnCar(entity);
 	} else {
 		LogError("Unknown entity type \"%s\"", entity.type);
 	}
@@ -1200,6 +1238,17 @@ void Cleanup() {
 		delete g_MapData.scenes;
 	}
 	delete g_MapData.lumpEdits;
+
+	// Cleanup all alarm car entities:
+	int entity = -1;
+	char targetname[128];
+	while((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_REFERENCE) {
+		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
+		if(StrContains(targetname, "randomizer_car") != -1) {
+			RemoveEntity(entity);
+		}
+	}
+	// TODO: delete car alarms
 
 	DeleteCustomEnts();
 	g_MapData.activeScenes.Clear();

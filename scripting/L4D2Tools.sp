@@ -5,10 +5,11 @@
 
 #define PLUGIN_VERSION "1.0"
 
-#define PRECACHE_SOUNDS_COUNT 4
+#define PRECACHE_SOUNDS_COUNT 5
 char PRECACHE_SOUNDS[PRECACHE_SOUNDS_COUNT][] = {
 	"custom/xen_teleport.mp3",
 	"custom/mariokartmusic.mp3",
+	"custom/airhorn.mp3",
 	"custom/spookyscaryskeletons.mp3",
 	"custom/wearenumberone2.mp3",
 };

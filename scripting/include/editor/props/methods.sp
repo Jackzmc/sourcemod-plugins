@@ -203,6 +203,7 @@ void LoadFolder(ArrayList parent, const char[] rootPath) {
 	DirectoryListing listing = OpenDirectory(rootPath);
 	if(listing == null) {
 		LogError("Cannot open \"%s\"", rootPath);
+		return;
 	}
 	while(listing.GetNext(buffer, sizeof(buffer), fileType)) {
 		if(fileType == FileType_Directory) {

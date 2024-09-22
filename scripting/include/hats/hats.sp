@@ -135,7 +135,7 @@ Action Command_DoAHat(int client, int args) {
 			char sizeStr[4];
 			GetCmdArg(2, sizeStr, sizeof(sizeStr));
 			float size = StringToFloat(sizeStr);
-			if(size == 0.0) {
+			if(size <= 0.0) {
 				ReplyToCommand(client, "[Hats] Invalid size");
 				return Plugin_Handled;
 			}
@@ -335,7 +335,12 @@ Action Command_DoAHat(int client, int args) {
 	} else {
 		// Find a new hatable entity
 		int flags = 0;
-		entity = GetLookingEntity(client, Filter_ValidHats);
+		if(args > 0 && isForced) {
+			char arg[16];
+			entity = GetCmdArgInt(1);
+		} else {
+			entity = GetLookingEntity(client, Filter_ValidHats);
+		}
 		if(entity <= 0) {
 			PrintCenterText(client, "[Hats] No entity found");
 			return Plugin_Handled;

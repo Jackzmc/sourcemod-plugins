@@ -24,6 +24,8 @@ TopMenu g_topMenu;
 
 char g_currentMap[64];
 
+ConVar enabledBlacklist;
+
 //int g_markedMode
 
 #include <editor/editor.sp>
@@ -79,6 +81,8 @@ public void OnPluginStart() {
 	
 	LoadTranslations("common.phrases");
 	HookEvent("player_spawn", Event_PlayerSpawn);
+
+	enabledBlacklist = CreateConVar("editor_denylist", "7", "The lists to check, add bits together.\n1 = classnames\n2 = models\n4 = targetnames", FCVAR_NONE, true, 0.0);
 
 	RegAdminCmd("sm_mkwall", Command_MakeWall, ADMFLAG_CUSTOM2);
 	RegAdminCmd("sm_edit", Command_Editor, ADMFLAG_CUSTOM2);
@@ -489,13 +493,15 @@ char FORBIDDEN_MODELS[MAX_FORBIDDEN_MODELS][] = {
 bool CheckBlacklist(int entity) {
 	if(entity == 0) return false;
 	static char buffer[64];
-	GetEntityClassname(entity, buffer, sizeof(buffer));
-	for(int i = 0; i < MAX_FORBIDDEN_CLASSNAMES; i++) {
-		if(StrEqual(FORBIDDEN_CLASSNAMES[i], buffer)) {
-			return false;
+	if(enabledBlacklist.IntValue & 1) {
+		GetEntityClassname(entity, buffer, sizeof(buffer));
+		for(int i = 0; i < MAX_FORBIDDEN_CLASSNAMES; i++) {
+			if(StrEqual(FORBIDDEN_CLASSNAMES[i], buffer)) {
+				return false;
+			}
 		}
 	}
-	if(StrContains(buffer, "prop_") > -1) {
+	if(enabledBlacklist.IntValue & 2) {
 		GetEntPropString(entity, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
 		for(int i = 0; i < MAX_FORBIDDEN_MODELS; i++) {
 			if(StrEqual(FORBIDDEN_MODELS[i], buffer)) {
@@ -503,9 +509,11 @@ bool CheckBlacklist(int entity) {
 			}
 		}
 	}
-	GetEntPropString(entity, Prop_Data, "m_iName", buffer, sizeof(buffer));
-	if(StrEqual(buffer, "l4d2_randomizer")) {
-		return false;
+	if(enabledBlacklist.IntValue & 4) {
+		GetEntPropString(entity, Prop_Data, "m_iName", buffer, sizeof(buffer));
+		if(StrContains(buffer, "randomizer") > -1) {
+			return false;
+		}
 	}
 	return true;
 }

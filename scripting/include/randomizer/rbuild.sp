@@ -35,8 +35,8 @@ void OpenVariantsMenu(int client) {
 	Menu menu = new Menu(BuilderHandler_VariantsMenu);
 	menu.SetTitle("%s > Variants", g_builder.selectedSceneId);
 	char id[8], display[32];
-	menu.AddItem("new", "New");
-	menu.AddItem("-1", "None (Shared Scene)");
+	menu.AddItem("new", "New Variant");
+	menu.AddItem("-1", "Global Scene Variant");
 
 	JSONArray variants = view_as<JSONArray>(g_builder.selectedSceneData.Get("variants"));
 	JSONObject varObj;
@@ -45,9 +45,9 @@ void OpenVariantsMenu(int client) {
 		varObj = view_as<JSONObject>(variants.Get(i));
 		entities = view_as<JSONArray>(varObj.Get("entities"));
 		if(i == g_builder.selectedVariantIndex) {
-			Format(display, sizeof(display), "%d entities (selected)", entities.Length);
+			Format(display, sizeof(display), "#%d - %d entities (✔)", i, entities.Length);
 		} else {
-			Format(display, sizeof(display), "%d entities", entities.Length);
+			Format(display, sizeof(display), "#%d - %d entities", i, entities.Length);
 		}
 		IntToString(i, id, sizeof(id));
 		menu.AddItem(id, display);
