@@ -25,6 +25,7 @@ models/props_junk/wood_pallet001a_chunka4.mdl Wood Pallet Piece 2-4
 models/props_junk/wood_pallet001a_chunkb2.mdl Wood Pallet Piece 2-5
 models/props_junk/wood_pallet001a_chunkb3.mdl Wood Pallet Piece 2-6
 models/props_junk/wood_pallet001a_shard01.mdl Wood Pallet Piece 2-7
+models/props_industrial/pallet_stack_docks.mdl Wood Pallet Stack
 models/props_highway/op_straightincline_med_u.mdl Overpass Straight Incline
 models/props_highway/op_straight_u.mdl Straight U 1
 models/props_highway/op_straight_u_broken01.mdl Broken Straight U 2
@@ -37,6 +38,7 @@ models/props_highway/op_onramp_column.mdl On Ramp Column
 models/props_highway/plywood_01.mdl Plywood 1
 models/props_highway/plywood_02.mdl Plywood 2
 models/props_highway/plywood_03.mdl Plywood 3
+models/props_industrial/plywood_leaning.mdl Plywood Leaning
 models/props_industrial/construction_crane_leverbody.mdl Construction Crane Leverbody
 models/props_industrial/construction_crane_leverhandle.mdl Construction Crane Lever
 models/props_industrial/construction_crane.mdl construction crane LARGE
@@ -123,3 +125,29 @@ models/props_swamp/winch.mdl Winch
 models/c1_chargerexit/mall_rampbundle.mdl Collection of supplies making small ramp
 models/props_debris/paintbucket01.mdl Paintbucket
 models/props_debris/paintbucket01_static.mdl paint bucket (solid)
+models/props_industrial/pallet_barrels_water01_single.mdl Pallet Water Barrel (Single)
+models/props_industrial/pallet_barrels_water01_docks.mdl Pallet Water Barrel
+models/props_industrial/brickpallets.mdl Brick Pallets
+models/props_industrial/brickpallets_break03.mdl Brick Pallets (Breakable)
+models/props_industrial/brickstack01.mdl Brick Stack (Massive)
+models/props_industrial/brickstack02_a.mdl Brick Stack 2A (Massive)
+models/props_industrial/brickstack02_b.mdl Brick Stack 2B (Massive)
+models/props_industrial/brickstack03_a.mdl Brick Stack 3A (Massive)
+models/props_industrial/brickstack04_a.mdl Brick Stack 4A (Massive)
+models/props_industrial/brickstack04_b.mdl Brick Stack 4B (Massive)
+models/props_industrial/brickstack05_a.mdl Brick Stack 5A (Massive)
+models/props_industrial/brickstack05_b.mdl Brick Stack 5B (Massive)
+models/props_industrial/brickstack06_a.mdl Brick Stack 6A (Massive)
+models/props_industrial/brickstack06_b.mdl Brick Stack 6B (Massive)
+models/props_industrial/brickstack07_a.mdl Brick Stack 7A (Massive)
+models/props_industrial/brickstack07_b.mdl Brick Stack 7B (Massive)
+models/props_industrial/brickstack08_a.mdl Brick Stack 8A (Massive)
+models/props_industrial/brickstack08_b.mdl Brick Stack 8B (Massive)
+models/props_industrial/brickstack09_a.mdl Brick Stack 9A (Massive)
+models/props_industrial/brickstack09_b.mdl Brick Stack 9B (Massive)
+models/props_industrial/brickstack10_a.mdl Brick Stack 10A (Massive)
+models/props_industrial/brickstack10_b.mdl Brick Stack 10B (Massive)
+models/props_industrial/brickstack11_a.mdl Brick Stack 11A (Massive)
+models/props_industrial/brickstack11_b.mdl Brick Stack 11B (Massive)
+models/props_industrial/brickstack12_a.mdl Brick Stack 12A (Massive)
+models/props_industrial/brickstack12_b.mdl Brick Stack 12B (Massive)

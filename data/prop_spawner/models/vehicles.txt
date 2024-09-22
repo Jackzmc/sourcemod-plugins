@@ -27,6 +27,7 @@ models/props_vehicles/boat_rescue_tug_sunshine.mdl Virgil's Boat (No Collision)
 models/props_vehicles/boat_fishing.mdl Fishing Boat (No Collision)
 models/props_vehicles/boat_fishing02_static.mdl Rescue Boat
 models/props_vehicles/boat_ski.mdl Speed Boat
+models/props_vehicles/boat_smash.mdl Speed Boat (Smashable)
 models/props_vehicles/sailboat.mdl Sailboat
 models/props_vehicles/church_bus01.mdl Church Bus
 models/props_vehicles/cara_69sedan.mdl '69 Sedan
