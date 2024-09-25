@@ -69,7 +69,7 @@ Action Command_Props(int client, int args) {
 			}
 		}
 		PrintToChat(client, "\x04[Editor]\x01 Check console");
-	} else if(StrEqual(arg, "search")) {
+	} else if(StrEqual(arg, "?q") || StrEqual(arg, "search")) {
 		if(args == 1) {
 			PrintToChat(client, "\x04[Editor]\x01 Enter your search query:");
 			g_PropData[client].chatPrompt = Prompt_Search;

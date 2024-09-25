@@ -109,7 +109,9 @@ void ShowCategoryList(int client, CategoryData category) {
 	int index =  g_PropData[client].lastCategoryIndex / 7 * 7;
 	menu.DisplayAt(client, index, MENU_TIME_FOREVER);
 }
-void _showItemMenu(int client, ArrayList items, const char[] title = "", bool clearArray = false, const char[] classnameOverride = "") {
+
+
+void _showItemMenu(int client, ArrayList items, const char[] title = "", int flags = IMF_None, const char[] classnameOverride = "") {
 	if(items == null) {
 		// Use previous list buffer
 		items = g_PropData[client].itemBuffer;
@@ -120,7 +122,7 @@ void _showItemMenu(int client, ArrayList items, const char[] title = "", bool cl
 		}
 	} else {
 		// Populate the buffer with this list
-		g_PropData[client].SetItemBuffer(items, clearArray);
+		g_PropData[client].SetItemBuffer(items, flags);
 		// Reset the index, so we start on the first item
 		g_PropData[client].lastItemIndex = 0;
 		strcopy(g_PropData[client].classnameOverride, 32, classnameOverride);
@@ -168,7 +170,7 @@ void ShowCategoryItemMenu(int client, CategoryData category) {
  * @param classnameOverride    Override the classname to spawn as
  */
 void ShowItemMenu(int client, ArrayList items = null, const char[] title = "", const char[] classnameOverride = "") {
-	_showItemMenu(client, items, title, false, classnameOverride);
+	_showItemMenu(client, items, title, IMF_NoChange, classnameOverride);
 }
 /**
  * Show a list of items, deleting the arraylist on completion
@@ -181,7 +183,7 @@ void ShowTempItemMenu(int client, ArrayList items, const char[] title = "", cons
 	if(items == null) {
 		LogError("ShowTempItemMenu: Given null item list");
 	}
-	_showItemMenu(client, items, title, true, classnameOverride);
+	_showItemMenu(client, items, title, IMF_DeleteAfterUse, classnameOverride);
 }
 
 void Spawn_ShowFavorites(int client) {

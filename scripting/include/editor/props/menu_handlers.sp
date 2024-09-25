@@ -344,12 +344,12 @@ int ManagerSelectorActionHandler(Menu menu, MenuAction action, int client, int p
 			Spawn_ShowManagerMainMenu(client);
 		} else if(StrEqual(info, "save_scene")) {
 			ArrayList items = g_PropData[client].Selector.End();
-			g_PropData[client].SetItemBuffer(items, true);
+			g_PropData[client].SetItemBuffer(items, IMF_DeleteAfterUse);
 			g_PropData[client].chatPrompt = Prompt_SaveScene;
 			SendEditorMessage(client, "Enter name for scene:");
 		} else if(StrEqual(info, "save_collection")) {
 			ArrayList items = g_PropData[client].Selector.End();
-			g_PropData[client].SetItemBuffer(items, true);
+			g_PropData[client].SetItemBuffer(items, IMF_DeleteAfterUse);
 			g_PropData[client].chatPrompt = Prompt_SaveCollection;
 			SendEditorMessage(client, "Enter name for collection:");
 		} else {

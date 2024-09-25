@@ -138,6 +138,7 @@ public any Native_SpawnSchematic(Handle plugin, int numParams) {
 	return true;
 }
 
+
 enum struct PropSelectorIterator {
 	ArrayList _list;
 	int _index;
@@ -335,10 +336,17 @@ enum struct PropSelector {
 		return -1;
 	}
 }
+enum itemMenuFlag {
+	// Do not change flags
+	IMF_NoChange = -1,
+	IMF_None = 0,
+	// Delete underlying item buffer when done using it (for temp buffers, such as search results)
+	IMF_DeleteAfterUse = 1
+}
 enum struct PlayerPropData {
 	ArrayList categoryStack;
 	ArrayList itemBuffer;
-	bool clearListBuffer;
+	int bufferFlags; // itemMenuFlag, IMF_*
 	int lastCategoryIndex;
 	int lastItemIndex;
 	// When did the user last interact with prop spawner? (Shows hints after long inactivity)
@@ -359,7 +367,7 @@ enum struct PlayerPropData {
 	void Reset() {
 		if(this.Selector.IsActive()) this.Selector.Cancel();
 		this.chatPrompt = Prompt_None;
-		this.clearListBuffer = false;
+		this.bufferFlags = IMF_None;
 		this.lastCategoryIndex = 0;
 		this.lastItemIndex = 0;
 		this.lastActiveTime = 0;
@@ -389,18 +397,20 @@ enum struct PlayerPropData {
 		ShowCategoryList(client, ROOT_CATEGORY);
 	}
 
-	// Sets the list buffer
-	void SetItemBuffer(ArrayList list, bool cleanupAfterUse = false) {
+	// Sets the list buffer, with optional flags. If no flags set, uses current flags
+	void SetItemBuffer(ArrayList list, int flags = IMF_NoChange) {
 		// Cleanup previous buffer if exist
 		this.itemBuffer = list;
-		this.clearListBuffer = cleanupAfterUse;
+		if(flags != IMF_NoChange) {
+			this.bufferFlags = flags;
+		}
 	}
 	void ClearItemBuffer() {
-		if(this.itemBuffer != null && this.clearListBuffer) {
+		if(this.itemBuffer != null && this.bufferFlags & IMF_DeleteAfterUse) {
 			PrintToServer("ClearItemBuffer(): arraylist deleted.");
 			delete this.itemBuffer;
 		}
-		this.clearListBuffer = false;
+		this.bufferFlags = IMF_None;
 	}
 
 	void PushCategory(CategoryData category) {
@@ -443,7 +453,6 @@ enum struct PlayerPropData {
 		if(this.categoryStack != null) {
 			delete this.categoryStack;
 		}
-		this.clearListBuffer = false;
 	}
 }
 PlayerPropData g_PropData[MAXPLAYERS+1];

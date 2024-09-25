@@ -389,7 +389,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 void DoSearch(int client, const char[] query) {
 	ArrayList results = SearchItems(query);
 	if(results.Length == 0) {
-		CPrintToChat(client, "\x04[Editor]\x01 No results found. :(");
+		CPrintToChat(client, "\x04[Editor]\x01 No results found for \x05%s\x01 :(", query);
 	} else {
 		char title[64];
 		Format(title, sizeof(title), "Results for \"%s\"", query);
@@ -464,6 +464,9 @@ bool _searchItems(ArrayList results, ArrayList items, const char[] query) {
 	for(int i = 0; i < items.Length; i++) {
 		items.GetArray(i, item);
 		int searchIndex = StrContains(item.name, query, false);
+		// Search model if name doesn't match
+		// item.model: models/...., we cut out models/ part
+		if(searchIndex == -1) searchIndex = StrContains(item.model[7], query, false);
 		if(searchIndex > -1) {
 			search.FromItemData(item);
 			search.index = searchIndex;
