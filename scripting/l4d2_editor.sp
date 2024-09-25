@@ -31,6 +31,7 @@ ConVar enabledBlacklist;
 #include <editor/editor.sp>
 #include <editor/props/base.sp>
 #include <editor/natives.sp>
+#include <editor>
 
 public Plugin myinfo = {
 	name =  "L4D2 Hats & Editor", 

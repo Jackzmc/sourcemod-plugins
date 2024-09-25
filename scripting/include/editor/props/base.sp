@@ -401,12 +401,12 @@ enum struct PlayerPropData {
 	void SetItemBuffer(ArrayList list, int flags = IMF_NoChange) {
 		// Cleanup previous buffer if exist
 		this.itemBuffer = list;
-		if(flags != IMF_NoChange) {
+		if(flags != view_as<int>(IMF_NoChange)) {
 			this.bufferFlags = flags;
 		}
 	}
 	void ClearItemBuffer() {
-		if(this.itemBuffer != null && this.bufferFlags & IMF_DeleteAfterUse) {
+		if(this.itemBuffer != null && this.bufferFlags & view_as<int>(IMF_DeleteAfterUse)) {
 			PrintToServer("ClearItemBuffer(): arraylist deleted.");
 			delete this.itemBuffer;
 		}
