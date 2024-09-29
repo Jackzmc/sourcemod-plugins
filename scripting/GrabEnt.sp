@@ -594,7 +594,7 @@ bool CheckBlacklist(int entity) {
 		}
 	}
 	GetEntPropString(entity, Prop_Data, "m_iName", buffer, sizeof(buffer));
-	if(StrEqual(buffer, "l4d2_randomizer")) {
+	if(StrContains(buffer, "randomizer") == 0) {
 		return false;
 	}
 	GetEntityClassname(entity, buffer, sizeof(buffer));
