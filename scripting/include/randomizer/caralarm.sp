@@ -209,29 +209,29 @@ void CreateLights(char[] lightsName, float vPos[3], float vAng[3], char[] carNam
     lightDistance[1] = distance[1]*-1.0;
     lightDistance[2] = distance[2];
     MoveVectorvPos3D(newPos, vAng, lightDistance); // front left
-    CreateLight(lightsName, COLOR_YELLOWLIGHT, newPos, carName);
+    CreateVehicleLight(lightsName, COLOR_YELLOWLIGHT, newPos, carName);
 
     newPos = vPos;
     lightDistance[1] = distance[1];
     MoveVectorvPos3D(newPos, vAng, lightDistance); // front right
-    CreateLight(lightsName, COLOR_YELLOWLIGHT, newPos, carName);
+    CreateVehicleLight(lightsName, COLOR_YELLOWLIGHT, newPos, carName);
 
     newPos = vPos;
     lightDistance[0] = distance[3]*-1.0;
     lightDistance[1] = distance[4]*-1.0;
     lightDistance[2] = distance[5];
     MoveVectorvPos3D(newPos, vAng, lightDistance); // back left
-    CreateLight(lightsName, COLOR_REDLIGHT, newPos, carName);
+    CreateVehicleLight(lightsName, COLOR_REDLIGHT, newPos, carName);
 
     newPos = vPos;
     lightDistance[1] = distance[4];
     MoveVectorvPos3D(newPos, vAng, lightDistance); // back right
-    CreateLight(lightsName, COLOR_REDLIGHT, newPos, carName);
+    CreateVehicleLight(lightsName, COLOR_REDLIGHT, newPos, carName);
 }
 
 /****************************************************************************************************/
 
-void CreateLight(char[] targetName, char[] renderColor, float vPos[3], char[] carName)
+static void CreateVehicleLight(char[] targetName, char[] renderColor, float vPos[3], char[] carName)
 {
     int entity = CreateEntityByName("env_sprite");
 

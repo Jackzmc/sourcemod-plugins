@@ -207,9 +207,10 @@ stock int GetLookingPosition(int client, TraceEntityFilter filter, float pos[3])
 public Action Command_CycleRandom(int client, int args) {
 	if(args > 0) {
 		DeleteCustomEnts();
-
-		int flags = GetCmdArgInt(1) | view_as<int>(FLAG_REFRESH);
-		RunMap(currentMap, flags);
+		int flags = GetCmdArgInt(1);
+		if(flags != -1) {
+			RunMap(currentMap, flags | view_as<int>(FLAG_REFRESH));
+		}
 		if(client > 0)
 			PrintCenterText(client, "Cycled flags=%d", flags);
 	} else {
@@ -367,7 +368,7 @@ Action Command_RandomizerBuild(int client, int args) {
 enum ExportType {
 	Export_HammerId,
 	Export_TargetName,
-	Export_Model
+	Export_Model,
 }
 JSONObject ExportEntity(int entity, ExportType exportType = Export_Model) {
 	float origin[3], angles[3], size[3];
@@ -400,6 +401,26 @@ JSONObject ExportEntity(int entity, ExportType exportType = Export_Model) {
 	entityData.Set("angles", VecToArray(angles));
 	return entityData;
 }
+JSONObject ExportEntityInput(int entity, const char[] input) {
+	char classname[128];
+	JSONObject entityData = new JSONObject();
+	GetEntityClassname(entity, classname, sizeof(classname));
+
+	int hammerid = GetEntProp(entity, Prop_Data, "m_iHammerID");
+	if(hammerid != 0) {
+		entityData.SetInt("hammerid", hammerid);
+	} else {
+		char targetname[128];
+		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
+		if(targetname[0] != '\0') {
+			entityData.SetString("targetname", targetname);
+		} else {
+			entityData.SetString("classname", classname);
+		}
+	}
+	entityData.SetString("input", input);
+	return entityData;
+}
 
 bool OnSpawnerDone(int client, int entity, CompleteType result) {
 	PrintToServer("Randomizer OnSpawnerDone");
@@ -414,14 +435,26 @@ bool OnSpawnerDone(int client, int entity, CompleteType result) {
 }
 void OnSelectorDone(int client, ArrayList entities) {
 	JSONArray entArray = view_as<JSONArray>(g_builder.selectedVariantData.Get("entities"));
+	JSONArray inputArray = g_builder.selectedVariantData.HasKey("inputs") ? view_as<JSONArray>(g_builder.selectedVariantData.Get("inputs")) : null;
 	if(entities != null) {
 		JSONObject entityData;
+		char classname[128];
 		for(int i = 0; i < entities.Length; i++) {
 			int ref = entities.Get(i);
-			entityData = ExportEntity(ref, Export_Model);
-			entArray.Push(entityData);
+			GetEntityClassname(ref, classname, sizeof(classname));
+			if(StrEqual(classname, "func_simpleladder")) {
+				if(inputArray == null) {
+					inputArray = new JSONArray();
+					g_builder.selectedVariantData.Set("inputs", inputArray);
+				}
+				entityData = ExportEntityInput(ref, "_allow_ladder");
+				inputArray.Push(entityData);
+			} else {
+				entityData = ExportEntity(ref, Export_Model);
+				entArray.Push(entityData);
+				RemoveEntity(ref);
+			}
 			delete entityData; //?
-			RemoveEntity(ref);
 		}
 		PrintToChat(client, "Added %d entities to variant", entities.Length);
 		delete entities;
@@ -1146,10 +1179,30 @@ void spawnVariant(SceneVariantData choice) {
 	}
 }
 
+int CreateLight(const float origin[3], const float angles[3], const int color[4] = { 255, 255, 255, 1 }, float distance = 100.0) {
+	int entity = CreateEntityByName("light_dynamic");
+	if(entity == -1) return -1; 
+	DispatchKeyValue(entity, "targetname", ENT_PROP_NAME);
+	DispatchKeyValueInt(entity, "brightness", color[3]);
+	DispatchKeyValueFloat(entity, "distance", distance);
+	DispatchKeyValueFloat(entity, "_inner_cone", angles[0]);
+	DispatchKeyValueFloat(entity, "_cone", angles[1]);
+	DispatchKeyValueFloat(entity, "pitch", angles[2]);
+	// DispatchKeyValueInt()
+	TeleportEntity(entity, origin, NULL_VECTOR, NULL_VECTOR);
+	if(!DispatchSpawn(entity)) return -1;
+	SetEntityRenderColor(entity, color[0], color[1], color[2], color[3]);
+	AcceptEntityInput(entity, "TurnOn");
+	return entity;
+}
+
 void spawnEntity(VariantEntityData entity) {
 	if(StrEqual(entity.type, "env_fire")) {
 		Debug("spawning \"%s\" at (%.1f %.1f %.1f) rot (%.0f %.0f %.0f)", entity.type, entity.origin[0], entity.origin[1], entity.origin[2], entity.angles[0], entity.angles[1], entity.angles[2]);
 		CreateFire(entity.origin, 20.0, 100.0, 1.0);
+	} else if(StrEqual(entity.type, "light_dynamic")) {
+		CreateLight(entity.origin, entity.angles, entity.color, entity.scale[0]);	
+		Effect_DrawBeamBoxRotatableToAll(entity.origin, { -5.0, -5.0, -5.0}, { 5.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {255, 255, 0, 255}, 0);
 	} else if(StrEqual(entity.type, "env_physics_blocker") || StrEqual(entity.type, "env_player_blocker")) {
 		CreateEnvBlockerScaled(entity.type, entity.origin, entity.scale);
 	} else if(StrEqual(entity.type, "infodecal")) {
