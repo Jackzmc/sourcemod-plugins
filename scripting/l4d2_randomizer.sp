@@ -39,6 +39,7 @@ enum struct ActiveSceneData {
 MapData g_MapData;
 BuilderData g_builder;
 char currentMap[64];
+static int _ropeIndex;
 
 enum struct BuilderData {
 	JSONObject mapData;
@@ -84,6 +85,11 @@ enum struct BuilderData {
 	}
 
 	void AddEntity(int entity, ExportType exportType = Export_Model) {
+		JSONObject entityData = ExportEntity(entity, Export_Model);
+		this.AddEntityData(entityData);
+	}
+
+	void AddEntityData(JSONObject entityData) {
 		JSONArray entities;
 		if(g_builder.selectedVariantData == null) {
 			// Create <scene>.entities if doesn't exist:
@@ -94,7 +100,6 @@ enum struct BuilderData {
 		} else {
 			entities = view_as<JSONArray>(g_builder.selectedVariantData.Get("entities"));
 		}
-		JSONObject entityData = ExportEntity(entity, Export_Model);
 		entities.Push(entityData);
 	}
 }
@@ -117,7 +122,7 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
-	HookEvent("round_start_post_nav", Event_RoundStartPosNav);
+	HookEvent("round_start_post_nav", Event_RoundStartPostNav);
 
 	RegAdminCmd("sm_rcycle", Command_CycleRandom, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_expent", Command_ExportEnt, ADMFLAG_GENERIC);
@@ -130,7 +135,13 @@ public void OnPluginStart() {
 	g_MapData.activeScenes = new ArrayList(sizeof(ActiveSceneData));
 }
 
+bool randomizerRan = false;
+
 void Event_PlayerFirstSpawn(Event event, const char[] name ,bool dontBroadcast) {
+	if(!randomizerRan) {
+		CreateTimer(0.1, Timer_Run);
+		randomizerRan = true;
+	}
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(GetUserFlagBits(client) & ADMFLAG_CHAT) {
 		// If enabled but no map loaded:
@@ -139,9 +150,9 @@ void Event_PlayerFirstSpawn(Event event, const char[] name ,bool dontBroadcast) 
 	}
 }
 
-void Event_RoundStartPosNav(Event event, const char[] name ,bool dontBroadcast) {
-	if(cvarEnabled.BoolValue)
-		CreateTimer(5.0, Timer_Run);
+void Event_RoundStartPostNav(Event event, const char[] name ,bool dontBroadcast) {
+	// if(cvarEnabled.BoolValue)
+		// CreateTimer(15.0, Timer_Run);
 }
 
 // TODO: on round start
@@ -152,6 +163,7 @@ public void OnMapStart() {
 
 
 public void OnMapEnd() {
+	randomizerRan = false;
 	g_builder.Cleanup();
 	Cleanup();
 }
@@ -344,6 +356,10 @@ Action Command_RandomizerBuild(int client, int args) {
 			ReplyToCommand(client, "No entity found");
 		}
 	} else if(StrEqual(arg, "entityid")) {
+		if(g_builder.selectedVariantData == null) {
+			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
+			return Plugin_Handled;
+		}
 		char arg1[32];
 		int entity = GetCmdArgInt(2);
 		GetCmdArg(3, arg1, sizeof(arg));
@@ -359,6 +375,20 @@ Action Command_RandomizerBuild(int client, int args) {
 		} else {
 			ReplyToCommand(client, "No entity found");
 		}
+	} else if(StrEqual(arg, "decal")) {
+		if(g_builder.selectedVariantData == null) {
+			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
+			return Plugin_Handled;
+		}
+		float pos[3];
+		GetLookingPosition(client, Filter_IgnorePlayer, pos);
+		Effect_DrawBeamBoxRotatableToAll(pos, { -5.0, -5.0, -5.0}, { 5.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {73, 0, 130, 255}, 0);
+		JSONObject obj = new JSONObject();
+		obj.SetString("type", "infodecal");
+		obj.Set("origin", VecToArray(pos));
+		obj.SetString("model", "decals/checkpointarrow01_black.vmt");
+		g_builder.AddEntityData(obj);
+		ReplyToCommand(client, "Added sprite to variant #%d", g_builder.selectedVariantIndex);
 	} else {
 		ReplyToCommand(client, "Unknown arg. Try: new, load, save, scenes, cursor");
 	}
@@ -604,10 +634,13 @@ enum struct SceneVariantData {
 enum struct VariantEntityData {
 	char type[32];
 	char model[128];
+	char targetname[128];
 	float origin[3];
 	float angles[3];
 	float scale[3];
 	int color[4];
+
+	ArrayList keyframes;
 }
 
 enum InputType {
@@ -630,21 +663,31 @@ enum struct VariantInputData {
 			}
 			case Input_Targetname: {
 				char targetname[64];
+				int count = 0;
 				while((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_REFERENCE) {
 					GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
 					if(StrEqual(targetname, this.name)) {
 						this._trigger(entity);
+						count++;
 					}
+				}
+				if(count == 0) {
+					PrintToServer("[Randomizer::WARN] Input TargetName=\"%s\" matched 0 entties", this.name);
 				}
 			}
 			case Input_HammerId: {
 				int targetId = StringToInt(this.name);
+				int count = 0;
 				while((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_REFERENCE) {
 					int hammerId = GetEntProp(entity, Prop_Data, "m_iHammerID");
 					if(hammerId == targetId ) {
 						this._trigger(entity);
+						count++;
 						break;
 					}
+				}
+				if(count == 0) {
+					PrintToServer("[Randomizer::WARN] Input HammerId=%d matched 0 entties", targetId);
 				}
 			}
 		}
@@ -859,6 +902,8 @@ public bool RunMap(const char[] map, int flags) {
 	selectScenes(flags);
 	profiler.Stop();
 
+	_ropeIndex = 0;
+
 	Log("Done processing in %.4f seconds", g_MapData.scenes.Length, profiler.Time);
 	return true;
 }
@@ -993,12 +1038,32 @@ void loadLumpData(ArrayList list, JSONObject inputData) {
 void loadChoiceEntity(ArrayList list, JSONObject entityData) {
 	VariantEntityData entity;
 	entityData.GetString("model", entity.model, sizeof(entity.model));
+	if(entityData.GetString("targetname", entity.targetname, sizeof(entity.targetname))) {
+		Format(entity.targetname, sizeof(entity.targetname), "randomizer_%s", entity.targetname);
+	}
 	if(!entityData.GetString("type", entity.type, sizeof(entity.type))) {
 		entity.type = "prop_dynamic";
 	} /*else if(entity.type[0] == '_') { 
 		LogError("Invalid custom entity type \"%s\"", entity.type);
 		return;
 	}*/
+
+	if(StrEqual(entity.type, "move_rope")) {
+		if(!entityData.HasKey("keyframes")) {
+			LogError("move_rope entity is missing keyframes: Vec[] property");
+			return;
+		}
+		entity.keyframes = new ArrayList(3);
+		JSONArray keyframesData = view_as<JSONArray>(entityData.Get("keyframes"));
+		float vec[3];
+		for(int i = 0 ; i < keyframesData.Length; i++) {
+			JSONArray vecArray = view_as<JSONArray>(keyframesData.Get(i));
+			vec[0] = vecArray.GetFloat(0);
+			vec[1] = vecArray.GetFloat(1);
+			vec[2] = vecArray.GetFloat(2);
+			entity.keyframes.PushArray(vec);
+		}
+	}
 	GetVector(entityData, "origin", entity.origin);
 	GetVector(entityData, "angles", entity.angles);
 	GetVector(entityData, "scale", entity.scale);
@@ -1206,13 +1271,16 @@ void spawnEntity(VariantEntityData entity) {
 	} else if(StrEqual(entity.type, "env_physics_blocker") || StrEqual(entity.type, "env_player_blocker")) {
 		CreateEnvBlockerScaled(entity.type, entity.origin, entity.scale);
 	} else if(StrEqual(entity.type, "infodecal")) {
+		Effect_DrawBeamBoxRotatableToAll(entity.origin, { -1.0, -5.0, -5.0}, { 1.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {73, 0, 130, 255}, 0);
 		CreateDecal(entity.model, entity.origin);
 	} else if(StrContains(entity.type, "prop_") == 0 || StrEqual(entity.type, "prop_fuel_barrel")) {
 		if(entity.model[0] == '\0') {
 			LogError("Missing model for entity with type \"%s\"", entity.type);
 			return;
+		} else if(!PrecacheModel(entity.model)) {
+			LogError("Precache of entity model \"%s\" with type \"%s\" failed", entity.model, entity.type);
+			return;
 		}
-		PrecacheModel(entity.model);
 		int prop = CreateProp(entity.type, entity.model, entity.origin, entity.angles);
 		SetEntityRenderColor(prop, entity.color[0], entity.color[1], entity.color[2], entity.color[3]);
 	} else if(StrEqual(entity.type, "hammerid")) {
@@ -1256,9 +1324,65 @@ void spawnEntity(VariantEntityData entity) {
 			Debug("Warn: Could not find entity (classname=%s)", entity.model);
 	} else if(StrContains(entity.type, "_car") != -1) {
 		SpawnCar(entity);
+	} else if(StrEqual(entity.type, "move_rope")) {
+		if(!PrecacheModel(entity.model)) {
+			LogError("Precache of entity model \"%s\" with type \"%s\" failed", entity.model, entity.type);
+			return;
+		} else if(entity.keyframes == null) {
+			// should not happen
+			LogError("rope entity has no keyframes", entity.keyframes);
+			return;
+		}
+		CreateRope(entity);
 	} else {
 		LogError("Unknown entity type \"%s\"", entity.type);
 	}
+}
+
+int CreateRope(VariantEntityData data) {
+	char targetName[32], nextKey[32];
+	Format(targetName, sizeof(targetName), "randomizer_rope%d", _ropeIndex);
+	Format(nextKey, sizeof(nextKey), "randomizer_rope%d_0", _ropeIndex);
+	int entity = _CreateRope("move_rope", targetName, nextKey, data.model, data.origin);
+	float pos[3];
+	for(int i = 0; i < data.keyframes.Length; i++) {
+		nextKey[0] = '\0';
+		Format(targetName, sizeof(targetName), "randomizer_rope%d_%d", _ropeIndex, i);
+		if(i < data.keyframes.Length - 1) {
+			Format(nextKey, sizeof(nextKey), "randomizer_rope%d_%d", _ropeIndex, i + 1);
+		}
+		data.keyframes.GetArray(i, pos, sizeof(pos));
+		_CreateRope("move_rope", targetName, nextKey, data.model, pos);
+	}
+	Debug("created rope #%d with %d keyframes. entid:%d", _ropeIndex, data.keyframes.Length, entity);
+	_ropeIndex++;
+	return entity;
+}
+int _CreateRope(const char[] type, const char[] targetname, const char[] nextKey, const char[] texture, const float origin[3]) {
+	int entity = CreateEntityByName(type);
+	if(entity == -1) return -1;
+	Debug("_createRope(\"%s\", \"%s\", \"%s\", \"%s\", %.0f %.0f %.0f", type, targetname, nextKey, texture, origin[0], origin[1], origin[2]);
+	DispatchKeyValue(entity, "targetname", targetname);
+	DispatchKeyValue(entity, "NextKey", nextKey);
+	DispatchKeyValue(entity, "RopeMaterial", texture);
+	DispatchKeyValueInt(entity, "Type", 0);
+	DispatchKeyValueFloat(entity, "Width", 2.0);
+	DispatchKeyValueInt(entity, "Breakable", 0); 
+	DispatchKeyValueInt(entity, "Slack", 0);
+	DispatchKeyValueInt(entity, "Type", 0);
+	DispatchKeyValueInt(entity, "TextureScale", 2);
+	DispatchKeyValueInt(entity, "Subdiv", 2); 
+	DispatchKeyValueInt(entity, "MoveSpeed", 0);
+	DispatchKeyValueInt(entity, "Dangling", 0);
+	DispatchKeyValueInt(entity, "Collide", 0);
+	DispatchKeyValueInt(entity, "Barbed", 0); 
+	DispatchKeyValue(entity, "PositionInterpolator", "2");
+	// DispatchKeyValueFloat( entity, "m_RopeLength", 10.0 ); 
+	TeleportEntity(entity, origin, NULL_VECTOR, NULL_VECTOR);
+	if(!DispatchSpawn(entity)) {
+		return -1;
+	}
+	return entity;
 }
 
 void Debug(const char[] format, any ...) {
@@ -1296,8 +1420,9 @@ void Cleanup() {
 	int entity = -1;
 	char targetname[128];
 	while((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_REFERENCE) {
+		if(!IsValidEntity(entity)) return;
 		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
-		if(StrContains(targetname, "randomizer_car") != -1) {
+		if(StrContains(targetname, "randomizer_") != -1) {
 			RemoveEntity(entity);
 		}
 	}

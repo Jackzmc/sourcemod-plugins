@@ -173,6 +173,7 @@ stock int StartPropCreate(const char[] entClass, const char[] model, const float
 
 stock int CreateProp(const char[] entClass, const char[] model, const float pos[3], const float ang[3] = NULL_VECTOR, const float vel[3] = NULL_VECTOR) {
 	int entity = StartPropCreate(entClass, model, pos, ang, vel);
+	if(entity == -1) return -1;
 	if(DispatchSpawn(entity)) {
 		#if defined DEBUG_LOG_MAPSTART
 		PrintToServer("spawn prop %.1f %.1f %.1f model %s", pos[0], pos[1], pos[2], model[7]);
@@ -281,17 +282,24 @@ stock int CreateParticle(const char[] sParticle, const float vPos[3], const floa
 	return 0;
 }
 
-stock void CreateDecal(const char[] texture, const float vPos[3]) {
-	int index = PrecacheDecal("decals/checkpointarrow01_black.vmt");
+stock void CreateDecal(const char[] texture, const float origin[3]) {
+	int index = PrecacheDecal(texture);
+	if(index <= 0) {
+		LogError("CreateDecal: bad decal \"%s\", precache failed.", texture);
+		return;
+	}
+	PrintToServer("CreateDecal: %s -> %d", texture, index);
 	TE_Start("World Decal");
-	TE_WriteVector("m_vecOrigin", vPos);
+	TE_WriteVector("m_vecOrigin", origin);
+	// TE_WriteNum("m_nEntity", -1);
 	TE_WriteNum("m_nIndex", index);
 	TE_SendToAll();
 
-	TE_Start("BSP Decal");
-	TE_WriteVector("m_vecOrigin", vPos);
-	TE_WriteNum("m_nIndex", index);
-	TE_SendToAll();
+	// TE_Start("World Decal");
+	// TE_WriteVector("m_vecOrigin", origin);
+	// TE_WriteNum("m_nIndex", index);
+	// TE_SendToAll();
+
 	// int entity = CreateEntityByName("infodecal");
 	// if( entity != -1 ) {
 	// 	DispatchKeyValue(entity, "texture", "decals/checkpointarrow01_black.vmt");
@@ -299,6 +307,7 @@ stock void CreateDecal(const char[] texture, const float vPos[3]) {
 	// 	TeleportEntity(entity, vPos, NULL_VECTOR, NULL_VECTOR);
 	// 	DispatchSpawn(entity);
 	// 	ActivateEntity(entity);
+	// 	AcceptEntityInput(entity, "Activate");
 	// }
 }
 

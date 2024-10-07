@@ -444,6 +444,7 @@ int SpawnCategoryHandler(Menu menu, MenuAction action, int client, int param2) {
 				ShowSpawnRoot(client);
 			}
 		} else {
+			PrintToServer("SpawnCategoryHandler: calling ClearItemBuffer, Menu cancelled");
 			g_PropData[client].CleanupBuffers();
 		}
 	} else if (action == MenuAction_End)	
@@ -470,7 +471,6 @@ int SpawnItemHandler(Menu menu, MenuAction action, int client, int param2) {
 		// Use same item menu again:
 		ShowItemMenu(client);
 	} else if(action == MenuAction_Cancel) {
-		g_PropData[client].ClearItemBuffer();
 		if(param2 == MenuCancel_ExitBack) {
 			CategoryData category;
 			if(g_PropData[client].PopCategory(category)) {
@@ -480,7 +480,8 @@ int SpawnItemHandler(Menu menu, MenuAction action, int client, int param2) {
 				// If there is no categories, it means we are in a temp menu (search / recents / favorites)
 				ShowSpawnRoot(client);
 			}
-		} else {
+		} else if(param2 != MenuCancel_Interrupted) {
+			PrintToServer("SpawnItemHandler: calling ClearItemBuffer, Menu cancelled. param2=%d", param2);
 			g_PropData[client].CleanupBuffers();
 		}
 	} else if (action == MenuAction_End) {

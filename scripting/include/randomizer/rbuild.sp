@@ -43,7 +43,7 @@ void OpenVariantsMenu(int client) {
 	JSONArray entities;
 	for(int i = 0; i < variants.Length; i++) {
 		varObj = view_as<JSONObject>(variants.Get(i));
-		entities = view_as<JSONArray>(varObj.Get("entities"));
+		entities = varObj.HasKey("entities") ? view_as<JSONArray>(varObj.Get("entities")) : new JSONArray();
 		if(i == g_builder.selectedVariantIndex) {
 			Format(display, sizeof(display), "#%d - %d entities (✔)", i, entities.Length);
 		} else {

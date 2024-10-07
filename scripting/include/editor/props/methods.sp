@@ -426,6 +426,9 @@ ArrayList SearchItems(const char[] query) {
 	ArrayList items = new ArrayList(sizeof(ItemData));
 	ItemData item; 
 	SearchData data;
+	if(results.Length > MAX_SEARCH_RESULTS) {
+		results.Resize(MAX_SEARCH_RESULTS);
+	}
 	for(int i = 0; i < results.Length; i++) {
 		results.GetArray(i, data);
 		item.FromSearchData(data);
@@ -471,7 +474,6 @@ bool _searchItems(ArrayList results, ArrayList items, const char[] query) {
 			search.FromItemData(item);
 			search.index = searchIndex;
 			results.PushArray(search);
-			if(results.Length > MAX_SEARCH_RESULTS) return false;
 		}
 	}
 	return true;

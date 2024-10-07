@@ -5,8 +5,8 @@
 #define DIRECTOR_WITCH_CHECK_TIME 30.0 // How often to check if a witch should be spawned
 #define DIRECTOR_WITCH_MAX_WITCHES 5 // The maximum amount of extra witches to spawn 
 #define DIRECTOR_WITCH_ROLLS 3 // The number of dice rolls, increase if you want to increase freq
-#define DIRECTOR_MIN_SPAWN_TIME 13.0 // Possibly randomized, per-special
-#define DIRECTOR_SPAWN_CHANCE 0.038 // The raw chance of a spawn 
+#define DIRECTOR_MIN_SPAWN_TIME 13.0 // Possibly randomized, per-special, in seconds
+ConVar directorSpawnChance; // Base chance of a special spawning, changed by player stress
 #define DIRECTOR_CHANGE_LIMIT_CHANCE 0.05 // The chance that the maximum amount per-special is changed
 #define DIRECTOR_SPECIAL_TANK_CHANCE 0.05 // The chance that specials can spawn when a tank is active
 #define DIRECTOR_STRESS_CUTOFF 0.75 // The minimum chance a random cut off stress value is chosen [this, 1.0]
@@ -41,7 +41,8 @@ enum specialType {
 enum directorState {
 	DState_Normal,
 	DState_NoPlayersOrNotCoop,
-	DState_PendingMinFlowOrDisabled,
+	DState_PendingMinFlow,
+	DState_Disabled,
 	DState_MaxSpecialTime,
 	DState_PlayerChance,
 	DState_Resting,
@@ -49,10 +50,11 @@ enum directorState {
 	DState_HighStress,
 	DState_MaxDirectorSpecials,
 }
-char DIRECTOR_STATE[9][] = {
+char DIRECTOR_STATE[10][] = {
 	"normal",
 	"no players / not coop",
-	"pending minflow OR disabled",
+	"pending minflow",
+	"disabled",
 	"max special in window",
 	"player scaled chance",
 	"rest period",
@@ -388,7 +390,8 @@ directorState Director_Think() {
 	// C. Special spawning is enabled
 	gd_maxSpecials = L4D2_GetScriptValueInt("MaxSpecials", 0);
 	if(gd_maxSpecials <= 0) return DState_MaxDirectorSpecials;
-	if( ~cvEPISpecialSpawning.IntValue & 1 || !L4D_HasAnySurvivorLeftSafeArea() || g_highestFlowAchieved < g_minFlowSpawn) return DState_PendingMinFlowOrDisabled;
+	if(~cvEPISpecialSpawning.IntValue & 1 ) return DState_Disabled;
+	if(!L4D_HasAnySurvivorLeftSafeArea() || g_highestFlowAchieved < g_minFlowSpawn) return DState_PendingMinFlow;
 
 	// Check if a rest period is given
 	if(Director_ShouldRest()) {
@@ -423,7 +426,7 @@ directorState Director_Think() {
 		return DState_HighStress;
 	}
 	// Scale the chance where stress = 0.0, the chance is 50% more, and stress = 1.0, the chance is 50% less
-	float spawnChance = DIRECTOR_SPAWN_CHANCE + ((0.5 - curAvgStress) / 10.0);
+	float spawnChance = directorSpawnChance.FloatValue + ((0.5 - curAvgStress) / 10.0);
 	for(int i = 0; i < NUM_SPECIALS; i++) {
 		specialType special = view_as<specialType>(i);
 		// Skip if we hit our limit, or too soon:

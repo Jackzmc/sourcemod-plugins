@@ -325,6 +325,7 @@ public void OnPluginStart() {
 	cvEPICommonCountScale     = CreateConVar("epi_commons_scale_multiplier", "0", "This value is multiplied by the number of extra players playing. It's then added to z_common_limit. 5 players with value 5 would be z_common_limit + ", FCVAR_NONE, true, 0.0);
 	cvEPICommonCountScaleMax  = CreateConVar("epi_commons_scale_max", "60", "The maximum amount that z_common_limit can be scaled to.", FCVAR_NONE, true, 0.0);
 	cvZCommonLimit = FindConVar("z_common_limit");
+	directorSpawnChance = CreateConVar("epi_director_special_chance", "0.038", "The base chance a special spawns, scaled by the survivor's average stress.", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	cvEPICommonCountScale.AddChangeHook(Cvar_CommonScaleChange);
 	cvEPICommonCountScaleMax.AddChangeHook(Cvar_CommonScaleChange);

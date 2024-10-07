@@ -12,7 +12,7 @@ int SpawnCar(VariantEntityData entity) {
     }
 
     char glassModel[64];
-	strcopy(glassModel, sizeof(glassModel), entity.type);
+	strcopy(glassModel, sizeof(glassModel), entity.model);
     ReplaceString(glassModel, sizeof(glassModel), ".mdl", "_glass.mdl");
     if(StrEqual(entity.type, "_car_physics")) {
         vehicle = CreateProp("prop_physics", entity.model, entity.origin, entity.angles);
@@ -20,9 +20,11 @@ int SpawnCar(VariantEntityData entity) {
         vehicle = CreateProp("prop_dynamic", entity.model, entity.origin, entity.angles);
     }
 	if(PrecacheModel(glassModel)) {
-		int glass = CreateProp(glassModel, entity.model, entity.origin, entity.angles);
-        SetVariantString("!activator");
-	    AcceptEntityInput(glass, "SetParent", vehicle);
+		int glass = CreateProp("prop_dynamic", glassModel, entity.origin, entity.angles);
+        if(glass != -1) {
+            SetVariantString("!activator");
+            AcceptEntityInput(glass, "SetParent", vehicle);
+        }
     }
 	SetEntityRenderColor(vehicle, GetRandomInt(0, 255), GetRandomInt(0, 255), GetRandomInt(0, 255));
     return vehicle;

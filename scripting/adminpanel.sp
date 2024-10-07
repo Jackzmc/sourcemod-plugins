@@ -1102,7 +1102,7 @@ void AddPlayerRecord(int client, ClientState state) {
 	StartRecord(Live_Player);
 	sendBuffer.WriteInt(GetClientUserId(client));
 	sendBuffer.WriteString(steamidCache[client]);
-	sendBuffer.WriteByte(state);
+	sendBuffer.WriteByte(view_as<int>(state));
 	sendBuffer.WriteInt(state == Client_Disconnected ? GetTime() : playerJoinTime[client]);
 	sendBuffer.WriteString(nameCache[client]);
 	EndRecord();
