@@ -24,9 +24,9 @@ StringMap actionFallbackHandlers; // namespace -> action name has no handler, fa
 StringMap actionNamespaceHandlers; // { namespace: { [action name] -> handler } }
 
 enum authState {
-	AuthError = -1,
-	NotAuthorized,
-	Authorized,
+	Auth_Error = -1,
+	Auth_None,
+	Auth_Success,
 }
 
 public Plugin myinfo = 
@@ -80,7 +80,7 @@ public void OnPluginStart() {
 
 	g_globalVars = new JSONObject();
 
-	cvarManagerUrl = CreateConVar("sm_overlay_manager_url", "ws://localhost:3011/socket", "");
+	cvarManagerUrl = CreateConVar("sm_overlay_manager_url", "ws://desktop:3011/socket", "");
 	cvarManagerUrl.AddChangeHook(OnUrlChanged);
 	OnUrlChanged(cvarManagerUrl, "", "");
 
@@ -109,7 +109,7 @@ public void OnPluginEnd() {
 }
 
 bool isManagerReady() {
-	return g_ws != null && g_ws.WsOpen() && g_authState == Authorized;
+	return g_ws != null && g_ws.WsOpen() && g_authState == Auth_Success;
 }
 
 void SendAllPlayers() {
@@ -141,8 +141,15 @@ Action Command_Overlay(int client, int args) {
 		pos.SetInt("y", 200);
 		defaults.Set("pos", pos);
 		temp.Set("defaults", defaults);
-		SendEvent_RegisterTempUI("temp", 180, temp);
-		ReplyToCommand(client, "Sent");
+		bool result = SendEvent_RegisterTempUI("temp", 180, temp);
+		ReplyToCommand(client, result ? "Sent" : "Error");
+	} else if(StrEqual(arg, "trigger_login")) {
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientInGame(i) && !IsFakeClient(i)) {
+				GetClientAuthId(i, AuthId_Steam2, steamidCache[i], 32);
+				SendEvent_PlayerJoined(steamidCache[i]);
+			}
+		}	
 	} else if(StrEqual(arg, "connect")) {
 		ConnectManager();	
 	} else {
@@ -190,7 +197,7 @@ void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) 
 
 void OnWSConnect(WebSocket ws, any arg) {
 	connectAttempts = 0;
-	g_authState = NotAuthorized;
+	g_authState = Auth_None;
 	PrintToServer("[Overlay] Connected, authenticating");
 	JSONObject obj = new JSONObject();
 	obj.SetString("type", "server");
@@ -200,7 +207,7 @@ void OnWSConnect(WebSocket ws, any arg) {
 }
 
 void OnWSDisconnect(WebSocket ws, int attempt) {
-	if(g_authState == AuthError) {
+	if(g_authState == Auth_Error) {
 		return;
 	}
 	connectAttempts++;
@@ -217,10 +224,22 @@ Action Timer_Reconnect(Handle h) {
 
 void OnWSJson(WebSocket ws, JSON message, any data) {
 	JSONObject obj = view_as<JSONObject>(message);
-	if(obj.HasKey("error")) {
-		if(g_authState == NotAuthorized) {
-			g_authState = AuthError;
+	if(g_authState == Auth_None) {
+		if(obj.HasKey("error")) {
+			g_authState = Auth_Error;
+			char buffer[2048];
+			message.ToString(buffer, sizeof(buffer));
+			PrintToServer("[Overlay] Auth Failure: %s", buffer);
+			DisconnectManager();
+		} else if(obj.HasKey("type")) {
+			char buffer[128];
+			obj.GetString("type", buffer, sizeof(buffer));
+			PrintToServer("[Overlay::Debug] Auth: %s", buffer);
+			if(StrEqual(buffer, "authorized")) {
+				g_authState = Auth_Success;
+			}
 		}
+	} else if(obj.HasKey("error")) {
 		char buffer[2048];
 		message.ToString(buffer, sizeof(buffer));
 		PrintToServer("[Overlay] Error: %s", buffer);
@@ -298,14 +317,16 @@ int FindClientBySteamId2(const char[] steamid) {
 }
 
 
-void ConnectManager() {
+bool ConnectManager() {
 	DisconnectManager();
-	if(authToken[0] == '\0') return;
+	if(authToken[0] == '\0') return false;
 
 	PrintToServer("[Overlay] Connecting to \"%s\"", managerUrl);
 	if(g_ws.Connect()) {
 		PrintToServer("[Overlay] Connected");
+		return true;
 	}
+	return false;
 }
 
 void DisconnectManager() {
@@ -314,28 +335,30 @@ void DisconnectManager() {
 	}
 }
 
-void SendEvent_PlayerJoined(const char[] steamid) {
-	if(!isManagerReady()) return;
+bool SendEvent_PlayerJoined(const char[] steamid) {
+	if(!isManagerReady()) return false;
 	JSONObject obj = new JSONObject();
 	obj.SetString("type", OUT_EVENT_IDS[Event_PlayerJoin]);
 	obj.SetString("steamid", steamid);
 	g_ws.Write(obj);
 	obj.Clear();
 	delete obj;
+	return true;
 }
 
-void SendEvent_PlayerLeft(const char[] steamid) {
-	if(!isManagerReady()) return;
+bool SendEvent_PlayerLeft(const char[] steamid) {
+	if(!isManagerReady()) return false;
 	JSONObject obj = new JSONObject();
 	obj.SetString("type", OUT_EVENT_IDS[Event_PlayerLeft]);
 	obj.SetString("steamid", steamid);
 	g_ws.Write(obj);
 	obj.Clear();
 	delete obj;
+	return true;
 }
 
-void SendEvent_RegisterTempUI(const char[] elemId, int expiresSeconds = 0, JSONObject element) {
-	if(!isManagerReady()) return;
+bool SendEvent_RegisterTempUI(const char[] elemId, int expiresSeconds = 0, JSONObject element) {
+	if(!isManagerReady()) return false;
 	JSONObject obj = new JSONObject();
 	obj.SetString("type", OUT_EVENT_IDS[Event_RegisterTempUI]);
 	obj.SetString("elem_id", elemId);
@@ -345,11 +368,15 @@ void SendEvent_RegisterTempUI(const char[] elemId, int expiresSeconds = 0, JSONO
 	g_ws.Write(obj);
 	obj.Clear();
 	delete obj;
+	return true;
+}
+
+methodmap PlayerList < JSONArray {
 }
 
 // namespace optional
-void SendEvent_UpdateUI(const char[] elemNamespace, const char[] elemId, bool visibility, JSONObject variables) {
-	if(!isManagerReady()) return;
+bool SendEvent_UpdateUI(const char[] elemNamespace, const char[] elemId, bool visibility, JSONObject variables) {
+	if(!isManagerReady()) return false;
 	JSONObject obj = new JSONObject();
 	if(elemNamespace[0] != '\0')
 		obj.SetString("namespace", elemNamespace);
@@ -359,6 +386,7 @@ void SendEvent_UpdateUI(const char[] elemNamespace, const char[] elemId, bool vi
 	g_ws.Write(obj);
 	obj.Clear();
 	delete obj;
+	return true;
 }
 
 //SendTempUI(int client, const char[] id, int lifetime, JSONObject element);

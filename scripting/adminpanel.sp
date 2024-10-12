@@ -66,8 +66,9 @@ enum AuthState {
 AuthState authState;
 enum GameState {
 	State_None,
-	State_Transitioning,
-	State_Hibernating
+	State_Transitioning = 1,
+	State_Hibernating = 2,
+	State_NewGame = 3
 }
 GameState g_gameState;
 #define BUFFER_SIZE 2048
@@ -581,11 +582,12 @@ void StopServer() {
 
 void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
 	campaignStartTime = GetTime();
-	g_gameState = State_None;
+	g_gameState = State_NewGame;
 	if(StartPayload(true)) {
 		AddGameRecord();
 		SendPayload();
 	}
+	g_gameState = State_None;
 }
 void Event_GameEnd(Event event, const char[] name, bool dontBroadcast) {
 	campaignStartTime = 0;
