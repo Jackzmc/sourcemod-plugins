@@ -2,6 +2,7 @@
 	#endinput
 #endif
 #define _overlay_included
+#include <ripext>
 
 public SharedPlugin __pl_overlay = {
 	name = "overlay",
@@ -25,19 +26,39 @@ native bool IsOverlayConnected();
 
 // myplugin:action_name
 // Handles any action for actionNamespace and actionName
-native void RegisterActionHandler(const char[] actionNamespace, const char[] actionName, ActionFallbackHandlerCallback cb);
+native void RegisterActionHandler(const char[] actionNamespace, const char[] commandName, ActionFallbackHandlerCallback cb);
 // Handles all actions for namespace that were not caught by RegisterActionHandler
 native void RegisterActionAnyHandler(const char[] actionNamespace, ActionHandlerCallback cb);
 
+enum struct ClientAction {
+    char steamid[32];
+    char ns[64];
+    char instanceId[64];
+    char command[128];
+    char input[512];
+}
+
+// Utility to get arguments from an action input.
 methodmap UIActionEvent {
     public UIActionEvent(ArrayList list) {
         return view_as<UIActionEvent>(list);   
     }
 
+    // 1 indexed. 0 returns full action string
     public void GetArg(int argNum, char[] output, int maxlen) {
         view_as<ArrayList>(this).GetString(argNum, output, maxlen);
     }
-
+    public int GetArgInt(int argNum) {
+        char buffer[32];
+        this.GetArg(argNum, buffer, sizeof(buffer));
+        return StringToInt(buffer);
+    }
+    public float GetArgFloat(int argNum) {
+        char buffer[32];
+        this.GetArg(argNum, buffer, sizeof(buffer));
+        return StringToFloat(buffer);
+    }
+    
     public void _Delete() {
         delete view_as<ArrayList>(this);
     }
@@ -48,10 +69,11 @@ methodmap UIActionEvent {
 }
 
 methodmap UIElement < JSONObject {
-    public UIElement(const char[] elemNamespace, const char[] elemId) {
+    public UIElement(const char[] elemNamespace, const char[] templateId, const char[] instanceId) {
         JSONObject obj = new JSONObject();
         obj.SetString("namespace", elemNamespace);
-        obj.SetString("elem_id", elemId);
+        obj.SetString("instance_id", instanceId);
+        obj.SetString("template_id", templateId);
         obj.SetBool("visibility", false);
         obj.Set("steamids", new JSONArray());
         obj.Set("variables", new JSONObject());
@@ -68,23 +90,31 @@ methodmap UIElement < JSONObject {
         }
     }
 
-    public void SetVariable(const char[] id, JSON json) {
+    public void GetTemplateId(char[] buffer, int maxlen) {
+        view_as<JSONObject>(this).GetString("template_id", buffer, maxlen);
+    }
+
+    public void GetInstanceId(char[] buffer, int maxlen) {
+        view_as<JSONObject>(this).GetString("instance_id", buffer, maxlen);
+    }
+
+    public void SetVar(const char[] id, JSON json) {
         view_as<JSONObject>(this).Set(id, json);
     }
     
-    public void SetVariableInt(const char[] id, int value) {
+    public void SetVarInt(const char[] id, int value) {
         view_as<JSONObject>(this).SetInt(id, value);
     }
     
-    public void SetVariableFloat(const char[] id, float value) {
+    public void SetVarFloat(const char[] id, float value) {
         view_as<JSONObject>(this).SetFloat(id, value);
     }
 
-    public void SetVariableString(const char[] id, const char[] value) {
+    public void SetVarString(const char[] id, const char[] value) {
         view_as<JSONObject>(this).SetString(id, value);
     }
 
-    public void SetVariableBool(const char[] id, bool value) {
+    public void SetVarBool(const char[] id, bool value) {
         view_as<JSONObject>(this).SetBool(id, value);
     }
 
@@ -376,6 +406,7 @@ enum AudioState {
     Audio_Play
 }
 
+// List of clients to send an element to. If empty, it will default to all connected clients.
 methodmap ClientList < JSONArray {
     public ClientList() {
         return view_as<ClientList>(new JSONArray());
@@ -449,6 +480,8 @@ methodmap AudioResource < JSONObject {
     }
 }
 
+native int FindClientBySteamId2(const char[] steamid);
+
 #if !defined REQUIRE_PLUGIN
 public void __pl_overlay_SetNTVOptional() {
 	MarkNativeAsOptional("IsOverlayConnected");
@@ -462,5 +495,7 @@ public void __pl_overlay_SetNTVOptional() {
     MarkNativeAsOptional("AudioResource.Play");
     MarkNativeAsOptional("AudioResource.Stop");
     MarkNativeAsOptional("AudioResource.Pause");
+
+    MarkNativeAsOptional("FindClientBySteamId2");
 }
 #endif

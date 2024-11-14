@@ -10,7 +10,6 @@ static float EMPTY_ANG[3] = { 0.0, 0.0, 0.0 };
 
 #include <sourcemod>
 #include <sdktools>
-#include <left4dhooks>
 #include <clientprefs>
 #include <jutils>
 #include <gamemodes/ents>
@@ -399,35 +398,6 @@ public void Event_HatsEnableChanged(ConVar convar, const char[] sOldValue, const
 	}
 }
 
-ArrayList GetSpawnLocations() {
-	ArrayList list = new ArrayList(); 
-	ArrayList newList = new ArrayList();
-	L4D_GetAllNavAreas(list);
-	for(int i = 0; i < list.Length; i++) {
-		Address nav = list.Get(i);
-		if(L4D_GetNavArea_SpawnAttributes(nav) & NAV_SPAWN_THREAT) {
-			newList.Push(nav);
-		}
-	}
-	delete list;
-	PrintToServer("[Hats] Got %d valid locations", newList.Length);
-	return newList;
-}
-
-
-void ChooseRandomPosition(float pos[3], int ignoreClient = 0) {
-	if(NavAreas.Length > 0 && GetURandomFloat() > 0.5) {
-		int nav = NavAreas.Get(GetURandomInt() % (NavAreas.Length - 1));
-		L4D_FindRandomSpot(nav, pos);
-	} else {
-		int survivor = GetRandomClient(5, 1);
-		if(ignoreClient > 0 && survivor == ignoreClient) survivor = GetRandomClient(5, 1);
-		if(survivor > 0) {
-			GetClientAbsOrigin(survivor, pos);
-		}
-	}
-}
-
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	float tick = GetGameTime();
 	//////////////////////////////
@@ -492,12 +462,12 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				EquipHat(client, entity);
 			}
 
-			// If bot is commandable and reversed (player reverse-hat common/survivor), change position:
-			if(HasFlag(client, HAT_COMMANDABLE | HAT_REVERSED) && tickcount % 200 == 0) {
-				float pos[3];
-				ChooseRandomPosition(pos, client);
-				L4D2_CommandABot(entity, client, BOT_CMD_MOVE, pos);
-			}
+			// // If bot is commandable and reversed (player reverse-hat common/survivor), change position:
+			// if(HasFlag(client, HAT_COMMANDABLE | HAT_REVERSED) && tickcount % 200 == 0) {
+			// 	float pos[3];
+			// 	ChooseRandomPosition(pos, client);
+			// 	L4D2_CommandABot(entity, client, BOT_CMD_MOVE, pos);
+			// }
 		} 
 		// Detect E + R to offset hat or place down
 		if(buttons & IN_USE && buttons & IN_RELOAD) {
@@ -682,12 +652,10 @@ bool CheckBlacklist(int entity) {
 				return false;
 			}
 		}
-		if(StrContains(buffer, "prop_") > -1) {
-			GetEntPropString(entity, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
-			for(int i = 0; i < MAX_FORBIDDEN_MODELS; i++) {
-				if(StrEqual(FORBIDDEN_MODELS[i], buffer)) {
-					return false;
-				}
+		GetEntPropString(entity, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
+		for(int i = 0; i < MAX_FORBIDDEN_MODELS; i++) {
+			if(StrEqual(FORBIDDEN_MODELS[i], buffer)) {
+				return false;
 			}
 		}
 		GetEntPropString(entity, Prop_Data, "m_iName", buffer, sizeof(buffer));
@@ -726,16 +694,6 @@ stock bool FindGround(const float start[3], float end[3]) {
 	return true;
 }
 
-stock bool L4D_IsPlayerCapped(int client) {
-	if(GetEntPropEnt(client, Prop_Send, "m_pummelAttacker") > 0 || 
-		GetEntPropEnt(client, Prop_Send, "m_carryAttacker") > 0 || 
-		GetEntPropEnt(client, Prop_Send, "m_pounceAttacker") > 0 || 
-		GetEntPropEnt(client, Prop_Send, "m_jockeyAttacker") > 0 || 
-		GetEntPropEnt(client, Prop_Send, "m_pounceAttacker") > 0 ||
-		GetEntPropEnt(client, Prop_Send, "m_tongueOwner") > 0)
-		return true;
-	return false;
-}
 stock void LookAtPoint(int entity, const float destination[3]){
 	float angles[3], pos[3], result[3];
 	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);

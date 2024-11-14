@@ -4,7 +4,7 @@
 #define DIRECTOR_WITCH_MIN_TIME 120 // The minimum amount of time to pass since last witch spawn for the next extra witch to spawn
 #define DIRECTOR_WITCH_CHECK_TIME 30.0 // How often to check if a witch should be spawned
 #define DIRECTOR_WITCH_MAX_WITCHES 5 // The maximum amount of extra witches to spawn 
-#define DIRECTOR_WITCH_ROLLS 3 // The number of dice rolls, increase if you want to increase freq
+#define DIRECTOR_WITCH_ROLLS 4 // The number of dice rolls, increase if you want to increase freq
 #define DIRECTOR_MIN_SPAWN_TIME 13.0 // Possibly randomized, per-special, in seconds
 ConVar directorSpawnChance; // Base chance of a special spawning, changed by player stress
 #define DIRECTOR_CHANGE_LIMIT_CHANCE 0.05 // The chance that the maximum amount per-special is changed

@@ -66,6 +66,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("UIElement.SendTo", Native_UpdateUI);
 	CreateNative("TempUI.SendAll", Native_UpdateTempUI);
 	CreateNative("TempUI.SendTo", Native_UpdateTempUI);
+
+	CreateNative("FindClientBySteamId2", Native_FindClientBySteamId2);
 	return APLRes_Success;
 }
 
@@ -128,8 +130,11 @@ Action Command_Overlay(int client, int args) {
 		ReplyToCommand(client, "URL: %s", managerUrl);
 		ReplyToCommand(client, "Socket Connected: %b | WS Connected: %b", g_ws.SocketOpen(), g_ws.WsOpen());
 		ReplyToCommand(client, "Auth State: %d", g_authState);
+	} else if(StrEqual(arg, "players")) {
+		SendAllPlayers();
 	} else if(StrEqual(arg, "test")) {
 		SendAllPlayers();
+		// TODO: server can send: steamids[], steamid, or none (manager knows who was connected)
 
 		JSONObject temp = new JSONObject();
 		temp.SetString("type", "text");
@@ -276,38 +281,45 @@ stock int ExplodeStringToArrayList(const char[] text, const char[] split, ArrayL
 }
 
 void OnAction(JSONObject obj) {
-	char steamid[32];
-	obj.GetString("steamid", steamid, sizeof(steamid));
-	char ns[64];
-	obj.GetString("namespace", ns, sizeof(ns));
-	char id[64];
-	obj.GetString("elem_id", id, sizeof(id));
-	char action[256];
-	obj.GetString("action", action, sizeof(action));
+	ClientAction action;
+	obj.GetString("steamid", action.steamid, sizeof(action.steamid));
+	obj.GetString("namespace", action.ns, sizeof(action.ns));
+	obj.GetString("instance_id", action.instanceId, sizeof(action.instanceId));
+	obj.GetString("command", action.command, sizeof(action.command));
+	if(obj.HasKey("input"))
+		obj.GetString("input", action.input, sizeof(action.input));
 
-	int client = FindClientBySteamId2(steamid);
+	int client = FindClientBySteamId2(action.steamid);
+	if(client <= 0) return;
 
 	StringMap nsHandler;
 	PrivateForward fwd;
-	if(!actionNamespaceHandlers.GetValue(ns, nsHandler) || !nsHandler.GetValue(id, fwd)) {
-		if(!actionFallbackHandlers.GetValue(ns, fwd)) {
+	if(!actionNamespaceHandlers.GetValue(action.ns, nsHandler) || !nsHandler.GetValue(action.command, fwd)) {
+		if(!actionFallbackHandlers.GetValue(action.ns, fwd)) {
 			// No handler or catch all namespace handler
+			PrintToServer("[Overlay] Warn: No handler found for action \"%s:%s\"", action.ns, action.command);
 			return;
 		}
 	}
 
 	ArrayList args = new ArrayList(ACTION_ARG_LENGTH);
-	ExplodeStringToArrayList(action, " ", args, ACTION_ARG_LENGTH);
+	args.PushString(action.input);
+	ExplodeStringToArrayList(action.input, " ", args, ACTION_ARG_LENGTH);
 	UIActionEvent event = UIActionEvent(args);
 
 	Call_StartForward(fwd);
 	Call_PushCell(event);
 	Call_PushCell(client);
 	Call_Finish();
+
+	if(StrEqual(action.ns, "game")) {
+		if(CheckCommandAccess(client, action.command, 0)) {
+			FakeClientCommand(client, "%s %s", action.command, action.input);
+		}
+	}
 	event._Delete();
 }
-
-int FindClientBySteamId2(const char[] steamid) {
+int _FindClientBySteamId2(const char[] steamid) {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(StrEqual(steamidCache[i], steamid)) {
 			return i;
@@ -315,7 +327,6 @@ int FindClientBySteamId2(const char[] steamid) {
 	}
 	return -1;
 }
-
 
 bool ConnectManager() {
 	DisconnectManager();
@@ -536,4 +547,11 @@ any Native_ActionHandler(Handle plugin, int numParams) {
 		actionFallbackHandlers.SetValue(ns, fwd);
 	}
 	return 1;
+}
+
+
+any Native_FindClientBySteamId2(Handle plugin, int numParams) {
+	char steamid[32];
+	GetNativeString(1, steamid, sizeof(steamid));
+	return _FindClientBySteamId2(steamid);
 }

@@ -585,12 +585,10 @@ bool CheckBlacklist(int entity) {
 			return false;
 		}
 	}
-	if(StrContains(buffer, "prop_") > -1) {
-		GetEntPropString(entity, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
-		for(int i = 0; i < MAX_FORBIDDEN_MODELS; i++) {
-			if(StrEqual(FORBIDDEN_MODELS[i], buffer)) {
-				return false;
-			}
+	GetEntPropString(entity, Prop_Data, "m_ModelName", buffer, sizeof(buffer));
+	for(int i = 0; i < MAX_FORBIDDEN_MODELS; i++) {
+		if(StrEqual(FORBIDDEN_MODELS[i], buffer)) {
+			return false;
 		}
 	}
 	GetEntPropString(entity, Prop_Data, "m_iName", buffer, sizeof(buffer));
