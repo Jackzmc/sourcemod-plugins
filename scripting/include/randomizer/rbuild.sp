@@ -37,7 +37,14 @@ void OpenVariantsMenu(int client) {
 	char id[8], display[32];
 	menu.AddItem("new", "New Variant");
 	menu.AddItem("-1", "Global Scene Variant");
-
+	if(!g_builder.selectedSceneData) {
+		ReplyToCommand(client, "Error: Missing scene data for %s", g_builder.selectedSceneId);
+		PrintToServer("[Randomizer] Warn: Scene %s has no data", g_builder.selectedSceneId);
+	} else if(!g_builder.selectedSceneData.HasKey("variants")) {
+		ReplyToCommand(client, "Error: Missing variants for %d", g_builder.selectedSceneId);
+		PrintToServer("[Randomizer] Warn: Selected scene %s has no variants", g_builder.selectedSceneId);
+		return;
+	}
 	JSONArray variants = view_as<JSONArray>(g_builder.selectedSceneData.Get("variants"));
 	JSONObject varObj;
 	JSONArray entities;
@@ -102,8 +109,11 @@ int BuilderHandler_ScenesMenu(Menu menu, MenuAction action, int client, int para
 			FakeClientCommand(client, "sm_rbuild scenes new");
 			OpenScenesMenu(client);
 		} else {
-			FakeClientCommand(client, "sm_rbuild scenes select %s", info);
-			OpenVariantsMenu(client);
+			if(g_builder.SelectScene(info)) {
+				OpenVariantsMenu(client);
+			} else {
+				PrintToChat(client, "Error: Scene not found");
+			}
 		}
 	} else if(action == MenuAction_Cancel) {
 		if(param2 == MenuCancel_ExitBack) {

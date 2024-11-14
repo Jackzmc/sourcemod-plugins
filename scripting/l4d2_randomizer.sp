@@ -226,6 +226,10 @@ public Action Command_CycleRandom(int client, int args) {
 		if(client > 0)
 			PrintCenterText(client, "Cycled flags=%d", flags);
 	} else {
+		if(g_MapData.activeScenes == null) {
+			ReplyToCommand(client, "No map data");
+			return Plugin_Handled;
+		}
 		ReplyToCommand(client, "Active Scenes (%d/%d):", g_MapData.activeScenes.Length, g_MapData.scenes.Length);
 		ActiveSceneData scene;
 		for(int i = 0; i < g_MapData.activeScenes.Length; i++) {
@@ -389,6 +393,18 @@ Action Command_RandomizerBuild(int client, int args) {
 		obj.SetString("model", "decals/checkpointarrow01_black.vmt");
 		g_builder.AddEntityData(obj);
 		ReplyToCommand(client, "Added sprite to variant #%d", g_builder.selectedVariantIndex);
+	} else if(StrEqual(arg, "fire")) {
+		if(g_builder.selectedVariantData == null) {
+			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
+			return Plugin_Handled;
+		}
+		float pos[3];
+		GetLookingPosition(client, Filter_IgnorePlayer, pos);
+		JSONObject obj = new JSONObject();
+		obj.SetString("type", "env_fire");
+		obj.Set("origin", VecToArray(pos));
+		g_builder.AddEntityData(obj);
+		ReplyToCommand(client, "Added fire to variant #%d", g_builder.selectedVariantIndex);
 	} else {
 		ReplyToCommand(client, "Unknown arg. Try: new, load, save, scenes, cursor");
 	}
