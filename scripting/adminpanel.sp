@@ -31,6 +31,7 @@ public Plugin myinfo =
 int LIVESTATUS_VERSION = 0;
 Regex CommandArgRegex;
 
+ConVar cvar_flags;
 ConVar cvar_debug;
 ConVar cvar_gamemode; char gamemode[32];
 ConVar cvar_difficulty; int gameDifficulty;
@@ -58,6 +59,7 @@ int pendingTries = 3;
 bool lateLoaded;
 
 Socket g_socket;
+int g_lastPayloadSent;
 enum AuthState {
 	Auth_Fail = -1,
 	Auth_Pending,
@@ -69,6 +71,10 @@ enum GameState {
 	State_Transitioning = 1,
 	State_Hibernating = 2,
 	State_NewGame = 3
+}
+enum PanelSettings {
+	Setting_None = 0,
+	Setting_DisableWithNoViewers = 1
 }
 GameState g_gameState;
 #define BUFFER_SIZE 2048
@@ -87,6 +93,7 @@ public void OnPluginStart() {
 	g_socket.SetOption(SocketSendBuffer, BUFFER_SIZE);
 
 	uptime = GetTime();
+	cvar_flags = CreateConVar("sm_adminpanel_flags", "1", "Bit Flags.\n1=Disable when no viewers", FCVAR_NONE, true, 0.0);
 	cvar_debug = CreateConVar("sm_adminpanel_debug", "0", "Turn on debug mode", FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 
 	cvar_authToken = CreateConVar("sm_adminpanel_authtoken", "", "The token for authentication", FCVAR_PROTECTED);
@@ -237,7 +244,7 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 				int client = GetClientOfUserId(userid);
 				if(client > 0 && StartPayload(true)) {
 					PrintToServer("[AdminPanel] Sync requested for #%d, performing", userid);
-					AddPlayerRecord(client, Client_Normal);
+					AddPlayerRecord(client, Client_Connected);
 					SendPayload();
 				}
 			} else {
@@ -519,6 +526,8 @@ Action Command_PanelDebug(int client, int args) {
 			ConnectSocket();
 	} else if(StrEqual(arg, "info")) {
 		ReplyToCommand(client, "Connected: %b\tAuthenticated: %d\tState: %d", g_socket.Connected, authState, g_gameState);
+		int timeFromLastPayload = GetTime() - g_lastPayloadSent;
+		ReplyToCommand(client, "Last Payload: %ds", timeFromLastPayload);
 		ReplyToCommand(client, "#Viewers: %d\t#Players: %d", numberOfViewers, numberOfPlayers);
 		ReplyToCommand(client, "Target Host: %s:%d", serverIp, serverPort);
 		ReplyToCommand(client, "Buffer Size: %d", BUFFER_SIZE);
@@ -617,7 +626,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 public void Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast) {
 	int player = GetClientOfUserId(GetEventInt(event, "player"));
 	int bot    = GetClientOfUserId(GetEventInt(event, "bot")); 
-	if(player > 0 && !IsFakeClient(player) && StartPayload(true)) {
+	if(player > 0 && !IsFakeClient(player) && StartPayload()) {
 		AddSurvivorRecord(player);
 		SendPayload();
 	}
@@ -626,7 +635,7 @@ public void Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast) {
 public void Event_BotToPlayer(Handle event, char[] name, bool dontBroadcast) {
 	int player = GetClientOfUserId(GetEventInt(event, "player"));
 	int bot    = GetClientOfUserId(GetEventInt(event, "bot")); 
-	if(player > 0 && !IsFakeClient(player) && StartPayload(true)) {
+	if(player > 0 && !IsFakeClient(player) && StartPayload()) {
 		// Bot is going away, remove it: (prob unnecessary OnClientDisconnect happens)
 		AddPlayerRecord(bot, Client_Disconnected);
 		AddPlayerRecord(player, Client_Normal);
@@ -658,7 +667,7 @@ void Event_HealInterrupted(Event event, const char[] name, bool dontBroadcast) {
 void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
 	RecalculatePlayerCount();
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(client > 0 && StartPayload()) {
+	if(client > 0 && StartPayload(true)) {
 		AddPlayerRecord(client, Client_Normal);
 		SendPayload();
 	}
@@ -678,7 +687,7 @@ void SendPlayers() {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientInGame(i)) {
 			if(StartPayload(true)) {
-				AddPlayerRecord(i, Client_Normal);
+				AddPlayerRecord(i, Client_Connected);
 				SendPayload();
 			}
 		}
@@ -805,15 +814,14 @@ Action Timer_UpdateItems(Handle h, int client) {
 
 void SendNewClient(int client) {
 	if(!IsClientInGame(client)) return;
-	if(StartPayload()) {
-		PrintToServer("SendNewClient(%N)", client);
+	if(StartPayload(true)) {
 		AddPlayerRecord(client, Client_Connected);
 		SendPayload();
 	}
 }
 
 public void OnClientDisconnect(int client) {
-	if(StartPayload()) {
+	if(StartPayload(true)) {
 		// hopefully userid is valid here?
 		AddPlayerRecord(client, Client_Disconnected);
 		SendPayload();
@@ -1024,7 +1032,7 @@ bool CanSendPayload(bool ignorePause = false) {
 		}
 		return false;
 	}
-	if(!ignorePause && (numberOfViewers == 0 || numberOfPlayers == 0)) return false;
+	if(cvar_flags.IntValue & view_as<int>(Setting_DisableWithNoViewers) && !ignorePause && (numberOfViewers == 0 || numberOfPlayers == 0)) return false;
 	return true;
 }
 
@@ -1209,6 +1217,7 @@ void SendPayload() {
 	if(cvar_debug.BoolValue) {
 		PrintToServer("[AdminPanel] Sending %d bytes of data (records = %s)", len, pendingRecords);
 	}
+	g_lastPayloadSent = GetTime();
 	g_socket.Send(sendBuffer.buffer, len);
 }
 
