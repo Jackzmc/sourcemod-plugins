@@ -36,8 +36,9 @@ ConVar cvar_debug;
 ConVar cvar_gamemode; char gamemode[32];
 ConVar cvar_difficulty; int gameDifficulty;
 ConVar cvar_maxplayers, cvar_visibleMaxPlayers;
-ConVar cvar_address; char serverIp[16] = "127.0.0.1"; int serverPort = DEFAULT_SERVER_PORT; 
+ConVar cvar_address; char serverIp[32] = "127.0.0.1"; int serverPort = DEFAULT_SERVER_PORT; 
 ConVar cvar_authToken; char authToken[256];
+ConVar cvar_hostPort;
 
 char currentMap[64];
 int numberOfPlayers = 0;
@@ -54,18 +55,25 @@ int playerJoinTime[MAXPLAYERS+1];
 Handle updateHealthTimer[MAXPLAYERS+1];
 Handle updateItemTimer[MAXPLAYERS+1];
 Handle receiveTimeoutTimer = null;
-int pendingTries = 3;
-
-bool lateLoaded;
+int pendingAuthTries = 3;
 
 Socket g_socket;
 int g_lastPayloadSent;
 enum AuthState {
 	Auth_Fail = -1,
+	Auth_Inactive,
 	Auth_Pending,
+	Auth_PendingResponse,
 	Auth_Success,
 }
-AuthState authState;
+char AUTH_STATE_LABEL[5][] = {
+	"failed",
+	"inactive",
+	"waiting connect",
+	"pending response",
+	"success"
+};
+AuthState authState = Auth_Inactive;
 enum GameState {
 	State_None,
 	State_Transitioning = 1,
@@ -76,13 +84,13 @@ enum PanelSettings {
 	Setting_None = 0,
 	Setting_DisableWithNoViewers = 1
 }
-GameState g_gameState;
+GameState g_gameState = State_Hibernating;
 #define BUFFER_SIZE 2048
 Buffer sendBuffer;
 Buffer receiveBuffer; // Unfortunately there's no easy way to have this not be the same as BUFFER_SIZE
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
-	lateLoaded = late;
+	// lateLoaded = late;
 	return APLRes_Success;
 }
 
@@ -111,6 +119,8 @@ public void OnPluginStart() {
 	cvar_gamemode = FindConVar("mp_gamemode");
 	cvar_gamemode.AddChangeHook(OnCvarChanged);
 	cvar_gamemode.GetString(gamemode, sizeof(gamemode));
+
+	cvar_hostPort = FindConVar("hostport");
 
 	cvar_difficulty = FindConVar("z_difficulty");
 	cvar_difficulty.AddChangeHook(OnCvarChanged);
@@ -151,9 +161,24 @@ public void OnPluginStart() {
 	CreateTimer(300.0, Timer_FullSync, _, TIMER_REPEAT);
 }
 
+stock void Debug(const char[] format, any ...) {
+	if(!cvar_debug.BoolValue) return;
+	char buffer[254];
+	VFormat(buffer, sizeof(buffer), format, 2);
+	PrintToServer("[AdminPanel] debug: %s", buffer);
+}
+stock void Log(const char[] format, any ...) {
+	char buffer[254];
+	VFormat(buffer, sizeof(buffer), format, 2);
+	PrintToServer("[AdminPanel] %s", buffer);
+}
+
 Action Timer_FullSync(Handle h) {
 	if(CanSendPayload(true)) {
 		SendFullSync();
+	} else if(authState != Auth_Success && authState != Auth_Fail) {
+		// Try to reconnect if we aren't active
+		ConnectSocket();
 	}
 	return Plugin_Continue;
 }
@@ -172,15 +197,19 @@ void TriggerItemUpdate(int client) {
 	updateItemTimer[client] = CreateTimer(1.0, Timer_UpdateItems, client);
 }
 
-void OnSocketError(Socket socket, int errorType, int errorNumber, int any) {
+void OnSocketError(Socket socket, int errorType, int errorNumber, int attempt) {
 	PrintToServer("[AdminPanel] Socket Error %d %d", errorType, errorNumber);
 	if(!socket.Connected) {
 		PrintToServer("[AdminPanel] Lost connection to socket, reconnecting", errorType, errorNumber);
-		ConnectSocket();
+		float nextAttempt = Exponential(float(attempt) / 2.0) + 2.0;
+		if(nextAttempt > MAX_ATTEMPT_TIMEOUT) nextAttempt = MAX_ATTEMPT_TIMEOUT;
+		PrintToServer("[AdminPanel] Disconnected, retrying in %.0f seconds", nextAttempt);
+		g_socket.SetArg(attempt + 1);
+		CreateTimer(nextAttempt, Timer_Reconnect);
 	}
 }
 
-void SendFullSync() {
+bool SendFullSync() {
 	if(StartPayload(true)) {
 		AddGameRecord();
 		int stage = L4D2_GetCurrentFinaleStage();
@@ -190,21 +219,21 @@ void SendFullSync() {
 
 		// Resend all players
 		SendPlayers();
+		return true;
 	}
+	return false;
 }
 
 void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int arg) {
 	receiveBuffer.FromArray(receiveData, dataSize);
 	LiveRecordResponse response = view_as<LiveRecordResponse>(receiveBuffer.ReadByte());
-	if(cvar_debug.BoolValue) {
-		PrintToServer("[AdminPanel] Received response=%d size=%d bytes", response, dataSize);
-	}
-	if(authState == Auth_Pending) {
+	Debug("Received response=%d size=%d bytes", response, dataSize);
+	if(authState == Auth_PendingResponse) {
 		if(response == Live_OK) {
 			authState = Auth_Success;
-			pendingTries = 0;
+			pendingAuthTries = 0;
 			PrintToServer("[AdminPanel] Authenticated with server successfully.");
-			SendFullSync();
+			CreateTimer(1.0, Timer_FullSync);
 		} else if(response == Live_Error) {
 			authState = Auth_Fail;
 			g_socket.Disconnect();
@@ -430,19 +459,25 @@ int FindPlayer(const char[] arg) {
 	return result;
 }
 
-void OnSocketConnect(Socket socket, int any) {
-	if(cvar_debug.BoolValue)
-		PrintToServer("[AdminPanel] Connected to %s:%d", serverIp, serverPort);
+void SendAuthPayload() {
+	// Already sending one, ignore.
+	if(authState == Auth_PendingResponse) return;
 	g_socket.SetArg(0);
-
-	PrintToServer("[AdminPanel] Authenticating with server");
+	authState = Auth_PendingResponse;
 	StartPayloadEx();
 	AddAuthRecord();
 	SendPayload();
+	PrintToServer("[AdminPanel] Authenticating with server");
+}
+
+// This does not trigger if the server is hibernating.
+void OnSocketConnect(Socket socket, int any) {
+	Debug("Connected to %s:%d. Authenticating...", serverIp, serverPort);
+	SendAuthPayload();
 }
 
 void OnSocketDisconnect(Socket socket, int attempt) {
-	authState = Auth_Pending;
+	authState = Auth_Inactive;
 	g_socket.SetArg(attempt + 1);
 	float nextAttempt = Exponential(float(attempt) / 2.0) + 2.0;
 	if(nextAttempt > MAX_ATTEMPT_TIMEOUT) nextAttempt = MAX_ATTEMPT_TIMEOUT;
@@ -471,6 +506,7 @@ public void L4D_OnServerHibernationUpdate(bool hibernating) {
 	}
 
 	if(hibernating) {
+		authState = Auth_Inactive;
 		g_socket.Disconnect();
 	} else {
 		ConnectSocket();
@@ -504,15 +540,32 @@ Action Timer_Reconnect(Handle h, int type) {
 	return Plugin_Continue;
 }
 
-void ConnectSocket() {
+bool ConnectSocket(bool force = false, int authTry = 0) {
 	if(g_socket == null) LogError("Socket is invalid");
-	if(g_socket.Connected)
+	if(g_socket.Connected) {
+		Debug("Already connected, disconnecting...");
 		g_socket.Disconnect();
-	if(authToken[0] == '\0') return;
+		authState = Auth_Inactive;
+	}
+	if(authToken[0] == '\0') LogError("ConnectSocket() called with no auth token");
 	// Do not try to reconnect on auth failure, until token has changed
-	if(authState == Auth_Fail) return;
+	if(!force && authState == Auth_Fail) return false;
 	authState = Auth_Pending;
 	g_socket.Connect(OnSocketConnect, OnSocketReceive, OnSocketDisconnect, serverIp, serverPort);
+	CreateTimer(10.0, Timer_ConnectTimeout, authTry);
+	return true;
+}
+
+Action Timer_ConnectTimeout(Handle h, int attempt) {
+	if(g_socket.Connected && authState == Auth_Pending) {
+		if(attempt == 3) {
+			Debug("Timed out");
+			g_socket.Disconnect();
+		}
+		Debug("timed out waiting for connection callback, trying again (try=%d)", attempt);
+		ConnectSocket(false, attempt + 1);
+	}
+	return Plugin_Handled;
 }
 
 #define DATE_FORMAT "%F at %I:%M %p"
@@ -520,13 +573,25 @@ Action Command_PanelDebug(int client, int args) {
 	char arg[32];
 	GetCmdArg(1, arg, sizeof(arg));
 	if(StrEqual(arg, "connect")) {
-		if(authToken[0] == '\0') 
+		if(authToken[0] == '\0') {
 			ReplyToCommand(client, "No auth token.");
-		else
-			ConnectSocket();
+		} else {
+			if(ConnectSocket(true)) {
+				ReplyToCommand(client, "Connecting...");
+			} else {
+				ReplyToCommand(client, "Cannot connect");
+			}
+		}
+	} else if(StrEqual(arg, "auth")) {
+		if(!g_socket.Connected) {
+			ReplyToCommand(client, "Not connected.");
+		} else {
+			SendAuthPayload();
+			ReplyToCommand(client, "Sent auth payload");
+		}
 	} else if(StrEqual(arg, "info")) {
-		ReplyToCommand(client, "Connected: %b\tAuthenticated: %d\tState: %d", g_socket.Connected, authState, g_gameState);
-		int timeFromLastPayload = GetTime() - g_lastPayloadSent;
+		ReplyToCommand(client, "Connected: %b\tAuth State: %s\tGameState: %d", g_socket.Connected, AUTH_STATE_LABEL[view_as<int>(authState)+1], g_gameState);
+		int timeFromLastPayload = g_lastPayloadSent > 0 ? GetTime() - g_lastPayloadSent : -1;
 		ReplyToCommand(client, "Last Payload: %ds", timeFromLastPayload);
 		ReplyToCommand(client, "#Viewers: %d\t#Players: %d", numberOfViewers, numberOfPlayers);
 		ReplyToCommand(client, "Target Host: %s:%d", serverIp, serverPort);
@@ -625,7 +690,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 }
 public void Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast) {
 	int player = GetClientOfUserId(GetEventInt(event, "player"));
-	int bot    = GetClientOfUserId(GetEventInt(event, "bot")); 
+	// int bot    = GetClientOfUserId(GetEventInt(event, "bot")); 
 	if(player > 0 && !IsFakeClient(player) && StartPayload()) {
 		AddSurvivorRecord(player);
 		SendPayload();
@@ -1024,14 +1089,15 @@ char pendingRecords[64];
 
 bool CanSendPayload(bool ignorePause = false) {
 	if(!g_socket.Connected) return false;
-	if(authState != Auth_Success) {
-		if(authState == Auth_Pending && pendingTries > 0) {
-			pendingTries--;
-			PrintToServer("[AdminPanel] Auth state is pending. Too early?");
-			ConnectSocket();
-		}
-		return false;
-	}
+	// if(authState != Auth_Success) {
+	// 	if(authState == Auth_Pending && pendingTries > 0) {
+	// 		pendingTries--;
+	// 		PrintToServer("[AdminPanel] Auth state is pending. Too early?");
+	// 		ConnectSocket();
+	// 	}
+	// 	return false;
+	// }
+	if(authState != Auth_Success) return false;
 	if(cvar_flags.IntValue & view_as<int>(Setting_DisableWithNoViewers) && !ignorePause && (numberOfViewers == 0 || numberOfPlayers == 0)) return false;
 	return true;
 }
@@ -1202,6 +1268,7 @@ void AddAuthRecord() {
 	StartRecord(Live_Auth);
 	sendBuffer.WriteByte(LIVESTATUS_VERSION);
 	sendBuffer.WriteString(authToken);
+	sendBuffer.WriteInt(cvar_hostPort.IntValue);
 	EndRecord();
 }
 
@@ -1212,11 +1279,12 @@ void AddMetaRecord(bool state) {
 }
 
 void SendPayload() {
-	if(sendBuffer.offset == 0) return;
-	int len = sendBuffer.Finish();
-	if(cvar_debug.BoolValue) {
-		PrintToServer("[AdminPanel] Sending %d bytes of data (records = %s)", len, pendingRecords);
+	if(sendBuffer.offset == 0) {
+		Debug("sendBuffer empty, ignoring SendPayload()");
+		return;
 	}
+	int len = sendBuffer.Finish();
+	Debug("Sending %d bytes of data (records = %s)", len, pendingRecords);
 	g_lastPayloadSent = GetTime();
 	g_socket.Send(sendBuffer.buffer, len);
 }
