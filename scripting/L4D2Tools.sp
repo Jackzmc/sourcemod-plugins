@@ -59,8 +59,8 @@ static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
 
 public Plugin myinfo = {
 	name = "L4D2 Misc Tools",
-	author = "Includes: Notice on laser use, Timer for gauntlet runs",
-	description = "jackzmc", 
+	description = "Includes useful tools, like laser pickup detection and model changing.",
+	author = "jackzmc", 
 	version = PLUGIN_VERSION, 
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
