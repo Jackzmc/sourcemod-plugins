@@ -78,7 +78,7 @@ PlayerItems items[MAXPLAYERS+1];
 
 public Plugin myinfo = 
 {
-	name =  "L4D2 Extra Player Tools", 
+	name =  "L4D2 5+ Extra Tools & Director", 
 	author = "jackzmc", 
 	description = "Automatic system for management of 5+ player games. Provides extra kits, items, and more", 
 	version = PLUGIN_VERSION, 

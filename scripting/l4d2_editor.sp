@@ -34,9 +34,9 @@ ConVar enabledBlacklist;
 #include <editor>
 
 public Plugin myinfo = {
-	name =  "L4D2 Hats & Editor", 
+	name =  "L4D2 Editor", 
 	author = "jackzmc", 
-	description = "", 
+	description = "Advanced prop spawner and entity editing", 
 	version = PLUGIN_VERSION, 
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };

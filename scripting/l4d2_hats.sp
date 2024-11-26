@@ -41,9 +41,9 @@ char g_currentMap[64];
 #include <hats/hat_presets.sp>
 
 public Plugin myinfo = {
-	name =  "L4D2 Hats & Editor", 
+	name =  "L4D2 Hats", 
 	author = "jackzmc", 
-	description = "", 
+	description = "Hat props and cause problems", 
 	version = PLUGIN_VERSION, 
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
