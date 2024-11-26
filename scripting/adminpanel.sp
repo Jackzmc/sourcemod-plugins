@@ -151,6 +151,7 @@ public void OnPluginStart() {
 	HookEvent("player_death", Event_PlayerDeath);
 	HookEvent("player_bot_replace", Event_PlayerToBot);
 	HookEvent("bot_player_replace", Event_BotToPlayer);
+	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 
 	campaignStartTime = GetTime();
 	char auth[32];
@@ -767,6 +768,13 @@ void Event_PlayerInfo(Event event, const char[] name, bool dontBroadcast) {
 	}
 }
 
+void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) { 
+	int userid = event.GetInt("userid");
+	int client = GetClientOfUserId(userid);
+	if(client > 0)
+		SetupUserInDB(client);
+}
+
 void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
 	campaignStartTime = GetTime();
 	g_gameState = State_NewGame;
@@ -904,7 +912,6 @@ public void OnClientAuthorized(int client, const char[] auth) {
 	}
 	GetClientName(client, nameCache[client], MAX_NAME_LENGTH);
 	playerJoinTime[client] = GetTime();
-	SetupUserInDB(client);
 	RequestFrame(SendNewClient, client);
 }
 // Player counts
