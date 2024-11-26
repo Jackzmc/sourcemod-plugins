@@ -15,6 +15,7 @@ static float EMPTY_ANG[3] = { 0.0, 0.0, 0.0 };
 #include <gamemodes/ents>
 #include <smlib/effects>
 #include <multicolors>
+#include <left4dhooks>
 #include <adminmenu>
 
 
@@ -48,7 +49,6 @@ public Plugin myinfo = {
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
-ArrayList NavAreas;
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	return APLRes_Success;
 }
@@ -343,10 +343,10 @@ void Event_PlayerOutOfIdle(Event event, const char[] name, bool dontBroadcast) {
 
 void Frame_FixClient(int client) {
 	if(IsClientConnected(client) && GetClientTeam(client) == 2) {
-	ClearParent(client);
-	SetEntProp(client, Prop_Send, "m_CollisionGroup", 5);
-	SetEntProp(client, Prop_Send, "m_nSolidType", 2);
-	SetEntityMoveType(client, MOVETYPE_WALK);
+		ClearParent(client);
+		SetEntProp(client, Prop_Send, "m_CollisionGroup", 5);
+		SetEntProp(client, Prop_Send, "m_nSolidType", 2);
+		SetEntityMoveType(client, MOVETYPE_WALK);
 	}
 	// SetEntProp(client, Prop_Send, "movetype", MOVETYPE_ISOMETRIC);
 }
@@ -574,12 +574,21 @@ public void OnMapStart() {
 		tempGod[i] = false;
 	}
 	GetCurrentMap(g_currentMap, sizeof(g_currentMap));
-	NavAreas = GetSpawnLocations();
+}
+
+stock bool L4D_IsPlayerCapped(int client) {
+	if(GetEntPropEnt(client, Prop_Send, "m_pummelAttacker") > 0 || 
+		GetEntPropEnt(client, Prop_Send, "m_carryAttacker") > 0 || 
+		GetEntPropEnt(client, Prop_Send, "m_pounceAttacker") > 0 || 
+		GetEntPropEnt(client, Prop_Send, "m_jockeyAttacker") > 0 || 
+		GetEntPropEnt(client, Prop_Send, "m_pounceAttacker") > 0 ||
+		GetEntPropEnt(client, Prop_Send, "m_tongueOwner") > 0)
+		return true;
+	return false;
 }
 
 
 public void OnMapEnd() {
-	delete NavAreas;
 	ClearHats();
 }
 public void OnPluginEnd() {

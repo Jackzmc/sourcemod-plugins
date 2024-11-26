@@ -336,7 +336,6 @@ Action Command_DoAHat(int client, int args) {
 		// Find a new hatable entity
 		int flags = 0;
 		if(args > 0 && isForced) {
-			char arg[16];
 			entity = GetCmdArgInt(1);
 		} else {
 			entity = GetLookingEntity(client, Filter_ValidHats);
@@ -814,10 +813,6 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 				SetParentAttachment(modifyEntity, attachPoint, true);
 			}
 			
-			if(HasFlag(client, HAT_COMMANDABLE)) {
-				ChooseRandomPosition(hatData[client].offset);
-				L4D2_CommandABot(entity, client, BOT_CMD_MOVE, hatData[client].offset);
-			}
 		} else {
 			SetParent(entity, client);
 			SetParentAttachment(modifyEntity, attachPoint, true);
