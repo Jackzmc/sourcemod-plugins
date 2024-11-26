@@ -203,7 +203,7 @@ void SetupUserInDB(int client) {
 		g_db.Format(query, sizeof(query), "INSERT INTO panel_user "
 			..."(account_id,last_join_time,last_ip,last_country,last_region)"
 			..."VALUES ('%s',%d,'%s','%s','%s')"
-			..."ON DUPLICATE KEY UPDATE last_join_time=%d,last_ip='%s',last_country='%s',last_region='%s');",
+			..."ON DUPLICATE KEY UPDATE last_join_time=%d,last_ip='%s',last_country='%s',last_region='%s';",
 			steamidCache[client][10], // strip STEAM_#:#:##### returning only ending #######
 			// insert:
 			time,
@@ -216,10 +216,19 @@ void SetupUserInDB(int client) {
 			country,
 			region
 		);
-		g_db.Query(DBCT_Insert, query);
+		g_db.Query(DBCT_PanelUser, query, GetClientUserId(client));
+	}
+}
 
-		g_db.Format(query, sizeof(query), "SELECT name FROM panel_user_names WHERE account_id = '%s' ORDER BY name_update_time DESC LIMIT 1", steamidCache[client][10]);  // strip STEAM_#:#:##### returning only ending #######
-		g_db.Query(DBCT_CheckUserName, query, GetClientUserId(client));
+void DBCT_PanelUser(Database db, DBResultSet results, const char[] error, int userId) {
+	if(db == null || results == null) {
+		LogError("DBCT_Insert returned error: %s", error);
+	}
+	int client = GetClientOfUserId(userId);
+	if(client > 0) {
+		char query[128];
+		g_db.Format(query, sizeof(query), "SELECT name FROM panel_user_names WHERE account_id = '%s' ORDER BY name_update_time 	DESC LIMIT 1", steamidCache[client][10]);  // strip STEAM_#:#:##### returning only ending #######
+		g_db.Query(DBCT_CheckUserName, query, userId);
 	}
 }
 
@@ -236,10 +245,13 @@ void DBCT_CheckUserName(Database db, DBResultSet results, const char[] error, in
 		int client = GetClientOfUserId(userId);
 		if(client == 0) return; // Client left, ignore
 
-		char prevName[64];
 		// Insert new name if we have none, or prev differs
 		bool insertNewName = true;
 		if(results.FetchRow()) {
+			if(nameCache[client][0] == '\0') {
+				LogError("DBCT_CheckUserName user %N(#%d) missing namecache", client, userId);
+			}
+			char prevName[64];
 			results.FetchString(0, prevName, sizeof(prevName));
 			if(StrEqual(prevName, nameCache[client])) {
 				insertNewName = false;
@@ -247,8 +259,9 @@ void DBCT_CheckUserName(Database db, DBResultSet results, const char[] error, in
 		}
 
 		if(insertNewName) {
+			PrintToServer("[AdminPanel] Updating/Inserting name '%s' for %s", nameCache[client], steamidCache[client]);
 			char query[255];
-			g_db.Format(query, sizeof(query), "INSERT INTO panel_user_names (accountId,name,name_update_time) VALUES ('%s','%s',%d)", steamidCache[client][10], nameCache[client][10], GetTime());
+			g_db.Format(query, sizeof(query), "INSERT INTO panel_user_names (account_id,name,name_update_time) VALUES ('%s','%s',%d)", steamidCache[client][10], nameCache[client], GetTime());
 			g_db.Query(DBCT_Insert, query);
 		}
 	}
