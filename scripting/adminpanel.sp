@@ -195,9 +195,10 @@ void SetupUserInDB(int client) {
 		char country[128];
 		char region[128];
 		char ip[64];
-		GetClientIP(client, ip, sizeof(ip));
-		GeoipCountry(ip, country, sizeof(country));
-		GeoipRegion(ip, region, sizeof(region));
+		if(GetClientIP(client, ip, sizeof(ip))) {
+			GeoipCountry(ip, country, sizeof(country));
+			GeoipRegion(ip, region, sizeof(region));
+		}
 		int time = GetTime();
 
 		char query[512];
