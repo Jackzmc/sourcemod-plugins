@@ -7,6 +7,8 @@
 #define DEFAULT_SERVER_PORT 7888
 #define SOCKET_TIMEOUT_DURATION 90.0
 
+#define DATABASE_NAME "adminpanel"
+
 #include <sourcemod>
 #include <sdktools>
 #include <ripext>
@@ -14,6 +16,7 @@
 #include <multicolors>
 #include <jutils>
 #include <socket>
+#include <geoip>
 #undef REQUIRE_PLUGIN
 #tryinclude <SteamWorks>
 
@@ -89,12 +92,20 @@ GameState g_gameState = State_Hibernating;
 Buffer sendBuffer;
 Buffer receiveBuffer; // Unfortunately there's no easy way to have this not be the same as BUFFER_SIZE
 
+Database g_db;
+
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	// lateLoaded = late;
 	return APLRes_Success;
 }
 
 public void OnPluginStart() {
+	if(!SQL_CheckConfig(DATABASE_NAME)) {
+		SetFailState("No database entry for '%s'; no database to connect to.", DATABASE_NAME);
+	} else if(!ConnectDB()) {
+		SetFailState("Failed to connect to database.");
+	}
+
 	g_socket = new Socket(SOCKET_TCP, OnSocketError);
 	g_socket.SetOption(SocketKeepAlive, 1);
 	g_socket.SetOption(SocketReuseAddr, 1);
@@ -126,6 +137,7 @@ public void OnPluginStart() {
 	cvar_difficulty.AddChangeHook(OnCvarChanged);
 	gameDifficulty = GetDifficultyInt();
 
+	HookEvent("player_info", Event_PlayerInfo);
 	HookEvent("game_init", Event_GameStart);
 	HookEvent("game_end", Event_GameEnd);
 	HookEvent("heal_begin", Event_HealStart);
@@ -159,6 +171,87 @@ public void OnPluginStart() {
 	CommandArgRegex = new Regex("(?:[^\\s\"]+|\"[^\"]*\")+", 0);
 
 	CreateTimer(300.0, Timer_FullSync, _, TIMER_REPEAT);
+}
+bool ConnectDB() {
+	char error[255];
+	g_db = SQL_Connect(DATABASE_NAME, true, error, sizeof(error));
+	if (g_db == null) {
+		LogError("Database error %s", error);
+		delete g_db;
+		return false;
+	} else {
+		PrintToServer("Connected to database %s", DATABASE_NAME);
+		SQL_LockDatabase(g_db);
+		SQL_FastQuery(g_db, "SET NAMES \"UTF8mb4\"");  
+		SQL_UnlockDatabase(g_db);
+		g_db.SetCharset("utf8mb4");
+		return true;
+	}
+}
+//Setups a user, this tries to fetch user by steamid
+void SetupUserInDB(int client) {
+	if(client > 0 && !IsFakeClient(client)) {
+		char country[128];
+		char region[128];
+		char ip[64];
+		GetClientIP(client, ip, sizeof(ip));
+		GeoipCountry(ip, country, sizeof(country));
+		GeoipRegion(ip, region, sizeof(region));
+		int time = GetTime();
+
+		char query[512];
+		g_db.Format(query, sizeof(query), "INSERT INTO panel_user "
+			..."(account_id,last_join_time,last_ip,last_country,last_region)"
+			..."VALUES ('%s',%d,'%s','%s','%s')"
+			..."ON DUPLICATE KEY UPDATE last_join_time=%d,last_ip='%s',last_country='%s',last_region='%s');",
+			steamidCache[client][10], // strip STEAM_#:#:##### returning only ending #######
+			// insert:
+			time,
+			ip,
+			country,
+			region,
+			// update:
+			time,
+			ip,
+			country,
+			region
+		);
+		g_db.Query(DBCT_Insert, query);
+
+		g_db.Format(query, sizeof(query), "SELECT name FROM panel_user_names WHERE account_id = '%s' ORDER BY name_update_time DESC LIMIT 1", steamidCache[client][10]);  // strip STEAM_#:#:##### returning only ending #######
+		g_db.Query(DBCT_CheckUserName, query, GetClientUserId(client));
+	}
+}
+
+void DBCT_Insert(Database db, DBResultSet results, const char[] error, any data) {
+	if(db == null || results == null) {
+		LogError("DBCT_Insert returned error: %s", error);
+	}
+}
+
+void DBCT_CheckUserName(Database db, DBResultSet results, const char[] error, int userId) {
+	if(db == null || results == null) {
+		LogError("DBCT_CheckUserName returned error: %s", error);
+	} else {
+		int client = GetClientOfUserId(userId);
+		if(client == 0) return; // Client left, ignore
+
+		char prevName[64];
+		// Insert new name if we have none, or prev differs
+		bool insertNewName = true;
+		if(results.FetchRow()) {
+			results.FetchString(0, prevName, sizeof(prevName));
+			if(StrEqual(prevName, nameCache[client])) {
+				insertNewName = false;
+			}
+		}
+
+		if(insertNewName) {
+			char query[255];
+			g_db.Format(query, sizeof(query), "INSERT INTO panel_user_names (accountId,name,name_update_time) VALUES ('%s','%s',%d)", steamidCache[client][10], nameCache[client][10], GetTime());
+			g_db.Query(DBCT_Insert, query);
+		}
+	}
 }
 
 stock void Debug(const char[] format, any ...) {
@@ -654,6 +747,13 @@ void StopServer() {
 	ServerCommand("exit");
 }
 
+void Event_PlayerInfo(Event event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client && !IsFakeClient(client)) {
+		GetClientName(client, nameCache[client], 32);
+	}
+}
+
 void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
 	campaignStartTime = GetTime();
 	g_gameState = State_NewGame;
@@ -791,6 +891,7 @@ public void OnClientAuthorized(int client, const char[] auth) {
 	}
 	GetClientName(client, nameCache[client], MAX_NAME_LENGTH);
 	playerJoinTime[client] = GetTime();
+	SetupUserInDB(client);
 	RequestFrame(SendNewClient, client);
 }
 // Player counts
@@ -925,7 +1026,8 @@ void OnCvarChanged(ConVar convar, const char[] oldValue, const char[] newValue) 
 				if(serverPort == 0) serverPort = DEFAULT_SERVER_PORT;
 			}
 			PrintToServer("[AdminPanel] Sending data to %s:%d", serverIp, serverPort);
-			ConnectSocket();
+			if(authToken[0] != '\0')
+				ConnectSocket();
 		}
 	} else if(cvar_gamemode == convar) {
 		strcopy(gamemode, sizeof(gamemode), newValue);
