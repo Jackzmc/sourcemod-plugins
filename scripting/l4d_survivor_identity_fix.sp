@@ -299,7 +299,6 @@ public void OnClientCookiesCached(int client) {
 ///////////////////////////////////////////////////////////////////////////////
 //Prevent issues with L4D1 characters being TP'd and stuck in brain dead form
 public void OnMapStart() {
-	isL4D1Survivors = L4D2_GetSurvivorSetMap() == 1;
 
 	survivors = 0;
 
@@ -308,6 +307,10 @@ public void OnMapStart() {
 	}
 	
 	GetCurrentMap(currentMap, sizeof(currentMap));
+	RequestFrame(Frame_MapStart);
+}
+void Frame_MapStart() {
+	isL4D1Survivors = L4D2_GetSurvivorSetMap() == 1;
 }
 
 //Either use preferred model OR find the least-used.
