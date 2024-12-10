@@ -92,7 +92,7 @@ enum PanelSettings {
 	Setting_None = 0,
 	Setting_DisableWithNoViewers = 1
 }
-GameState g_gameState = State_Hibernating;
+GameState g_gameState = State_None;
 #define BUFFER_SIZE 2048
 Buffer sendBuffer;
 Buffer receiveBuffer; // Unfortunately there's no easy way to have this not be the same as BUFFER_SIZE
