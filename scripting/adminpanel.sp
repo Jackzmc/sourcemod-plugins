@@ -658,13 +658,14 @@ Action Timer_Reconnect(Handle h, int type) {
 }
 
 bool ConnectSocket(bool force = false, int authTry = 0) {
-	if(g_gameState == State_Hibernating) return false; // ignore when hibernating
-	if(g_socket == null) {
+	if(g_gameState == State_Hibernating) {
+		Debug("ConnectSocket: Server is hibernating, ignoring");
+		return false;
+	} else if(g_socket == null) {
 		LogError("Socket is invalid");
 		return false;
-	}
-	if(g_socket.Connected) {
-		Debug("Already connected, disconnecting...");
+	} else if(g_socket.Connected) {
+		Debug("ConnectSocket: Already connected, disconnecting...");
 		g_socket.Disconnect();
 		authState = Auth_Inactive;
 	}
@@ -673,7 +674,10 @@ bool ConnectSocket(bool force = false, int authTry = 0) {
 		return false;
 	}
 	// Do not try to reconnect on auth failure, until token has changed
-	if(!force && authState == Auth_Fail) return false;
+	if(!force && authState == Auth_Fail) {
+		Debug("ConnectSocket: Ignoring request, auth failed");
+		return false;
+	}
 	authState = Auth_Pending;
 	g_socket.Connect(OnSocketConnect, OnSocketReceive, OnSocketDisconnect, serverIp, serverPort);
 	CreateTimer(10.0, Timer_ConnectTimeout, authTry);
