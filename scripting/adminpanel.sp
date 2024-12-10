@@ -62,6 +62,10 @@ int pendingAuthTries = 3;
 
 Socket g_socket;
 int g_lastPayloadSent;
+
+char gameVersion[32];
+int gameAppId;
+
 enum AuthState {
 	Auth_Fail = -1,
 	Auth_Inactive,
@@ -81,7 +85,8 @@ enum GameState {
 	State_None,
 	State_Transitioning = 1,
 	State_Hibernating = 2,
-	State_NewGame = 3
+	State_NewGame = 3,
+	State_EndGame = 4
 }
 enum PanelSettings {
 	Setting_None = 0,
@@ -172,6 +177,8 @@ public void OnPluginStart() {
 	CommandArgRegex = new Regex("(?:[^\\s\"]+|\"[^\"]*\")+", 0);
 
 	CreateTimer(300.0, Timer_FullSync, _, TIMER_REPEAT);
+
+	FindGameVersion();
 }
 bool ConnectDB() {
 	char error[255];
@@ -225,6 +232,7 @@ void SetupUserInDB(int client) {
 void DBCT_PanelUser(Database db, DBResultSet results, const char[] error, int userId) {
 	if(db == null || results == null) {
 		LogError("DBCT_Insert returned error: %s", error);
+		return;
 	}
 	int client = GetClientOfUserId(userId);
 	if(client > 0) {
@@ -252,6 +260,7 @@ void DBCT_CheckUserName(Database db, DBResultSet results, const char[] error, in
 		if(results.FetchRow()) {
 			if(nameCache[client][0] == '\0') {
 				LogError("DBCT_CheckUserName user %N(#%d) missing namecache", client, userId);
+				return;
 			}
 			char prevName[64];
 			results.FetchString(0, prevName, sizeof(prevName));
@@ -599,7 +608,7 @@ public void L4D_OnServerHibernationUpdate(bool hibernating) {
 	if(hibernating) {
 		g_gameState = State_Hibernating;
 		PrintToServer("[AdminPanel] Server is hibernating, disconnecting from socket");
-		hibernateTimer = CreateTimer(30.0, Timer_Wake, 0, TIMER_REPEAT);
+		// hibernateTimer = CreateTimer(30.0, Timer_Wake, 0, TIMER_REPEAT);
 	} else {
 		g_gameState = State_None;
 		PrintToServer("[AdminPanel] Server is not hibernating");
@@ -649,13 +658,20 @@ Action Timer_Reconnect(Handle h, int type) {
 }
 
 bool ConnectSocket(bool force = false, int authTry = 0) {
-	if(g_socket == null) LogError("Socket is invalid");
+	if(g_gameState == State_Hibernating) return false; // ignore when hibernating
+	if(g_socket == null) {
+		LogError("Socket is invalid");
+		return false;
+	}
 	if(g_socket.Connected) {
 		Debug("Already connected, disconnecting...");
 		g_socket.Disconnect();
 		authState = Auth_Inactive;
 	}
-	if(authToken[0] == '\0') LogError("ConnectSocket() called with no auth token");
+	if(authToken[0] == '\0') {
+		LogError("ConnectSocket() called with no auth token");
+		return false;
+	}
 	// Do not try to reconnect on auth failure, until token has changed
 	if(!force && authState == Auth_Fail) return false;
 	authState = Auth_Pending;
@@ -787,7 +803,17 @@ void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
 }
 void Event_GameEnd(Event event, const char[] name, bool dontBroadcast) {
 	campaignStartTime = 0;
-	CreateTimer(10.0, Timer_FullSync);
+	g_gameState = State_EndGame;
+	if(StartPayload(true)) {
+		AddGameRecord();
+		int stage = L4D2_GetCurrentFinaleStage();
+		if(stage != 0)
+			AddFinaleRecord(stage);
+		SendPayload();
+
+		// Resend all players
+		SendPlayers();
+	}
 }
 
 void Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
@@ -1239,6 +1265,7 @@ bool pendingRecord;
 void StartPayloadEx() {
 	if(pendingRecord) {
 		LogError("StartPayloadEx called before EndRecord()");
+		return;
 	}
 	sendBuffer.Reset();
 	hasRecord = false;
@@ -1252,6 +1279,7 @@ void StartPayloadEx() {
 void StartRecord(LiveRecordType type) {
 	if(pendingRecord) {
 		LogError("StartRecord called before EndRecord()");
+		return;
 	}
 	if(hasRecord) {
 		sendBuffer.WriteChar('\x1e');
@@ -1329,7 +1357,10 @@ void AddSurvivorRecord(int client) {
 	if(isL4D1Survivors) {
 		survivor += 4; 
 	}
-	if(survivor >= 8) LogError("invalid survivor %d", survivor);
+	if(survivor >= 8) {
+		LogError("invalid survivor %d", survivor);
+		return;
+	}
 
 	StartRecord(Live_Survivor);
 	sendBuffer.WriteInt(userid);
@@ -1387,11 +1418,14 @@ void AddCommandResponseRecord(int id, CommandResultType resultType = Result_None
 void AddAuthRecord() {
 	if(authToken[0] == '\0') {
 		LogError("AddAuthRecord called with missing auth token");
+		return;
 	}
 	StartRecord(Live_Auth);
 	sendBuffer.WriteByte(LIVESTATUS_VERSION);
 	sendBuffer.WriteString(authToken);
-	sendBuffer.WriteInt(cvar_hostPort.IntValue);
+	sendBuffer.WriteShort(cvar_hostPort.IntValue);
+	sendBuffer.WriteString(gameVersion);
+	// gameAppId?
 	EndRecord();
 }
 
@@ -1452,7 +1486,7 @@ enum struct Buffer {
 
 	void WriteByteAt(int value, int offset) {
 		this.buffer[offset] = value & 0xFF;
-    }
+	}
 
 	void WriteShort(int value) {
 		this.buffer[this.offset++] = value & 0xFF;
@@ -1462,7 +1496,7 @@ enum struct Buffer {
 	void WriteShortAt(int value, int offset) {
 		this.buffer[offset] = value & 0xFF;
 		this.buffer[offset+1] = (value >> 8) & 0xFF;
-    }
+	}
 
 	void WriteInt(int value) {
 		this.WriteIntAt(value, this.offset);
@@ -1474,7 +1508,7 @@ enum struct Buffer {
 		this.buffer[offset+1] = (value >> 8) & 0xFF;
 		this.buffer[offset+2] = (value >> 16) & 0xFF;
 		this.buffer[offset+3] = (value >> 24) & 0xFF;
-    }
+	}
 
 	void WriteFloat(float value) {
 		this.WriteInt(view_as<int>(value));
@@ -1537,4 +1571,32 @@ int GetMaxPlayers() {
 	if(cvar_visibleMaxPlayers != null && cvar_visibleMaxPlayers.IntValue > 0) return cvar_visibleMaxPlayers.IntValue;
 	if(cvar_maxplayers != null) return cvar_maxplayers.IntValue;
 	return L4D_IsVersusMode() ? 8 : 4;
+}
+
+void FindGameVersion() {
+	char path[PLATFORM_MAX_PATH];
+	File file = OpenFile("steam.inf", "r");
+	if (file == null) {
+	   LogError("Could not open steam.inf file to get game version");
+	   return;
+	}
+
+	char line[255];
+	while (!IsEndOfFile(file) && file.ReadLine(line, sizeof(line))) {
+		TrimString(line);
+		if (StrContains(line, "appID=") != -1)
+		{
+			ReplaceString(line, sizeof(line), "appID=", "");
+			ReplaceString(line, sizeof(line), ".", "");
+			gameAppId = StringToInt(line);
+		}
+		else if (StrContains(line, "PatchVersion=") != -1)
+		{
+			ReplaceString(line, sizeof(line), "PatchVersion=", "");
+			ReplaceString(line, sizeof(line), ".", "");
+			strcopy(gameVersion, sizeof(gameVersion), line);
+		}
+	}
+	
+	delete file;
 }
