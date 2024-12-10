@@ -324,6 +324,11 @@ void OnSocketError(Socket socket, int errorType, int errorNumber, int attempt) {
 		g_socket.SetArg(attempt + 1);
 		CreateTimer(nextAttempt, Timer_Reconnect);
 	}
+	if(authState == Auth_PendingResponse) {
+		Debug("Got socket error on auth?, retry");
+		g_socket.SetArg(attempt + 1);
+		ConnectSocket(false, attempt);
+	}
 }
 
 bool SendFullSync() {
