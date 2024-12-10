@@ -945,7 +945,7 @@ public void OnClientAuthorized(int client, const char[] auth) {
 public void OnClientPutInServer(int client) {
 	if(g_gameState == State_Transitioning) {
 		g_gameState = State_None;
-		if(StartPayload()) {
+		if(StartPayload(true)) {
 			AddGameRecord();
 			SendPayload();
 		}
