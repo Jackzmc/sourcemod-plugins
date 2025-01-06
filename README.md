@@ -2,6 +2,8 @@
 This is a collection of sourcemod plugins, most are used on my servers. The majority of the plugins are created by me, but some are modifications of other plugins. 
 Some of the plugins / changes are very specific, but may be useful to someone.
 
+Please note that these plugins are only guaranteed to work on Left 4 Dead **2**.
+
 Not always the latest versions. If you have any interest with a plugin, I can make sure to upload the latest.
 
 Useful things:
@@ -340,7 +342,7 @@ Any survivor that attacks another survivor
 3. If neither #1 or #2, both the victim and the attacker take 1/2 the original damage
 4. If victim is in a saferoom, no damage is dealt.
 
-See https://admin.jackz.me/docs/plugins#tkstopper for some more implementation information
+See https://jackzie.dev/posts/sourcemod/sm-dev#tkstopper for some more implementation information
 
 
 During any of the above three conditions, if they deal (or attempt to deal) over 75 HP in 15 seconds (configurable) they will be instantly banned for a set period of time (60 minutes). If they are for sure a team killer, it can be extended to a permanent ban.
