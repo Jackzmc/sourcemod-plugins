@@ -814,6 +814,7 @@ void Event_GameEnd(Event event, const char[] name, bool dontBroadcast) {
 		// Resend all players
 		SendPlayers();
 	}
+	g_gameState = State_None;
 }
 
 void Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
