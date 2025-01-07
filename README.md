@@ -4,6 +4,8 @@ Some of the plugins / changes are very specific, but may be useful to someone.
 
 Not always the latest versions. If you have any interest with a plugin, I can make sure to upload the latest.
 
+Currently plugins are only compiled and tested with SM 1.11-6964
+
 Useful things:
 1. **Netprop Viewer** [L4D2 Netprops](https://jackz.me/netprops/l4d2) and [L4D2 Datamaps](https://jackz.me/netprops/l4d2-data)
 
@@ -369,6 +371,7 @@ _This plugin is not perfect, sometimes it may trigger early, or not trigger at a
 
 ### l4d2_vocalize_control
 A very small plugin that simply allows a player to mute another player's vocalizations only for them.
+It only blocks the actual sounds, captions still show, and any follow-up vocalizations continue to play.
 
 * **Commands:**
   * `sm_vgag <player(s)>` - Vocalize gag or ungags selected player(s) for the command activator only
