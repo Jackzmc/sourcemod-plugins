@@ -41,6 +41,13 @@ BuilderData g_builder;
 char currentMap[64];
 static int _ropeIndex;
 
+enum struct GascanSpawnerData {
+	float origin[3];
+	float angles[3];
+}
+ArrayList g_gascanRespawnQueue;
+AnyMap g_gascanSpawners;
+
 enum struct BuilderData {
 	JSONObject mapData;
 
@@ -85,7 +92,7 @@ enum struct BuilderData {
 	}
 
 	void AddEntity(int entity, ExportType exportType = Export_Model) {
-		JSONObject entityData = ExportEntity(entity, Export_Model);
+		JSONObject entityData = ExportEntity(entity, exportType);
 		this.AddEntityData(entityData);
 	}
 
@@ -133,6 +140,7 @@ public void OnPluginStart() {
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 
 	g_MapData.activeScenes = new ArrayList(sizeof(ActiveSceneData));
+	g_gascanSpawners = new AnyMap();
 }
 
 bool randomizerRan = false;
@@ -184,6 +192,22 @@ public void OnMapInit(const char[] map) {
 
 public void OnConfigsExecuted() {
 
+}
+
+public void OnEntityCreated(int entity, const char[] classname) {
+	if(StrEqual(classname, "weapon_gascan")) {
+		RequestFrame(Frame_RandomizeGascan, entity);
+	}
+}
+
+void Frame_RandomizeGascan(int gascan) {
+	if(!IsValidEntity(gascan)) return;
+	if(g_gascanRespawnQueue == null || g_gascanRespawnQueue.Length == 0) return;
+	GascanSpawnerData spawner;
+	g_gascanRespawnQueue.GetArray(0, spawner);
+	g_gascanRespawnQueue.Erase(0);
+
+	AssignGascan(gascan, spawner);
 }
 
 Action Timer_Run(Handle h) {
@@ -346,39 +370,46 @@ Action Command_RandomizerBuild(int client, int args) {
 		float origin[3];
 		char arg1[32];
 		int entity = GetLookingPosition(client, Filter_IgnorePlayer, origin);
+		if(entity == 0) {
+			ReplyToCommand(client, "No entity found");
+			return Plugin_Handled;
+		}
 		GetCmdArg(2, arg1, sizeof(arg1));
 		ExportType exportType = Export_Model;
 		if(StrEqual(arg1, "hammerid")) {
 			exportType = Export_HammerId;
+			ReplyToCommand(client, "Added entity's hammerid to variant #%d", g_builder.selectedVariantIndex);
 		} else if(StrEqual(arg1, "targetname")) {
+			ReplyToCommand(client, "Added entity's targetname to variant #%d",  g_builder.selectedVariantIndex);
 			exportType = Export_TargetName;
-		}
-		if(entity > 0) {
-			g_builder.AddEntity(entity, exportType);
-			ReplyToCommand(client, "Added entity #%d to variant #%d", entity, g_builder.selectedVariantIndex);
 		} else {
-			ReplyToCommand(client, "No entity found");
+			ReplyToCommand(client, "Added entity #%d to variant #%d", entity, g_builder.selectedVariantIndex);
 		}
+		g_builder.AddEntity(entity, exportType);
 	} else if(StrEqual(arg, "entityid")) {
 		if(g_builder.selectedVariantData == null) {
 			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
 			return Plugin_Handled;
 		}
+		float origin[3];
 		char arg1[32];
 		int entity = GetCmdArgInt(2);
-		GetCmdArg(3, arg1, sizeof(arg));
+		if(entity <= 0 && !IsValidEntity(entity)) {
+			ReplyToCommand(client, "No entity found");
+			return Plugin_Handled;
+		}
+		GetCmdArg(2, arg1, sizeof(arg1));
 		ExportType exportType = Export_Model;
 		if(StrEqual(arg1, "hammerid")) {
 			exportType = Export_HammerId;
+			ReplyToCommand(client, "Added entity's hammerid to variant #%d", g_builder.selectedVariantIndex);
 		} else if(StrEqual(arg1, "targetname")) {
+			ReplyToCommand(client, "Added entity's targetname to variant #%d",  g_builder.selectedVariantIndex);
 			exportType = Export_TargetName;
-		}
-		if(entity > 0) {
-			g_builder.AddEntity(entity, exportType);
-			ReplyToCommand(client, "Added entity #%d to variant #%d", entity, g_builder.selectedVariantIndex);
 		} else {
-			ReplyToCommand(client, "No entity found");
+			ReplyToCommand(client, "Added entity #%d to variant #%d", entity, g_builder.selectedVariantIndex);
 		}
+		g_builder.AddEntity(entity, exportType);
 	} else if(StrEqual(arg, "decal")) {
 		if(g_builder.selectedVariantData == null) {
 			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
@@ -405,6 +436,60 @@ Action Command_RandomizerBuild(int client, int args) {
 		obj.Set("origin", VecToArray(pos));
 		g_builder.AddEntityData(obj);
 		ReplyToCommand(client, "Added fire to variant #%d", g_builder.selectedVariantIndex);
+	} else if(StrEqual(arg, "light")) {
+		if(g_builder.selectedVariantData == null) {
+			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
+			return Plugin_Handled;
+		}
+		float pos[3];
+		int defaultColor[4] = { 255, 255, 255, 255};
+		float empty[3];
+		float scale[3] = { 100.0, -1.0, -1.0 };
+		GetLookingPosition(client, Filter_IgnorePlayer, pos);
+		JSONObject obj = new JSONObject();
+		obj.SetString("type", "light_dynamic");
+		obj.Set("origin", FromFloatArray(pos, 3));
+		obj.Set("color", FromIntArray(defaultColor, 4));
+		obj.Set("angles", FromFloatArray(empty, 3));
+		obj.Set("scale", FromFloatArray(scale, 3));
+		g_builder.AddEntityData(obj);
+		ReplyToCommand(client, "Added light to variant #%d", g_builder.selectedVariantIndex);
+	} else if(StrEqual(arg, "wall")) {
+		if(g_builder.selectedVariantData == null) {
+			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
+			return Plugin_Handled;
+		}
+		float pos[3];
+		float scale[3] = { 15.0, 30.0, 100.0 };
+		GetLookingPosition(client, Filter_IgnorePlayer, pos);
+		JSONObject obj = new JSONObject();
+		obj.SetString("type", "env_player_blocker");
+		obj.Set("origin", FromFloatArray(pos, 3));
+		obj.Set("scale", FromFloatArray(scale, 3));
+		g_builder.AddEntityData(obj);
+		ReplyToCommand(client, "Added wall to variant #%d", g_builder.selectedVariantIndex);
+	} else if(StrEqual(arg, "gascan")) {
+		if(g_builder.selectedVariantData == null) {
+			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
+			return Plugin_Handled;
+		}
+		float pos[3];
+		float ang[3];
+		int entity = GetLookingPosition(client, Filter_IgnorePlayer, pos);
+		if(entity == 0) {
+			GetClientAbsOrigin(client, pos);
+			pos[2] += 10.0;
+			GetClientEyeAngles(client, ang);
+		} else {
+			GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
+			GetEntPropVector(entity, Prop_Send, "m_angRotation", ang);
+		}
+		JSONObject obj = new JSONObject();
+		obj.SetString("type", "_gascan");
+		obj.Set("origin", FromFloatArray(pos, 3));
+		obj.Set("angles", FromFloatArray(ang, 3));
+		g_builder.AddEntityData(obj);
+		ReplyToCommand(client, "Added gascan (%d) to variant #%d", entity, g_builder.selectedVariantIndex);
 	} else {
 		ReplyToCommand(client, "Unknown arg. Try: new, load, save, scenes, cursor");
 	}
@@ -467,7 +552,19 @@ JSONObject ExportEntityInput(int entity, const char[] input) {
 	entityData.SetString("input", input);
 	return entityData;
 }
-
+public void L4D2_CGasCan_EventKilled_Post(int gascan, int inflictor, int attacker) {
+	GascanSpawnerData spawner;
+	// If Gascan was destroyed, and was from a spawner
+	if(g_gascanSpawners.GetArray(gascan, spawner, sizeof(spawner))) {
+		g_gascanSpawners.Remove(gascan);
+		// Push to queue, so when it respawns it can pop it off
+		if(g_gascanRespawnQueue == null) {
+			g_gascanRespawnQueue = new ArrayList(sizeof(GascanSpawnerData));
+		}
+		g_gascanRespawnQueue.PushArray(spawner, sizeof(spawner));
+		Debug("gascan %d destroyed. queue size=%d", gascan, g_gascanRespawnQueue.Length);
+	}
+}
 bool OnSpawnerDone(int client, int entity, CompleteType result) {
 	PrintToServer("Randomizer OnSpawnerDone");
 	if(result == Complete_PropSpawned && entity > 0) {
@@ -496,9 +593,13 @@ void OnSelectorDone(int client, ArrayList entities) {
 				entityData = ExportEntityInput(ref, "_allow_ladder");
 				inputArray.Push(entityData);
 			} else {
-				entityData = ExportEntity(ref, Export_Model);
+				// If there is a hammerid (> 0), then it's built on the map - we don't want to delete it
+				// If it is 0, it was spawned, probably by prop spawner, so we remove it 
+				int hammerId = GetEntProp(ref, Prop_Data, "m_iHammerID");
+				entityData = ExportEntity(ref, hammerId > 0 ? Export_HammerId : Export_Model);
 				entArray.Push(entityData);
-				RemoveEntity(ref);
+				if(hammerId == 0)
+					RemoveEntity(ref);
 			}
 			delete entityData; //?
 		}
@@ -512,6 +613,20 @@ JSONArray VecToArray(float vec[3]) {
 	arr.PushFloat(vec[0]);
 	arr.PushFloat(vec[1]);
 	arr.PushFloat(vec[2]);
+	return arr;
+}
+JSONArray FromFloatArray(float[] vec, int count) {
+	JSONArray arr = new JSONArray();
+	for(int i = 0 ; i < count; i++) {
+		arr.PushFloat(vec[i]);
+	}
+	return arr;
+}
+JSONArray FromIntArray(int[] vec, int count) {
+	JSONArray arr = new JSONArray();
+	for(int i = 0 ; i < count; i++) {
+		arr.PushInt(vec[i]);
+	}
 	return arr;
 }
 
@@ -818,6 +933,7 @@ enum struct MapData {
 	ArrayList scenes;
 	ArrayList lumpEdits;
 	ArrayList activeScenes;
+	ArrayList gascanSpawners;
 }
 
 enum loadFlags {
@@ -916,12 +1032,45 @@ public bool RunMap(const char[] map, int flags) {
 
 	profiler.Start();
 	selectScenes(flags);
+	spawnGascans();
 	profiler.Stop();
 
 	_ropeIndex = 0;
 
 	Log("Done processing in %.4f seconds", g_MapData.scenes.Length, profiler.Time);
 	return true;
+}
+
+void spawnGascans() {
+	if(g_MapData.gascanSpawners != null && g_MapData.gascanSpawners.Length > 0) {
+		// Iterate through every gascan until we run out - picking a random spawner each time
+		int entity = -1;
+		char targetname[9];
+		GascanSpawnerData spawner;
+		int spawnerCount = g_MapData.gascanSpawners.Length;
+		int count;
+		while((entity = FindEntityByClassname(entity, "weapon_gascan")) != INVALID_ENT_REFERENCE) {
+			GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
+			int hammerid = GetEntProp(entity, Prop_Data, "m_iHammerID");
+			int glowColor = GetEntProp(entity, Prop_Send, "m_glowColorOverride"); // check if white
+			if(hammerid == 0 && glowColor == 16777215 && targetname[0] == '\0' && !g_gascanSpawners.ContainsKey(entity)) {
+				// Found a valid gascan, apply a random spawner
+				int spawnerIndex = GetRandomInt(0, g_MapData.gascanSpawners.Length - 1);
+				g_MapData.gascanSpawners.GetArray(spawnerIndex, spawner);
+				g_MapData.gascanSpawners.Erase(spawnerIndex); // only want one can to use this spawner
+
+				AssignGascan(entity, spawner);
+				count++;
+			}
+		}
+		Debug("Assigned %d gascans to %d spawners", count, spawnerCount);
+	}
+}
+
+void AssignGascan(int gascan, GascanSpawnerData spawner) {
+	g_gascanSpawners.SetArray(gascan, spawner, sizeof(spawner));
+	TeleportEntity(gascan, spawner.origin, spawner.angles, NULL_VECTOR);
+	Debug("Assigning gascan %d to spawner at %.0f %.0f %.0f", gascan, spawner.origin[0], spawner.origin[1], spawner.origin[2]);
 }
 
 void loadScene(const char key[MAX_SCENE_NAME_LENGTH], JSONObject sceneData) {
@@ -1277,8 +1426,22 @@ int CreateLight(const float origin[3], const float angles[3], const int color[4]
 	return entity;
 }
 
+void AddGascanSpawner(VariantEntityData data) {
+	if(g_MapData.gascanSpawners == null) {
+		g_MapData.gascanSpawners = new ArrayList(sizeof(GascanSpawnerData));
+	}
+	GascanSpawnerData spawner;
+	spawner.origin = data.origin;
+	spawner.angles = data.angles;
+	
+	g_MapData.gascanSpawners.PushArray(spawner);
+	// Debug("Added gascan spawner at %.0f %.0f %.0f", spawner.origin[0], spawner.origin[1], spawner.origin[2]);
+}
+
 void spawnEntity(VariantEntityData entity) {
-	if(StrEqual(entity.type, "env_fire")) {
+	if(StrEqual(entity.type, "_gascan")) {
+		AddGascanSpawner(entity);
+	} else if(StrEqual(entity.type, "env_fire")) {
 		Debug("spawning \"%s\" at (%.1f %.1f %.1f) rot (%.0f %.0f %.0f)", entity.type, entity.origin[0], entity.origin[1], entity.origin[2], entity.angles[0], entity.angles[1], entity.angles[2]);
 		CreateFire(entity.origin, 20.0, 100.0, 1.0);
 	} else if(StrEqual(entity.type, "light_dynamic")) {
@@ -1431,12 +1594,13 @@ void Cleanup() {
 		delete g_MapData.scenes;
 	}
 	delete g_MapData.lumpEdits;
+	delete g_MapData.gascanSpawners;
 
 	// Cleanup all alarm car entities:
 	int entity = -1;
 	char targetname[128];
 	while((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_REFERENCE) {
-		if(!IsValidEntity(entity)) return;
+		if(!IsValidEntity(entity)) continue;
 		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
 		if(StrContains(targetname, "randomizer_") != -1) {
 			RemoveEntity(entity);
@@ -1446,4 +1610,6 @@ void Cleanup() {
 
 	DeleteCustomEnts();
 	g_MapData.activeScenes.Clear();
+	g_gascanSpawners.Clear();
+	delete g_gascanRespawnQueue;
 }
