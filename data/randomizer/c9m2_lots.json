@@ -297,12 +297,12 @@
                         "type": "prop_dynamic",
                         "model": "models/props_c17/metalladder001.mdl",
                         "origin": [
-                            3510.315673828125,
-                            3315.55859375,
+                            3513.515673828125,
+                            3324.55859375,
                             84.583740234375
                         ],
                         "angles": [
-                            -1.3999999761581421,
+                            0.3999999761581421,
                             -91.400001525878906,
                             0.0
                         ]
@@ -494,6 +494,86 @@
                         "angles": [
                             0.0,
                             8.1000003814697266,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "warehouse-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/bus01.mdl",
+                        "origin": [
+                            7087.00927734375,
+                            5887.7353515625,
+                            41.365642547607422
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            7110.74853515625,
+                            6037.83642578125,
+                            173.90252685546875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            7134.6181640625,
+                            6165.1875,
+                            114.36043548583984
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            7060.404296875,
+                            6169.53369140625,
+                            48.904567718505859
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            7127.77734375,
+                            6182.53369140625,
+                            49.298847198486328
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
                             0.0
                         ]
                     }

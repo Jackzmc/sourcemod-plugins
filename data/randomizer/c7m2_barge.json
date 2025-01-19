@@ -502,7 +502,7 @@
                 "inputs": [
                     {
                         "hammerid": 86115,
-                        "input": "Lock"
+                        "input": "_lock"
                     }
                 ]
             }

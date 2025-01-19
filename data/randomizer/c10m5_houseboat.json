@@ -1,0 +1,255 @@
+{
+    "start-alt": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/van.mdl",
+                        "origin": [
+                            3359.1982421875,
+                            3433.04638671875,
+                            -68.673934936523438
+                        ],
+                        "angles": [
+                            0.0,
+                            21.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/flatnose_truck.mdl",
+                        "origin": [
+                            3585.08251953125,
+                            3378.024169921875,
+                            -74.552680969238281
+                        ],
+                        "angles": [
+                            -1.5999997854232788,
+                            183.99998474121094,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer.mdl",
+                        "origin": [
+                            3876.85791015625,
+                            3376.116943359375,
+                            -70.900886535644531
+                        ],
+                        "angles": [
+                            0.0,
+                            88.400001525878906,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            3823.412841796875,
+                            3245.720458984375,
+                            145.166259765625
+                        ],
+                        "angles": [
+                            -26.799999237060547,
+                            -82.200004577636719,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            3859.290771484375,
+                            3231.25048828125,
+                            149.62367248535156
+                        ],
+                        "angles": [
+                            -26.799999237060547,
+                            -96.599998474121094,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_equipment/scaffolding_norails.mdl",
+                        "origin": [
+                            3869.619384765625,
+                            3089.66796875,
+                            -57.604019165039062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_junk/dumpster.mdl",
+                        "origin": [
+                            3869.7705078125,
+                            2953.1474609375,
+                            148.66787719726562
+                        ],
+                        "angles": [
+                            0.0,
+                            86.700004577636719,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 3,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer.mdl",
+                        "origin": [
+                            3548.080322265625,
+                            2966.39501953125,
+                            -61.005458831787109
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/flatnose_truck.mdl",
+                        "origin": [
+                            3538.9208984375,
+                            3268.471435546875,
+                            -69.479354858398438
+                        ],
+                        "angles": [
+                            2.3000001907348633,
+                            85.400001525878906,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "_car",
+                        "model": "models/props_vehicles/van.mdl",
+                        "origin": [
+                            3426.73583984375,
+                            3308.757568359375,
+                            -68.673934936523438
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_equipment/scaffolding_norails.mdl",
+                        "origin": [
+                            3841.92919921875,
+                            2952.34814453125,
+                            -64.182273864746094
+                        ],
+                        "angles": [
+                            0.0,
+                            89.700004577636719,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_junk/dumpster.mdl",
+                        "origin": [
+                            3831.75,
+                            2950.09375,
+                            142.25
+                        ],
+                        "angles": [
+                            360.0,
+                            119.970703125,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_pipes/concrete_pipe001a.mdl",
+                        "origin": [
+                            3820.2841796875,
+                            2855.499755859375,
+                            168.77639770507812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/lighthouse/junkyard_crane_base.mdl",
+                        "origin": [
+                            4616.7353515625,
+                            2744.9990234375,
+                            -21.089157104492188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/lighthouse/junkyard_crane_arm.mdl",
+                        "origin": [
+                            4595.56494140625,
+                            2748.435791015625,
+                            -26.156791687011719
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/lighthouse/junkyard_crane_magnet.mdl",
+                        "origin": [
+                            3830.515380859375,
+                            2846.2939453125,
+                            265.34185791015625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "move_rope",
+                        "targetname": "rope_1",
+                        "model": "cable/metal.vmt",
+                        "origin": [
+                            3840.764648, 2797.061523, 774.764282
+                        ],
+                        "keyframes": [
+                            [
+                                3831.976562,
+                                2845.826416,
+                                300.080398]
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

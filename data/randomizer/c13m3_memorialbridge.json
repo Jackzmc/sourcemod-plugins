@@ -1,0 +1,238 @@
+{
+    "junkyard-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/cara_69sedan.mdl",
+                        "origin": [
+                            4666.517578125,
+                            -4668.2333984375,
+                            418.92123413085938
+                        ],
+                        "angles": [
+                            15.0,
+                            75.0,
+                            -15.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/cara_95sedan_wrecked.mdl",
+                        "origin": [
+                            4734.72802734375,
+                            -4501.05712890625,
+                            423.81634521484375
+                        ],
+                        "angles": [
+                            -45.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/zapastl.mdl",
+                        "origin": [
+                            4753.47802734375,
+                            -4469.5751953125,
+                            403.37753295898438
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_prodigy/tirestack3.mdl",
+                        "origin": [
+                            4815.59375,
+                            -4421.0283203125,
+                            444.87600708007812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_prodigy/tirestack3.mdl",
+                        "origin": [
+                            4823.66357421875,
+                            -4419.6044921875,
+                            407.50912475585938
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/cara_82hatchback_wrecked.mdl",
+                        "origin": [
+                            4703.01904296875,
+                            -4685.78515625,
+                            375.15521240234375
+                        ],
+                        "angles": [
+                            0.0,
+                            30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_prodigy/tirestack3.mdl",
+                        "origin": [
+                            4823.7275390625,
+                            -4419.28125,
+                            370.14224243164062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "PEANUT": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            5406.31103515625,
+                            -3274.575927734375,
+                            425.65420532226562
+                        ],
+                        "angles": [
+                            0.0,
+                            -105.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "saferoom-alt": {
+        "chance": 0.60000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence_gate001_128.mdl",
+                        "origin": [
+                            6111.263671875,
+                            -4826.7607421875,
+                            383.51702880859375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence002_128.mdl",
+                        "origin": [
+                            6097.30712890625,
+                            -5015.82470703125,
+                            384.24444580078125
+                        ],
+                        "angles": [
+                            0.0,
+                            176.79997253417969,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence002_64.mdl",
+                        "origin": [
+                            6097.806640625,
+                            -5042.54736328125,
+                            384.24429321289062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [
+                            6239.74755859375,
+                            -5004.73828125,
+                            385.29116821289062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_junk/dumpster.mdl",
+                        "origin": [
+                            6345.59033203125,
+                            -5022.0810546875,
+                            386.56964111328125
+                        ],
+                        "angles": [
+                            0.0,
+                            99.600013732910156,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "saferoom-trailer-block": {
+        "chance": 0.80000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer_freestanding.mdl",
+                        "origin": [
+                            6089.583984375,
+                            -4472.66015625,
+                            382.65048217773438
+                        ],
+                        "angles": [
+                            0.0,
+                            -21.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

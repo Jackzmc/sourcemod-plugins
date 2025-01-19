@@ -40,7 +40,7 @@
         ]
     },
     "mainblock": {
-        "chance": 0.5,
+        "chance": 0.2,
         "variants": [
             {
                 "weight": 1,
@@ -84,7 +84,7 @@
                 "entities": [
                     {
                         "model": "models/props_vehicles/pickup_truck_78.mdl",
-                        "origin": [2755.60, 4139.53, 12.72],
+                        "origin": [2755.60, 4190.53, 12.72],
                         "angles": [0.00, -180.00, 0.00],
                         "size": [57.97, 105.86, 124.61]
                     }

@@ -1,0 +1,54 @@
+{
+    "platform": {
+        "chance": 0.80000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_384.mdl",
+                        "origin": [
+                            -2642.70703125,
+                            3953.36181640625,
+                            664.279541015625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_tall_384.mdl",
+                        "origin": [
+                            -2515.354248046875,
+                            3959.018798828125,
+                            665.6915283203125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_exteriors/stairs_house_01.mdl",
+                        "origin": [
+                            -2915.685302734375,
+                            4094.0087890625,
+                            509.1387939453125
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

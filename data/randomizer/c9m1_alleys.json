@@ -326,6 +326,20 @@
                             -90.599998474121094,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/concrete_wall001_96_reference.mdl",
+                        "origin": [
+                            -9936.49609375,
+                            -9655.125,
+                            -5.5445585250854492
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
                     }
                 ]
             }
@@ -808,6 +822,20 @@
                             -2504.70458984375,
                             -8726.732421875,
                             2.6430988311767578
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -3421.105224609375,
+                            -9382.3583984375,
+                            -1.4816436767578125
                         ],
                         "angles": [
                             0.0,

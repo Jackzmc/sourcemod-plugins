@@ -1,0 +1,493 @@
+{
+    "start-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_foliage/fallentree01.mdl",
+                        "origin": [
+                            -3212.951171875,
+                            442.80398559570312,
+                            117.58555603027344
+                        ],
+                        "angles": [
+                            34.100002288818359,
+                            208.80001831054688,
+                            -11.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/militiarock04.mdl",
+                        "origin": [
+                            -3222.472900390625,
+                            436.102294921875,
+                            81.231033325195312
+                        ],
+                        "angles": [
+                            0.0,
+                            71.100006103515625,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_wasteland/rockcliff_cluster03b.mdl",
+                        "origin": [
+                            -3036.25048828125,
+                            483.80340576171875,
+                            129.02738952636719
+                        ],
+                        "angles": [
+                            0.0,
+                            24.200000762939453,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/militiarock04.mdl",
+                        "origin": [
+                            -2815.442626953125,
+                            418.470703125,
+                            73.597740173339844
+                        ],
+                        "angles": [
+                            0.0,
+                            65.000007629394531,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/militiarock04.mdl",
+                        "origin": [
+                            -2870.623291015625,
+                            44.285781860351562,
+                            155.05862426757812
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_debris/wood_board05a.mdl",
+                        "origin": [
+                            -2756.4228515625,
+                            60.624160766601562,
+                            243.78292846679688
+                        ],
+                        "angles": [
+                            -119.79998779296875,
+                            3.5999999046325684,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_debris/wood_board05a.mdl",
+                        "origin": [
+                            -2775.25634765625,
+                            76.734382629394531,
+                            227.9774169921875
+                        ],
+                        "angles": [
+                            -100.89999389648438,
+                            3.5999999046325684,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/militiarock04.mdl",
+                        "origin": [
+                            -3126.873046875,
+                            -79.320831298828125,
+                            29.748947143554688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/militiarock01.mdl",
+                        "origin": [
+                            -2895.9677734375,
+                            -84.539680480957031,
+                            64.116531372070312
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/militiarock05.mdl",
+                        "origin": [
+                            -2838.955078125,
+                            1.7689590454101562,
+                            125.87327575683594
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_debris/wood_board04a.mdl",
+                        "origin": [
+                            -2846.916015625,
+                            12.398698806762695,
+                            188.89385986328125
+                        ],
+                        "angles": [
+                            64.000001525878901,
+                            64.099998474121094,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "bridge-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_tall_128.mdl",
+                        "origin": [
+                            -1840.79052734375,
+                            2810.0400390625,
+                            121.74037933349609
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_exteriors/wood_stairs_120_swamp.mdl",
+                        "origin": [
+                            -1756.10205078125,
+                            2820.28173828125,
+                            128.34774780273438
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_exteriors/wood_stairs_120_swamp.mdl",
+                        "origin": [
+                            -1608.7769775390625,
+                            2820.693603515625,
+                            240.39585876464844
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_tall_256.mdl",
+                        "origin": [
+                            -1469.48291015625,
+                            2763.292236328125,
+                            348.46734619140625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_tall_128.mdl",
+                        "origin": [
+                            -1473.0872802734375,
+                            2570.576416015625,
+                            348.59811401367188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_rail_256_break.mdl",
+                        "origin": [
+                            -1531.1256103515625,
+                            2650.1279296875,
+                            403.47293090820312
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_rail_256_break_b.mdl",
+                        "origin": [
+                            -1395.18359375,
+                            2881.222412109375,
+                            402.17822265625
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_docks/dock02_pole02a.mdl",
+                        "origin": [
+                            -1726.9632568359375,
+                            2820.0602539062502,
+                            8.0228729248046875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_exteriors/wood_stairs_swamp.mdl",
+                        "origin": [
+                            -1413.8275146484375,
+                            2632.720458984375,
+                            364.1424560546875
+                        ],
+                        "angles": [
+                            0.0,
+                            165.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_exteriors/wood_stairs_swamp.mdl",
+                        "origin": [
+                            -1365.60693359375,
+                            2619.85302734375,
+                            396.7713623046875
+                        ],
+                        "angles": [
+                            0.0,
+                            165.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_wasteland/rock_moss03.mdl",
+                        "origin": [
+                            -2758.45458984375,
+                            2993.458740234375,
+                            271.85012817382812
+                        ],
+                        "angles": [
+                            30.0,
+                            105.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_wasteland/rock_moss05.mdl",
+                        "origin": [
+                            -2633.27392578125,
+                            2979.890380859375,
+                            260.99285888671875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "house-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_tall_128.mdl",
+                        "origin": [
+                            357.606689453125,
+                            2687.626953125,
+                            435.0416259765625
+                        ],
+                        "angles": [
+                            0.0,
+                            25.600000381469727,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_exteriors/wood_stairs_120_swamp.mdl",
+                        "origin": [
+                            481.08209228515625,
+                            2757.514892578125,
+                            324.7967529296875
+                        ],
+                        "angles": [
+                            0.0,
+                            29.999998092651367,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_foliage/swamp_rock01.mdl",
+                        "origin": [
+                            409.67312622070312,
+                            2545.138427734375,
+                            376.74990844726562
+                        ],
+                        "angles": [
+                            0.0,
+                            -18.200000762939453,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_foliage/swamp_fallentree_dry01.mdl",
+                        "origin": [
+                            442.01638793945312,
+                            2590.0751953125,
+                            438.77597045898438
+                        ],
+                        "angles": [
+                            8.4000005722045898,
+                            -120.50002288818359,
+                            42.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_foliage/swamp_rock02.mdl",
+                        "origin": [
+                            308.96426391601562,
+                            2669.802490234375,
+                            331.05984497070312
+                        ],
+                        "angles": [
+                            0.0,
+                            -49.800003051757812,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/militiarock02.mdl",
+                        "origin": [
+                            488.53561401367188,
+                            2612.981689453125,
+                            335.59677124023438
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/militiarock05.mdl",
+                        "origin": [
+                            804.12750244140625,
+                            2147.43505859375,
+                            461.74026489257812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_wasteland/rock_moss04.mdl",
+                        "origin": [
+                            728.421630859375,
+                            2154.911376953125,
+                            509.59222412109375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "env_player_blocker",
+                        "origin": [
+                            1048.7502440000001,
+                            2286.2802729999999,
+                            736.14697200000001
+                        ],
+                        "scale": [
+                            20,
+                            60,
+                            100
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_doors/shackwall01_dmg02.mdl",
+                        "origin": [
+                            838.887451171875,
+                            2615.198974609375,
+                            485.13436889648438
+                        ],
+                        "angles": [
+                            0.0,
+                            270.70001220703125,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -128,7 +128,7 @@
                         "angles": [0.00, 127.97, 0.00]
                     },
                     {
-                        "model": "models/props_urban/fence_cover001_64.mdl",
+                        "model": "models/props_urban/_cover001_64.mdl",
                         "origin": [2868.79, 639.06, 4.47],
                         "angles": [0.00, 1.59, 0.00]
                     },
@@ -260,8 +260,8 @@
         "variants": [
             {
                 "inputs": [
-                    {"hammerid": 3331344, "input": "Break"},
-                    {"hammerid": 3331353, "input": "break"}
+                    {"hammerid": 3331344, "input": "kill"},
+                    {"hammerid": 3331353, "input": "kill"}
                 ]
             }
         ]

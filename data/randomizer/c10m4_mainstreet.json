@@ -1,0 +1,1044 @@
+{
+    "start-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_pole001.mdl",
+                        "origin": [
+                            -3077.85400390625,
+                            -587.37005615234375,
+                            16.632408142089844
+                        ],
+                        "angles": [
+                            -78.100006103515625,
+                            87.400001525878906,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_pole001.mdl",
+                        "origin": [
+                            -3047.4599609375,
+                            -584.61297607421875,
+                            13.798984527587891
+                        ],
+                        "angles": [
+                            -74.5,
+                            88.900009155273438,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_downtown/railing04_256.mdl",
+                        "origin": [
+                            -3283.322509765625,
+                            -759.43780517578125,
+                            56.297573089599609
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "store-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/shelvinggrocery01.mdl",
+                        "origin": [
+                            -3059.07177734375,
+                            -2101.567138671875,
+                            -48.524745941162109
+                        ],
+                        "angles": [
+                            -3.7000000476837158,
+                            -87.299995422363281,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/hmmwv.mdl",
+                        "origin": [
+                            -2967.53759765625,
+                            -1996.6865234375,
+                            -50.247592926025391
+                        ],
+                        "angles": [
+                            4.6000003814697266,
+                            90.799995422363281,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/lighthouse/props/wood_plank_128.mdl",
+                        "origin": [
+                            -2952.69775390625,
+                            -2087.302978515625,
+                            28.075748443603516
+                        ],
+                        "angles": [
+                            90.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/lighthouse/props/wood_plank_128.mdl",
+                        "origin": [
+                            -2828.88671875,
+                            -2087.210205078125,
+                            29.10877799987793
+                        ],
+                        "angles": [
+                            90.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/lighthouse/props/wood_plank_128.mdl",
+                        "origin": [
+                            -2952.69775390625,
+                            -2087.302978515625,
+                            48.075748443603516
+                        ],
+                        "angles": [
+                            90.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/lighthouse/props/wood_plank_128.mdl",
+                        "origin": [
+                            -2828.88671875,
+                            -2087.210205078125,
+                            49.10877799987793
+                        ],
+                        "angles": [
+                            90.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -2653.31494140625,
+                            -1808.5572509765625,
+                            -61.115554809570312
+                        ],
+                        "angles": [
+                            0.0,
+                            150.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "env_player_blocker",
+                        "origin": [
+                            -2720.2429189999998,
+                            -1890.44165,
+                            41.382457000000002
+                        ],
+                        "scale": [
+                            60,
+                            40,
+                            80
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "bus-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/bus01_2.mdl",
+                        "origin": [
+                            -1229.865478515625,
+                            -1321.692626953125,
+                            -62.991683959960938
+                        ],
+                        "angles": [
+                            0.0,
+                            15.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/sandbags_line2.mdl",
+                        "origin": [
+                            -1293.3968505859375,
+                            -1204.701171875,
+                            -65.745742797851562
+                        ],
+                        "angles": [
+                            0.0,
+                            30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -1263.7718505859375,
+                            -1196.5823974609375,
+                            -61.317760467529297
+                        ],
+                        "angles": [
+                            0.0,
+                            -150.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "PEANUT": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            -1350.03125,
+                            -2781.84375,
+                            -47.5625
+                        ],
+                        "angles": [
+                            0.0,
+                            269.8681640625,
+                            0.17578125
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "bus-2": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/bus01_2.mdl",
+                        "origin": [
+                            1530.8623046875,
+                            -1147.4859619140625,
+                            5.3739361763000488
+                        ],
+                        "angles": [
+                            0.0,
+                            60.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "van-up-alt": {
+        "chance": 0.5,
+        "entities": [
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                "origin": [
+                    2598.743896484375,
+                    -2111.88671875,
+                    61.973171234130859
+                ],
+                "angles": [
+                    0.0,
+                    90.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_fortifications/sandbags_line2.mdl",
+                "origin": [
+                    2607.3896484375,
+                    -2130.980224609375,
+                    65.154808044433594
+                ],
+                "angles": [
+                    0.0,
+                    -90.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                "origin": [
+                    2462.55224609375,
+                    -2099.280517578125,
+                    54.807285308837891
+                ],
+                "angles": [
+                    0.0,
+                    90.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_fortifications/sandbags_line2.mdl",
+                "origin": [
+                    2462.55859375,
+                    -2084.201171875,
+                    54.590476989746094
+                ],
+                "angles": [
+                    0.0,
+                    -90.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                "origin": [
+                    2343.31640625,
+                    -2120.585205078125,
+                    58.241104125976562
+                ],
+                "angles": [
+                    0.0,
+                    90.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_fortifications/sandbags_line2.mdl",
+                "origin": [
+                    2350.137451171875,
+                    -2093.274169921875,
+                    54.426013946533203
+                ],
+                "angles": [
+                    0.0,
+                    -90.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_vehicles/ceda_trailer_closed.mdl",
+                "origin": [
+                    2026.471435546875,
+                    -2318.116455078125,
+                    33.559989929199219
+                ],
+                "angles": [
+                    3.2999997138977051,
+                    177.60000610351562,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_equipment/metalladder002.mdl",
+                "origin": [
+                    2718.921875,
+                    -1743.96875,
+                    95.858322143554688
+                ],
+                "angles": [
+                    0.0,
+                    90.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_equipment/metalladder002.mdl",
+                "origin": [
+                    2718.921875,
+                    -1743.96875,
+                    225.85832214355469
+                ],
+                "angles": [
+                    0.0,
+                    90.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_interiors/furniture_lamp01a.mdl",
+                "origin": [
+                    2901.518798828125,
+                    -1802.595703125,
+                    369.54855346679688
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "light_dynamic",
+                "origin": [
+                    2901.518798828125,
+                    -1802.595703125,
+                    369.54855346679688
+                ],
+                "color": [
+                    255,
+                    120,
+                    60,
+                    3
+                ],
+                "scale": [
+                    330,
+                    0,
+                    0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_office/desk_01.mdl",
+                "origin": [
+                    2860.557373046875,
+                    -2125.39013671875,
+                    335.87603759765625
+                ],
+                "angles": [
+                    0.0,
+                    -45.5,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props/cs_office/shelves_metal1.mdl",
+                "origin": [
+                    2926.966796875,
+                    -2034.2320556640625,
+                    337.36669921875
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_interiors/chair_office2.mdl",
+                "origin": [
+                    2882.708740234375,
+                    -2166.189453125,
+                    337.01690673828125
+                ],
+                "angles": [
+                    0.0,
+                    92.5,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_foliage/flower_barrel.mdl",
+                "origin": [
+                    2903.974365234375,
+                    -2208.59033203125,
+                    336.44699096679688
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_interiors/furniture_lamp01a.mdl",
+                "origin": [
+                    2824.725830078125,
+                    -2380.7138671875,
+                    369.36117553710938
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "light_dynamic",
+                "origin": [
+                    2824.725830078125,
+                    -2380.7138671875,
+                    369.36117553710938
+                ],
+                "color": [
+                    255,
+                    120,
+                    60,
+                    2
+                ],
+                "scale": [
+                    240,
+                    0,
+                    0
+                ]
+            }
+        ],
+        "variants": [
+            {
+                "weight": 2,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/van.mdl",
+                        "origin": [
+                            2707.75244140625,
+                            -1498.9013671875,
+                            88.477996826171875
+                        ],
+                        "angles": [
+                            0.10000038146972656,
+                            81.999992370605469,
+                            -4.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/van_glass.mdl",
+                        "origin": [
+                            2707.75244140625,
+                            -1498.9013671875,
+                            88.477996826171875
+                        ],
+                        "angles": [
+                            0.10000038146972656,
+                            81.999992370605469,
+                            -4.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 2926408,
+                        "input": "_allow_ladder"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_cliprework_windows",
+                        "input": "kill"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_cliprework_balcony",
+                        "input": "kill"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_cliprework_awning",
+                        "input": "kill"
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_02.mdl",
+                        "origin": [
+                            2670.826416015625,
+                            -2011.8172607421875,
+                            78.30047607421875
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 2926408,
+                        "input": "_allow_ladder"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_cliprework_windows",
+                        "input": "kill"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_cliprework_balcony",
+                        "input": "kill"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_cliprework_awning",
+                        "input": "kill"
+                    },
+                    {
+                        "hammerid": 2740479,
+                        "input": "_lock"
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_junk/dumpster_2.mdl",
+                        "origin": [
+                            1771.5364990234375,
+                            -2206.287841796875,
+                            109.77334594726562
+                        ],
+                        "angles": [
+                            -10.799999237060547,
+                            87.199996948242188,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "_car",
+                        "model": "models/props_vehicles/van.mdl",
+                        "origin": [
+                            1791.0679931640625,
+                            -2096.375,
+                            23.955520629882812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 2926408,
+                        "input": "_allow_ladder"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_cliprework_windows",
+                        "input": "kill"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_cliprework_balcony",
+                        "input": "kill"
+                    }
+                ]
+            }
+        ]
+    },
+    "FRED": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3537.0546875,
+                            -4178.2451171875,
+                            42.308437347412109
+                        ],
+                        "angles": [
+                            0.0,
+                            90.800003051757812,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3561.50537109375,
+                            -4243.30712890625,
+                            46.845859527587891
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3501.950439453125,
+                            -4199.38720703125,
+                            43.789276123046875
+                        ],
+                        "angles": [
+                            0.0,
+                            56.200000762939453,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3477.67236328125,
+                            -4222.869140625,
+                            45.431827545166016
+                        ],
+                        "angles": [
+                            0.0,
+                            56.200000762939453,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3496.946533203125,
+                            -4190.05078125,
+                            50.712352752685547
+                        ],
+                        "angles": [
+                            0.0,
+                            79.900009155273438,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3504.73046875,
+                            -4200.3515625,
+                            43.856182098388672
+                        ],
+                        "angles": [
+                            0.0,
+                            79.900009155273438,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3504.789306640625,
+                            -4217.67919921875,
+                            45.065544128417969
+                        ],
+                        "angles": [
+                            0.0,
+                            76.400001525878906,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3500.93212890625,
+                            -4234.46533203125,
+                            46.237728118896484
+                        ],
+                        "angles": [
+                            0.0,
+                            76.400001525878906,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3508.8271484375,
+                            -4181.205078125,
+                            42.519214630126953
+                        ],
+                        "angles": [
+                            0.0,
+                            79.900009155273438,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3488.02392578125,
+                            -4195.64306640625,
+                            59.923595428466797
+                        ],
+                        "angles": [
+                            0.0,
+                            79.900009155273438,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3476.1689453125,
+                            -4200.9619140625,
+                            69.242889404296875
+                        ],
+                        "angles": [
+                            0.0,
+                            79.900009155273438,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3483.625244140625,
+                            -4212.236328125,
+                            61.122882843017578
+                        ],
+                        "angles": [
+                            0.0,
+                            79.900009155273438,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3494.322265625,
+                            -4206.44873046875,
+                            52.634510040283203
+                        ],
+                        "angles": [
+                            0.0,
+                            79.900009155273438,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3489.544677734375,
+                            -4222.20556640625,
+                            55.098117828369141
+                        ],
+                        "angles": [
+                            0.0,
+                            79.900009155273438,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "storefront-break": {
+        "chance": 0.60000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [],
+                "inputs": [
+                    {
+                        "hammerid": 5503133,
+                        "input": "break"
+                    },
+                    {
+                        "hammerid": 1239079,
+                        "input": "break"
+                    },
+                    {
+                        "hammerid": 1239085,
+                        "input": "break"
+                    },
+                    {
+                        "hammerid": 1239082,
+                        "input": "break"
+                    },
+                    {
+                        "hammerid": 1239076,
+                        "input": "break"
+                    },
+                    {
+                        "hammerid": 1239060,
+                        "input": "break"
+                    }
+                ]
+            }
+        ]
+    },
+    "busrun": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/bus01_2.mdl",
+                        "origin": [
+                            -883.2579345703125,
+                            -4106.8525390625,
+                            -66.495567321777344
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "midnightrider": {
+        "chance": 0.60000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_waterfront/tour_bus.mdl",
+                        "origin": [
+                            -2400.587646484375,
+                            -3491.239501953125,
+                            -56.484817504882812
+                        ],
+                        "angles": [
+                            0.0,
+                            93.599998474121094,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/cara_95sedan_wrecked.mdl",
+                        "origin": [
+                            -2536.472412109375,
+                            -4105.857421875,
+                            -66.587745666503906
+                        ],
+                        "angles": [
+                            0.0,
+                            48.500003814697266,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "saferoom-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/floodlight_generator_pose02_static.mdl",
+                        "origin": [
+                            891.928466796875,
+                            -5254.1181640625,
+                            -54.704494476318359
+                        ],
+                        "angles": [
+                            0.0,
+                            204.19998168945312,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [
+                            938.223876953125,
+                            -5358.0537109375,
+                            -54.048954010009766
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "GNOME": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_junk/gnome.mdl",
+                        "origin": [
+                            1221.4747314453125,
+                            -5711.86962890625,
+                            -44.578498840332031
+                        ],
+                        "angles": [
+                            -1.3999999761581421,
+                            -149.39997863769531,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

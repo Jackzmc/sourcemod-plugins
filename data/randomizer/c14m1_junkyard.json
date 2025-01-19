@@ -1,0 +1,341 @@
+{
+    "start-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -4451.79541015625,
+                            -8857.662109375,
+                            -165.99571228027344
+                        ],
+                        "angles": [
+                            0.0,
+                            -60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -4575.86376953125,
+                            -8913.611328125,
+                            -165.7325439453125
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/sandbags_line2.mdl",
+                        "origin": [
+                            -4445.240234375,
+                            -8876.05078125,
+                            -165.53819274902344
+                        ],
+                        "angles": [
+                            0.0,
+                            -60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/sandbags_line2.mdl",
+                        "origin": [
+                            -4625.16552734375,
+                            -8982.0107421875,
+                            -160.43975830078125
+                        ],
+                        "angles": [
+                            0.0,
+                            -60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -4682.56982421875,
+                            -8964.6787109375,
+                            -168.01664733886719
+                        ],
+                        "angles": [
+                            0.0,
+                            -60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_64_reference.mdl",
+                        "origin": [
+                            -4769.24365234375,
+                            -9001.498046875,
+                            -176.02607727050781
+                        ],
+                        "angles": [
+                            -30.0,
+                            -30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/sandbags_line2.mdl",
+                        "origin": [
+                            -4893.8232421875,
+                            -8966.0263671875,
+                            -228.1749267578125
+                        ],
+                        "angles": [
+                            0.0,
+                            -120.0,
+                            30.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/hmmwv.mdl",
+                        "origin": [
+                            -4612.88916015625,
+                            -8730.5478515625,
+                            -186.68417358398438
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "water-helper": {
+        "chance": 0.60000002384185791,
+        "entities": [
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_swamp/boardwalk_128.mdl",
+                "origin": [
+                    -2802.4033203125,
+                    -5950.2724609375,
+                    -382.4144287109375
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_swamp/boardwalk_128.mdl",
+                "origin": [
+                    -2800.839111328125,
+                    -6088.6396484375,
+                    -383.72882080078125
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        ],
+        "variants": [
+            {
+                "weight": 1,
+                "entities": []
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_128.mdl",
+                        "origin": [
+                            -2794.874267578125,
+                            -5625.00146484375,
+                            -379.90435791015625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_128.mdl",
+                        "origin": [
+                            -2798.776123046875,
+                            -5486.0458984375,
+                            -380.5999755859375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_128.mdl",
+                        "origin": [
+                            -2806.12646484375,
+                            -5337.2919921875,
+                            -377.73880004882812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "bridge-alt": {
+        "chance": 0.5,
+        "entities": [
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_foliage/swamp_rock01.mdl",
+                "origin": [
+                    -2282.300048828125,
+                    -5671.53369140625,
+                    -373.44729614257812
+                ],
+                "angles": [
+                    0.0,
+                    60.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_foliage/swamp_rock02.mdl",
+                "origin": [
+                    -2354.805419921875,
+                    -5811.63818359375,
+                    -380.6275634765625
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        ],
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence_768_collapsed.mdl",
+                        "origin": [
+                            -2387.3994140625,
+                            -5721.208984375,
+                            -379.93023681640625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001b.mdl",
+                        "origin": [
+                            -2390.051025390625,
+                            -5631.56689453125,
+                            -373.44342041015625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/dead_cow_smallpile.mdl",
+                        "origin": [
+                            -2450.463134765625,
+                            -5768.9521484375,
+                            -380.85064697265625
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_exteriors/fence002.mdl",
+                        "origin": [
+                            -2409.011962890625,
+                            -5720.62109375,
+                            -370.004638671875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "balcony-ladder-back": {
+        "chance": 0.60000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/ladderwood.mdl",
+                        "origin": [
+                            -1038.7279052734375,
+                            -4756.287109375,
+                            -242.18136596679688
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 2672703,
+                        "input": "_allow_ladder"
+                    }
+                ]
+            }
+        ]
+    }
+}

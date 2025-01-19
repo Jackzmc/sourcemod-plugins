@@ -1,0 +1,178 @@
+{
+    "train-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/train_flatcar_small.mdl",
+                        "origin": [
+                            10565.1142578125,
+                            2041.3280029296875,
+                            -19.207952499389648
+                        ],
+                        "angles": [
+                            -15.0,
+                            105.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/train_boxwreck.mdl",
+                        "origin": [
+                            10795.3330078125,
+                            2570.847900390625,
+                            -75.722320556640625
+                        ],
+                        "angles": [
+                            0.0,
+                            75.0,
+                            30.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "corn-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            8803.033203125,
+                            1936.9923095703125,
+                            201.50358581542969
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            8743.4296875,
+                            1632.52783203125,
+                            198.7589111328125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            8740.4501953125,
+                            1635.71240234375,
+                            235.67671203613281
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "stairs-block": {
+        "chance": 0.20000000298023224,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_downtown/dresser.mdl",
+                        "origin": [
+                            6723.9638671875,
+                            1026.1580810546875,
+                            434.28204345703125
+                        ],
+                        "angles": [
+                            0.0,
+                            75.0,
+                            -30.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/dresser_short.mdl",
+                        "origin": [
+                            6746.05615234375,
+                            1051.2489013671875,
+                            438.54769897460938
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [],
+                "inputs": [
+                    {
+                        "hammerid": 250539,
+                        "input": "_lock_nobreak"
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [],
+                "inputs": [
+                    {
+                        "hammerid": 274460,
+                        "input": "_lock_nobreak"
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [],
+                "inputs": [
+                    {
+                        "hammerid": 210930,
+                        "input": "_lock_nobreak"
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [],
+                "inputs": [
+                    {
+                        "hammerid": 274460,
+                        "input": "_lock_nobreak"
+                    },
+                    {
+                        "hammerid": 210930,
+                        "input": "_lock_nobreak"
+                    },
+                    {
+                        "hammerid": 250539,
+                        "input": "_lock_nobreak"
+                    }
+                ]
+            }
+        ]
+    }
+}

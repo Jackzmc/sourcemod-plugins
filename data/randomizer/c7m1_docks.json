@@ -1,5 +1,5 @@
 {
-    "start": {
+    "start-train": {
         "chance": 0.40000000596046448,
         "variants": [
             {
@@ -279,7 +279,7 @@
                 "inputs": [
                     {
                         "hammerid": 250055,
-                        "input": "Lock"
+                        "input": "_lock"
                     }
                 ],
                 "entities": [
@@ -339,6 +339,12 @@
             },
             {
                 "weight": 1,
+                "inputs": [
+                    {
+                        "hammerid": 250055,
+                        "input": "break"
+                    }
+                ],
                 "entities": [
                     {
                         "model": "models/props_wasteland/exterior_fence002c.mdl",

@@ -1,0 +1,440 @@
+{
+    "start-alt": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "inputs": [
+                    {
+                        "hammerid": 1099683,
+                        "input": "_lock"
+                    }
+                ],
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/boxes_garage_lower.mdl",
+                        "origin": [
+                            -6295.73193359375,
+                            -6249.54736328125,
+                            213.03311157226562
+                        ],
+                        "angles": [
+                            0.0,
+                            -45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/boxes_garage_lower.mdl",
+                        "origin": [
+                            -6288.99072265625,
+                            -6304.99755859375,
+                            213.03311157226562
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "_comment": "sniper",
+                        "type": "hammerid",
+                        "model": "1728829",
+                        "origin": [
+                            -6661.00927734375,
+                            -6757.1279296875,
+                            244.98966979980469
+                        ],
+                        "angles": [
+                            0.0,
+                            231.9873046875,
+                            90.0
+                        ]
+                    },
+                    {
+                        "_comment": "rifle",
+                        "type": "hammerid",
+                        "model": "1728827",
+                        "origin": [
+                            -6667.3134765625,
+                            -6800.60107421875,
+                            244.94515686035157
+                        ],
+                        "angles": [
+                            0.0,
+                            55.986328125,
+                            270.0
+                        ]
+                    },
+                    {
+                        "_comment": "melee",
+                        "type": "hammerid",
+                        "model": "1960325",
+                        "origin": [
+                            -6526.4541015625,
+                            -6646.751953125,
+                            246.11729431152344
+                        ],
+                        "angles": [
+                            0.0,
+                            150.0,
+                            90.0
+                        ]
+                    },
+                    {
+                        "_comment": "chainsaw",
+                        "type": "hammerid",
+                        "model": "1960641",
+                        "origin": [
+                            -6626.0,
+                            -7089.2399999999998,
+                            249.77000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            300.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "uparea-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_assault/handtruck.mdl",
+                        "origin": [
+                            -7986.2099609375,
+                            -6347.89892578125,
+                            236.586669921875
+                        ],
+                        "angles": [
+                            -60.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/boxes_frontroom.mdl",
+                        "origin": [
+                            -8051.25,
+                            -6409.30078125,
+                            198.46438598632812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/boxes_garage_lower.mdl",
+                        "origin": [
+                            -7944.998046875,
+                            -6408.04736328125,
+                            199.8568115234375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/boxes_garage_lower.mdl",
+                        "origin": [
+                            -7953.4638671875,
+                            -6359.94921875,
+                            202.5557861328125
+                        ],
+                        "angles": [
+                            0.0,
+                            -30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -8255.4423828125,
+                            -6692.72119140625,
+                            -61.475875854492188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -8262.015625,
+                            -6804.2509765625,
+                            -63.616081237792969
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -8348.0478515625,
+                            -6868.05078125,
+                            -62.182350158691406
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -8425.6787109375,
+                            -6801.455078125,
+                            -63.626220703125
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -8418.966796875,
+                            -6689.6396484375,
+                            -64.722412109375
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_64_reference.mdl",
+                        "origin": [
+                            -8290.8447265625,
+                            -6654.76171875,
+                            -61.343902587890625
+                        ],
+                        "angles": [
+                            0.0,
+                            60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "origin": [
+                            -8297.6445309999999,
+                            -6634.7353510000003,
+                            33.751823000000002
+                        ],
+                        "scale": [
+                            20,
+                            20,
+                            100
+                        ]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "origin": [
+                            -7983.7314450000003,
+                            -6380.9072260000003,
+                            266.64172300000001
+                        ],
+                        "scale": [
+                            50,
+                            65,
+                            50
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "door-stair-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_prodigy/tirestack3.mdl",
+                        "origin": [
+                            -8703.8681640625,
+                            -7687.59033203125,
+                            -61.975486755371094
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "1122269",
+                        "origin": [
+                            -8649.0599999999995,
+                            -7745.0500000000002,
+                            -62.329999999999998
+                        ],
+                        "angles": [
+                            360.0,
+                            345.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "inputs": [
+                    {"hammerid": 996321, "input": "break"}
+                ],
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_office/shelves_metal.mdl",
+                        "origin": [
+                            -8046.7119140625,
+                            -7735.9990234375,
+                            168.10891723632812
+                        ],
+                        "angles": [
+                            0.0,
+                            15.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_office/shelves_metal.mdl",
+                        "origin": [
+                            -8034.68115234375,
+                            -7666.908203125,
+                            170.89945983886719
+                        ],
+                        "angles": [
+                            0.0,
+                            150.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/paintbucket01.mdl",
+                        "origin": [
+                            -8028.8662109375,
+                            -7648.91015625,
+                            251.39398193359375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [
+                            -8001.51904296875,
+                            -7647.310546875,
+                            -62.569675445556641
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [
+                            -7990.70166015625,
+                            -7652.81201171875,
+                            -9.9731273651123047
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [
+                            -7971.517578125,
+                            -7706.97705078125,
+                            -8.2384490966796875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [
+                            -7983.73583984375,
+                            -7678.521484375,
+                            42.214107513427734
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/wire_spool_01.mdl",
+                        "origin": [
+                            -7974.52587890625,
+                            -7703.74169921875,
+                            -60.41900634765625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
