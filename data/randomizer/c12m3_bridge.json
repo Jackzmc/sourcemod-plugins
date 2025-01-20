@@ -214,7 +214,7 @@
                 "weight": 1,
                 "entities": [
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props_debris/wood_board04a.mdl",
                         "origin": [
                             1848.0999755859375,
@@ -228,7 +228,7 @@
                         ]
                     },
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props_debris/wood_board04a.mdl",
                         "origin": [
                             1844.65478515625,
@@ -242,7 +242,7 @@
                         ]
                     },
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props_debris/wood_board04a.mdl",
                         "origin": [
                             1846.005615234375,
@@ -256,7 +256,7 @@
                         ]
                     },
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props_debris/wood_board04a.mdl",
                         "origin": [
                             1854.0460205078125,
@@ -284,7 +284,7 @@
                         ]
                     },
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props_debris/wood_board04a.mdl",
                         "origin": [
                             1853.1259765625,

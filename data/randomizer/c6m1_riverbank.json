@@ -1,0 +1,325 @@
+{
+    "start-alt": {
+        "chance": 0.40000000596046448,
+        "entities": [
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_downtown/railing02_256.mdl",
+                "origin": [
+                    1145.3924560546875,
+                    3468.448974609375,
+                    98.244842529296875
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_downtown/railing02_256.mdl",
+                "origin": [
+                    1146.0556640625,
+                    3213.31005859375,
+                    98.043586730957031
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        ],
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/van.mdl",
+                        "origin": [
+                            1637.127685546875,
+                            2831.88232421875,
+                            96.291152954101562
+                        ],
+                        "angles": [
+                            0.0,
+                            60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/van_glass.mdl",
+                        "origin": [
+                            1637.127685546875,
+                            2831.88232421875,
+                            96.291152954101562
+                        ],
+                        "angles": [
+                            0.0,
+                            60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "light_dynamic",
+                        "origin": [
+                            1920.9532470703125,
+                            2880.474609375,
+                            280.4603271484375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "color": [
+                            255,
+                            255,
+                            200,
+                            1
+                        ],
+                        "scale": [
+                            600,
+                            200,
+                            200
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_equipment/metalladder002.mdl",
+                        "origin": [
+                            1664.21240234375,
+                            2650.03125,
+                            233.08331298828125
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_equipment/metalladder002.mdl",
+                        "origin": [
+                            1664.21240234375,
+                            2650.03125,
+                            116.08331298828125
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "light_dynamic",
+                        "origin": [
+                            1675.2440180000001,
+                            2547.5998530000002,
+                            357.193939
+                        ],
+                        "color": [
+                            255,
+                            255,
+                            200,
+                            2
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            20.0
+                        ],
+                        "scale": [
+                            400.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 567175,
+                        "input": "_allow_ladder"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_commonhop_windows",
+                        "input": "kill"
+                    }
+                ]
+            }
+        ]
+    },
+    "courtarea-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer_wrecked.mdl",
+                        "origin": [
+                            2466.358642578125,
+                            3441.0078125,
+                            17.375520706176758
+                        ],
+                        "angles": [
+                            1.100000262260437,
+                            3.1999998092651367,
+                            -10.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_office/ladder1.mdl",
+                        "origin": [
+                            2375.712890625,
+                            3085.90478515625,
+                            43.571483612060547
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 509269,
+                        "input": "_allow_ladder"
+                    }
+                ]
+            }
+        ]
+    },
+    "truckgone": {
+        "chance": 0.20000000298023224,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "hammerid",
+                        "model": "291007",
+                        "origin": [
+                            4304.0,
+                            2800.0,
+                            28.019500732421875
+                        ],
+                        "angles": [
+                            -0.53749799728393555,
+                            111.00700378417969,
+                            -1.4004100561141968
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "291011",
+                        "origin": [
+                            4064.0,
+                            2672.0,
+                            27.370500564575195
+                        ],
+                        "angles": [
+                            -0.67301702499389648,
+                            245.85499572753906,
+                            -3.6046199798583984
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "acar1": {
+        "chance": 0.60000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "hammerid",
+                        "model": "1025924",
+                        "origin": [
+                            -505.19406127929688,
+                            1339.283447265625,
+                            195.73117065429688
+                        ],
+                        "angles": [
+                            358.8726806640625,
+                            222.51954650878906,
+                            -1.0224609375
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "walkway-ladder-alt": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_nuke/truck_nuke.mdl",
+                        "origin": [
+                            202.65921020507812,
+                            1421.7216796875,
+                            191.51179504394531
+                        ],
+                        "angles": [
+                            0.0,
+                            65.300003051757812,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_nuke/truck_nuke_glass.mdl",
+                        "origin": [
+                            202.65921020507812,
+                            1421.7216796875,
+                            191.51179504394531
+                        ],
+                        "angles": [
+                            0.0,
+                            65.300003051757812,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_office/ladder1.mdl",
+                        "origin": [
+                            427.605224609375,
+                            1292.0462646484375,
+                            284.0791015625
+                        ],
+                        "angles": [
+                            -15.0,
+                            180.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 357116,
+                        "input": "_allow_ladder"
+                    }
+                ]
+            }
+        ]
+    }
+}
