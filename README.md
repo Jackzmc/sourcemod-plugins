@@ -232,6 +232,7 @@ Plugin requirements:
 * [Left4DHooks](https://forums.alliedmods.net/showthread.php?t=321696)
 * [L4D Info Editor](https://forums.alliedmods.net/showthread.php?p=2614626)
 * (Development dependency) Updated l4d2_weapon_stocks.inc
+  
 Recommended plugins:
 * [Modified l4d_survivor_identity_fix](#l4d_survivor_identity_fix) - dependency of L4D2Tools, automodel
 * [L4D2Tools](#l4d2tools) - for survivor model changing
