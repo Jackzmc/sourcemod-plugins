@@ -9,7 +9,7 @@ Not always the latest versions. If you have any interest with a plugin, I can ma
 Currently plugins are only compiled and tested with SM 1.11-6964
 
 Useful things:
-1. **Netprop Viewer** [L4D2 Netprops](https://jackz.me/netprops/l4d2) and [L4D2 Datamaps](https://jackz.me/netprops/l4d2-data)
+1. **Netprop Viewer** [L4D2 Netprops](https://jackz.me/netprops/l4d2/netprops) and [L4D2 Datamaps](https://jackz.me/netprops/l4d2/datamaps)
 
 ## Plugin List
 
@@ -41,6 +41,7 @@ Useful things:
   * [l4d2-stats-plugin](https://github.com/jackzmc/l4d2-stats-plugin) - Custom stats recorder, see https://stats.jackz.me
   * [l4d2-ai-tweaks](#l4d2_ai_tweaks) - Very minor tweaks to survivor bots' behavior
   * [sm_player_notes](#sm_player_notes) - Add notes to players
+  * [l4d2_ranadomizer](#l4d2_randomizer) - Randomizes official campaigns, changing flows, adding new paths, decorations, etc.
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
@@ -477,3 +478,18 @@ Simply lets you add notes to any player, and includes reputation summary and aut
   * `sm_note <player> <message>` - Add notes to player, message does not need to be surrounded with quotes
   * `sm_notedisconnected` - Shows menu of all players that have disconnected, allowing you to add a note.
   * `sm_notes <player>` - Show the notes for player
+
+### l4d2_randomizer
+
+Randomizes campaigns by config files with scenes (% chance to be chosen) and their variants (one chosen per scene), making every game played even more unique. Allows creating invisible walls, triggering entity inputs, adding new props or moving existing props, randomizing gascans, and more.
+
+In the `data/randomizer` folder there are official maps I've done for my own server, feel free to use these. Not every map is done yet, [see the status here](https://jackz.me/notes/randomizer/campaigns.html).
+
+More technical information if you want to make your own randomized campaigns is in here: [https://jackz.me/notes/randomizer/information.html](https://jackz.me/notes/randomizer/information.html)
+
+* **Commands:**
+  * `sm_rcycle [flags]` - If empty, lists all active scenes. If flags given, loads randomizer with given flags (see above link for info)
+  * `sm_rbuild` - Tool that helps create randomizations, see link above
+  * `sm_rbuild menu` - Menu version of tool
+* **Convars:**
+  * `sm_randomizer_enabled <0/1>` - If enabled, next map load will activate randomizer. Manually activating does not check this.
