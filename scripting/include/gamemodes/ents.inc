@@ -85,8 +85,8 @@ enum struct PortalData {
 	float portalOffsets[3];
 }
 static AnyMap portals;
-
 stock int CreatePortal(PortalType type, const char model[64], const float pos[3], const float offset[3] = { 40.0, 40.0, 0.0 }, const float scale[3] = { 5.0, 5.0, 5.0 }) {
+	#pragma unused model
 	int entity = CreateEntityByName("trigger_multiple");
 	if(entity == -1) return -1;
 	DispatchKeyValue(entity, "spawnflags", "513");

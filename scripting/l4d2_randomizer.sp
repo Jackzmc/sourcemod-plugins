@@ -18,99 +18,27 @@
 #undef REQUIRE_PLUGIN
 #include <editor>
 
-int g_iLaserIndex;
+#include <randomizer/defs.sp>
+
 #if defined DEBUG_BLOCKERS
 #include <smlib/effects>
 #endif
+#include <smlib/strings>
 #define ENT_PROP_NAME "randomizer"
 #define ENT_ENV_NAME "randomizer"
 #define ENT_BLOCKER_NAME "randomizer"
 #include <gamemodes/ents>
 
-#define MAX_SCENE_NAME_LENGTH 32
-#define MAX_INPUTS_CLASSNAME_LENGTH 64
+ConVar cvarEnabled; // is map enabled
 
-
-ConVar cvarEnabled;
-enum struct ActiveSceneData {
-	char name[MAX_SCENE_NAME_LENGTH];
-	int variantIndex;
-}
-MapData g_MapData;
-BuilderData g_builder;
 char currentMap[64];
-static int _ropeIndex;
 
-enum struct GascanSpawnerData {
-	float origin[3];
-	float angles[3];
-}
-ArrayList g_gascanRespawnQueue;
-AnyMap g_gascanSpawners;
+bool randomizerRan = false;
 
-enum struct BuilderData {
-	JSONObject mapData;
 
-	JSONObject selectedSceneData;
-	char selectedSceneId[64];
-
-	JSONObject selectedVariantData;
-	int selectedVariantIndex;
-
-	void Cleanup() {
-		this.selectedSceneData = null;
-		this.selectedVariantData = null;
-		this.selectedVariantIndex = -1;
-		this.selectedSceneId[0] = '\0';
-		if(this.mapData != null)
-			delete this.mapData;
-			// JSONcleanup_and_delete(this.mapData);
-	}
-
-	bool SelectScene(const char[] group) {
-		if(!g_builder.mapData.HasKey(group)) return false;
-		this.selectedSceneData = view_as<JSONObject>(g_builder.mapData.Get(group));
-		strcopy(this.selectedSceneId, sizeof(this.selectedSceneId), group);
-		return true;
-	}
-
-	/**
-	 * Select a variant, enter -1 to not select any (scene's entities)
-	 */
-	bool SelectVariant(int index = -1) {
-		if(this.selectedSceneData == null) LogError("SelectVariant called, but no group selected");
-		JSONArray variants = view_as<JSONArray>(this.selectedSceneData.Get("variants"));
-		if(index >= variants.Length) return false;
-		else if(index < -1) return false;
-		else if(index > -1) {
-			this.selectedVariantData = view_as<JSONObject>(variants.Get(index));
-		} else {
-			this.selectedVariantData = null;
-		}
-		this.selectedVariantIndex = index;
-		return true;
-	}
-
-	void AddEntity(int entity, ExportType exportType = Export_Model) {
-		JSONObject entityData = ExportEntity(entity, exportType);
-		this.AddEntityData(entityData);
-	}
-
-	void AddEntityData(JSONObject entityData) {
-		JSONArray entities;
-		if(g_builder.selectedVariantData == null) {
-			// Create <scene>.entities if doesn't exist:
-			if(!g_builder.selectedSceneData.HasKey("entities")) {
-				g_builder.selectedSceneData.Set("entities", new JSONArray());
-			} 
-			entities = view_as<JSONArray>(g_builder.selectedSceneData.Get("entities")); 
-		} else {
-			entities = view_as<JSONArray>(g_builder.selectedVariantData.Get("entities"));
-		}
-		entities.Push(entityData);
-	}
-}
-
+#include <randomizer/util.sp>
+#include <randomizer/loader_functions.sp>
+#include <randomizer/select_functions.sp>
 #include <randomizer/rbuild.sp>
 #include <randomizer/caralarm.sp>
 
@@ -129,21 +57,25 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D/L4D2 only.");	
 	}
 
-	HookEvent("round_start_post_nav", Event_RoundStartPostNav);
 
 	RegAdminCmd("sm_rcycle", Command_CycleRandom, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_expent", Command_ExportEnt, ADMFLAG_GENERIC);
 	RegAdminCmd("sm_rbuild", Command_RandomizerBuild, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_randomizer", Command_Debug, ADMFLAG_GENERIC);
 
 	cvarEnabled = CreateConVar("sm_randomizer_enabled", "0");
 
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
+	HookEvent("game_end", Event_GameEnd);
 
-	g_MapData.activeScenes = new ArrayList(sizeof(ActiveSceneData));
-	g_gascanSpawners = new AnyMap();
+	InitGlobals();
 }
 
-bool randomizerRan = false;
+void Event_GameEnd(Event event, const char[] name ,bool dontBroadcast) {
+	// Purge the traverse list after a campaign is played
+	g_mapTraverseSelections.Clear();	
+}
+
 
 void Event_PlayerFirstSpawn(Event event, const char[] name ,bool dontBroadcast) {
 	if(!randomizerRan) {
@@ -158,40 +90,27 @@ void Event_PlayerFirstSpawn(Event event, const char[] name ,bool dontBroadcast) 
 	}
 }
 
-void Event_RoundStartPostNav(Event event, const char[] name ,bool dontBroadcast) {
-	// if(cvarEnabled.BoolValue)
-		// CreateTimer(15.0, Timer_Run);
-}
-
-// TODO: on round start
 public void OnMapStart() {
 	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt", true);
 	GetCurrentMap(currentMap, sizeof(currentMap));
+
+	// We wait a while before running to prevent some edge cases i don't remember
 }
 
 
 public void OnMapEnd() {
 	randomizerRan = false;
 	g_builder.Cleanup();
-	Cleanup();
-}
 
-public void OnMapInit(const char[] map) {
-	// if(cvarEnabled.BoolValue) {
-	// 	if(LoadMapData(currentMap, FLAG_NONE) && g_MapData.lumpEdits.Length > 0) {
-	// 		Log("Found %d lump edits, running...", g_MapData.lumpEdits.Length);
-	// 		LumpEditData lump;
-	// 		for(int i = 0; i < g_MapData.lumpEdits.Length; i++) {
-	// 			g_MapData.lumpEdits.GetArray(i, lump);
-	// 			lump.Trigger();
-	// 		}
-	// 		hasRan = true;
-	// 	}
-	// }
-}
-
-public void OnConfigsExecuted() {
-
+	// For maps that players traverse backwards, like hard rain (c4m1_milltown_a -> c4m3_milltown_b )
+	// We store the selection of the _a map, to later be loaded for _b maps
+	// This is done at end of map just in case a user re-runs the cycle and generates a different selection
+	if(g_selection != null && String_EndsWith(currentMap, "_a")) {
+		Log("Storing %s in map traversal store", currentMap);
+		g_mapTraverseSelections.SetValue(currentMap, g_selection.AsList());
+	}
+	// don't clear entities because they will be deleted anyway (and errors if you tryq)
+	Cleanup(false);
 }
 
 public void OnEntityCreated(int entity, const char[] classname) {
@@ -211,8 +130,9 @@ void Frame_RandomizeGascan(int gascan) {
 }
 
 Action Timer_Run(Handle h) {
-	if(cvarEnabled.BoolValue)
-		RunMap(currentMap, FLAG_NONE);
+	if(cvarEnabled.BoolValue) {
+		LoadRunGlobalMap(currentMap, FLAG_NONE);
+	}
 	return Plugin_Handled;
 }
 
@@ -238,27 +158,82 @@ stock int GetLookingPosition(int client, TraceEntityFilter filter, float pos[3])
 	}
 	return -1;
 }
+Action Command_Debug(int client, int args) {
+	// TODO is builder active, selection active, list of traverse pool, can pool
+	if(args > 0) {
+		char arg[32];
+		GetCmdArg(1, arg, sizeof(arg));
+		if(StrEqual(arg, "scenes")) {
+			if(g_MapData.IsLoaded()) {
+				StringMapSnapshot snapshot = g_MapData.scenesKv.Snapshot();
+				char buffer[MAX_SCENE_NAME_LENGTH];
+				for(int i = 0; i < snapshot.Length; i++) {
+					snapshot.GetKey(i, buffer, sizeof(buffer));
+					ReplyToCommand(client, "%d. %s", i, buffer);
+				}
+				delete snapshot;
+			} else {
+				ReplyToCommand(client, "No map data loaded");
+			}
 
+		} /*else if(StrEqual(arg, "identify")) {
+			if(args == 1) {
+				ReplyToCommand(client, "Specify scene name");
+			} else if(!g_MapData.IsLoaded()) {
+				ReplyToCommand(client, "No map data loaded");
+			} else {
+				GetCmdArg(2, arg, sizeof(arg));
+				SceneData scene;
+				g_MapData.sceneKv.GetArray()
+			}
+		}*/
+		else {
+			ReplyToCommand(client, "unknown subcommand");
+		}
+		return Plugin_Handled;
+	}
+	ReplyToCommand(client, "Enabled: %b", cvarEnabled.BoolValue);
+	ReplyToCommand(client, "Map Data: %s", g_MapData.IsLoaded() ? "Loaded" : "-");
+	if(g_selection != null) {
+		ReplyToCommand(client, "Scene Selection: %d selected", g_selection.Count);
+	} else {
+		ReplyToCommand(client, "Scene Selection: -");
+	}
+	ReplyToCommand(client, "Builder Data: %s", g_builder.IsLoaded() ? "Loaded" : "-");
+	ReplyToCommand(client, "Traverse Store: count=%d", g_mapTraverseSelections.Size);
+	if(g_gascanRespawnQueue != null) {
+		ReplyToCommand(client, "Gascan Spawners: count=%d queue_size=%d", g_gascanSpawners.Size, g_gascanRespawnQueue.Length);
+	} else {
+		ReplyToCommand(client, "Gascan Spawners: count=%d queue_size=-", g_gascanSpawners.Size);
+	}
+	return Plugin_Handled;
+}
 
 public Action Command_CycleRandom(int client, int args) {
 	if(args > 0) {
 		DeleteCustomEnts();
 		int flags = GetCmdArgInt(1);
 		if(flags != -1) {
-			RunMap(currentMap, flags | view_as<int>(FLAG_REFRESH));
+			LoadRunGlobalMap(currentMap, flags | view_as<int>(FLAG_REFRESH));
 		}
 		if(client > 0)
 			PrintCenterText(client, "Cycled flags=%d", flags);
 	} else {
-		if(g_MapData.activeScenes == null) {
-			ReplyToCommand(client, "No map data");
+		if(g_selection == null) {
+			ReplyToCommand(client, "No map selection active");
 			return Plugin_Handled;
 		}
-		ReplyToCommand(client, "Active Scenes (%d/%d):", g_MapData.activeScenes.Length, g_MapData.scenes.Length);
-		ActiveSceneData scene;
-		for(int i = 0; i < g_MapData.activeScenes.Length; i++) {
-			g_MapData.activeScenes.GetArray(i, scene);
-			ReplyToCommand(client, "\t%s: variant #%d", scene.name, scene.variantIndex);
+		ReplyToCommand(client, "Active Scenes (%d/%d):", g_selection.Count, g_MapData.scenes.Length);
+		SelectedSceneData aScene;
+		char buffer[32];
+		for(int i = 0; i < g_selection.Count; i++) {
+			g_selection.Get(i, aScene);
+			buffer[0] = '\0';
+			for(int v = 0; v < aScene.selectedVariantIndexes.Length; v++) {
+				int index = aScene.selectedVariantIndexes.Get(v);
+				Format(buffer, sizeof(buffer), "#%d ", index);
+			}
+			ReplyToCommand(client, "\t%s: variants %s", aScene.name, buffer);
 		}
 	}
 	return Plugin_Handled;
@@ -391,7 +366,6 @@ Action Command_RandomizerBuild(int client, int args) {
 			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
 			return Plugin_Handled;
 		}
-		float origin[3];
 		char arg1[32];
 		int entity = GetCmdArgInt(2);
 		if(entity <= 0 && !IsValidEntity(entity)) {
@@ -420,7 +394,7 @@ Action Command_RandomizerBuild(int client, int args) {
 		Effect_DrawBeamBoxRotatableToAll(pos, { -5.0, -5.0, -5.0}, { 5.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {73, 0, 130, 255}, 0);
 		JSONObject obj = new JSONObject();
 		obj.SetString("type", "infodecal");
-		obj.Set("origin", VecToArray(pos));
+		obj.Set("origin", FromFloatArray(pos, 3));
 		obj.SetString("model", "decals/checkpointarrow01_black.vmt");
 		g_builder.AddEntityData(obj);
 		ReplyToCommand(client, "Added sprite to variant #%d", g_builder.selectedVariantIndex);
@@ -433,7 +407,7 @@ Action Command_RandomizerBuild(int client, int args) {
 		GetLookingPosition(client, Filter_IgnorePlayer, pos);
 		JSONObject obj = new JSONObject();
 		obj.SetString("type", "env_fire");
-		obj.Set("origin", VecToArray(pos));
+		obj.Set("origin", FromFloatArray(pos, 3));
 		g_builder.AddEntityData(obj);
 		ReplyToCommand(client, "Added fire to variant #%d", g_builder.selectedVariantIndex);
 	} else if(StrEqual(arg, "light")) {
@@ -511,7 +485,7 @@ JSONObject ExportEntity(int entity, ExportType exportType = Export_Model) {
 	JSONObject entityData = new JSONObject();
 	GetEntityClassname(entity, classname, sizeof(classname));
 	if(StrContains(classname, "prop_") == -1) {
-		entityData.Set("scale", VecToArray(size));
+		entityData.Set("scale", FromFloatArray(size, 3));
 	}
 	if(exportType == Export_HammerId) {
 		int hammerid = GetEntProp(entity, Prop_Data, "m_iHammerID");
@@ -528,8 +502,8 @@ JSONObject ExportEntity(int entity, ExportType exportType = Export_Model) {
 		entityData.SetString("type", classname);
 		entityData.SetString("model", model);
 	}
-	entityData.Set("origin", VecToArray(origin));
-	entityData.Set("angles", VecToArray(angles));
+	entityData.Set("origin", FromFloatArray(origin, 3));
+	entityData.Set("angles", FromFloatArray(angles, 3));
 	return entityData;
 }
 JSONObject ExportEntityInput(int entity, const char[] input) {
@@ -608,27 +582,7 @@ void OnSelectorDone(int client, ArrayList entities) {
 	}
 }
 
-JSONArray VecToArray(float vec[3]) {
-	JSONArray arr = new JSONArray();
-	arr.PushFloat(vec[0]);
-	arr.PushFloat(vec[1]);
-	arr.PushFloat(vec[2]);
-	return arr;
-}
-JSONArray FromFloatArray(float[] vec, int count) {
-	JSONArray arr = new JSONArray();
-	for(int i = 0 ; i < count; i++) {
-		arr.PushFloat(vec[i]);
-	}
-	return arr;
-}
-JSONArray FromIntArray(int[] vec, int count) {
-	JSONArray arr = new JSONArray();
-	for(int i = 0 ; i < count; i++) {
-		arr.PushInt(vec[i]);
-	}
-	return arr;
-}
+
 
 void Command_RandomizerBuild_Scenes(int client, int args) {
 	char arg[16];
@@ -690,6 +644,7 @@ void Command_RandomizerBuild_Scenes(int client, int args) {
 }
 
 void Command_RandomizerBuild_Variants(int client, int args) {
+	#pragma unused args
 	if(g_builder.selectedSceneId[0] == '\0') {
 		ReplyToCommand(client, "No scene selected, select with /rbuild groups select <group>");
 		return;
@@ -731,682 +686,10 @@ void Command_RandomizerBuild_Variants(int client, int args) {
 	}
 }
 
-
-enum struct SceneData {
-	char name[MAX_SCENE_NAME_LENGTH];
-	float chance;
-	char group[MAX_SCENE_NAME_LENGTH];
-	ArrayList variants;
-
-	void Cleanup() {
-		g_MapData.activeScenes.Clear();
-		SceneVariantData choice;
-		for(int i = 0; i < this.variants.Length; i++) {
-			this.variants.GetArray(i, choice);
-			choice.Cleanup();
-		}
-		delete this.variants;
-	}
-}
-
-enum struct SceneVariantData {
-	int weight;
-	ArrayList inputsList;
-	ArrayList entities;
-	ArrayList forcedScenes;
-
-	void Cleanup() {
-		delete this.inputsList;
-		delete this.entities;
-		delete this.forcedScenes;
-	}
-}
-
-enum struct VariantEntityData {
-	char type[32];
-	char model[128];
-	char targetname[128];
-	float origin[3];
-	float angles[3];
-	float scale[3];
-	int color[4];
-
-	ArrayList keyframes;
-}
-
-enum InputType {
-	Input_Classname,
-	Input_Targetname,
-	Input_HammerId
-}
-enum struct VariantInputData {
-	char name[MAX_INPUTS_CLASSNAME_LENGTH];
-	InputType type; 
-	char input[64];
-
-	void Trigger() {
-		int entity = -1;
-		switch(this.type) {
-			case Input_Classname: {
-				while((entity = FindEntityByClassname(entity, this.name)) != INVALID_ENT_REFERENCE) {
-					this._trigger(entity);
-				}
-			}
-			case Input_Targetname: {
-				char targetname[64];
-				int count = 0;
-				while((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_REFERENCE) {
-					GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
-					if(StrEqual(targetname, this.name)) {
-						this._trigger(entity);
-						count++;
-					}
-				}
-				if(count == 0) {
-					PrintToServer("[Randomizer::WARN] Input TargetName=\"%s\" matched 0 entties", this.name);
-				}
-			}
-			case Input_HammerId: {
-				int targetId = StringToInt(this.name);
-				int count = 0;
-				while((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_REFERENCE) {
-					int hammerId = GetEntProp(entity, Prop_Data, "m_iHammerID");
-					if(hammerId == targetId ) {
-						this._trigger(entity);
-						count++;
-						break;
-					}
-				}
-				if(count == 0) {
-					PrintToServer("[Randomizer::WARN] Input HammerId=%d matched 0 entties", targetId);
-				}
-			}
-		}
-	}
-
-	void _trigger(int entity) {
-		if(entity > 0 && IsValidEntity(entity)) {
-			if(StrEqual(this.input, "_allow_ladder")) {
-				if(HasEntProp(entity, Prop_Send, "m_iTeamNum")) {
-					SetEntProp(entity, Prop_Send, "m_iTeamNum", 0);
-				} else {
-					Log("Warn: Entity (%d) with id \"%s\" has no teamnum for \"_allow_ladder\"", entity, this.name);
-				}
-			} else if(StrEqual(this.input, "_lock")) {
-				AcceptEntityInput(entity, "Close");
-				AcceptEntityInput(entity, "Lock");
-			} else if(StrEqual(this.input, "_lock_nobreak")) {
-				AcceptEntityInput(entity, "Close");
-				AcceptEntityInput(entity, "Lock");
-				AcceptEntityInput(entity, "SetUnbreakable");
-			} else {
-				char cmd[32];
-				// Split input "a b" to a with variant "b"
-				int len = SplitString(this.input, " ", cmd, sizeof(cmd));
-				if(len > -1) {
-					SetVariantString(this.input[len]);
-					AcceptEntityInput(entity, cmd);
-					Debug("_trigger(%d): %s (v=%s)", entity, cmd, this.input[len]);
-				} else {
-					Debug("_trigger(%d): %s", entity, this.input);
-					AcceptEntityInput(entity, this.input);
-				}
-				
-			}
-		}
-	}
-}
-
-enum struct LumpEditData {
-	char name[MAX_INPUTS_CLASSNAME_LENGTH];
-	InputType type; 
-	char action[32];
-	char value[64];
-
-	int _findLumpIndex(int startIndex = 0, EntityLumpEntry entry) {
-		int length = EntityLump.Length();
-		char val[64];
-		Debug("Scanning for \"%s\" (type=%d)", this.name, this.type);
-		for(int i = startIndex; i < length; i++) {
-			entry = EntityLump.Get(i);
-			int index = entry.FindKey("hammerid");
-			if(index != -1) {
-				entry.Get(index, "", 0, val, sizeof(val));
-				if(StrEqual(val, this.name)) {
-					return i;
-				}
-			}
-
-			index = entry.FindKey("classname");
-			if(index != -1) {
-				entry.Get(index, "", 0, val, sizeof(val));
-				Debug("%s vs %s", val, this.name);
-				if(StrEqual(val, this.name)) {
-					return i;
-				}
-			}
-
-			index = entry.FindKey("targetname");
-			if(index != -1) {
-				entry.Get(index, "", 0, val, sizeof(val));
-				if(StrEqual(val, this.name)) {
-					return i;
-				}
-			}
-			delete entry;
-		}
-		Log("Warn: Could not find any matching lump for \"%s\" (type=%d)", this.name, this.type);
-		return -1;
-	}
-
-	void Trigger() {
-		int index = 0;
-		EntityLumpEntry entry;
-		while((index = this._findLumpIndex(index, entry) != -1)) {
-			// for(int i = 0; i < entry.Length; i++) {
-			// 	entry.Get(i, a, sizeof(a), v, sizeof(v));
-			// 	Debug("%s=%s", a, v);
-			// }
-			this._trigger(entry);
-		}
-	}
-
-	void _updateKey(EntityLumpEntry entry, const char[] key, const char[] value) {
-		int index = entry.FindKey(key);
-		if(index != -1) {
-			Debug("update key %s = %s", key, value);
-			entry.Update(index, key, value);
-		}
-	}
-
-	void _trigger(EntityLumpEntry entry) {
-		if(StrEqual(this.action, "setclassname")) {
-			this._updateKey(entry, "classname", this.value);
-		}
-
-		delete entry;
-	}
-}
-
-enum struct MapData {
-	StringMap scenesKv;
-	ArrayList scenes;
-	ArrayList lumpEdits;
-	ArrayList activeScenes;
-	ArrayList gascanSpawners;
-}
-
-enum loadFlags {
-	FLAG_NONE = 0,
-	FLAG_ALL_SCENES = 1, // Pick all scenes, no random chance
-	FLAG_ALL_VARIANTS = 2, // Pick all variants (for debug purposes),
-	FLAG_REFRESH = 4, // Load data bypassing cache
-	FLAG_FORCE_ACTIVE = 8 // Similar to ALL_SCENES, bypasses % chance
-}
-
-// Reads (mapname).json file and parses it
-public JSONObject LoadMapJson(const char[] map) {
-	Debug("Loading config for %s", map);
-	char filePath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, filePath, sizeof(filePath), "data/randomizer/%s.json", map);
-	if(!FileExists(filePath)) {
-		Log("[Randomizer] No map config file (data/randomizer/%s.json), not loading", map);
-		return null;
-	}
-
-	JSONObject data = JSONObject.FromFile(filePath);
-	if(data == null) {
-		LogError("Could not parse map config file (data/randomizer/%s.json)", map);
-		return null;
-	}
-	return data;
-}
-public void SaveMapJson(const char[] map, JSONObject json) {
-	Debug("Saving config for %s", map);
-	char filePath[PLATFORM_MAX_PATH], filePathTemp[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, filePathTemp, sizeof(filePath), "data/randomizer/%s.json.tmp", map);
-	BuildPath(Path_SM, filePath, sizeof(filePath), "data/randomizer/%s.json", map);
-
-	json.ToFile(filePathTemp, JSON_INDENT(4));
-	RenameFile(filePath, filePathTemp);
-	SetFilePermissions(filePath, FPERM_U_WRITE | FPERM_U_READ | FPERM_G_WRITE | FPERM_G_READ | FPERM_O_READ);
-}
-
-public bool LoadMapData(const char[] map, int flags) {
-	JSONObject data = LoadMapJson(map);
-	if(data == null) {
-		return false;
-	}
-
-	Debug("Starting parsing json data");
-
-	Cleanup();
-	g_MapData.scenes = new ArrayList(sizeof(SceneData));
-	g_MapData.scenesKv = new StringMap();
-	g_MapData.lumpEdits = new ArrayList(sizeof(LumpEditData));
-	g_MapData.activeScenes.Clear();
-
-	Profiler profiler = new Profiler();
-	profiler.Start();
-
-	JSONObjectKeys iterator = data.Keys();
-	char key[32];
-	while(iterator.ReadKey(key, sizeof(key))) {
-		if(key[0] == '_') {
-			if(StrEqual(key, "_lumps")) {
-				JSONArray lumpsList = view_as<JSONArray>(data.Get(key));
-				if(lumpsList != null) {
-					for(int l = 0; l < lumpsList.Length; l++) {
-						loadLumpData(g_MapData.lumpEdits, view_as<JSONObject>(lumpsList.Get(l)));
-					}
-				}
-			} else {
-				Debug("Unknown special entry \"%s\", skipping", key);
-			}
-		} else {
-			// if(data.GetType(key) != JSONType_Object) {
-			// 	Debug("Invalid normal entry \"%s\" (not an object), skipping", key);
-			// 	continue;
-			// }
-			JSONObject scene = view_as<JSONObject>(data.Get(key));
-			// Parses scene data and inserts to scenes
-			loadScene(key, scene);
-		}
-	}
-
-	delete data;
-	profiler.Stop();
-	Log("Parsed map file for %s(%d) and found %d scenes in %.4f seconds", map, flags, g_MapData.scenes.Length, profiler.Time);
-	delete profiler;
-	return true;
-}
-
-// Calls LoadMapData (read&parse (mapname).json) then select scenes
-public bool RunMap(const char[] map, int flags) {
-	if(g_MapData.scenes == null || flags & view_as<int>(FLAG_REFRESH)) {
-		if(!LoadMapData(map, flags)) {
-			return false;
-		}
-	}
-	Profiler profiler = new Profiler();
-
-	profiler.Start();
-	selectScenes(flags);
-	spawnGascans();
-	profiler.Stop();
-
-	_ropeIndex = 0;
-
-	Log("Done processing in %.4f seconds", g_MapData.scenes.Length, profiler.Time);
-	return true;
-}
-
-void spawnGascans() {
-	if(g_MapData.gascanSpawners != null && g_MapData.gascanSpawners.Length > 0) {
-		// Iterate through every gascan until we run out - picking a random spawner each time
-		int entity = -1;
-		char targetname[9];
-		GascanSpawnerData spawner;
-		int spawnerCount = g_MapData.gascanSpawners.Length;
-		int count;
-		while((entity = FindEntityByClassname(entity, "weapon_gascan")) != INVALID_ENT_REFERENCE) {
-			GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
-			int hammerid = GetEntProp(entity, Prop_Data, "m_iHammerID");
-			int glowColor = GetEntProp(entity, Prop_Send, "m_glowColorOverride"); // check if white
-			if(hammerid == 0 && glowColor == 16777215 && targetname[0] == '\0' && !g_gascanSpawners.ContainsKey(entity)) {
-				// Found a valid gascan, apply a random spawner
-				int spawnerIndex = GetRandomInt(0, g_MapData.gascanSpawners.Length - 1);
-				g_MapData.gascanSpawners.GetArray(spawnerIndex, spawner);
-				g_MapData.gascanSpawners.Erase(spawnerIndex); // only want one can to use this spawner
-
-				AssignGascan(entity, spawner);
-				count++;
-			}
-		}
-		Debug("Assigned %d gascans to %d spawners", count, spawnerCount);
-	}
-}
-
 void AssignGascan(int gascan, GascanSpawnerData spawner) {
 	g_gascanSpawners.SetArray(gascan, spawner, sizeof(spawner));
 	TeleportEntity(gascan, spawner.origin, spawner.angles, NULL_VECTOR);
 	Debug("Assigning gascan %d to spawner at %.0f %.0f %.0f", gascan, spawner.origin[0], spawner.origin[1], spawner.origin[2]);
-}
-
-void loadScene(const char key[MAX_SCENE_NAME_LENGTH], JSONObject sceneData) {
-	SceneData scene;
-	scene.name = key;
-	scene.chance = sceneData.GetFloat("chance");
-	if(scene.chance < 0.0 || scene.chance > 1.0) {
-		LogError("Scene \"%s\" has invalid chance (%f)", scene.name, scene.chance);
-		return;
-	}
-	// TODO: load "entities", merge with choice.entities
-	sceneData.GetString("group", scene.group, sizeof(scene.group));
-	scene.variants = new ArrayList(sizeof(SceneVariantData));
-	if(!sceneData.HasKey("variants")) {
-		ThrowError("Failed to load: Scene \"%s\" has missing \"variants\" array", scene.name);
-		return;
-	}
-	JSONArray entities;
-	if(sceneData.HasKey("entities")) {
-		entities = view_as<JSONArray>(sceneData.Get("entities"));
-	}
-
-	JSONArray variants = view_as<JSONArray>(sceneData.Get("variants"));
-	for(int i = 0; i < variants.Length; i++) {
-		// Parses choice and loads to scene.choices
-		loadChoice(scene, view_as<JSONObject>(variants.Get(i)), entities);
-	}
-	g_MapData.scenes.PushArray(scene);
-	g_MapData.scenesKv.SetArray(scene.name, scene, sizeof(scene));
-}
-
-void loadChoice(SceneData scene, JSONObject choiceData, JSONArray extraEntities) {
-	SceneVariantData choice;
-	choice.weight = 1;
-	if(choiceData.HasKey("weight"))
-		choice.weight = choiceData.GetInt("weight");
-	choice.entities = new ArrayList(sizeof(VariantEntityData));
-	choice.inputsList = new ArrayList(sizeof(VariantInputData));
-	choice.forcedScenes = new ArrayList(ByteCountToCells(MAX_SCENE_NAME_LENGTH));
-	// Load in any variant-based entities
-	if(choiceData.HasKey("entities")) {
-		JSONArray entities = view_as<JSONArray>(choiceData.Get("entities"));
-		for(int i = 0; i < entities.Length; i++) {
-			// Parses entities and loads to choice.entities
-			loadChoiceEntity(choice.entities, view_as<JSONObject>(entities.Get(i)));
-		}
-		delete entities;
-	}
-	// Load in any entities that the scene has
-	if(extraEntities != null) {
-		for(int i = 0; i < extraEntities.Length; i++) {
-			// Parses entities and loads to choice.entities
-			loadChoiceEntity(choice.entities, view_as<JSONObject>(extraEntities.Get(i)));
-		}
-		// delete extraEntities;
-	}
-	// Load all inputs
-	if(choiceData.HasKey("inputs")) {
-		JSONArray inputsList = view_as<JSONArray>(choiceData.Get("inputs"));
-		for(int i = 0; i < inputsList.Length; i++) {
-			loadChoiceInput(choice.inputsList, view_as<JSONObject>(inputsList.Get(i)));
-		}
-		delete inputsList;
-	}
-	if(choiceData.HasKey("force_scenes")) {
-		JSONArray scenes = view_as<JSONArray>(choiceData.Get("force_scenes"));
-		char sceneId[32];
-		for(int i = 0; i < scenes.Length; i++) {
-			scenes.GetString(i, sceneId, sizeof(sceneId));
-			choice.forcedScenes.PushString(sceneId);
-			Debug("scene %s: require %s", scene.name, sceneId);
-		}
-		delete scenes;
-	}
-	scene.variants.PushArray(choice);
-}
-
-void loadChoiceInput(ArrayList list, JSONObject inputData) {
-	VariantInputData input;
-	input.type = Input_Classname;
-	// Check classname -> targetname -> hammerid
-	if(!inputData.GetString("classname", input.name, sizeof(input.name))) {
-		if(inputData.GetString("targetname", input.name, sizeof(input.name))) {
-			input.type = Input_Targetname;
-		} else {
-			if(inputData.GetString("hammerid", input.name, sizeof(input.name))) {
-				input.type = Input_HammerId;
-			} else {
-				int id = inputData.GetInt("hammerid");
-				if(id > 0) {
-					input.type = Input_HammerId;
-					IntToString(id, input.name, sizeof(input.name));
-				} else {
-					LogError("Missing valid input specification (hammerid, classname, targetname)");
-					return;
-				}
-			}
-		}
-	}
-	inputData.GetString("input", input.input, sizeof(input.input));
-	list.PushArray(input);
-}
-
-void loadLumpData(ArrayList list, JSONObject inputData) {
-	LumpEditData input;
-	// Check classname -> targetname -> hammerid
-	if(!inputData.GetString("classname", input.name, sizeof(input.name))) {
-		if(inputData.GetString("targetname", input.name, sizeof(input.name))) {
-			input.type = Input_Targetname;
-		} else {
-			if(inputData.GetString("hammerid", input.name, sizeof(input.name))) {
-				input.type = Input_HammerId;
-			} else {
-				int id = inputData.GetInt("hammerid");
-				if(id > 0) {
-					input.type = Input_HammerId;
-					IntToString(id, input.name, sizeof(input.name));
-				} else {
-					LogError("Missing valid input specification (hammerid, classname, targetname)");
-					return;
-				}
-			}
-		}
-	}
-	inputData.GetString("action", input.action, sizeof(input.action));
-	inputData.GetString("value", input.value, sizeof(input.value));
-	list.PushArray(input);
-}
-
-void loadChoiceEntity(ArrayList list, JSONObject entityData) {
-	VariantEntityData entity;
-	entityData.GetString("model", entity.model, sizeof(entity.model));
-	if(entityData.GetString("targetname", entity.targetname, sizeof(entity.targetname))) {
-		Format(entity.targetname, sizeof(entity.targetname), "randomizer_%s", entity.targetname);
-	}
-	if(!entityData.GetString("type", entity.type, sizeof(entity.type))) {
-		entity.type = "prop_dynamic";
-	} /*else if(entity.type[0] == '_') { 
-		LogError("Invalid custom entity type \"%s\"", entity.type);
-		return;
-	}*/
-
-	if(StrEqual(entity.type, "move_rope")) {
-		if(!entityData.HasKey("keyframes")) {
-			LogError("move_rope entity is missing keyframes: Vec[] property");
-			return;
-		}
-		entity.keyframes = new ArrayList(3);
-		JSONArray keyframesData = view_as<JSONArray>(entityData.Get("keyframes"));
-		float vec[3];
-		for(int i = 0 ; i < keyframesData.Length; i++) {
-			JSONArray vecArray = view_as<JSONArray>(keyframesData.Get(i));
-			vec[0] = vecArray.GetFloat(0);
-			vec[1] = vecArray.GetFloat(1);
-			vec[2] = vecArray.GetFloat(2);
-			entity.keyframes.PushArray(vec);
-		}
-	}
-	GetVector(entityData, "origin", entity.origin);
-	GetVector(entityData, "angles", entity.angles);
-	GetVector(entityData, "scale", entity.scale);
-	GetColor(entityData, "color", entity.color);
-	list.PushArray(entity);
-}
-
-bool GetVector(JSONObject obj, const char[] key, float out[3]) {
-	if(!obj.HasKey(key)) return false;
-	JSONArray vecArray = view_as<JSONArray>(obj.Get(key));
-	if(vecArray != null) {
-		out[0] = vecArray.GetFloat(0);
-		out[1] = vecArray.GetFloat(1);
-		out[2] = vecArray.GetFloat(2);
-	}
-	return true;
-}
-
-void GetColor(JSONObject obj, const char[] key, int out[4], int defaultColor[4] = { 255, 255, 255, 255 }) {
-	if(obj.HasKey(key)) {
-		JSONArray vecArray = view_as<JSONArray>(obj.Get(key));
-		out[0] = vecArray.GetInt(0);
-		out[1] = vecArray.GetInt(1);
-		out[2] = vecArray.GetInt(2);
-		if(vecArray.Length == 4)
-			out[3] = vecArray.GetInt(3);
-		else
-			out[3] = 255;
-	} else {
-		out = defaultColor;
-	}
-}
-
-void selectScenes(int flags = 0) {
-	SceneData scene;
-	StringMap groups = new StringMap();
-	ArrayList list;
-	// Select and spawn non-group scenes
-	// TODO: refactor to use .scenesKv
-	for(int i = 0; i < g_MapData.scenes.Length; i++) {
-		g_MapData.scenes.GetArray(i, scene);
-		// TODO: Exclusions
-		// Select scene if not in group, or add to list of groups
-		if(scene.group[0] == '\0') {
-			selectScene(scene, flags);
-		} else {
-			// Load it into group list
-			if(!groups.GetValue(scene.group, list)) {
-				list = new ArrayList();
-			}
-			list.Push(i);
-			groups.SetValue(scene.group, list);
-		}
-	}
-
-	// Iterate through groups and select a random scene:
-	StringMapSnapshot snapshot = groups.Snapshot();
-	char key[MAX_SCENE_NAME_LENGTH];
-	for(int i = 0; i < snapshot.Length; i++) {
-		snapshot.GetKey(i, key, sizeof(key));
-		groups.GetValue(key, list);
-		// Select a random scene from the group:
-		int index = GetURandomInt() % list.Length;
-		index = list.Get(index);
-		g_MapData.scenes.GetArray(index, scene);
-
-		Debug("Selected scene \"%s\" for group %s (%d members)", scene.name, key, list.Length);
-		selectScene(scene, flags);
-		delete list;
-	}
-	// Traverse active scenes, loading any other scene it requires (via .force_scenes)
-	ActiveSceneData aScene;
-	SceneVariantData choice;
-	char sceneId[64];
-	// list of scenes that will need to be forced if not already:
-	ArrayList forcedScenes = new ArrayList(ByteCountToCells(MAX_SCENE_NAME_LENGTH));
-	for(int i = 0; i < g_MapData.activeScenes.Length; i++) {
-		g_MapData.activeScenes.GetArray(i, aScene);
-		// Load scene from active scene entry
-		if(!g_MapData.scenesKv.GetArray(aScene.name, scene, sizeof(scene))) {
-			// can't find scene, ignore
-			continue;
-		}
-		if(aScene.variantIndex < scene.variants.Length) {
-			scene.variants.GetArray(aScene.variantIndex, choice);
-			if(choice.forcedScenes != null) {
-				for(int j = 0; j < choice.forcedScenes.Length; j++) {
-					choice.forcedScenes.GetString(j, key, sizeof(key));
-					forcedScenes.PushString(key);
-				}
-			}
-		}
-	}
-	if(forcedScenes.Length > 0) {
-		Debug("Loading %d forced scenes", forcedScenes.Length);
-	}
-	// Iterate and activate any forced scenes
-	for(int i = 0; i < forcedScenes.Length; i++) {
-		forcedScenes.GetString(i, key, sizeof(key));
-		// Check if scene was already loaded
-		bool isSceneAlreadyLoaded = false;
-		for(int j = 0; j < g_MapData.activeScenes.Length; j++) {
-			g_MapData.activeScenes.GetArray(j, aScene);
-			if(StrEqual(aScene.name, key)) {
-				isSceneAlreadyLoaded = true;
-				break;
-			}
-		}
-		if(isSceneAlreadyLoaded) continue;
-		g_MapData.scenesKv.GetArray(key, scene, sizeof(scene));
-		selectScene(scene, flags | view_as<int>(FLAG_FORCE_ACTIVE));
-	}
-
-	delete forcedScenes;
-	delete snapshot;
-	delete groups;
-}
-
-void selectScene(SceneData scene, int flags) {
-	// Use the .chance field  unless FLAG_ALL_SCENES or FLAG_FORCE_ACTIVE is set
-	if(~flags & view_as<int>(FLAG_ALL_SCENES) && ~flags & view_as<int>(FLAG_FORCE_ACTIVE) && GetURandomFloat() > scene.chance) {
-		return;
-	}
-
-	if(scene.variants.Length == 0) {
-		LogError("Warn: No variants were found for scene \"%s\"", scene.name);
-		return;
-	}
-
-	ArrayList choices = new ArrayList();
-	SceneVariantData choice;
-	int index;
-	Debug("Scene %s has %d variants", scene.name, scene.variants.Length);
-	// Weighted random: Push N times dependent on weight
-	for(int i = 0; i < scene.variants.Length; i++) {
-		scene.variants.GetArray(i, choice);
-		if(flags & view_as<int>(FLAG_ALL_VARIANTS)) {
-			spawnVariant(choice);
-		} else {
-			if(choice.weight <= 0) {
-				PrintToServer("Warn: Variant %d in scene %s has invalid weight", i, scene.name);
-				continue;
-			}
-			for(int c = 0; c < choice.weight; c++) {
-				choices.Push(i);
-			}
-		}
-	}
-	if(flags & view_as<int>(FLAG_ALL_VARIANTS)) {
-		delete choices;
-	} else if(choices.Length > 0) {
-		index = GetURandomInt() % choices.Length;
-		index = choices.Get(index);
-		delete choices;
-		Log("Spawned scene \"%s\" with variant #%d", scene.name, index);
-		scene.variants.GetArray(index, choice);
-		spawnVariant(choice);
-	}
-	ActiveSceneData aScene;
-	strcopy(aScene.name, sizeof(aScene.name), scene.name);
-	aScene.variantIndex = index;
-	g_MapData.activeScenes.PushArray(aScene);
-}
-
-void spawnVariant(SceneVariantData choice) {
-	VariantEntityData entity;
-	for(int i = 0; i < choice.entities.Length; i++) {
-		choice.entities.GetArray(i, entity);
-		spawnEntity(entity);
-	}
-
-	if(choice.inputsList.Length > 0) {
-		VariantInputData input;
-		for(int i = 0; i < choice.inputsList.Length; i++) {
-			choice.inputsList.GetArray(i, input);
-			input.Trigger();
-		}
-	}
 }
 
 int CreateLight(const float origin[3], const float angles[3], const int color[4] = { 255, 255, 255, 1 }, float distance = 100.0) {
@@ -1520,21 +803,21 @@ void spawnEntity(VariantEntityData entity) {
 
 int CreateRope(VariantEntityData data) {
 	char targetName[32], nextKey[32];
-	Format(targetName, sizeof(targetName), "randomizer_rope%d", _ropeIndex);
-	Format(nextKey, sizeof(nextKey), "randomizer_rope%d_0", _ropeIndex);
+	Format(targetName, sizeof(targetName), "randomizer_rope%d", g_ropeIndex);
+	Format(nextKey, sizeof(nextKey), "randomizer_rope%d_0", g_ropeIndex);
 	int entity = _CreateRope("move_rope", targetName, nextKey, data.model, data.origin);
 	float pos[3];
 	for(int i = 0; i < data.keyframes.Length; i++) {
 		nextKey[0] = '\0';
-		Format(targetName, sizeof(targetName), "randomizer_rope%d_%d", _ropeIndex, i);
+		Format(targetName, sizeof(targetName), "randomizer_rope%d_%d", g_ropeIndex, i);
 		if(i < data.keyframes.Length - 1) {
-			Format(nextKey, sizeof(nextKey), "randomizer_rope%d_%d", _ropeIndex, i + 1);
+			Format(nextKey, sizeof(nextKey), "randomizer_rope%d_%d", g_ropeIndex, i + 1);
 		}
 		data.keyframes.GetArray(i, pos, sizeof(pos));
 		_CreateRope("move_rope", targetName, nextKey, data.model, pos);
 	}
-	Debug("created rope #%d with %d keyframes. entid:%d", _ropeIndex, data.keyframes.Length, entity);
-	_ropeIndex++;
+	Debug("created rope #%d with %d keyframes. entid:%d", g_ropeIndex, data.keyframes.Length, entity);
+	g_ropeIndex++;
 	return entity;
 }
 int _CreateRope(const char[] type, const char[] targetname, const char[] nextKey, const char[] texture, const float origin[3]) {
@@ -1584,32 +867,28 @@ void Log(const char[] format, any ...) {
 	PrintToServer("[Randomizer] %s", buffer);
 }
 
-void Cleanup() {
+void Cleanup(bool clearEntities = true) {
 	if(g_MapData.scenes != null) {
-		SceneData scene;
-		for(int i = 0; i < g_MapData.scenes.Length; i++) {
-			g_MapData.scenes.GetArray(i, scene);
-			scene.Cleanup();
-		}
-		delete g_MapData.scenes;
+		g_MapData.Cleanup();
 	}
 	delete g_MapData.lumpEdits;
 	delete g_MapData.gascanSpawners;
 
 	// Cleanup all alarm car entities:
-	int entity = -1;
-	char targetname[128];
-	while((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_REFERENCE) {
-		if(!IsValidEntity(entity)) continue;
-		GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
-		if(StrContains(targetname, "randomizer_") != -1) {
-			RemoveEntity(entity);
+	if(clearEntities) {
+		int entity = -1;
+		char targetname[128];
+		while((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_REFERENCE) {
+			if(!IsValidEntity(entity)) continue;
+			GetEntPropString(entity, Prop_Data, "m_iName", targetname, sizeof(targetname));
+			if(StrContains(targetname, "randomizer_") != -1) {
+				RemoveEntity(entity);
+			}
 		}
+		DeleteCustomEnts();
 	}
 	// TODO: delete car alarms
 
-	DeleteCustomEnts();
-	g_MapData.activeScenes.Clear();
 	g_gascanSpawners.Clear();
 	delete g_gascanRespawnQueue;
 }
