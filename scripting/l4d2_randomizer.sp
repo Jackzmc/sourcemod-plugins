@@ -72,8 +72,8 @@ public void OnPluginStart() {
 }
 
 void Event_GameEnd(Event event, const char[] name ,bool dontBroadcast) {
-	// Purge the traverse list after a campaign is played
-	g_mapTraverseSelections.Clear();	
+	// Purge the traverse stack after a campaign is played
+	ClearTraverseStack();
 }
 
 
@@ -97,7 +97,6 @@ public void OnMapStart() {
 	// We wait a while before running to prevent some edge cases i don't remember
 }
 
-
 public void OnMapEnd() {
 	randomizerRan = false;
 	g_builder.Cleanup();
@@ -105,9 +104,15 @@ public void OnMapEnd() {
 	// For maps that players traverse backwards, like hard rain (c4m1_milltown_a -> c4m3_milltown_b )
 	// We store the selection of the _a map, to later be loaded for _b maps
 	// This is done at end of map just in case a user re-runs the cycle and generates a different selection
-	if(g_selection != null && String_EndsWith(currentMap, "_a")) {
-		Log("Storing %s in map traversal store", currentMap);
-		g_mapTraverseSelections.SetValue(currentMap, g_selection.AsList());
+	if(g_selection != null) {
+		if(IsTraverseMapA(currentMap)) {
+			Log("Storing %s in map traversal store", currentMap);
+			StoreTraverseSelection(currentMap, g_selection);
+		} 
+		// We want to store milltown_a twice, so the c4m5_milltown_escape can also pop it off 
+		if(StrEqual(currentMap, "c4m1_milltown_a")) {
+			StoreTraverseSelection(currentMap, g_selection);
+		}
 	}
 	// don't clear entities because they will be deleted anyway (and errors if you tryq)
 	Cleanup(false);
@@ -176,7 +181,26 @@ Action Command_Debug(int client, int args) {
 				ReplyToCommand(client, "No map data loaded");
 			}
 
-		} /*else if(StrEqual(arg, "identify")) {
+		} if(StrEqual(arg, "traverse")) {
+			TraverseData trav;
+			for(int i = 0; i < g_mapTraverseSelectionStack.Length; i++) {
+				g_mapTraverseSelectionStack.GetArray(i, trav, sizeof(trav));
+				if(trav.selection == null) {
+					ReplyToCommand(client, "  #%d - %s: ERROR", i, trav.map);
+				} else {
+					ReplyToCommand(client, "  #%d - %s: %d scenes", i, trav.map, trav.selection.Length);
+				}
+			}
+		} else if(StrEqual(arg, "store")) {
+			char buffer[64];
+			if(args == 1) {
+				strcopy(buffer, sizeof(buffer), currentMap);
+			} else {
+				GetCmdArg(2, buffer, sizeof(buffer));
+			}
+			StoreTraverseSelection(buffer, g_selection);
+			ReplyToCommand(client, "Stored current selection as %s", buffer);
+		}  /*else if(StrEqual(arg, "identify")) {
 			if(args == 1) {
 				ReplyToCommand(client, "Specify scene name");
 			} else if(!g_MapData.IsLoaded()) {
@@ -200,7 +224,7 @@ Action Command_Debug(int client, int args) {
 		ReplyToCommand(client, "Scene Selection: -");
 	}
 	ReplyToCommand(client, "Builder Data: %s", g_builder.IsLoaded() ? "Loaded" : "-");
-	ReplyToCommand(client, "Traverse Store: count=%d", g_mapTraverseSelections.Size);
+	ReplyToCommand(client, "Traverse Store: count=%d", g_mapTraverseSelectionStack.Length);
 	if(g_gascanRespawnQueue != null) {
 		ReplyToCommand(client, "Gascan Spawners: count=%d queue_size=%d", g_gascanSpawners.Size, g_gascanRespawnQueue.Length);
 	} else {
@@ -213,11 +237,13 @@ public Action Command_CycleRandom(int client, int args) {
 	if(args > 0) {
 		DeleteCustomEnts();
 		int flags = GetCmdArgInt(1);
-		if(flags != -1) {
+		if(flags < 0) {
+			ReplyToCommand(client, "Invalid flags");
+		} else {
 			LoadRunGlobalMap(currentMap, flags | view_as<int>(FLAG_REFRESH));
+			if(client > 0)
+				PrintCenterText(client, "Cycled flags=%d", flags);
 		}
-		if(client > 0)
-			PrintCenterText(client, "Cycled flags=%d", flags);
 	} else {
 		if(g_selection == null) {
 			ReplyToCommand(client, "No map selection active");
@@ -705,6 +731,7 @@ int CreateLight(const float origin[3], const float angles[3], const int color[4]
 	TeleportEntity(entity, origin, NULL_VECTOR, NULL_VECTOR);
 	if(!DispatchSpawn(entity)) return -1;
 	SetEntityRenderColor(entity, color[0], color[1], color[2], color[3]);
+	SetEntityRenderMode(entity, RENDER_TRANSCOLOR);
 	AcceptEntityInput(entity, "TurnOn");
 	return entity;
 }

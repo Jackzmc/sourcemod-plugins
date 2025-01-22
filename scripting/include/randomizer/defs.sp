@@ -6,7 +6,7 @@ int DEFAULT_COLOR[4] = { 255, 255, 255, 255 };
 MapData g_MapData; // The global map data
 SceneSelection g_selection; // The selected scenes from the global map data
 BuilderData g_builder; // The global instance of the builder
-StringMap g_mapTraverseSelections; // For maps that traverse backwards, holds record of the selected scenes so they can be re-applied
+ArrayList g_mapTraverseSelectionStack; // For maps that traverse backwards, holds record of the selected scenes so they can be re-applied
 
 int g_ropeIndex; // Unique id for ropes on spawn, is reset to 0 for every new spawn attempt
 ArrayList g_gascanRespawnQueue; // Queue that gascan respawns pop from to respawn to
@@ -16,7 +16,97 @@ int g_iLaserIndex;
 
 public void InitGlobals() {
 	g_gascanSpawners = new AnyMap();
-    g_mapTraverseSelections = new StringMap();
+    g_mapTraverseSelectionStack = new ArrayList(sizeof(TraverseData));
+}
+
+enum struct TraverseData {
+    char map[64];
+    ArrayList selection;
+}
+
+methodmap SceneSelection < ArrayList {
+    public SceneSelection() {
+        ArrayList selectedScenes = new ArrayList(sizeof(SelectedSceneData));
+        return view_as<SceneSelection>(selectedScenes);
+    }
+
+    property int Count {
+        public get() {
+            return (view_as<ArrayList>(this)).Length;
+        }
+    }
+
+    public void Cleanup() {
+        delete this;
+    }
+
+    public void Activate(MapData data, int flags = 0) {
+        g_ropeIndex = 0;
+        SelectedSceneData aScene;
+        SceneData scene;
+        SceneVariantData choice;
+        ArrayList list = view_as<ArrayList>(this);
+        for(int i = 0; i < list.Length; i++) {
+            list.GetArray(i, aScene);
+            Log("Activating scene \"%s\" with %d variants", aScene.name, aScene.selectedVariantIndexes.Length);
+
+            // Fetch the scene that aScene marks
+            if(!data.scenesKv.GetArray(aScene.name, scene, sizeof(scene))) {
+                Log("WARN: Selected scene \"%s\" not found, skipping", aScene.name);
+                continue;
+            }
+
+            for(int v = 0; v <  aScene.selectedVariantIndexes.Length; v++) {
+                int variantIndex = aScene.selectedVariantIndexes.Get(v);
+
+
+                scene.variants.GetArray(variantIndex, choice);
+                activateVariant(choice, flags);
+            }
+        }
+    }
+
+    public void Get(int sceneIndex, SelectedSceneData scene) {
+        (view_as<ArrayList>(this)).GetArray(sceneIndex, scene);
+    }
+
+    property ArrayList List {
+        public get() {
+            return view_as<ArrayList>(this);
+        }
+    } 
+
+    public void AddScene(SelectedSceneData aScene) {
+        view_as<ArrayList>(this).PushArray(aScene);
+    }
+}
+
+void StoreTraverseSelection(const char[] name, SceneSelection selection) {
+    // Pushes selection and map to the stack
+    TraverseData data;
+    strcopy(data.map, sizeof(data.map), name);
+    data.selection = selection.List.Clone();
+    g_mapTraverseSelectionStack.PushArray(data);
+}
+
+bool PopTraverseSelection(TraverseData data) {
+    if(g_mapTraverseSelectionStack.Length == 0) {
+        Log("WARN: PopTraverseSelection() called but stack is empty");
+        return false;
+    }
+    int index = g_mapTraverseSelectionStack.Length - 1;
+    g_mapTraverseSelectionStack.GetArray(index, data);
+    g_mapTraverseSelectionStack.Erase(index);
+    return true;
+}
+
+void ClearTraverseStack() {
+    TraverseData trav;
+    for(int i = 0; i < g_mapTraverseSelectionStack.Length; i++) {
+        g_mapTraverseSelectionStack.GetArray(i, trav, sizeof(trav));
+        delete trav.selection;
+    }
+    g_mapTraverseSelectionStack.Clear();
 }
 
 enum struct SelectedSceneData {

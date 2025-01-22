@@ -1,5 +1,6 @@
 public bool LoadGlobalMapData(const char[] map, int flags) {
 	Cleanup();
+	g_selection = null;
 	return ParseMapData(g_MapData, map, flags);
 }
 

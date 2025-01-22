@@ -1,3 +1,27 @@
+#define WINDSHIELD_LIST_COUNT 1
+char VEHICLE_MODEL_WINDSHIELD_KEY[WINDSHIELD_LIST_COUNT][] = {
+    "models/props_vehicles/cement_truck01.mdl"
+};
+char VEHICLE_MODEL_WINDSHIELD_VAL[WINDSHIELD_LIST_COUNT][] = {
+    "models/props_vehicles/cement_truck01_windows.mdl"
+};
+
+bool GetWindshieldModel(const char[] vehicleModel, char[] model, int modelSize) {
+    bool found = false;
+    for(int i = 0; i < WINDSHIELD_LIST_COUNT; i++) {
+        if(StrEqual(VEHICLE_MODEL_WINDSHIELD_KEY[i], vehicleModel)) {
+            strcopy(model, modelSize, VEHICLE_MODEL_WINDSHIELD_VAL[i]);
+            found = true;
+            break;
+        }
+    }
+    if(!found) {
+        strcopy(model, modelSize, vehicleModel);
+        ReplaceString(model, modelSize, ".mdl", "_glass.mdl");
+    }
+    return PrecacheModel(model);
+}
+
 int SpawnCar(VariantEntityData entity) {
 	if(entity.model[0] == '\0') {
 		LogError("Missing model for entity with type \"%s\"", entity.type);
@@ -12,14 +36,12 @@ int SpawnCar(VariantEntityData entity) {
     }
 
     char glassModel[64];
-	strcopy(glassModel, sizeof(glassModel), entity.model);
-    ReplaceString(glassModel, sizeof(glassModel), ".mdl", "_glass.mdl");
     if(StrEqual(entity.type, "_car_physics")) {
         vehicle = CreateProp("prop_physics", entity.model, entity.origin, entity.angles);
 	} else {
         vehicle = CreateProp("prop_dynamic", entity.model, entity.origin, entity.angles);
     }
-	if(PrecacheModel(glassModel)) {
+	if(GetWindshieldModel(entity.model, glassModel, sizeof(glassModel))) {
 		int glass = CreateProp("prop_dynamic", glassModel, entity.origin, entity.angles);
         if(glass != -1) {
             SetVariantString("!activator");

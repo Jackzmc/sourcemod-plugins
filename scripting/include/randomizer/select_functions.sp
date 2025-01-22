@@ -1,29 +1,30 @@
+bool IsTraverseMapA(const char[] map) {
+    return String_EndsWith(map, "_a");
+}
+bool IsTraverseMapB(const char[] map) {
+    // c4m1_milltown_a was added twice so _escape can pop it off and re-use
+    return StrEqual(map, "c4m5_milltown_escape") || String_EndsWith(map, "_b");
+}
+
 public bool LoadRunGlobalMap(const char[] map, int flags) {
     // Unless FLAG_IGNORE_TRAVERSE_STORE, if the map is the _b variant, then load the stored _a value 
     SceneSelection selection;
     // Only load map data if we don't already have it
     if(g_MapData.scenes == null || g_selection == null || flags & view_as<int>(FLAG_REFRESH)) {
-        if(~flags & view_as<int>(FLAG_IGNORE_TRAVERSE_STORE) && String_EndsWith(map, "_b")) {
-            // Switch _b to _a
-            char buffer[64];
-            int len = strcopy(buffer, sizeof(buffer), map);
-            buffer[len-1] = 'a'; 
-            
-            // Load the A variant
-            if(!LoadGlobalMapData(buffer, flags)) {
-                return false;
+        if(~flags & view_as<int>(FLAG_IGNORE_TRAVERSE_STORE) && IsTraverseMapB(map) ) {
+            Log("LoadRunGlobal: Trying to load traverse selection");
+            TraverseData traverse;
+            if(PopTraverseSelection(traverse)) {
+                Debug("traverse map: %s", traverse.map);
+                // Try Load the A variant
+                if(LoadGlobalMapData(traverse.map, flags)) {
+                    selection = view_as<SceneSelection>(traverse.selection);
+                }
             }
-
-            // Load selection from the traverse store, if it exists
-            ArrayList list;
-            if(g_mapTraverseSelections.GetValue(buffer, list)) {
-                Log("Loaded previously traversed map selection (c:%s p:%s)", map, buffer);
-                selection = view_as<SceneSelection>(list);
-            } else {
-                Log("Tried to load previously traversed map selection, but nothing stored (c:%s p:%s)", map, buffer);
-            }
-        } else if(selection == null) {
+        }
+        if(selection == null) {
             // This is called if not traverse map or previous data not found
+            Log("LoadRunGlobal: Loading & generating selection");
             if(!LoadGlobalMapData(map, flags)) {
                 return false;
             }
@@ -161,62 +162,6 @@ void selectForcedScenes(SceneSelection selection, MapData data, int flags) {
 		trySelectScene(selection, scene, flags | view_as<int>(FLAG_FORCE_ACTIVE));
 	}
 	delete forcedScenes;
-}
-
-// TODO: the scenes that are selected need variant index set
-methodmap SceneSelection < ArrayList {
-    public SceneSelection() {
-        ArrayList selectedScenes = new ArrayList(sizeof(SelectedSceneData));
-        return view_as<SceneSelection>(selectedScenes);
-    }
-
-    property int Count {
-        public get() {
-            return (view_as<ArrayList>(this)).Length;
-        }
-    }
-
-    public void Cleanup() {
-        delete this;
-    }
-
-    public void Activate(MapData data, int flags = 0) {
-        g_ropeIndex = 0;
-        SelectedSceneData aScene;
-        SceneData scene;
-        SceneVariantData choice;
-        ArrayList list = view_as<ArrayList>(this);
-        for(int i = 0; i < list.Length; i++) {
-            list.GetArray(i, aScene);
-            Log("Activating scene \"%s\" with %d variants", aScene.name, aScene.selectedVariantIndexes.Length);
-
-            // Fetch the scene that aScene marks
-            if(!data.scenesKv.GetArray(aScene.name, scene, sizeof(scene))) {
-                Log("WARN: Selected scene \"%s\" not found, skipping", aScene.name);
-                continue;
-            }
-
-            for(int v = 0; v <  aScene.selectedVariantIndexes.Length; v++) {
-                int variantIndex = aScene.selectedVariantIndexes.Get(v);
-
-
-                scene.variants.GetArray(variantIndex, choice);
-                activateVariant(choice, flags);
-            }
-        }
-    }
-
-    public void Get(int sceneIndex, SelectedSceneData scene) {
-        (view_as<ArrayList>(this)).GetArray(sceneIndex, scene);
-    }
-
-    public ArrayList AsList() {
-        return view_as<ArrayList>(this);
-    } 
-
-    public void AddScene(SelectedSceneData aScene) {
-        view_as<ArrayList>(this).PushArray(aScene);
-    }
 }
 
 // Selects what scenes and its variants to apply and returns list - does not activate
