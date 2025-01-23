@@ -489,24 +489,9 @@ void DirectorSpawn(specialType special, int player = -1) {
 	}
 }
 
-// Finds a player that is suitable (lowest intensity)
-// TODO: biased random (lower intensity : bias)
-// dice roll, #sides = #players, sort list of players by intensity
-// then use biased left dice, therefore lower intensity = higher random weight
 int g_iLastVictim;
 int GetSuitableVictim() {
-	// TODO: randomize?
 	return GetRandomSurvivor(1, -1);
-	// ArrayList survivors = new ArrayList(2);
-	// for(int i = 1; i <= MaxClients; i++) {
-	// 	if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i)) {
-	// 		int index = survivors.Push(i);
-	// 		survivors.Set(index, 1, L4D_GetPlayerIntensity(i));
-	// 	}
-	// }
-	// // Soe
-	// survivors.SortCustom()
-
 	int victim = -1;
 	float lowestIntensity = 0.0;
 	for(int i = 1; i <= MaxClients; i++) {

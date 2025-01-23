@@ -55,11 +55,6 @@
 #undef REQUIRE_PLUGIN
 #include <CreateSurvivorBot>
 
-#define L4D2_WEPUPGFLAG_NONE            (0 << 0)
-#define L4D2_WEPUPGFLAG_INCENDIARY      (1 << 0)
-#define L4D2_WEPUPGFLAG_EXPLOSIVE       (1 << 1)
-#define L4D2_WEPUPGFLAG_LASER 			(1 << 2)  
-
 #define AMMOPACK_ENTID 0
 #define AMMOPACK_USERS 1
 
@@ -1779,7 +1774,7 @@ Action Timer_UpdateHud(Handle h) {
 void PopulateItems() {
 	if(g_areItemsPopulated) return;
 	UpdateSurvivorCount();
-	PrintToServer("[EPI:TEMP] PopulateItems hasRan=%b finale=%b willRun=%b players=%d", g_areItemsPopulated, L4D_IsMissionFinalMap(true), !g_areItemsPopulated&&IsEPIActive, g_realSurvivorCount);
+	PrintToServer("[EPI:TEMP] PopulateItems hasRan=%b finale=%b willRun=%b players=%d", g_areItemsPopulated, L4D_IsMissionFinalMap(true), !g_areItemsPopulated&&IsEPIActive(), g_realSurvivorCount);
 	if(!IsEPIActive()) return;
 
 	g_areItemsPopulated = true;
@@ -1821,6 +1816,20 @@ void PopulateItems() {
 	PopulateCabinets();
 }
 
+int CalculateExtraDefibCount() {
+	if(L4D_IsMissionFinalMap()) {
+		int maxCount = g_survivorCount - 4;
+		if(maxCount < 0) maxCount = 0;
+
+		return DiceRoll(0, maxCount, 2, BIAS_LEFT);
+	} else if(g_survivorCount > 4) {
+		float chance = float(g_survivorCount) / 64.0;
+		return GetRandomFloat() > chance ? 1 : 0;
+	} else {
+		return 0;
+	}
+}
+
 void PopulateItemSpawns(int minWalls = 4) {
 	ArrayList navs = new ArrayList();
 	L4D_GetAllNavAreas(navs);
@@ -1837,6 +1846,9 @@ void PopulateItemSpawns(int minWalls = 4) {
 	float mapFlowMax = L4D2Direct_GetMapMaxFlowDistance();
 	PrintToServer("[EPI] PopulateItemSpawns: flow[0, %f]", mapFlowMax);
 	int maxSpawns = RoundFloat(mapFlowMax / MAX_RANDOM_SPAWNS);
+	int defibCount = CalculateExtraDefibCount();
+	bool isFinale = L4D_IsMissionFinalMap();
+
 	for(int i = 0; i < navs.Length; i++) {
 		Address nav = navs.Get(i);
 		int spawnFlags = L4D_GetNavArea_SpawnAttributes(nav);
@@ -1866,8 +1878,19 @@ void PopulateItemSpawns(int minWalls = 4) {
 					}
 					if(wpn == -1) continue;
 					if(++count >= maxSpawns) break;
+				} else if(defibCount > 0) {
+					if(isFinale) {
+						if(spawnFlags & NAV_SPAWN_FINALE) {
+							CreateWeaponSpawn(pos, "weapon_defibrilator", tier);
+							defibCount--;
+						}
+					} else {
+						CreateWeaponSpawn(pos, "weapon_defibrilator", tier);
+						defibCount--;
+					}
 				}
 			}
+			
 		}
 	}
 	PrintToServer("[EPI] Spawned %d/%d new item spawns (tier=%d)", count, maxSpawns, tier);
