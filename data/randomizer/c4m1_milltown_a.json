@@ -1,0 +1,1482 @@
+{
+    "rooftop-2-access": {
+        "chance": 0.60000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_c17/truss02d.mdl",
+                        "origin": [
+                            -6130.37548828125,
+                            7925.4072265625,
+                            341.4249267578125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            7.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_02.mdl",
+                        "origin": [
+                            -6182.025390625,
+                            7697.3740234375,
+                            289.32940673828125
+                        ],
+                        "angles": [
+                            32.0,
+                            -107.40000915527344,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_exteriors/fence_plastic001.mdl",
+                        "origin": [
+                            -6201.5107421875,
+                            8130.63623046875,
+                            340.03125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_exteriors/fence_plastic001.mdl",
+                        "origin": [
+                            -6200.93798828125,
+                            8256.685546875,
+                            340.03125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_exteriors/fence_plastic001.mdl",
+                        "origin": [
+                            -6204.12353515625,
+                            8342.90625,
+                            340.03125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "truckblock": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_truck3.mdl",
+                        "origin": [
+                            -5010.0419921875,
+                            7734.44091796875,
+                            98.530517578125
+                        ],
+                        "angles": [
+                            0.0,
+                            11.899999618530273,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer.mdl",
+                        "origin": [
+                            -4959.31884765625,
+                            7431.03857421875,
+                            98.368728637695312
+                        ],
+                        "angles": [
+                            0.0,
+                            9.3000001907348633,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "construct-alley-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_prodigy/wood_pallet_01.mdl",
+                        "origin": [
+                            -612.926513671875,
+                            6012.0419921875,
+                            120.98597717285156
+                        ],
+                        "angles": [
+                            -80.100006103515625,
+                            69.199996948242188,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_nuke/truck_nuke.mdl",
+                        "origin": [
+                            -514.7620849609375,
+                            6061.83154296875,
+                            98.784637451171875
+                        ],
+                        "angles": [
+                            0.0,
+                            -92.599998474121094,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_nuke/truck_nuke_glass.mdl",
+                        "origin": [
+                            -514.7620849609375,
+                            6061.83154296875,
+                            98.784637451171875
+                        ],
+                        "angles": [
+                            0.0,
+                            -92.599998474121094,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/plywood_leaning.mdl",
+                        "origin": [
+                            -503.701171875,
+                            5982.18212890625,
+                            104.27775573730469
+                        ],
+                        "angles": [
+                            19.700002670288086,
+                            -90.20001220703125,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "house-door-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_furniture/chair2.mdl",
+                        "origin": [
+                            -843.57147216796875,
+                            5755.11767578125,
+                            173.48355102539062
+                        ],
+                        "angles": [
+                            -60.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_downtown/dresser.mdl",
+                        "origin": [
+                            -847.906494140625,
+                            5744.97607421875,
+                            193.7103271484375
+                        ],
+                        "angles": [
+                            -180.0,
+                            0.0,
+                            90.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/bbq_grill.mdl",
+                        "origin": [
+                            -860.88446044921875,
+                            5766.09228515625,
+                            105.82819366455078
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "playground-skip": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -1209.6839599609375,
+                            6914.2392578125,
+                            200.63134765625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -1309.03125,
+                            6938.50634765625,
+                            202.41818237304688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            -1254.373046875,
+                            6826.69384765625,
+                            112.12223052978516
+                        ],
+                        "angles": [
+                            0.59999990463256836,
+                            -67.699996948242188,
+                            10.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence_cover001_64.mdl",
+                        "origin": [
+                            -1229.9058837890625,
+                            6749.8232421875,
+                            115.98374176025391
+                        ],
+                        "angles": [
+                            30.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/plank001b_192.mdl",
+                        "origin": [
+                            -1041.4501953125,
+                            6920.8828125,
+                            158.14295959472656
+                        ],
+                        "angles": [
+                            10.199997901916504,
+                            88.100006103515625,
+                            32.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "ceda": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_misc/gazebo.mdl",
+                        "origin": [
+                            -602.975341796875,
+                            7816.41796875,
+                            99.958992004394531
+                        ],
+                        "angles": [
+                            0.0,
+                            -42.400001525878906,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/ceda_easel01.mdl",
+                        "origin": [
+                            -645.1663818359375,
+                            7809.6142578125,
+                            90.9564208984375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_misc/gazebo.mdl",
+                        "origin": [
+                            -789.31964111328125,
+                            7590.22216796875,
+                            113.48371124267578
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_furniture/it_mkt_table2.mdl",
+                        "origin": [
+                            -748.378173828125,
+                            7592.13427734375,
+                            107.78606414794922
+                        ],
+                        "angles": [
+                            -0.19999992847442627,
+                            -9.5999994277954102,
+                            -5.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/outhouse001.mdl",
+                        "origin": [
+                            -1008.3880615234375,
+                            7493.2470703125,
+                            100.10147857666016
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/outhouse002.mdl",
+                        "origin": [
+                            -1005.9328002929688,
+                            7429.42431640625,
+                            102.40476226806641
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/ceda_trailer_closed.mdl",
+                        "origin": [
+                            -199.79443359375,
+                            7200.08642578125,
+                            91.016487121582031
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer_freestanding.mdl",
+                        "origin": [
+                            -145.80682373046875,
+                            6835.9990234375,
+                            109.56112670898438
+                        ],
+                        "angles": [
+                            0.0,
+                            -112.09999847412109,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/cement_truck01.mdl",
+                        "origin": [
+                            321.60610961914062,
+                            7113.42529296875,
+                            99.0465087890625
+                        ],
+                        "angles": [
+                            0.0,
+                            -2.1000046730041504,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_misc/ceda_banner.mdl",
+                        "origin": [
+                            222.46876525878906,
+                            7426.16845703125,
+                            183.120849609375
+                        ],
+                        "angles": [
+                            0.0,
+                            -27.800003051757812,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            -1022.3969116210938,
+                            7423.01806640625,
+                            112.30544281005859
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/deadbodies/ceda/ceda_table_b.mdl",
+                        "origin": [
+                            -731.69183349609375,
+                            7605.625,
+                            109.14176940917969
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "left-boat-skip": {
+        "chance": 0.20000000298023224,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/boat_ski.mdl",
+                        "origin": [
+                            -1342.733154296875,
+                            7642.09716796875,
+                            142.09251403808594
+                        ],
+                        "angles": [
+                            0.0,
+                            -100.29999542236328,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/boat_trailer20ft.mdl",
+                        "origin": [
+                            -1331.3797607421875,
+                            7644.9287109375,
+                            143.82127380371094
+                        ],
+                        "angles": [
+                            0.0,
+                            -96.500015258789062,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/pickup_truck_2004.mdl",
+                        "origin": [
+                            -2219.626708984375,
+                            7607.5283203125,
+                            99.160079956054688
+                        ],
+                        "angles": [
+                            0.0,
+                            -163.69999694824219,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -1502.5404052734375,
+                            7603.2490234375,
+                            97.005584716796875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "house-garage-block": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_nuke/truck_nuke.mdl",
+                        "origin": [
+                            334.34182739257812,
+                            5404.47998046875,
+                            100.17530059814453
+                        ],
+                        "angles": [
+                            0.0,
+                            -14.899999618530273,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/shelves_wood.mdl",
+                        "origin": [
+                            237.07989501953125,
+                            5520.53271484375,
+                            94.864997863769531
+                        ],
+                        "angles": [
+                            -6.0000004768371582,
+                            83.199989318847656,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "dumpster-skip": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/suv_2001.mdl",
+                        "origin": [
+                            1817.2623291015625,
+                            3911.12939453125,
+                            100.9583740234375
+                        ],
+                        "angles": [
+                            0.0,
+                            -77.5,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/suv_2001_glass.mdl",
+                        "origin": [
+                            1817.2623291015625,
+                            3911.12939453125,
+                            100.9583740234375
+                        ],
+                        "angles": [
+                            0.0,
+                            -77.5,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/dumpster001.mdl",
+                        "origin": [
+                            1958.30126953125,
+                            3837.324951171875,
+                            96.284660339355469
+                        ],
+                        "angles": [
+                            0.0,
+                            -88.899993896484375,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001a.mdl",
+                        "origin": [
+                            1964.774658203125,
+                            3715.951904296875,
+                            173.462158203125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001b.mdl",
+                        "origin": [
+                            1969.86376953125,
+                            3790.276123046875,
+                            183.30633544921875
+                        ],
+                        "angles": [
+                            -12.799999237060547,
+                            306.79998779296875,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001a.mdl",
+                        "origin": [
+                            1964.503662109375,
+                            3848.463623046875,
+                            160.85580444335938
+                        ],
+                        "angles": [
+                            0.0,
+                            15.899999618530273,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001b.mdl",
+                        "origin": [
+                            1957.3970947265625,
+                            3896.373291015625,
+                            178.76214599609375
+                        ],
+                        "angles": [
+                            -12.799999237060547,
+                            87.700004577636719,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001b.mdl",
+                        "origin": [
+                            1954.4771728515625,
+                            3971.22998046875,
+                            186.51704406738281
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1915.98876953125,
+                            3866.54638671875,
+                            170.85635375976562
+                        ],
+                        "angles": [
+                            0.0,
+                            -83.699996948242188,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1939.1441650390625,
+                            3819.7646484375,
+                            160.9354248046875
+                        ],
+                        "angles": [
+                            0.0,
+                            -12.999996185302734,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001b.mdl",
+                        "origin": [
+                            1934.2772216796875,
+                            3788.553955078125,
+                            126.39857482910156
+                        ],
+                        "angles": [
+                            77.200004577636719,
+                            -21.600000381469727,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1921.8853759765625,
+                            3685.9990234375,
+                            170.81491088867188
+                        ],
+                        "angles": [
+                            0.0,
+                            84.000007629394531,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001b.mdl",
+                        "origin": [
+                            1980.500732421875,
+                            3702.30810546875,
+                            149.97383117675781
+                        ],
+                        "angles": [
+                            -39.700000762939453,
+                            306.79998779296875,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001a.mdl",
+                        "origin": [
+                            1952.237060546875,
+                            3943.56787109375,
+                            147.94662475585938
+                        ],
+                        "angles": [
+                            0.0,
+                            15.899999618530273,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1941.6190185546875,
+                            3980.210693359375,
+                            170.33621215820312
+                        ],
+                        "angles": [
+                            0.0,
+                            84.000007629394531,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001b.mdl",
+                        "origin": [
+                            1957.4547119140625,
+                            3705.260986328125,
+                            154.65032958984375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1918.654541015625,
+                            3768.329345703125,
+                            160.54913330078125
+                        ],
+                        "angles": [
+                            0.0,
+                            -82.299995422363281,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1937.467529296875,
+                            3714.63330078125,
+                            171.19769287109375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1993.8851318359375,
+                            3689.807373046875,
+                            159.75634765625
+                        ],
+                        "angles": [
+                            0.0,
+                            84.000007629394531,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1995.285400390625,
+                            3782.07421875,
+                            158.66447448730469
+                        ],
+                        "angles": [
+                            0.0,
+                            84.000007629394531,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1958.77490234375,
+                            3920.156494140625,
+                            173.6800537109375
+                        ],
+                        "angles": [
+                            0.0,
+                            -39.799995422363281,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1969.6920166015625,
+                            3960.96875,
+                            163.96121215820312
+                        ],
+                        "angles": [
+                            0.0,
+                            67.000007629394531,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1985.8109130859375,
+                            3991.06396484375,
+                            172.69140625
+                        ],
+                        "angles": [
+                            0.0,
+                            67.000007629394531,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_chunk01a.mdl",
+                        "origin": [
+                            1985.2796630859375,
+                            3943.77294921875,
+                            161.65048217773438
+                        ],
+                        "angles": [
+                            0.0,
+                            -83.699996948242188,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "garage2-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/shelves_wood.mdl",
+                        "origin": [
+                            2379.632568359375,
+                            2920.348388671875,
+                            99.884902954101562
+                        ],
+                        "angles": [
+                            0.0,
+                            90.300003051757812,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/plastic_bucket001.mdl",
+                        "origin": [
+                            2417.281005859375,
+                            2911.267333984375,
+                            127.97147369384766
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/paintbucket01_static.mdl",
+                        "origin": [
+                            2379.286376953125,
+                            2915.43408203125,
+                            126.29402923583984
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/big_wheel001.mdl",
+                        "origin": [
+                            2336.673828125,
+                            2867.917236328125,
+                            98.511054992675781
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_junk/wheebarrow01a.mdl",
+                        "origin": [
+                            2334.95849609375,
+                            2773.084228515625,
+                            110.24717712402344
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/carparts_wheel01a_static.mdl",
+                        "origin": [
+                            2422.4755859375,
+                            2757.2548828125,
+                            109.47286987304688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/carparts_wheel01a_static.mdl",
+                        "origin": [
+                            2460.7109375,
+                            2755.885498046875,
+                            112.17292022705078
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_junk/metalbucket02a.mdl",
+                        "origin": [
+                            2469.368896484375,
+                            2912.298095703125,
+                            107.14229583740234
+                        ],
+                        "angles": [
+                            0.0,
+                            36.600002288818359,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/shelves_wood.mdl",
+                        "origin": [
+                            2574.4013671875,
+                            2918.22265625,
+                            96.745361328125
+                        ],
+                        "angles": [
+                            0.0,
+                            90.300003051757812,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/paintbucket01.mdl",
+                        "origin": [
+                            2533.198486328125,
+                            2920.9853515625,
+                            122.88316345214844
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/paintbucket01.mdl",
+                        "origin": [
+                            2525.225341796875,
+                            2914.93603515625,
+                            154.70027160644531
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_junk/metalbucket01a.mdl",
+                        "origin": [
+                            2338.1171875,
+                            2914.409912109375,
+                            165.678466796875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/bucket_tools02.mdl",
+                        "origin": [
+                            2385.522705078125,
+                            2916.5068359375,
+                            96.890380859375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "garage2-alley-block": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/table_picnic.mdl",
+                        "origin": [
+                            2363.767333984375,
+                            2696.5908203125,
+                            121.72509765625
+                        ],
+                        "angles": [
+                            -38.100002288818359,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/plywood_leaning.mdl",
+                        "origin": [
+                            2310.503173828125,
+                            2656.603759765625,
+                            99.017684936523438
+                        ],
+                        "angles": [
+                            14.399999618530273,
+                            -77.900001525878906,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_misc/standing_tarp_narrow.mdl",
+                        "origin": [
+                            2465.73681640625,
+                            2661.52490234375,
+                            100.31044006347656
+                        ],
+                        "angles": [
+                            0.0,
+                            -24.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_assault/washer_box.mdl",
+                        "origin": [
+                            2396.148193359375,
+                            2726.48046875,
+                            96.866752624511719
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            2214.35107421875,
+                            2626.3076171875,
+                            95.359649658203125
+                        ],
+                        "angles": [
+                            83.600006103515625,
+                            89.699996948242188,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/coffee_table_oval.mdl",
+                        "origin": [
+                            2336.08740234375,
+                            2712.382080078125,
+                            98.705101013183594
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/table_bedside.mdl",
+                        "origin": [
+                            2361.804931640625,
+                            2687.34228515625,
+                            101.42886352539062
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_foliage/tree_city01.mdl",
+                        "origin": [
+                            2587.680908203125,
+                            2690.486083984375,
+                            94.296051025390625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "semi-collision": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/police_car_rural.mdl",
+                        "origin": [
+                            2945.1533203125,
+                            -68.587295532226562,
+                            117.86392974853516
+                        ],
+                        "angles": [
+                            10.199999809265137,
+                            184.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/police_car_city_glass.mdl",
+                        "origin": [
+                            2945.1533203125,
+                            -68.587295532226562,
+                            117.86392974853516
+                        ],
+                        "angles": [
+                            10.199999809265137,
+                            184.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/flatnose_truck.mdl",
+                        "origin": [
+                            3083.548828125,
+                            443.6507568359375,
+                            109.33514404296875
+                        ],
+                        "angles": [
+                            0.0,
+                            -76.900009155273438,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer.mdl",
+                        "origin": [
+                            3092.07275390625,
+                            727.62908935546875,
+                            102.77457427978516
+                        ],
+                        "angles": [
+                            0.0,
+                            -182.5,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer.mdl",
+                        "origin": [
+                            3174.597412109375,
+                            -5.639404296875,
+                            108.14723205566406
+                        ],
+                        "angles": [
+                            0.0,
+                            -25.600000381469727,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/flatnose_truck.mdl",
+                        "origin": [
+                            3273.8466796875,
+                            205.77471923828125,
+                            112.70208740234375
+                        ],
+                        "angles": [
+                            0.0,
+                            66.099998474121094,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [
+                            3005.129638671875,
+                            -277.87005615234375,
+                            113.38404846191406
+                        ],
+                        "angles": [
+                            0.0,
+                            -79.000007629394531,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [
+                            2922.20263671875,
+                            -321.47174072265625,
+                            104.12355804443359
+                        ],
+                        "angles": [
+                            -1.7000025510787964,
+                            -55.700008392333984,
+                            7.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "saferoom-ladder-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_02.mdl",
+                        "origin": [
+                            3882.66650390625,
+                            -882.27349853515625,
+                            179.87933349609375
+                        ],
+                        "angles": [
+                            -72.0,
+                            85.800010681152344,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/plywood_leaning.mdl",
+                        "origin": [
+                            3954.176513671875,
+                            -887.9573974609375,
+                            166.52484130859375
+                        ],
+                        "angles": [
+                            19.600000381469727,
+                            75.100006103515625,
+                            -93.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            3827.516357421875,
+                            -902.08880615234375,
+                            94.366706848144531
+                        ],
+                        "angles": [
+                            67.599990844726562,
+                            -98.199996948242188,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "FRED": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            4079.801025390625,
+                            -2030.1895751953125,
+                            128.56544494628906
+                        ],
+                        "angles": [
+                            0.0,
+                            -48.200008392333984,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "PEANUT": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            4194.7490234375,
+                            -1562.11767578125,
+                            105.9647216796875
+                        ],
+                        "angles": [
+                            0.0,
+                            185.60000610351562,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

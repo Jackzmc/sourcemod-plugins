@@ -1004,6 +1004,61 @@
                             69.000007629394531,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_street/concertinawire128.mdl",
+                        "origin": [
+                            1089.169921875,
+                            1763.4981689453125,
+                            291.31658935546875
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_street/concertinawire128.mdl",
+                        "origin": [
+                            964.45440673828125,
+                            1765.302490234375,
+                            291.97311401367188
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_street/concertinawire128.mdl",
+                        "origin": [
+                            837.82415771484375,
+                            1765.9117431640625,
+                            289.5538330078125
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "origin": [
+                            752.350830078125,
+                            2041.630615234375,
+                            548.03125
+                        ],
+                        "scale": [
+                            15.0,
+                            240.0,
+                            100.0
+                        ]
                     }
                 ]
             }
@@ -1369,7 +1424,7 @@
                 "weight": 1,
                 "entities": [
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props_junk/gnome.mdl",
                         "origin": [
                             -1365.762451171875,
@@ -1379,6 +1434,124 @@
                         "angles": [
                             0.0,
                             60.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "bar-block": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            273.46566772460938,
+                            -357.96719360351562,
+                            0.3364105224609375
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            273.00442504882812,
+                            -405.81011962890625,
+                            7.7817878723144531
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            249.58372497558594,
+                            -385.9383544921875,
+                            -25.917247772216797
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            253.77641296386719,
+                            -356.08816528320312,
+                            -4.7134323120117188
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            253.83631896972656,
+                            -362.62399291992188,
+                            55.695259094238281
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            252.20606994628906,
+                            -385.1119384765625,
+                            46.342216491699219
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "sedan": {
+        "chance": 0.20000000298023224,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "_car_physics",
+                        "model": "models/props_vehicles/cara_95sedan.mdl",
+                        "origin": [
+                            11.371078491210938,
+                            -84.446060180664062,
+                            -2.687330961227417
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
                             0.0
                         ]
                     }

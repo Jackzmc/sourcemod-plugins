@@ -22,5 +22,251 @@
                 ]
             }
         ]
+    },
+    "trailer": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001b.mdl",
+                        "origin": [
+                            -5020.86962890625,
+                            6377.85693359375,
+                            641.72576904296875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/hmmwv.mdl",
+                        "origin": [
+                            -4926.7568359375,
+                            6393.20068359375,
+                            626.56927490234375
+                        ],
+                        "angles": [
+                            -3.8999967575073242,
+                            61.0,
+                            9.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001a.mdl",
+                        "origin": [
+                            -4907.00537109375,
+                            6379.3125,
+                            701.50091552734375
+                        ],
+                        "angles": [
+                            19.80000114440918,
+                            -10.699999809265137,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer_wrecked.mdl",
+                        "origin": [
+                            -5159.9794921875,
+                            6288.13427734375,
+                            516.46624755859375
+                        ],
+                        "angles": [
+                            0.0,
+                            118.30000305175781,
+                            -5.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris128pile001a.mdl",
+                        "origin": [
+                            -4939.30126953125,
+                            6397.275390625,
+                            697.10382080078125
+                        ],
+                        "angles": [
+                            4.4000000953674316,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "bus": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/bus01_2.mdl",
+                        "origin": [
+                            -3170.48095703125,
+                            6297.6298828125,
+                            640.4088134765625
+                        ],
+                        "angles": [
+                            -23.000001907348633,
+                            49.799995422363281,
+                            -20.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "humvee": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/hmmwv.mdl",
+                        "origin": [
+                            4218.40283203125,
+                            6309.74951171875,
+                            455.75555419921875
+                        ],
+                        "angles": [
+                            0.0,
+                            -93.300003051757812,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "car-block": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/cara_95sedan.mdl",
+                        "origin": [
+                            4680.36962890625,
+                            6451.8359375,
+                            598.89410400390625
+                        ],
+                        "angles": [
+                            -16.500001907348633,
+                            113.90000152587891,
+                            -3.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "bus-down-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/cara_84sedan.mdl",
+                        "origin": [
+                            9448.177734375,
+                            2465.4091796875,
+                            402.39703369140625
+                        ],
+                        "angles": [
+                            -19.69999885559082,
+                            -7.8000001907348633,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/cara_95sedan_wrecked.mdl",
+                        "origin": [
+                            9574.169921875,
+                            2354.686279296875,
+                            230.94760131835938
+                        ],
+                        "angles": [
+                            -3.7000000476837158,
+                            66.599998474121094,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            9241.9619140625,
+                            2593.072998046875,
+                            395.70574951171875
+                        ],
+                        "angles": [
+                            -1.5000001192092896,
+                            -16.5,
+                            3.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            9209.5185546875,
+                            2495.00341796875,
+                            387.2938232421875
+                        ],
+                        "angles": [
+                            -1.5000001192092896,
+                            -16.5,
+                            3.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            9276.5849609375,
+                            2693.54833984375,
+                            405.56076049804688
+                        ],
+                        "angles": [
+                            -1.5000001192092896,
+                            -16.5,
+                            3.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_64_reference.mdl",
+                        "origin": [
+                            9286.923828125,
+                            2788.736328125,
+                            409.21328735351562
+                        ],
+                        "angles": [
+                            0.0,
+                            -22.400001525878906,
+                            5.0
+                        ]
+                    }
+                ]
+            }
+        ]
     }
 }

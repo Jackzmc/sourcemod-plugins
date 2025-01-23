@@ -595,5 +595,67 @@
                 ]
             }
         ]
+    },
+    "truck-bridge-gap": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer_wrecked.mdl",
+                        "origin": [
+                            -12307.5810546875,
+                            -11925.724609375,
+                            -349.92706298828125
+                        ],
+                        "angles": [
+                            4.0999965667724609,
+                            72.799995422363281,
+                            -2.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "catwalk-pipes": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_mill/pipeset08d_256_001a.mdl",
+                        "origin": [
+                            -12992.806640625,
+                            -5664.62939453125,
+                            -266.845703125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            270.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_mill/pipeset08d_256_001a.mdl",
+                        "origin": [
+                            -13243.6201171875,
+                            -5662.48095703125,
+                            -267.79513549804688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            270.0
+                        ]
+                    }
+                ]
+            }
+        ]
     }
 }
