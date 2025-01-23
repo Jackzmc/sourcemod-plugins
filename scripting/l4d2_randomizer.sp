@@ -240,7 +240,14 @@ public Action Command_CycleRandom(int client, int args) {
 		if(flags < 0) {
 			ReplyToCommand(client, "Invalid flags");
 		} else {
-			LoadRunGlobalMap(currentMap, flags | view_as<int>(FLAG_REFRESH));
+			if(args > 1) {
+				char buffer[64];
+				GetCmdArg(2, buffer, sizeof(buffer));
+				LoadRunGlobalMap(buffer, flags | view_as<int>(FLAG_REFRESH));
+				PrintCenterText(client, "Cycled %s flags=%d", buffer, flags);
+			} else {
+				LoadRunGlobalMap(currentMap, flags | view_as<int>(FLAG_REFRESH));
+			}
 			if(client > 0)
 				PrintCenterText(client, "Cycled flags=%d", flags);
 		}
@@ -461,7 +468,7 @@ Action Command_RandomizerBuild(int client, int args) {
 		}
 		float pos[3];
 		float scale[3] = { 15.0, 30.0, 100.0 };
-		GetLookingPosition(client, Filter_IgnorePlayer, pos);
+		GetClientAbsOrigin(client, pos);
 		JSONObject obj = new JSONObject();
 		obj.SetString("type", "env_player_blocker");
 		obj.Set("origin", FromFloatArray(pos, 3));
@@ -749,6 +756,11 @@ void AddGascanSpawner(VariantEntityData data) {
 }
 
 void spawnEntity(VariantEntityData entity) {
+	// if(entity.type[0] == '_') {
+	// 	if(StrEqual(entity.type, "_gascan")) {
+	// 		AddGascanSpawner(entity);
+	// 	} 
+	// }
 	if(StrEqual(entity.type, "_gascan")) {
 		AddGascanSpawner(entity);
 	} else if(StrEqual(entity.type, "env_fire")) {
@@ -763,6 +775,17 @@ void spawnEntity(VariantEntityData entity) {
 		Effect_DrawBeamBoxRotatableToAll(entity.origin, { -1.0, -5.0, -5.0}, { 1.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {73, 0, 130, 255}, 0);
 		CreateDecal(entity.model, entity.origin);
 	} else if(StrContains(entity.type, "prop_") == 0 || StrEqual(entity.type, "prop_fuel_barrel")) {
+		if(entity.model[0] == '\0') {
+			LogError("Missing model for entity with type \"%s\"", entity.type);
+			return;
+		} else if(!PrecacheModel(entity.model)) {
+			LogError("Precache of entity model \"%s\" with type \"%s\" failed", entity.model, entity.type);
+			return;
+		}
+		int prop = CreateProp(entity.type, entity.model, entity.origin, entity.angles);
+		SetEntityRenderColor(prop, entity.color[0], entity.color[1], entity.color[2], entity.color[3]);
+		entity.ApplyProperties(prop);
+	} else if(StrContains(entity.type, "weapon_") == 0) {
 		if(entity.model[0] == '\0') {
 			LogError("Missing model for entity with type \"%s\"", entity.type);
 			return;

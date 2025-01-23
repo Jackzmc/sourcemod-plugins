@@ -258,5 +258,11 @@ void loadChoiceEntity(ArrayList list, JSONObject entityData) {
 	GetVector(entityData, "angles", entity.angles);
 	GetVector(entityData, "scale", entity.scale);
 	GetColor(entityData, "color", entity.color, DEFAULT_COLOR);
+	if(entityData.HasKey("properties")) {
+		JSONObject propRoot = view_as<JSONObject>(entityData.Get("properties"));
+		if(propRoot.HasKey("int")) entity.properties.intKv = view_as<JSONObject>(propRoot.Get("int"));
+		if(propRoot.HasKey("float")) entity.properties.floatKv = view_as<JSONObject>(propRoot.Get("float"));
+		if(propRoot.HasKey("string")) entity.properties.stringKv = view_as<JSONObject>(propRoot.Get("string"));
+	}
 	list.PushArray(entity);
 }

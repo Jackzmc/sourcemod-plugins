@@ -46,7 +46,7 @@ stock int CreateEnvBlockerScaled(const char[] entClass, const float pos[3], cons
 	int entity = CreateEntityByName(entClass);
 	DispatchKeyValue(entity, "targetname", ENT_BLOCKER_NAME);
 	DispatchKeyValue(entity, "initialstate", "1");
-	DispatchKeyValue(entity, "BlockType", "0");
+	DispatchKeyValueInt(entity, "BlockType", StrEqual(entClass, "env_physics_blocker") ? 4 : 0);
 	static float mins[3];
 	mins = scale;
 	NegateVector(mins);
@@ -160,11 +160,12 @@ stock void ClearPortalData() {
 		portals.Clear();
 }
 
-stock int StartPropCreate(const char[] entClass, const char[] model, const float pos[3], const float ang[3] = NULL_VECTOR, const float vel[3] = NULL_VECTOR) {
+stock int StartPropCreate(const char[] entClass, const char[] model, const float pos[3], const float ang[3] = NULL_VECTOR, const float vel[3] = NULL_VECTOR, bool hasCollision = true) {
 	int entity = CreateEntityByName(entClass);
 	if(entity == -1) return -1;
 	DispatchKeyValue(entity, "model", model);
-	DispatchKeyValue(entity, "solid", "6");
+	if(hasCollision)
+		DispatchKeyValue(entity, "solid", "6");
 	DispatchKeyValue(entity, "targetname", ENT_PROP_NAME);
 	DispatchKeyValue(entity, "disableshadows", "1");
 	TeleportEntity(entity, pos, ang, vel);

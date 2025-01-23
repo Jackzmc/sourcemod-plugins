@@ -266,8 +266,121 @@ enum struct SceneVariantData {
 
 	void Cleanup() {
 		delete this.inputsList;
+		VariantEntityData entity;
+		for(int i = 0; i < this.entities.Length; i++) {
+			this.entities.GetArray(i, entity, sizeof(entity));
+			entity.Cleanup();
+		}
 		delete this.entities;
 		delete this.forcedScenes;
+	}
+}
+
+enum propertyType {
+	PROPERTY_NONE = -1,
+	PROPERTY_STRING,
+	PROPERTY_INTEGER,
+	PROPERTY_FLOAT
+}
+
+// This is horrible but we need a way to know what the type of the netprop to set is
+enum struct PropertyStore {
+	JSONObject intKv;
+	JSONObject stringKv;
+	JSONObject floatKv;
+
+	void Cleanup() {
+		if(this.intKv != null) delete this.intKv;
+		if(this.stringKv != null) delete this.stringKv;
+		if(this.floatKv != null) delete this.floatKv;
+	}
+
+	bool GetInt(const char[] name, int &value) {
+		if(this.intKv == null) return false;
+		if(!this.intKv.HasKey(name)) return false;
+		value = this.intKv.GetInt(name);
+		return true;
+	}
+
+	bool GetString(const char[] name, char[] buffer, int maxlen) {
+		if(this.stringKv == null) return false;
+		if(!this.stringKv.HasKey(name)) return false;
+		this.stringKv.GetString(name, buffer, maxlen);
+		return true;
+	}
+
+	bool GetFloat(const char[] name, float &value) {
+		if(this.floatKv == null) return false;
+		if(!this.floatKv.HasKey(name)) return false;
+		value = this.floatKv.GetFloat(name);
+		return true;
+	}
+
+	propertyType GetPropertyType(const char[] key) {
+		if(this.intKv != null && this.intKv.HasKey(key)) return PROPERTY_INTEGER;
+		if(this.floatKv != null && this.floatKv.HasKey(key)) return PROPERTY_FLOAT;
+		if(this.stringKv != null && this.stringKv.HasKey(key)) return PROPERTY_STRING;
+		return PROPERTY_NONE;
+	}
+
+	bool HasAny() {
+		return this.intKv != null || this.floatKv != null || this.stringKv != null;
+	}
+
+	ArrayList Keys() {
+		char key[128];
+		ArrayList list = new ArrayList(ByteCountToCells(128));
+		JSONObjectKeys keys;
+		if(this.stringKv != null) {
+			keys = this.stringKv.Keys()
+			while(keys.ReadKey(key, sizeof(key))) {
+				list.PushString(key);
+			}
+			delete keys;
+		}
+		if(this.intKv != null) {
+			keys = this.intKv.Keys()
+			while(keys.ReadKey(key, sizeof(key))) {
+				list.PushString(key);
+			}
+			delete keys;
+		}
+		if(this.floatKv != null) {
+			keys = this.floatKv.Keys()
+			while(keys.ReadKey(key, sizeof(key))) {
+				list.PushString(key);
+			}
+			delete keys;
+		}
+		return list;
+	}
+
+	StringMap Entries() {
+		char key[128];
+		StringMap kv = new StringMap();
+		JSONObjectKeys keys;
+		if(this.stringKv != null) {
+			keys = this.stringKv.Keys()
+			while(keys.ReadKey(key, sizeof(key))) {
+				kv.SetValue(key, PROPERTY_STRING);
+			}
+			delete keys;
+		}
+		if(this.intKv != null) {
+			keys = this.intKv.Keys()
+			while(keys.ReadKey(key, sizeof(key))) {
+				kv.SetValue(key, PROPERTY_INTEGER);
+			}
+			delete keys;
+		}
+		if(this.floatKv != null) {
+			keys = this.floatKv.Keys()
+			while(keys.ReadKey(key, sizeof(key))) {
+				kv.SetValue(key, PROPERTY_FLOAT);
+			}
+			delete keys;
+		}
+		return kv;
 	}
 }
 
@@ -281,6 +394,54 @@ enum struct VariantEntityData {
 	int color[4];
 
 	ArrayList keyframes;
+	PropertyStore properties;
+	JSONObject propertiesInt;
+	JSONObject propertiesString;
+	JSONObject propertiesFloat;
+
+	void Cleanup() {
+		if(this.keyframes != null) {
+			delete this.keyframes;
+		}
+		this.properties.Cleanup();
+	}
+
+	void ApplyProperties(int entity) {
+		if(!this.properties.HasAny()) return;
+		char key[64], buffer[128];
+		ArrayList keys = this.properties.Keys();
+		for(int i = 0; i < keys.Length; i++) {
+			keys.GetString(i, key, sizeof(key));
+			// Only want to apply netprops (m_ prefix)
+			if(key[0] == 'm' && key[1] == '_') {
+				propertyType type = this.properties.GetPropertyType(key);
+				Debug("netprop %s type %d", key, type);
+				switch(type) {
+					case PROPERTY_STRING: {
+						this.properties.GetString(key, buffer, sizeof(buffer));
+						Debug("Applying netprop %s (val=%s) on %d", key, buffer, entity);
+						SetEntPropString(entity, Prop_Send, key, buffer);
+						break;
+					}
+					case PROPERTY_INTEGER: {
+						int val;
+						this.properties.GetInt(key, val);
+						Debug("Applying netprop %s (val=%d) on %d", key, val, entity);
+						SetEntProp(entity, Prop_Send, key, val);
+						break;
+					}
+					case PROPERTY_FLOAT: {
+						float val;
+						this.properties.GetFloat(key, val);
+						Debug("Applying netprop %s (val=%f) on %d", key, val, entity);
+						SetEntPropFloat(entity, Prop_Send, key, val);
+						break;
+					}
+				}
+			}
+		}
+		delete keys;
+	}
 }
 
 enum InputType {
