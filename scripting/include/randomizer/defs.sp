@@ -41,6 +41,7 @@ methodmap SceneSelection < ArrayList {
     }
 
     public void Activate(MapData data, int flags = 0) {
+		if(this == null) return;
         g_ropeIndex = 0;
         SelectedSceneData aScene;
         SceneData scene;
@@ -276,114 +277,6 @@ enum struct SceneVariantData {
 	}
 }
 
-enum propertyType {
-	PROPERTY_NONE = -1,
-	PROPERTY_STRING,
-	PROPERTY_INTEGER,
-	PROPERTY_FLOAT
-}
-
-// This is horrible but we need a way to know what the type of the netprop to set is
-enum struct PropertyStore {
-	JSONObject intKv;
-	JSONObject stringKv;
-	JSONObject floatKv;
-
-	void Cleanup() {
-		if(this.intKv != null) delete this.intKv;
-		if(this.stringKv != null) delete this.stringKv;
-		if(this.floatKv != null) delete this.floatKv;
-	}
-
-	bool GetInt(const char[] name, int &value) {
-		if(this.intKv == null) return false;
-		if(!this.intKv.HasKey(name)) return false;
-		value = this.intKv.GetInt(name);
-		return true;
-	}
-
-	bool GetString(const char[] name, char[] buffer, int maxlen) {
-		if(this.stringKv == null) return false;
-		if(!this.stringKv.HasKey(name)) return false;
-		this.stringKv.GetString(name, buffer, maxlen);
-		return true;
-	}
-
-	bool GetFloat(const char[] name, float &value) {
-		if(this.floatKv == null) return false;
-		if(!this.floatKv.HasKey(name)) return false;
-		value = this.floatKv.GetFloat(name);
-		return true;
-	}
-
-	propertyType GetPropertyType(const char[] key) {
-		if(this.intKv != null && this.intKv.HasKey(key)) return PROPERTY_INTEGER;
-		if(this.floatKv != null && this.floatKv.HasKey(key)) return PROPERTY_FLOAT;
-		if(this.stringKv != null && this.stringKv.HasKey(key)) return PROPERTY_STRING;
-		return PROPERTY_NONE;
-	}
-
-	bool HasAny() {
-		return this.intKv != null || this.floatKv != null || this.stringKv != null;
-	}
-
-	ArrayList Keys() {
-		char key[128];
-		ArrayList list = new ArrayList(ByteCountToCells(128));
-		JSONObjectKeys keys;
-		if(this.stringKv != null) {
-			keys = this.stringKv.Keys()
-			while(keys.ReadKey(key, sizeof(key))) {
-				list.PushString(key);
-			}
-			delete keys;
-		}
-		if(this.intKv != null) {
-			keys = this.intKv.Keys()
-			while(keys.ReadKey(key, sizeof(key))) {
-				list.PushString(key);
-			}
-			delete keys;
-		}
-		if(this.floatKv != null) {
-			keys = this.floatKv.Keys()
-			while(keys.ReadKey(key, sizeof(key))) {
-				list.PushString(key);
-			}
-			delete keys;
-		}
-		return list;
-	}
-
-	StringMap Entries() {
-		char key[128];
-		StringMap kv = new StringMap();
-		JSONObjectKeys keys;
-		if(this.stringKv != null) {
-			keys = this.stringKv.Keys()
-			while(keys.ReadKey(key, sizeof(key))) {
-				kv.SetValue(key, PROPERTY_STRING);
-			}
-			delete keys;
-		}
-		if(this.intKv != null) {
-			keys = this.intKv.Keys()
-			while(keys.ReadKey(key, sizeof(key))) {
-				kv.SetValue(key, PROPERTY_INTEGER);
-			}
-			delete keys;
-		}
-		if(this.floatKv != null) {
-			keys = this.floatKv.Keys()
-			while(keys.ReadKey(key, sizeof(key))) {
-				kv.SetValue(key, PROPERTY_FLOAT);
-			}
-			delete keys;
-		}
-		return kv;
-	}
-}
-
 enum struct VariantEntityData {
 	char type[32];
 	char model[128];
@@ -394,53 +287,108 @@ enum struct VariantEntityData {
 	int color[4];
 
 	ArrayList keyframes;
-	PropertyStore properties;
-	JSONObject propertiesInt;
-	JSONObject propertiesString;
-	JSONObject propertiesFloat;
+	// PropertyStore properties;
+	// JSONObject propertiesInt;
+	// JSONObject propertiesString;
+	// JSONObject propertiesFloat;
+
+	JSONArray properties;
 
 	void Cleanup() {
-		if(this.keyframes != null) {
-			delete this.keyframes;
+		// if(this.keyframes != null) {
+			// delete this.keyframes;
+		// }
+		// this.properties.Cleanup();
+		if(this.properties != null) {
+			JSONObject obj;
+			for(int i = 0; i < this.properties.Length; i++) {
+				obj = view_as<JSONObject>(this.properties.Get(i));
+				delete obj;
+			}
+			delete this.properties;
 		}
-		this.properties.Cleanup();
 	}
 
 	void ApplyProperties(int entity) {
-		if(!this.properties.HasAny()) return;
-		char key[64], buffer[128];
-		ArrayList keys = this.properties.Keys();
-		for(int i = 0; i < keys.Length; i++) {
-			keys.GetString(i, key, sizeof(key));
-			// Only want to apply netprops (m_ prefix)
-			if(key[0] == 'm' && key[1] == '_') {
-				propertyType type = this.properties.GetPropertyType(key);
-				Debug("netprop %s type %d", key, type);
-				switch(type) {
-					case PROPERTY_STRING: {
-						this.properties.GetString(key, buffer, sizeof(buffer));
-						Debug("Applying netprop %s (val=%s) on %d", key, buffer, entity);
-						SetEntPropString(entity, Prop_Send, key, buffer);
-						break;
-					}
-					case PROPERTY_INTEGER: {
-						int val;
-						this.properties.GetInt(key, val);
-						Debug("Applying netprop %s (val=%d) on %d", key, val, entity);
-						SetEntProp(entity, Prop_Send, key, val);
-						break;
-					}
-					case PROPERTY_FLOAT: {
-						float val;
-						this.properties.GetFloat(key, val);
-						Debug("Applying netprop %s (val=%f) on %d", key, val, entity);
-						SetEntPropFloat(entity, Prop_Send, key, val);
-						break;
+		// if(!this.properties.HasAny()) return;
+		// char key[64];
+		// ArrayList keys = this.properties.Keys();
+		// for(int i = 0; i < keys.Length; i++) {
+		// 	keys.GetString(i, key, sizeof(key));
+		// 	// Only want to apply netprops (m_ prefix)
+		// 	if(key[0] == 'm' && key[1] == '_') {
+		// 		this._ApplyNetprop(entity, key);
+		// 	} else if(key[0] == "_") {
+		// 		this._ApplyCustom(entity, key);
+		// 	} else {
+		// 		this._ApplyKeyvalue(entity, key);
+		// 	}
+		// }
+		// delete keys;
+
+		if(this.properties != null) {
+			JSONObject obj;
+			char type[64], key[64];
+			for(int i = 0; i < this.properties.Length; i++) {
+				obj = view_as<JSONObject>(this.properties.Get(i));
+				if(!obj.HasKey("key")) {
+					LogError("Missing \"key\" in property object for entity %d", entity);
+				} else {
+					obj.GetString("type", type, sizeof(type));
+					obj.GetString("key", key, sizeof(key));
+					if(StrEqual(type, "netprop")) {
+						this._ApplyProperty(Prop_Send, entity, key, obj);
+					} else if(StrEqual(type, "datamap")) {
+						this._ApplyProperty(Prop_Data, entity, key, obj);
+					} else if(StrEqual(type, "keyvalue")) {
+						this._ApplyKeyvalue(entity, key, obj);
+					} else if(StrEqual(type, "input")) {
+						this._ApplyInput(entity, key, obj);
+					} else {
+						this._ApplyCustom(entity, key, obj);
 					}
 				}
 			}
 		}
-		delete keys;
+	}
+
+	void _ApplyProperty(PropType propType, int entity, const char[] key, JSONObject obj) {
+		char buffer[128];
+		if(obj.HasKey("string")) {
+			obj.GetString("string", buffer, sizeof(buffer));
+			Debug("Setting property %s (val=%s) on %d", key, buffer, entity);
+			SetEntPropString(entity, propType, key, buffer);
+		} else if(obj.HasKey("integer")) {
+			int val = obj.GetInt("integer");
+			Debug("Setting property %s (val=%d) on %d", key, val, entity);
+			SetEntProp(entity, propType, key, val);
+		} else if(obj.HasKey("float")) {
+			float val = obj.GetFloat("float");
+			Debug("Setting property %s (val=%f) on %d", key, val, entity);
+			SetEntPropFloat(entity, propType, key, val);
+		} else {
+			LogError("no value provided for entity %d with key %s", entity, key);
+		}
+	}	
+
+	void _ApplyInput(int entity, const char[] key, JSONObject obj) {
+		Debug("Applying input %s on %d", key, entity);
+		TriggerEntityInput(entity, key);
+	}
+
+	void _ApplyCustom(int entity, const char[] key, JSONObject obj) {
+		Debug("_ApplyCustom(%d, \"%s\"): unknown custom key", entity, key);
+	}
+
+	void _ApplyKeyvalue(int entity, const char[] key, JSONObject obj) {
+		if(obj.HasKey("buffer")) {
+			char buffer[255];
+			obj.GetString("string", buffer, sizeof(buffer));
+			Debug("Dispatching kv %s: %s on %d", key, buffer, entity);
+			DispatchKeyValue(entity, key, buffer);
+		} else {
+			LogError("no value provided for entity %d with key %s", entity, key);
+		}
 	}
 }
 
@@ -496,34 +444,38 @@ enum struct VariantInputData {
 
 	void _trigger(int entity) {
 		if(entity > 0 && IsValidEntity(entity)) {
-			if(StrEqual(this.input, "_allow_ladder")) {
-				if(HasEntProp(entity, Prop_Send, "m_iTeamNum")) {
-					SetEntProp(entity, Prop_Send, "m_iTeamNum", 0);
-				} else {
-					Log("Warn: Entity (%d) with id \"%s\" has no teamnum for \"_allow_ladder\"", entity, this.name);
-				}
-			} else if(StrEqual(this.input, "_lock")) {
-				AcceptEntityInput(entity, "Close");
-				AcceptEntityInput(entity, "Lock");
-			} else if(StrEqual(this.input, "_lock_nobreak")) {
-				AcceptEntityInput(entity, "Close");
-				AcceptEntityInput(entity, "Lock");
-				AcceptEntityInput(entity, "SetUnbreakable");
-			} else {
-				char cmd[32];
-				// Split input "a b" to a with variant "b"
-				int len = SplitString(this.input, " ", cmd, sizeof(cmd));
-				if(len > -1) {
-					SetVariantString(this.input[len]);
-					AcceptEntityInput(entity, cmd);
-					Debug("_trigger(%d): %s (v=%s)", entity, cmd, this.input[len]);
-				} else {
-					Debug("_trigger(%d): %s", entity, this.input);
-					AcceptEntityInput(entity, this.input);
-				}
-				
-			}
+			TriggerEntityInput(entity, this.input);
 		}
+	}
+}
+
+void TriggerEntityInput(int entity, const char[] input) {
+	if(StrEqual(input, "_allow_ladder")) {
+		if(HasEntProp(entity, Prop_Send, "m_iTeamNum")) {
+			SetEntProp(entity, Prop_Send, "m_iTeamNum", 0);
+		} else {
+			Log("Warn: Entity (%d) has no teamnum for \"_allow_ladder\"", entity);
+		}
+	} else if(StrEqual(input, "_lock")) {
+		AcceptEntityInput(entity, "Close");
+		AcceptEntityInput(entity, "Lock");
+	} else if(StrEqual(input, "_lock_nobreak")) {
+		AcceptEntityInput(entity, "Close");
+		AcceptEntityInput(entity, "Lock");
+		AcceptEntityInput(entity, "SetUnbreakable");
+	} else {
+		char cmd[32];
+		// Split input "a b" to a with variant "b"
+		int len = SplitString(input, " ", cmd, sizeof(cmd));
+		if(len > -1) {
+			SetVariantString(input[len]);
+			AcceptEntityInput(entity, cmd);
+			Debug("_trigger(%d): %s (v=%s)", entity, cmd, input[len]);
+		} else {
+			Debug("_trigger(%d): %s", entity, input);
+			AcceptEntityInput(entity, input);
+		}
+		
 	}
 }
 

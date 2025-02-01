@@ -39,6 +39,7 @@ bool randomizerRan = false;
 #include <randomizer/util.sp>
 #include <randomizer/loader_functions.sp>
 #include <randomizer/select_functions.sp>
+#include <randomizer/spawn_functions.sp>
 #include <randomizer/rbuild.sp>
 #include <randomizer/caralarm.sp>
 
@@ -725,24 +726,6 @@ void AssignGascan(int gascan, GascanSpawnerData spawner) {
 	Debug("Assigning gascan %d to spawner at %.0f %.0f %.0f", gascan, spawner.origin[0], spawner.origin[1], spawner.origin[2]);
 }
 
-int CreateLight(const float origin[3], const float angles[3], const int color[4] = { 255, 255, 255, 1 }, float distance = 100.0) {
-	int entity = CreateEntityByName("light_dynamic");
-	if(entity == -1) return -1; 
-	DispatchKeyValue(entity, "targetname", ENT_PROP_NAME);
-	DispatchKeyValueInt(entity, "brightness", color[3]);
-	DispatchKeyValueFloat(entity, "distance", distance);
-	DispatchKeyValueFloat(entity, "_inner_cone", angles[0]);
-	DispatchKeyValueFloat(entity, "_cone", angles[1]);
-	DispatchKeyValueFloat(entity, "pitch", angles[2]);
-	// DispatchKeyValueInt()
-	TeleportEntity(entity, origin, NULL_VECTOR, NULL_VECTOR);
-	if(!DispatchSpawn(entity)) return -1;
-	SetEntityRenderColor(entity, color[0], color[1], color[2], color[3]);
-	SetEntityRenderMode(entity, RENDER_TRANSCOLOR);
-	AcceptEntityInput(entity, "TurnOn");
-	return entity;
-}
-
 void AddGascanSpawner(VariantEntityData data) {
 	if(g_MapData.gascanSpawners == null) {
 		g_MapData.gascanSpawners = new ArrayList(sizeof(GascanSpawnerData));
@@ -756,45 +739,14 @@ void AddGascanSpawner(VariantEntityData data) {
 }
 
 void spawnEntity(VariantEntityData entity) {
-	// if(entity.type[0] == '_') {
-	// 	if(StrEqual(entity.type, "_gascan")) {
-	// 		AddGascanSpawner(entity);
-	// 	} 
-	// }
-	if(StrEqual(entity.type, "_gascan")) {
-		AddGascanSpawner(entity);
-	} else if(StrEqual(entity.type, "env_fire")) {
-		Debug("spawning \"%s\" at (%.1f %.1f %.1f) rot (%.0f %.0f %.0f)", entity.type, entity.origin[0], entity.origin[1], entity.origin[2], entity.angles[0], entity.angles[1], entity.angles[2]);
-		CreateFire(entity.origin, 20.0, 100.0, 1.0);
-	} else if(StrEqual(entity.type, "light_dynamic")) {
-		CreateLight(entity.origin, entity.angles, entity.color, entity.scale[0]);	
-		Effect_DrawBeamBoxRotatableToAll(entity.origin, { -5.0, -5.0, -5.0}, { 5.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {255, 255, 0, 255}, 0);
-	} else if(StrEqual(entity.type, "env_physics_blocker") || StrEqual(entity.type, "env_player_blocker")) {
-		CreateEnvBlockerScaled(entity.type, entity.origin, entity.scale);
-	} else if(StrEqual(entity.type, "infodecal")) {
-		Effect_DrawBeamBoxRotatableToAll(entity.origin, { -1.0, -5.0, -5.0}, { 1.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {73, 0, 130, 255}, 0);
-		CreateDecal(entity.model, entity.origin);
-	} else if(StrContains(entity.type, "prop_") == 0 || StrEqual(entity.type, "prop_fuel_barrel")) {
-		if(entity.model[0] == '\0') {
-			LogError("Missing model for entity with type \"%s\"", entity.type);
-			return;
-		} else if(!PrecacheModel(entity.model)) {
-			LogError("Precache of entity model \"%s\" with type \"%s\" failed", entity.model, entity.type);
-			return;
+	if(entity.type[0] == '_') {
+		if(StrEqual(entity.type, "_gascan")) {
+			AddGascanSpawner(entity);
+		} else if(StrContains(entity.type, "_car") != -1) {
+			SpawnCar(entity);
+		} else {
+			Log("WARN: Unknown custom entity type \"%s\", skipped", entity.type);
 		}
-		int prop = CreateProp(entity.type, entity.model, entity.origin, entity.angles);
-		SetEntityRenderColor(prop, entity.color[0], entity.color[1], entity.color[2], entity.color[3]);
-		entity.ApplyProperties(prop);
-	} else if(StrContains(entity.type, "weapon_") == 0) {
-		if(entity.model[0] == '\0') {
-			LogError("Missing model for entity with type \"%s\"", entity.type);
-			return;
-		} else if(!PrecacheModel(entity.model)) {
-			LogError("Precache of entity model \"%s\" with type \"%s\" failed", entity.model, entity.type);
-			return;
-		}
-		int prop = CreateProp(entity.type, entity.model, entity.origin, entity.angles);
-		SetEntityRenderColor(prop, entity.color[0], entity.color[1], entity.color[2], entity.color[3]);
 	} else if(StrEqual(entity.type, "hammerid")) {
 		int targetId = StringToInt(entity.model);
 		if(targetId > 0) {
@@ -834,8 +786,26 @@ void spawnEntity(VariantEntityData entity) {
 		}
 		if(!found)
 			Debug("Warn: Could not find entity (classname=%s)", entity.model);
-	} else if(StrContains(entity.type, "_car") != -1) {
-		SpawnCar(entity);
+	}  else if(StrEqual(entity.type, "env_fire")) {
+		Debug("spawning \"%s\" at (%.1f %.1f %.1f) rot (%.0f %.0f %.0f)", entity.type, entity.origin[0], entity.origin[1], entity.origin[2], entity.angles[0], entity.angles[1], entity.angles[2]);
+		R_CreateFire(entity);
+	} else if(StrEqual(entity.type, "light_dynamic")) {
+		R_CreateLight(entity);	
+		Effect_DrawBeamBoxRotatableToAll(entity.origin, { -5.0, -5.0, -5.0}, { 5.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {255, 255, 0, 255}, 0);
+	} else if(StrEqual(entity.type, "env_physics_blocker") || StrEqual(entity.type, "env_player_blocker")) {
+		R_CreateEnvBlockerScaled(entity);
+	} else if(StrEqual(entity.type, "infodecal")) {
+		Effect_DrawBeamBoxRotatableToAll(entity.origin, { -1.0, -5.0, -5.0}, { 1.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {73, 0, 130, 255}, 0);
+		R_CreateDecal(entity);
+	} else if(StrContains(entity.type, "weapon_") == 0 || StrContains(entity.type, "prop_") == 0 || StrEqual(entity.type, "prop_fuel_barrel")) {
+		if(entity.model[0] == '\0') {
+			LogError("Missing model for entity with type \"%s\"", entity.type);
+			return;
+		} else if(!PrecacheModel(entity.model)) {
+			LogError("Precache of entity model \"%s\" with type \"%s\" failed", entity.model, entity.type);
+			return;
+		}
+		R_CreateProp(entity);
 	} else if(StrEqual(entity.type, "move_rope")) {
 		if(!PrecacheModel(entity.model)) {
 			LogError("Precache of entity model \"%s\" with type \"%s\" failed", entity.model, entity.type);
@@ -847,7 +817,7 @@ void spawnEntity(VariantEntityData entity) {
 		}
 		CreateRope(entity);
 	} else {
-		LogError("Unknown entity type \"%s\"", entity.type);
+		LogError("Unsupported entity type \"%s\"", entity.type);
 	}
 }
 
@@ -897,6 +867,10 @@ int _CreateRope(const char[] type, const char[] targetname, const char[] nextKey
 	return entity;
 }
 
+// void DebugBox(const float origin[3], const float scale[3], int color[4]) {
+// 	Effect_DrawBeamBoxRotatableToAll(entity.origin, { -5.0, -5.0, -5.0}, { 5.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {255, 255, 0, 255}, 0);
+// }
+		
 void Debug(const char[] format, any ...) {
     #if defined DEBUG_SCENE_PARSE
 	char buffer[192];
