@@ -12,6 +12,7 @@ ConVar directorSpawnChance; // Base chance of a special spawning, changed by pla
 #define DIRECTOR_STRESS_CUTOFF 0.75 // The minimum chance a random cut off stress value is chosen [this, 1.0]
 #define DIRECTOR_REST_CHANCE 0.04 // The chance the director ceases spawning
 #define DIRECTOR_REST_MAX_COUNT 8 // The maximum amount of rest given (this * DIRECTOR_TIMER_INTERVAL)
+#define DIRECTOR_ESCAPE_TANK_MIN_TIME_S 40 // The min time in seconds that must elapse since escape vehicle arrival until tank can spawn
 
 #define DIRECTOR_DEBUG_SPAWN 1 // Dont actually spawn
 
@@ -155,6 +156,12 @@ void Director_CheckClient(int client) {
 static int g_newTankHealth = 0; 
 void OnTankBotSpawn(int client) {
 	if(!IsEPIActive() || !(cvEPISpecialSpawning.IntValue & 4)) return;
+	if(g_finaleVehicleStartTime > 0 && GetTime() - g_finaleVehicleStartTime >  DIRECTOR_ESCAPE_TANK_MIN_TIME_S) {
+		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: Tank too early, killing");
+		ForcePlayerSuicide(client);
+		return;
+	} 
+
 	// Check if any finale is active
 	if(g_newTankHealth > 0) {
 		// A split tank has spawned, set its health
@@ -164,29 +171,29 @@ void OnTankBotSpawn(int client) {
 		return;
 	} else if(g_realSurvivorCount >= hExtraTankThreshold.IntValue && g_extraFinaleTankEnabled && hExtraFinaleTank.IntValue > 1) {
 		// If we have hExtraTankThreshold or more and finale tanks enabled, spawn finale tanks:
-		if(g_finaleStage == Stage_Active) {
+		if(g_epiTankState == Stage_Active) {
 			// 1st tank spawned
 			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: [FINALE] 1st tank spawned");
 			int health = CalculateExtraTankHealth(client);
 			SetEntProp(client, Prop_Send, "m_iHealth", health);
-			g_finaleStage = Stage_FirstTankSpawned;
+			g_epiTankState = Stage_FirstTankSpawned;
 			return;
-		} else if(g_realSurvivorCount >= 6 && g_finaleStage == Stage_FirstTankSpawned) {
+		} else if(g_realSurvivorCount >= 6 && g_epiTankState == Stage_FirstTankSpawned) {
 			PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: [FINALE] 2nd tank spawned");
 			float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
 			// Pass it 0, which doesnt make it a split tank, has default health
 			CreateTimer(duration, Timer_SpawnSplitTank, 0);
 			int health = CalculateExtraTankHealth(client);
 			SetEntProp(client, Prop_Send, "m_iHealth", health);
-			g_finaleStage = Stage_SecondTankSpawned;
+			g_epiTankState = Stage_SecondTankSpawned;
 			return;
 		}
 	}
 
 	// End finale logic:
-	if(g_finaleStage == Stage_SecondTankSpawned) {
+	if(g_epiTankState == Stage_SecondTankSpawned) {
 		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: [FINALE] Health set, tank logic done");
-		g_finaleStage = Stage_ActiveDone;
+		g_epiTankState = Stage_ActiveDone;
 		// We don't return, letting the 2nd 5+ finale tank get buffed:
 	}
 	// This should not run on active finales (different than finale maps, such as swamp fever's, where finale isnt full map)
@@ -200,7 +207,7 @@ void OnTankBotSpawn(int client) {
 		(4) random chance set by hSplitTankChance
 	Otherwise, just scale health based on survivor count
 	*/
-	if(g_finaleStage == Stage_Inactive && g_realSurvivorCount >= hExtraTankThreshold.IntValue && hExtraFinaleTank.IntValue & 1 && GetURandomFloat() <= hSplitTankChance.FloatValue) {
+	if(g_epiTankState == Stage_Inactive && g_realSurvivorCount >= hExtraTankThreshold.IntValue && hExtraFinaleTank.IntValue & 1 && GetURandomFloat() <= hSplitTankChance.FloatValue) {
 		float duration = GetRandomFloat(EXTRA_TANK_MIN_SEC, EXTRA_TANK_MAX_SEC);
 		int splitHealth = health / 2;
 		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: split tank in %.1fs, health=%d", duration, splitHealth);
@@ -303,7 +310,7 @@ void Director_PrintDebug(int client) {
 	}
 	PrintToConsole(client, "highestFlow = %f, g_minFlowSpawn = %f, current flow = %f", g_highestFlowAchieved, g_minFlowSpawn, L4D2Direct_GetFlowDistance(client));
 	PrintToConsole(client, "g_maxStressIntensity = %f, current avg = %f", g_maxStressIntensity, L4D_GetAvgSurvivorIntensity());
-	PrintToConsole(client, "TankInPlay=%b, FinaleStage=%d, FinaleEscapeReady=%b, DirectorTankCheck:%b", L4D2_IsTankInPlay(), g_finaleStage, g_isFinaleEnding, L4D2_IsTankInPlay() && !g_isFinaleEnding);
+	PrintToConsole(client, "TankInPlay=%b, FinaleStage=%d, FinaleEscapeReady=%b, DirectorTankCheck:%b", L4D2_IsTankInPlay(), g_epiTankState, g_isFinaleEnding, L4D2_IsTankInPlay() && !g_isFinaleEnding);
 	char buffer[128];
 	float time = GetGameTime();
 	PrintToConsole(client, "Last Spawn Deltas: (%.1f s) (min %f)", time - g_lastSpecialSpawnTime, DIRECTOR_MIN_SPAWN_TIME);

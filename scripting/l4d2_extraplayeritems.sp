@@ -99,6 +99,7 @@ static char g_currentGamemode[32];
 static bool g_isGamemodeAllowed;
 int g_survivorCount, g_realSurvivorCount;
 bool g_isFinaleEnding;
+int g_finaleVehicleStartTime;
 static bool g_epiEnabled;
 bool g_isOfficialMap;
 
@@ -230,14 +231,15 @@ enum struct Cabinet {
 }
 static Cabinet cabinets[10]; //Store 10 cabinets
 
-enum FinaleStage {
+enum EPI_FinaleTankState {
 	Stage_Inactive = 0,
 	Stage_Active = 1, // Finale has started
 	Stage_FirstTankSpawned = 2,
 	Stage_SecondTankSpawned = 3,
 	Stage_ActiveDone = 10 // No more logic to be done
 }
-FinaleStage g_finaleStage;
+EPI_FinaleTankState g_epiTankState;
+int g_finaleState;
 
 //// Definitions completSe
 
@@ -295,6 +297,7 @@ public void OnPluginStart() {
 	HookEvent("finale_vehicle_incoming", Event_FinaleVehicleIncoming);
 	HookEvent("player_bot_replace", Event_PlayerToIdle);
 	HookEvent("bot_player_replace", Event_PlayerFromIdle);
+
 	
 
 
@@ -384,7 +387,9 @@ public void OnPluginStart() {
 }
 
 void Event_FinaleVehicleIncoming(Event event, const char[] name, bool dontBroadcast) {
+	PrintDebug(DEBUG_INFO, "Finale vehicle incoming, preventing early tank spawns");
 	g_isFinaleEnding = true;
+	g_finaleVehicleStartTime = GetTime();
 }
 
 Action Timer_ForceUpdateInventories(Handle h) {
@@ -1331,6 +1336,7 @@ void Debug_GetAttributes(int attributes, char[] output, int maxlen) {
 }
 
 public void L4D2_OnChangeFinaleStage_Post(int stage) {
+	g_finaleState = stage;
 	if(stage == 1 && IsEPIActive()) {
 		IncreaseKits(true);
 	}
@@ -1387,7 +1393,7 @@ public void OnMapStart() {
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 
-	g_finaleStage = Stage_Inactive;
+	g_epiTankState = Stage_Inactive;
 
 	L4D2_RunScript(HUD_SCRIPT_CLEAR);
 	Director_OnMapStart();
@@ -1488,11 +1494,12 @@ public void OnMapEnd() {
 		}
 	}
 	delete updateHudTimer;
+	g_finaleVehicleStartTime = 0;
 	Director_OnMapEnd();
 }
 
 void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
-	g_finaleStage = Stage_Active;
+	g_epiTankState = Stage_Active;
 }
 public void OnClientSpeaking(int client) {
 	g_isSpeaking[client] = true;
@@ -1836,7 +1843,6 @@ void PopulateItemSpawns(int minWalls = 4) {
 	navs.Sort(Sort_Random, Sort_Integer);
 	float pos[3];
 	float percentage = hExtraSpawnBasePercentage.FloatValue * (g_survivorCount - 4);
-	PrintToServer("[EPI] Populating extra item spawns based on player count (%d-4) | Percentage %.2f%%", g_survivorCount, percentage * 100);
 	int tier;
 	// On first chapter, 10% chance to give tier 2
 	if(g_currentChapter == 1) tier = GetRandomFloat() < 0.15 ? 1 : 0;
@@ -1844,10 +1850,11 @@ void PopulateItemSpawns(int minWalls = 4) {
 	int count;
 
 	float mapFlowMax = L4D2Direct_GetMapMaxFlowDistance();
-	PrintToServer("[EPI] PopulateItemSpawns: flow[0, %f]", mapFlowMax);
 	int maxSpawns = RoundFloat(mapFlowMax / MAX_RANDOM_SPAWNS);
 	int defibCount = CalculateExtraDefibCount();
 	bool isFinale = L4D_IsMissionFinalMap();
+	PrintToServer("[EPI] Populating extra item spawns based on player count (%d-4) | Percentage %.2f%%", g_survivorCount, percentage * 100);
+	PrintToServer("[EPI] PopulateItemSpawns: flow[0, %f] tier=%d maxSpawns=%d defibCount=%d", mapFlowMax, tier, maxSpawns, defibCount);
 
 	for(int i = 0; i < navs.Length; i++) {
 		Address nav = navs.Get(i);
