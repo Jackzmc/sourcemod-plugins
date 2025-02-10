@@ -67,6 +67,18 @@ methodmap SceneSelection < ArrayList {
         }
     }
 
+	public bool HasScene(const char[] sceneId) {
+		SelectedSceneData aScene;
+        ArrayList list = view_as<ArrayList>(this);
+        for(int i = 0; i < list.Length; i++) {
+            list.GetArray(i, aScene);
+			if(StrEqual(aScene.name, sceneId)) {
+				return true;
+			}
+        }
+		return false;
+	}
+
     public void Get(int sceneIndex, SelectedSceneData scene) {
         (view_as<ArrayList>(this)).GetArray(sceneIndex, scene);
     }
@@ -124,7 +136,6 @@ enum struct MapData {
 	StringMap scenesKv;
 	ArrayList scenes;
 	ArrayList lumpEdits;
-	ArrayList activeScenes;
 	ArrayList gascanSpawners;
 	StringMap groups;
 
@@ -137,7 +148,6 @@ enum struct MapData {
 		delete this.scenes;
 		delete this.scenesKv;
 		delete this.lumpEdits;
-		delete this.activeScenes;
 		delete this.gascanSpawners;
 		delete this.groups;
 	}
@@ -274,6 +284,7 @@ enum struct SceneVariantData {
 		}
 		delete this.entities;
 		delete this.forcedScenes;
+		Debug("variant deleted fs=%d", this.forcedScenes != null ? this.forcedScenes.Length : -1);
 	}
 }
 
@@ -287,18 +298,10 @@ enum struct VariantEntityData {
 	int color[4];
 
 	ArrayList keyframes;
-	// PropertyStore properties;
-	// JSONObject propertiesInt;
-	// JSONObject propertiesString;
-	// JSONObject propertiesFloat;
 
 	JSONArray properties;
 
 	void Cleanup() {
-		// if(this.keyframes != null) {
-			// delete this.keyframes;
-		// }
-		// this.properties.Cleanup();
 		if(this.properties != null) {
 			JSONObject obj;
 			for(int i = 0; i < this.properties.Length; i++) {
@@ -310,22 +313,6 @@ enum struct VariantEntityData {
 	}
 
 	void ApplyProperties(int entity) {
-		// if(!this.properties.HasAny()) return;
-		// char key[64];
-		// ArrayList keys = this.properties.Keys();
-		// for(int i = 0; i < keys.Length; i++) {
-		// 	keys.GetString(i, key, sizeof(key));
-		// 	// Only want to apply netprops (m_ prefix)
-		// 	if(key[0] == 'm' && key[1] == '_') {
-		// 		this._ApplyNetprop(entity, key);
-		// 	} else if(key[0] == "_") {
-		// 		this._ApplyCustom(entity, key);
-		// 	} else {
-		// 		this._ApplyKeyvalue(entity, key);
-		// 	}
-		// }
-		// delete keys;
-
 		if(this.properties != null) {
 			JSONObject obj;
 			char type[64], key[64];

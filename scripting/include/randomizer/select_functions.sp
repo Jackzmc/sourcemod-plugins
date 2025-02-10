@@ -59,7 +59,6 @@ void trySelectScene(SceneSelection selection, SceneData scene, int flags) {
     ArrayList choices = new ArrayList();
 	SceneVariantData choice;
 	int chosenIndex;
-	Debug("Scene %s has %d variants", scene.name, scene.variants.Length);
 	// Weighted random: Push N times dependent on weight
 	for(int i = 0; i < scene.variants.Length; i++) {
 		scene.variants.GetArray(i, choice);
@@ -83,7 +82,6 @@ void trySelectScene(SceneSelection selection, SceneData scene, int flags) {
 		chosenIndex = GetURandomInt() % choices.Length;
 		chosenIndex = choices.Get(chosenIndex);
 		Log("Chosen scene \"%s\" with variant #%d", scene.name, chosenIndex);
-
         aScene.selectedVariantIndexes.Push(chosenIndex);
 	}
     delete choices;
@@ -118,6 +116,7 @@ void selectForcedScenes(SceneSelection selection, MapData data, int flags) {
 	SceneVariantData choice;
     SceneData scene;
 	// list of scenes that will need to be forced if not already:
+	// (concat of all choice's .forcedScenes)
 	ArrayList forcedScenes = new ArrayList(ByteCountToCells(MAX_SCENE_NAME_LENGTH));
     char key[MAX_SCENE_NAME_LENGTH];
 	for(int i = 0; i < selection.Count; i++) {
@@ -129,10 +128,16 @@ void selectForcedScenes(SceneSelection selection, MapData data, int flags) {
 			// can't find scene, ignore
 			continue;
 		}
+		// Check all it's variants for any forced/required scenes
         for(int v = 0; v < aScene.selectedVariantIndexes.Length; v++) {
-            aScene.selectedVariantIndexes.GetArray(v, choice);
+			// Load the variant from its index
+			int variantIndex = aScene.selectedVariantIndexes.Get(v);
+            scene.variants.GetArray(variantIndex, choice);
+			
+			Debug("%s/#%d %d", aScene.name, v, choice.forcedScenes != null ? choice.forcedScenes.Length : -1);
             // If the choice has forced scenes
             if(choice.forcedScenes != null) {
+				Debug("scene#%d \"%s\" has forced scenes (%d)", aScene.name, v, choice.forcedScenes.Length);
                 // Add each scene to the list to be added
 				for(int j = 0; j < choice.forcedScenes.Length; j++) {
 					choice.forcedScenes.GetString(j, key, sizeof(key));
@@ -149,17 +154,10 @@ void selectForcedScenes(SceneSelection selection, MapData data, int flags) {
 	for(int i = 0; i < forcedScenes.Length; i++) {
 		forcedScenes.GetString(i, key, sizeof(key));
 		// Check if scene was already loaded
-		bool isSceneAlreadyLoaded = false;
-		for(int j = 0; j < data.activeScenes.Length; j++) {
-			data.activeScenes.GetArray(j, aScene);
-			if(StrEqual(aScene.name, key)) {
-				isSceneAlreadyLoaded = true;
-				break;
-			}
+		if(!selection.HasScene(key)) {
+			data.scenesKv.GetArray(key, scene, sizeof(scene));
+			trySelectScene(selection, scene, flags | view_as<int>(FLAG_FORCE_ACTIVE));
 		}
-		if(isSceneAlreadyLoaded) continue;
-		data.scenesKv.GetArray(key, scene, sizeof(scene));
-		trySelectScene(selection, scene, flags | view_as<int>(FLAG_FORCE_ACTIVE));
 	}
 	delete forcedScenes;
 }

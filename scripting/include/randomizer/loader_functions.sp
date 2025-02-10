@@ -134,7 +134,6 @@ void loadChoice(SceneData scene, JSONObject choiceData, JSONArray extraEntities)
     choice.weight = choiceData.HasKey("weight") ? choiceData.GetInt("weight") : 1;
 	choice.entities = new ArrayList(sizeof(VariantEntityData));
 	choice.inputsList = new ArrayList(sizeof(VariantInputData));
-	choice.forcedScenes = new ArrayList(ByteCountToCells(MAX_SCENE_NAME_LENGTH));
 	// Load in any variant-based entities
 	if(choiceData.HasKey("entities")) {
 		JSONArray entities = view_as<JSONArray>(choiceData.Get("entities"));
@@ -161,12 +160,13 @@ void loadChoice(SceneData scene, JSONObject choiceData, JSONArray extraEntities)
 		delete inputsList;
 	}
 	if(choiceData.HasKey("force_scenes")) {
+		choice.forcedScenes = new ArrayList(ByteCountToCells(MAX_SCENE_NAME_LENGTH));
 		JSONArray scenes = view_as<JSONArray>(choiceData.Get("force_scenes"));
 		char sceneId[32];
 		for(int i = 0; i < scenes.Length; i++) {
 			scenes.GetString(i, sceneId, sizeof(sceneId));
 			choice.forcedScenes.PushString(sceneId);
-			Debug("scene %s: require %s", scene.name, sceneId);
+			Debug("scene %s: adding required scene %s", scene.name, sceneId);
 		}
 		delete scenes;
 	}
