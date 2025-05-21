@@ -134,7 +134,6 @@ void selectForcedScenes(SceneSelection selection, MapData data, int flags) {
 			int variantIndex = aScene.selectedVariantIndexes.Get(v);
             scene.variants.GetArray(variantIndex, choice);
 			
-			Debug("%s/#%d %d", aScene.name, v, choice.forcedScenes != null ? choice.forcedScenes.Length : -1);
             // If the choice has forced scenes
             if(choice.forcedScenes != null) {
 				Debug("scene#%d \"%s\" has forced scenes (%d)", aScene.name, v, choice.forcedScenes.Length);

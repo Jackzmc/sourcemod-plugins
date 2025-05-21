@@ -284,7 +284,6 @@ enum struct SceneVariantData {
 		}
 		delete this.entities;
 		delete this.forcedScenes;
-		Debug("variant deleted fs=%d", this.forcedScenes != null ? this.forcedScenes.Length : -1);
 	}
 }
 

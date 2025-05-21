@@ -12,7 +12,7 @@ ConVar directorSpawnChance; // Base chance of a special spawning, changed by pla
 #define DIRECTOR_STRESS_CUTOFF 0.75 // The minimum chance a random cut off stress value is chosen [this, 1.0]
 #define DIRECTOR_REST_CHANCE 0.04 // The chance the director ceases spawning
 #define DIRECTOR_REST_MAX_COUNT 8 // The maximum amount of rest given (this * DIRECTOR_TIMER_INTERVAL)
-#define DIRECTOR_ESCAPE_TANK_MIN_TIME_S 40 // The min time in seconds that must elapse since escape vehicle arrival until tank can spawn
+#define DIRECTOR_ESCAPE_TANK_MIN_TIME_S 20 // The min time in seconds that must elapse since escape vehicle arrival until tank can spawn
 
 #define DIRECTOR_DEBUG_SPAWN 1 // Dont actually spawn
 
@@ -156,7 +156,7 @@ void Director_CheckClient(int client) {
 static int g_newTankHealth = 0; 
 void OnTankBotSpawn(int client) {
 	if(!IsEPIActive() || !(cvEPISpecialSpawning.IntValue & 4)) return;
-	if(g_finaleVehicleStartTime > 0 && GetTime() - g_finaleVehicleStartTime >  DIRECTOR_ESCAPE_TANK_MIN_TIME_S) {
+	if(g_finaleVehicleStartTime > 0 && GetTime() - g_finaleVehicleStartTime <= DIRECTOR_ESCAPE_TANK_MIN_TIME_S) {
 		PrintDebug(DEBUG_SPAWNLOGIC, "OnTankBotSpawn: Tank too early, killing");
 		ForcePlayerSuicide(client);
 		return;
@@ -325,6 +325,7 @@ void Director_PrintDebug(int client) {
 	}
 	PrintToConsole(client, "\t%s", buffer);
 	PrintToConsole(client, "timer interval=%.0f, rest count=%d, rest time left=%.0fs", DIRECTOR_TIMER_INTERVAL, g_restCount, float(g_restCount) * DIRECTOR_TIMER_INTERVAL);
+	PrintToConsole(client, "g_finaleVehicleStartTime = %d (%ds ago)", g_finaleVehicleStartTime, GetTime() - g_finaleVehicleStartTime);
 }
 
 void Director_RandomizeLimits() {

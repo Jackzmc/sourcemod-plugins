@@ -92,6 +92,7 @@ enum PanelSettings {
 	Setting_None = 0,
 	Setting_DisableWithNoViewers = 1
 }
+StringMap g_voiceState;
 GameState g_gameState = State_None;
 #define BUFFER_SIZE 2048
 Buffer sendBuffer;
@@ -110,6 +111,8 @@ public void OnPluginStart() {
 	} else if(!ConnectDB()) {
 		SetFailState("Failed to connect to database.");
 	}
+
+	g_voiceState = new StringMap();
 
 	g_socket = new Socket(SOCKET_TCP, OnSocketError);
 	g_socket.SetOption(SocketKeepAlive, 1);
@@ -173,6 +176,7 @@ public void OnPluginStart() {
 
 	RegAdminCmd("sm_panel_debug", Command_PanelDebug, ADMFLAG_GENERIC);
 	RegAdminCmd("sm_panel_request_stop", Command_RequestStop, ADMFLAG_GENERIC);
+	RegConsoleCmd("sm_voice", Command_Voice);
 
 	CommandArgRegex = new Regex("(?:[^\\s\"]+|\"[^\"]*\")+", 0);
 
@@ -370,6 +374,22 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 
 	lastReceiveTime = GetTime();
 	switch(response) {
+		case Live_VoiceState: {
+			bool connected = receiveBuffer.ReadByte() == 1;
+			char id[64];
+			receiveBuffer.ReadString(id, sizeof(id));
+			char name[64];
+			receiveBuffer.ReadString(name, sizeof(name));
+			if(connected) {
+
+				g_voiceState.SetString(id, name);
+				// first person to join
+				PrintChatToAdmins("[Discord] %s has joined voice (%d in voice)", name, g_voiceState.Size);
+			} else {
+				g_voiceState.Remove(id);
+				PrintChatToAdmins("[Discord] %s has left voice (%d in voice)", name, g_voiceState.Size);
+			}
+		}
 		case Live_RunCommand: {
 			char command[128];
 			char cmdNamespace[32];
@@ -683,6 +703,7 @@ bool ConnectSocket(bool force = false, int authTry = 0) {
 		Debug("ConnectSocket: Ignoring request, auth failed");
 		return false;
 	}
+	g_voiceState.Clear();
 	authState = Auth_Pending;
 	g_socket.Connect(OnSocketConnect, OnSocketReceive, OnSocketDisconnect, serverIp, serverPort);
 	CreateTimer(10.0, Timer_ConnectTimeout, authTry);
@@ -698,6 +719,20 @@ Action Timer_ConnectTimeout(Handle h, int attempt) {
 		Debug("timed out waiting for connection callback, trying again (try=%d)", attempt);
 		ConnectSocket(false, attempt + 1);
 	}
+	return Plugin_Handled;
+}
+
+Action Command_Voice(int client, int args) {
+	ReplyToCommand(client, "Users in Voice (%d):", g_voiceState.Size);
+	StringMapSnapshot snapshot = g_voiceState.Snapshot();
+	char key[64], buffer[64];
+	for(int i = 0; i < snapshot.Length; i++) {
+		snapshot.GetKey(i, key, sizeof(key));
+		g_voiceState.GetString(key, buffer, sizeof(buffer));
+		ReplyToCommand(client, "  %d. %s", i + 1, buffer);
+	}
+
+	delete snapshot;
 	return Plugin_Handled;
 }
 
@@ -797,8 +832,12 @@ void Event_PlayerInfo(Event event, const char[] name, bool dontBroadcast) {
 void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) { 
 	int userid = event.GetInt("userid");
 	int client = GetClientOfUserId(userid);
-	if(client > 0)
+	if(client > 0) {
 		SetupUserInDB(client);
+		if(GetUserAdmin(client) != INVALID_ADMIN_ID && g_voiceState.Size > 0) {
+			PrintToChat(client, "There are %d users in discord voice.", g_voiceState.Size);
+		}
+	}
 }
 
 void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
@@ -1222,7 +1261,7 @@ enum LiveRecordType {
 	Live_SurvivorItems = 5,
 	Live_CommandResponse = 6,
 	Live_Auth = 7,
-	Live_Meta = 8
+	Live_Meta = 8,
 }
 char LIVE_RECORD_NAMES[view_as<int>(Live_Meta)+1][] = {
 	"Game",
@@ -1241,7 +1280,8 @@ enum LiveRecordResponse {
 	Live_Reconnect,
 	Live_Error,
 	Live_Refresh,
-	Live_RunCommand
+	Live_RunCommand,
+	Live_VoiceState
 }
 
 char pendingRecords[64];
