@@ -12,7 +12,7 @@ Useful things:
 ## Compilation
 Currently plugins are only compiled and tested with **SM 1.12-7177** and **SM 1.12-7202**.
 
-Latest compiled plugins are found here at https://ci.jackz.me/job/sourcemod-plugins/
+Latest compiled plugins are found here at https://ci.jackz.me/job/sourcemod-plugins/ [![Build Status](https://ci.jackz.me/job/sourcemod-plugins/badge/icon)](https://ci.jackz.me/job/sourcemod-plugins/) 
 
 Otherwise the plugins/ folder here are manually compiled by me, and may be outdated.
 
