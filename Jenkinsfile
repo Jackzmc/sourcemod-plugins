@@ -9,13 +9,16 @@ pipeline {
 
     stages {
         stage("Build Plugins") {
-            sh "cd /build/scripting"
-            sh "for file in *.sp; do spcomp -o ../plugins/$file.smx -i /sourcemod/include -i include; done"
-        }
-        post {
-            success {
-                archiveArtifacts(artifacts: 'plugins/*.smx', fingerprint: true)
+            steps {
+                sh "cd /build/scripting"
+                sh "for file in *.sp; do spcomp -o ../plugins/$file.smx -i /sourcemod/include -i include; done"
+            }
+            post {
+                success {
+                    archiveArtifacts(artifacts: 'plugins/*.smx', fingerprint: true)
+                }
             }
         }
+        
     }
 }
