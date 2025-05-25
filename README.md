@@ -6,10 +6,16 @@ Please note that these plugins are only guaranteed to work on Left 4 Dead **2**.
 
 Not always the latest versions. If you have any interest with a plugin, I can make sure to upload the latest.
 
-Currently plugins are only compiled and tested with SM 1.11-6964
-
 Useful things:
 1. **Netprop Viewer** [L4D2 Netprops](https://jackz.me/netprops/l4d2/netprops) and [L4D2 Datamaps](https://jackz.me/netprops/l4d2/datamaps)
+
+## Compilation
+Currently plugins are only compiled and tested with **SM 1.12-7177** and **SM 1.12-7202**.
+
+Latest compiled plugins are found here at https://ci.jackz.me/job/sourcemod-plugins/ [![Build Status](https://ci.jackz.me/job/sourcemod-plugins/badge/icon)](https://ci.jackz.me/job/sourcemod-plugins/) 
+
+Otherwise the plugins/ folder here are manually compiled by me, and may be outdated.
+
 
 ## Plugin List
 
