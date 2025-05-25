@@ -8,8 +8,14 @@ pipeline {
 
     stages {
         stage("Build Plugins") {
+            agent {
+                docker {
+                    image 'jackzmc/spcomp:debian-1.12-git7202'
+                    reuseNode true
+                }
+            }
             steps {
-                sh '/sourcemod/compile_jenkins.sh || echo fail && exit 0'
+                sh '/sourcemod/compile_jenkins.sh'
             }
             post {
                 success {
