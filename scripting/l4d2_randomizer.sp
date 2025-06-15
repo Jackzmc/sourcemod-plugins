@@ -169,7 +169,19 @@ Action Command_Debug(int client, int args) {
 	if(args > 0) {
 		char arg[32];
 		GetCmdArg(1, arg, sizeof(arg));
-		if(StrEqual(arg, "scenes")) {
+		if(StrEqual(arg, "id")) {
+			if(g_MapData.IsLoaded()) {
+				float origin[3];
+				int entity = GetLookingPosition(client, Filter_IgnorePlayer, origin);
+				if(entity == 0) {
+					ReplyToCommand(client, "No entity found");
+					return Plugin_Handled;
+				}
+				IdentifyEntityScene(client, entity);
+			} else {
+				ReplyToCommand(client, "No map data loaded");
+			}
+		} else if(StrEqual(arg, "scenes")) {
 			if(g_MapData.IsLoaded()) {
 				StringMapSnapshot snapshot = g_MapData.scenesKv.Snapshot();
 				char buffer[MAX_SCENE_NAME_LENGTH];
@@ -181,8 +193,7 @@ Action Command_Debug(int client, int args) {
 			} else {
 				ReplyToCommand(client, "No map data loaded");
 			}
-
-		} if(StrEqual(arg, "traverse")) {
+		} else if(StrEqual(arg, "traverse")) {
 			TraverseData trav;
 			for(int i = 0; i < g_mapTraverseSelectionStack.Length; i++) {
 				g_mapTraverseSelectionStack.GetArray(i, trav, sizeof(trav));
@@ -201,18 +212,7 @@ Action Command_Debug(int client, int args) {
 			}
 			StoreTraverseSelection(buffer, g_selection);
 			ReplyToCommand(client, "Stored current selection as %s", buffer);
-		}  /*else if(StrEqual(arg, "identify")) {
-			if(args == 1) {
-				ReplyToCommand(client, "Specify scene name");
-			} else if(!g_MapData.IsLoaded()) {
-				ReplyToCommand(client, "No map data loaded");
-			} else {
-				GetCmdArg(2, arg, sizeof(arg));
-				SceneData scene;
-				g_MapData.sceneKv.GetArray()
-			}
-		}*/
-		else {
+		} else {
 			ReplyToCommand(client, "unknown subcommand");
 		}
 		return Plugin_Handled;
