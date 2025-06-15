@@ -257,14 +257,16 @@ Action Command_SwapPlayer(int client, int args) {
 			}
 			target2 = target_list[0];
 		}
-		float pos1[3], pos2[3];
-		float ang1[3], ang2[3];
+		float pos1[3], pos2[3], vel1[3];
+		float ang1[3], ang2[3], vel2[3];
 		GetClientAbsOrigin(target, pos1);
 		GetClientAbsOrigin(target2, pos2);
 		GetClientAbsAngles(target, ang1);
 		GetClientAbsAngles(target2, ang2);
-		TeleportEntity(target, pos2, ang2, NULL_VECTOR);
-		TeleportEntity(target2, pos1, ang1, NULL_VECTOR);
+		GetEntPropVector(target, Prop_Data, "m_vecVelocity", vel1);
+		GetEntPropVector(target2, Prop_Data, "m_vecVelocity", vel2);
+		TeleportEntity(target, pos2, ang2, vel2);
+		TeleportEntity(target2, pos1, ang1, vel1);
 		if(args < 3 || !StrEqual(arg3, "silent") && !StrEqual(arg2, "silent")) {
 			EmitSoundToClient(target, "custom/xen_teleport.mp3", target, 0);
 			EmitSoundToClient(target2, "custom/xen_teleport.mp3", target2);
