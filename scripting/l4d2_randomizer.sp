@@ -343,6 +343,7 @@ Action Command_RandomizerBuild(int client, int args) {
 		}
 		g_builder.Cleanup();
 		g_builder.mapData = LoadMapJson(arg);
+		strcopy(g_builder.saveAsName, sizeof(g_builder.saveAsName), arg); 
 		if(g_builder.mapData != null) {
 			ReplyToCommand(client, "Loaded map data for %s", arg);
 		} else {
@@ -354,7 +355,7 @@ Action Command_RandomizerBuild(int client, int args) {
 		ReplyToCommand(client, "No map data loaded for %s, either load with /rbuild load, or start new /rbuild new", currentMap);
 		return Plugin_Handled;
 	} else if(StrEqual(arg, "save")) {
-		SaveMapJson(currentMap, g_builder.mapData);
+		SaveMapJson(g_builder.saveAsName[0] != '\0' ? g_builder.saveAsName : currentMap, g_builder.mapData);
 		ReplyToCommand(client, "Saved %s", currentMap);
 	} else if(StrEqual(arg, "scenes")) {
 		Command_RandomizerBuild_Scenes(client, args);

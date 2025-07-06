@@ -186,6 +186,7 @@ enum loadFlags {
 
 enum struct BuilderData {
 	JSONObject mapData;
+	char saveAsName[64];
 
 	JSONObject selectedSceneData;
 	char selectedSceneId[64];
