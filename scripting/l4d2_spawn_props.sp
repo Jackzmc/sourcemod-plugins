@@ -643,10 +643,10 @@ public void AdminMenu_Spawn(TopMenu topmenu, TopMenuAction action, TopMenuObject
 	else if(action == TopMenuAction_SelectOption)
 	{
 		ConVar cheats = FindConVar("sm_cheats");
-		if(cheats != null && !cheats.BoolValue) {
-			ReplyToCommand(param, "Set sm_cheats to 1 to use the prop spawner");
-			return;
-		}
+		// if(cheats != null && !cheats.BoolValue) {
+		// 	ReplyToCommand(param, "Set sm_cheats to 1 to use the prop spawner");
+		// 	return;
+		// }
 		BuildSpawnMenu(param);
 	}
 }

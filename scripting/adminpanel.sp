@@ -88,6 +88,13 @@ enum GameState {
 	State_NewGame = 3,
 	State_EndGame = 4
 }
+char GAME_STATE_LABEL[5][] = {
+	"none",
+	"transition",
+	"hibernate",
+	"new game",
+	"end game"
+};
 enum PanelSettings {
 	Setting_None = 0,
 	Setting_DisableWithNoViewers = 1
@@ -111,6 +118,8 @@ public void OnPluginStart() {
 	} else if(!ConnectDB()) {
 		SetFailState("Failed to connect to database.");
 	}
+
+	LoadTranslations("common.phrases");
 
 	g_voiceState = new StringMap();
 
@@ -176,6 +185,7 @@ public void OnPluginStart() {
 
 	RegAdminCmd("sm_panel_debug", Command_PanelDebug, ADMFLAG_GENERIC);
 	RegAdminCmd("sm_panel_request_stop", Command_RequestStop, ADMFLAG_GENERIC);
+	RegAdminCmd("sm_names", Command_PlayerNames, ADMFLAG_GENERIC);
 	RegConsoleCmd("sm_voice", Command_Voice);
 
 	CommandArgRegex = new Regex("(?:[^\\s\"]+|\"[^\"]*\")+", 0);
@@ -214,8 +224,8 @@ void SetupUserInDB(int client) {
 
 		char query[512];
 		g_db.Format(query, sizeof(query), "INSERT INTO panel_user "
-			..."(account_id,last_join_time,last_ip,last_country,last_region)"
-			..."VALUES ('%s',%d,'%s','%s','%s')"
+			..."(account_id,create_time,last_join_time,last_ip,last_country,last_region)"
+			..."VALUES ('%s',UNIX_TIMESTAMP(),%d,'%s','%s','%s')"
 			..."ON DUPLICATE KEY UPDATE last_join_time=%d,last_ip='%s',last_country='%s',last_region='%s';",
 			steamidCache[client][10], // strip STEAM_#:#:##### returning only ending #######
 			// insert:
@@ -232,6 +242,48 @@ void SetupUserInDB(int client) {
 		g_db.Query(DBCT_PanelUser, query, GetClientUserId(client));
 	}
 }
+
+/** Prints to client all the recent names of player */
+bool GetNamesForPlayer(int client, int player, int count = 10) {
+	if(steamidCache[player][0] == '\0') return false;
+	char query[512];
+	g_db.Format(query, sizeof(query), 
+		"SELECT name FROM user_names_history WHERE SUBSTRING(steamid, 11) = ? ORDER BY created DESC LIMIT ?",
+		steamidCache[player][10], // strip STEAM_#:#:##### returning only ending #######
+		count
+	);
+	DataPack pack;
+	pack.WriteCell(GetClientUserId(client));
+	pack.WriteCell(GetClientUserId(player));
+	pack.WriteCell(count);
+	g_db.Query(DBCT_NamesForPlayer, query, pack);
+	return true;
+}
+
+void DBCT_NamesForPlayer(Database db, DBResultSet results, const char[] error, DataPack pack) {
+	if(db == null || results == null) {
+		LogError("DBCT_NamesForPlayer returned error: %s", error);
+		return;
+	}
+	pack.Reset();
+	int client = GetClientOfUserId(pack.ReadCell());
+	int player = GetClientOfUserId(pack.ReadCell());
+	int count = pack.ReadCell();
+	if(client > 0) {
+		char buffer[64];
+		if(player > 0) {
+			ReplyToCommand(client, "> Last %d Names for %N", count, player);
+		} else {
+			ReplyToCommand(client, "> Last %d Names for (Disconnected)", count);
+		}
+		while(results.FetchRow()) {
+			results.FetchString(0, buffer, sizeof(buffer));
+			ReplyToCommand(client, "  %s", buffer);
+		}
+	}
+	delete pack;
+}
+
 
 void DBCT_PanelUser(Database db, DBResultSet results, const char[] error, int userId) {
 	if(db == null || results == null) {
@@ -758,13 +810,13 @@ Action Command_PanelDebug(int client, int args) {
 			ReplyToCommand(client, "Sent auth payload");
 		}
 	} else if(StrEqual(arg, "info")) {
-		ReplyToCommand(client, "Connected: %b\tAuth State: %s\tGameState: %d", g_socket.Connected, AUTH_STATE_LABEL[view_as<int>(authState)+1], g_gameState);
+		ReplyToCommand(client, "Connected: %b\tAuthState: %s\tGameState: %s", g_socket.Connected, AUTH_STATE_LABEL[view_as<int>(authState)+1], GAME_STATE_LABEL[view_as<int>(g_gameState)]);
 		int timeFromLastPayload = g_lastPayloadSent > 0 ? GetTime() - g_lastPayloadSent : -1;
-		ReplyToCommand(client, "Last Payload: %ds", timeFromLastPayload);
+		ReplyToCommand(client, "Last Payload: %ds\tBuffer Size: %d", timeFromLastPayload, BUFFER_SIZE);
 		ReplyToCommand(client, "#Viewers: %d\t#Players: %d", numberOfViewers, numberOfPlayers);
 		ReplyToCommand(client, "Target Host: %s:%d", serverIp, serverPort);
-		ReplyToCommand(client, "Buffer Size: %d", BUFFER_SIZE);
 		ReplyToCommand(client, "Can Send: %b\tCan Force-Send: %b", CanSendPayload(), CanSendPayload(true));
+		ReplyToCommand(client, "Game: %d  %s", gameAppId, gameVersion);
 	} else if(StrEqual(arg, "cansend")) {
 		if(!g_socket.Connected) ReplyToCommand(client, "Socket Not Connected");
 		else if(authState != Auth_Success) ReplyToCommand(client, "Socket Not Authenticated (State=%d)", authState);
@@ -816,6 +868,34 @@ Action Command_RequestStop(int client, int args) {
 		ReplyToCommand(client, "Stopping...");
 		RequestFrame(StopServer);
 	}
+	return Plugin_Handled;
+}
+Action Command_PlayerNames(int client, int args) {
+	if(args == 0) {
+		char buf[16];
+		GetCmdArg(0, buf, sizeof(buf));
+		ReplyToCommand(client, "Syntax: %s <player>", buf);
+		return Plugin_Handled;
+	}
+	char buffer[64];
+	GetCmdArg(1, buffer, sizeof(buffer));
+	int target_list[1], target_count;
+	char target_name[MAX_TARGET_LENGTH];
+	bool tn_is_ml;
+	if ((target_count = ProcessTargetString(
+		buffer,
+		client,
+		target_list,
+		1,
+		0, //TODO: Conneting
+		target_name,
+		sizeof(target_name),
+		tn_is_ml)) <= 0
+	) {
+		ReplyToTargetError(client, target_count);
+		return Plugin_Handled;
+	}
+	GetNamesForPlayer(client, target_list[0]);
 	return Plugin_Handled;
 }
 void StopServer() {
@@ -1475,7 +1555,7 @@ void AddAuthRecord() {
 	sendBuffer.WriteString(authToken);
 	sendBuffer.WriteShort(cvar_hostPort.IntValue);
 	sendBuffer.WriteString(gameVersion);
-	// gameAppId?
+	sendBuffer.WriteInt(gameAppId);
 	EndRecord();
 }
 

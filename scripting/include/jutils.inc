@@ -976,3 +976,28 @@ stock int MathMax(int a, int b) {
 stock int MathMin(int a, int b) {
 	return a < b ? a : b;
 }
+
+#if defined _colors_included
+	#undef _canuse_colors
+	#define _canuse_colors 1
+#endif
+#if defined _multicolors_included
+	#undef _canuse_colors
+	#define _canuse_colors 1
+#endif
+
+#if defined _canuse_colors
+stock void SendFakeChatTo(int client, const char[] name, const char[] message) {
+	CPrintToChat(client, "{blue}%s{default} : %s", name, message);
+}
+stock void SendFakeChatAll(const char[] name, const char[] message) {
+	CPrintToChatAll("{blue}%s{default} : %s", name, message);
+}
+
+stock void SendFakeSurvivorChatTo(int client, const char[] name, const char[] message) {
+	CPrintToChat(client, "(Survivor) {blue}%s{default} : %s", name, message);
+}
+stock void SendFakeSurvivorAll(const char[] name, const char[] message) {
+	CPrintToChatAll("(Survivor) {blue}%s{default} : %s", name, message);
+}
+#endif
