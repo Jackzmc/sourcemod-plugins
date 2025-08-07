@@ -490,7 +490,7 @@ Simply lets you add notes to any player, and includes reputation summary and aut
 
 Randomizes campaigns by config files with scenes (% chance to be chosen) and their variants (one chosen per scene), making every game played even more unique. Allows creating invisible walls, triggering entity inputs, adding new props or moving existing props, randomizing gascans, and more.
 
-In the `data/randomizer` folder there are official maps I've done for my own server, feel free to use these. Not every map is done yet, [see the status here](https://jackz.me/notes/randomizer/campaigns.html).
+In the `data/randomizer` folder there are official maps I've done for my own server, feel free to use these.
 
 More technical information if you want to make your own randomized campaigns is in here: [https://jackz.me/notes/randomizer/information.html](https://jackz.me/notes/randomizer/information.html)
 
