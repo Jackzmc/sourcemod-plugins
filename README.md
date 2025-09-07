@@ -492,7 +492,7 @@ Randomizes campaigns by config files with scenes (% chance to be chosen) and the
 
 In the `data/randomizer` folder there are official maps I've done for my own server, feel free to use these.
 
-More technical information if you want to make your own randomized campaigns is in here: [https://jackz.me/notes/randomizer/information.html](https://jackz.me/notes/randomizer/information.html)
+More technical information if you want to make your own randomized campaigns is in here: [https://trilium.jackz.me/share/randomizer](https://trilium.jackz.me/share/randomizer)
 
 * **Commands:**
   * `sm_rcycle [flags]` - If empty, lists all active scenes. If flags given, loads randomizer with given flags (see above link for info)
