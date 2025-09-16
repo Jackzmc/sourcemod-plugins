@@ -47,7 +47,7 @@ Otherwise the plugins/ folder here are manually compiled by me, and may be outda
   * [l4d2-stats-plugin](https://github.com/jackzmc/l4d2-stats-plugin) - Custom stats recorder, see https://stats.jackz.me
   * [l4d2-ai-tweaks](#l4d2_ai_tweaks) - Very minor tweaks to survivor bots' behavior
   * [sm_player_notes](#sm_player_notes) - Add notes to players
-  * [l4d2_ranadomizer](#l4d2_randomizer) - Randomizes official campaigns, changing flows, adding new paths, decorations, etc.
+  * [l4d2_randomizer](#l4d2_randomizer) - Randomizes official campaigns, changing flows, adding new paths, decorations, etc.
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
