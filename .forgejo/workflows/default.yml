@@ -13,6 +13,6 @@ jobs:
           SPCOMP_PATH: spcomp
         run: chmod +x compile_all.sh && ./compile_all.sh
       - name: Upload artifacts 
-        uses: https://data.forgejo.org/actions/upload-artifact@v4
+        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
         with: 
           path: plugins/*
