@@ -35,3 +35,4 @@ l4d2_stats_plugin/
 !sql/*
 !scripting/.gitignore
 !plugins/.gitignore
+!.forgejo
