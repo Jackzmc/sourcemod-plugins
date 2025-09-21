@@ -8,5 +8,5 @@ fi
 mkdir -p "$SPCOMP_OUT_FOLDER" || true
 for file in scripting/*.sp; do 
     out_filename=$(basename "${file%.*}.smx")
-    $SPCOMP_PATH -i scripting/include "$file" -o "$SPCOMP_OUT_FOLDER"/"$out_filename" 
+    $SPCOMP_PATH -i scripting/include "$file" -o "$SPCOMP_OUT_FOLDER"/"$out_filename" || true
 done
