@@ -12,9 +12,9 @@ Useful things:
 ## Compilation
 Currently plugins are only compiled and tested with **SM 1.12-7177** and **SM 1.12-7202**.
 
-Latest compiled plugins are found here at https://ci.jackz.me/job/sourcemod-plugins/ [![Build Status](https://ci.jackz.me/job/sourcemod-plugins/badge/icon)](https://ci.jackz.me/job/sourcemod-plugins/) 
+Latest compiled plugins can be found under my forgejo's instances actions page [https://git.jackz.me/jackz/sourcemod-plugins/actions?workflow=&actor=0&status=1](https://git.jackz.me/jackz/sourcemod-plugins/actions?workflow=&actor=0&status=1)
 
-Otherwise the plugins/ folder here are manually compiled by me, and may be outdated.
+Otherwise the plugins folder in this repo exist, which are manually compiled by me and may be outdated.
 
 
 ## Plugin List
