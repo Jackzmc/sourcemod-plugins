@@ -612,6 +612,10 @@ any Native_AddNoteIdentity(Handle plugin, int numParams) {
 void AddNoteIdentity(const char noteCreator[32], const char noteTarget[32], const char[] message) {
 	// messaege length + steamids (32 + 32 + null term)
 	// char[] query = new char[strlen(message) + 65];
+	if(StrContains(noteCreator, "STEAM_") == -1) {
+		LogError("Invalid steamid for note");
+		return;
+	}
 	int size = 2 * strlen(message) + 1;
 	char[] content = new char[size];
 	DB.Escape(message, content, size);
