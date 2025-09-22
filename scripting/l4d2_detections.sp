@@ -4,7 +4,6 @@
 //#define DEBUG
 
 #define PLUGIN_VERSION "1.0"
-#define BILE_NO_HORDE_THRESHOLD 5
 #define DOOR_CLOSE_THRESHOLD 5000.0
 
 #include <sourcemod>
@@ -234,38 +233,38 @@ public void Event_DoorClose(Event event, const char[] name, bool dontBroadcast) 
 	}
 }
 
-public void OnEntityDestroyed(int entity) {
-	static char classname[16];
-	if(IsValidEntity(entity) && entity <= 4096) {
-		GetEntityClassname(entity, classname, sizeof(classname));
-		if(StrEqual(classname, "vomitjar_projec")) { //t cut off by classname size
-			int thrower = GetEntPropEnt(entity, Prop_Send, "m_hThrower");
-			if(thrower > 0 && thrower <= MaxClients && IsClientConnected(thrower) && IsClientInGame(thrower)) {
-				static float src[3];
-				float tmp[3];
-				GetClientAbsOrigin(thrower, tmp);
-				// TODO: Get source when lands
-				GetEntPropVector(entity, Prop_Send, "m_vecOrigin", src);
+// public void OnEntityDestroyed(int entity) {
+// 	static char classname[16];
+// 	if(IsValidEntity(entity) && entity <= 4096) {
+// 		GetEntityClassname(entity, classname, sizeof(classname));
+// 		if(StrEqual(classname, "vomitjar_projec")) { //t cut off by classname size
+// 			int thrower = GetEntPropEnt(entity, Prop_Send, "m_hThrower");
+// 			if(thrower > 0 && thrower <= MaxClients && IsClientConnected(thrower) && IsClientInGame(thrower)) {
+// 				static float src[3];
+// 				float tmp[3];
+// 				GetClientAbsOrigin(thrower, tmp);
+// 				// TODO: Get source when lands
+// 				GetEntPropVector(entity, Prop_Send, "m_vecOrigin", src);
 				
-				int commons = GetEntityCountNear(src, 50000.0);
-				PrintToConsoleAll("[Debug] Bile Thrown By %N, Commons: %d", thrower, commons);
-				if(commons < BILE_NO_HORDE_THRESHOLD) {
-					InternalDebugLog("BILE_NO_HORDE", thrower);
-					Action result;
-					Call_StartForward(fwd_NoHordeBileWaste);
-					Call_PushCell(thrower);
-					Call_PushCell(commons);
-					Call_Finish(result);
+// 				int commons = GetEntityCountNear(src, 50000.0);
+// 				PrintToConsoleAll("[Debug] Bile Thrown By %N, Commons: %d", thrower, commons);
+// 				if(commons < BILE_NO_HORDE_THRESHOLD) {
+// 					InternalDebugLog("BILE_NO_HORDE", thrower);
+// 					Action result;
+// 					Call_StartForward(fwd_NoHordeBileWaste);
+// 					Call_PushCell(thrower);
+// 					Call_PushCell(commons);
+// 					Call_Finish(result);
 
-					if(result == Plugin_Stop) { 
-						AcceptEntityInput(entity, "kill");
-						// GiveClientWeapon(thrower, "vomitjar");
-					}
-				}
-			}
-		}
-	}
-}
+// 					if(result == Plugin_Stop) { 
+// 						AcceptEntityInput(entity, "kill");
+// 						// GiveClientWeapon(thrower, "vomitjar");
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// }
 
 // TODO: Door close
 
