@@ -796,16 +796,18 @@ void Event_PlayerUse(Event event, const char[] name, bool dontBroadcast) {
 	if(hLaserNotice.BoolValue) {
 		int client = GetClientOfUserId(event.GetInt("userid"));
 		int targetEntity = event.GetInt("targetid");
-	
-		char classname[32];
-		GetEntityClassname(targetEntity, classname, sizeof(classname));
-		
-		if(StrEqual(classname, "upgrade_laser_sight")) {
-			if(LasersUsed.FindValue(targetEntity) == -1) {
+
+		if(LasersUsed.FindValue(targetEntity) == -1) {
+			char classname[32];
+			GetEntityClassname(targetEntity, classname, sizeof(classname));
+			
+			if(StrEqual(classname, "upgrade_laser_sight")) {
 				LasersUsed.Push(targetEntity);
 				PrintToChatAll("%N picked up laser sights", client);
-			}
-		}	
+				GlowEntity(targetEntity, 10.0, { 255, 255, 255 }); // temp TODO: remove
+			}	
+		}
+		
 	}
 }
 //FINALE TIME INFO
