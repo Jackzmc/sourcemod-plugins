@@ -192,7 +192,7 @@ public void OnPluginStart() {
 
 	CreateTimer(300.0, Timer_FullSync, _, TIMER_REPEAT);
 
-	FindGameVersion();
+	gameAppId = GetAppData(gameVersion, sizeof(gameVersion));
 }
 bool ConnectDB() {
 	char error[255];
@@ -1701,32 +1701,4 @@ int GetMaxPlayers() {
 	if(cvar_visibleMaxPlayers != null && cvar_visibleMaxPlayers.IntValue > 0) return cvar_visibleMaxPlayers.IntValue;
 	if(cvar_maxplayers != null) return cvar_maxplayers.IntValue;
 	return L4D_IsVersusMode() ? 8 : 4;
-}
-
-void FindGameVersion() {
-	char path[PLATFORM_MAX_PATH];
-	File file = OpenFile("steam.inf", "r");
-	if (file == null) {
-	   LogError("Could not open steam.inf file to get game version");
-	   return;
-	}
-
-	char line[255];
-	while (!IsEndOfFile(file) && file.ReadLine(line, sizeof(line))) {
-		TrimString(line);
-		if (StrContains(line, "appID=") != -1)
-		{
-			ReplaceString(line, sizeof(line), "appID=", "");
-			ReplaceString(line, sizeof(line), ".", "");
-			gameAppId = StringToInt(line);
-		}
-		else if (StrContains(line, "PatchVersion=") != -1)
-		{
-			ReplaceString(line, sizeof(line), "PatchVersion=", "");
-			ReplaceString(line, sizeof(line), ".", "");
-			strcopy(gameVersion, sizeof(gameVersion), line);
-		}
-	}
-	
-	delete file;
 }

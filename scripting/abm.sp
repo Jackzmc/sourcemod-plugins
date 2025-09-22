@@ -980,7 +980,7 @@ void UpdateGameMode() {
 void SetVDOU(char[] val, any ...) {
 	Echo(2, "SetVDOU");
 
-	static const char tmp[128] = "\
+	static const char tmp[256] = "\
 		DominatorLimit=%s;\
 		MaxSpecials=%s;\
 		BoomerLimit=%s;\

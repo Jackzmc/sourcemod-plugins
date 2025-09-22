@@ -23,3 +23,7 @@ for file in scripting/*.sp; do
     echo
     echo
 done
+
+if [[ "$SPCOMP_FAIL_ON_ERROR" == "1" ]]; then
+    echo Completed with no errors
+else

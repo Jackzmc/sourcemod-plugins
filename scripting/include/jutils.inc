@@ -1001,3 +1001,35 @@ stock void SendFakeSurvivorAll(const char[] name, const char[] message) {
 	CPrintToChatAll("(Survivor) {blue}%s{default} : %s", name, message);
 }
 #endif
+
+// Gets game info, returning the version and the appid as return value.
+// -1: error opening steam.inf
+// -2: appId was not found
+stock int GetAppData(char[] outVersion, int maxlen) {
+	File file = OpenFile("steam.inf", "r");
+	if (file == null) {
+	   LogError("Could not open steam.inf file to get game version");
+	   return -1;
+	}
+
+	char line[255];
+    int appId = -2;
+	while (!IsEndOfFile(file) && file.ReadLine(line, sizeof(line))) {
+		TrimString(line);
+		if (StrContains(line, "appID=") != -1)
+		{
+			ReplaceString(line, sizeof(line), "appID=", "");
+			ReplaceString(line, sizeof(line), ".", "");
+			appId = StringToInt(line);
+		}
+		else if (StrContains(line, "PatchVersion=") != -1)
+		{
+			ReplaceString(line, sizeof(line), "PatchVersion=", "");
+			ReplaceString(line, sizeof(line), ".", "");
+			strcopy(outVersion, maxlen, line);
+		}
+	}
+
+	delete file;
+    return appId;
+}

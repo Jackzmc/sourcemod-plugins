@@ -417,7 +417,7 @@ public Action OnTakeDamageAlive(int victim, int& attacker, int& inflictor, float
 	// TODO: see if DMG_ENERGYBEAM
 	if(attacker > MaxClients && attacker < 2048 && turretIsActiveLaser[attacker] && GetClientTeam(victim) != 3) {
 		int health = L4D_GetPlayerTempHealth(victim);
-		L4D_SetPlayerTempHealth(victim, health + 1.0);
+		L4D_SetPlayerTempHealth(victim, health + 1);
 		damage = 0.0;
 		return Plugin_Stop;
 	}

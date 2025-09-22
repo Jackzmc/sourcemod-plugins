@@ -234,7 +234,7 @@ Action Timer_SpawnSplitTank(Handle h, int health) {
 	return Plugin_Handled;
 }
 
-void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
+void Director_Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0) {
 		int team = GetClientTeam(client);
@@ -255,7 +255,7 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	} 
 }
 
-void Event_PlayerIncapped(Event event, const char[] name, bool dontBroadcast) {
+void Director_Event_PlayerIncapped(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && GetClientTeam(client) == 2) {
 		TryGrantRest();

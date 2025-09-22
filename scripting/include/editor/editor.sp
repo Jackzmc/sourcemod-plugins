@@ -9,7 +9,7 @@ char ON_OFF_STRING[2][] = {
 	"\x05OFF\x01",
 	"\x05ON\x01"
 }
-char COLOR_INDEX[4] = "RGBA";
+char COLOR_INDEX[5] = "RGBA";
 
 enum editMode {
 	INACTIVE = 0,

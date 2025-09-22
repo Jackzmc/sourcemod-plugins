@@ -18,7 +18,7 @@
 #define MODEL_V_SHOVEL "models/weapons/melee/v_shovel.mdl"
 #define MODEL_V_PITCHFORK  "models/weapons/melee/v_pitchfork.mdl"
 
-static g_PlayerSecondaryWeapons[MAXPLAYERS + 1];
+static char g_PlayerSecondaryWeapons[MAXPLAYERS + 1];
 
 public Plugin myinfo =
 {

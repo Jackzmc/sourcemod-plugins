@@ -12,6 +12,7 @@
 //#include <sdkhooks>
 #include <ripext>
 #include <overlay>
+#include <socket>
 
 WebSocket g_ws;
 ConVar cvarManagerUrl; char managerUrl[128];
@@ -38,20 +39,23 @@ public Plugin myinfo =
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
-enum outEvent {
-	Event_PlayerJoin,
-	Event_PlayerLeft,
-	Event_GameState,
-	Event_RegisterTempUI,
-	Event_UpdateUI,
-	Event_Invalid
+enum outRequest {
+	Request_PlayerJoin,
+	Request_PlayerLeft,
+	Request_GameState,
+	Request_RequestElement,
+	Request_UpdateElement,
+	Request_UpdateAudioState,
+
+	Request_Invalid
 }
-char OUT_EVENT_IDS[view_as<int>(Event_Invalid)][] = {
+char OUT_REQUEST_IDS[view_as<int>(Request_Invalid)][] = {
 	"player_joined",
 	"player_left",
 	"game_state",
-	"register_temp_ui",
-	"update_ui"
+	"request_element",
+	"update_element",
+	"change_audio_state"
 };
 char steamidCache[MAXPLAYERS+1][32];
 
@@ -61,11 +65,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("IsOverlayConnected", Native_IsOverlayConnected);
 	CreateNative("RegisterActionAnyHandler", Native_ActionHandler);
 	CreateNative("RegisterActionHandler", Native_ActionHandler);
-
-	CreateNative("UIElement.SendAll", Native_UpdateUI);
-	CreateNative("UIElement.SendTo", Native_UpdateUI);
-	CreateNative("TempUI.SendAll", Native_UpdateTempUI);
-	CreateNative("TempUI.SendTo", Native_UpdateTempUI);
 
 	CreateNative("FindClientBySteamId2", Native_FindClientBySteamId2);
 	return APLRes_Success;
@@ -82,7 +81,7 @@ public void OnPluginStart() {
 
 	g_globalVars = new JSONObject();
 
-	cvarManagerUrl = CreateConVar("sm_overlay_manager_url", "ws://desktop:3011/socket", "");
+	cvarManagerUrl = CreateConVar("sm_overlay_manager_url", "ws://100.92.116.2:3011/socket", "");
 	cvarManagerUrl.AddChangeHook(OnUrlChanged);
 	OnUrlChanged(cvarManagerUrl, "", "");
 
@@ -103,6 +102,22 @@ public void OnPluginStart() {
 	}
 }
 
+/*
+every request:
+
+POST http://manager/server/auth with token and server info
+{ "token": "<AUTH TOKEN>", "info": { "name": "My Server" }}
+-> 
+200 OK { "session_token": "..." }
+
+IF no request in timeout the server can be timed out, and token expires? have it auto renew? idk
+
+
+POST http://manager/req with JSON body AND headers `Authentication
+{ "type": "player_join", ... }
+
+ */
+
 public void OnPluginEnd() {
 	if(g_ws != null) {
 		g_ws.Close();
@@ -118,7 +133,7 @@ void SendAllPlayers() {
 	if(!isManagerReady) return;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientInGame(i) && !IsFakeClient(i)) {
-			SendEvent_PlayerJoined(steamidCache[i]);
+			Send_PlayerJoined(steamidCache[i]);
 		}
 	}
 }
@@ -134,25 +149,31 @@ Action Command_Overlay(int client, int args) {
 		SendAllPlayers();
 	} else if(StrEqual(arg, "test")) {
 		SendAllPlayers();
+
+		JSONObject state = new JSONObject();
+		state.SetString("test", "yes");
+		Element elem = new Element("overlay:test", "overlay:generic_text", state, new ElementOptions());
+		elem.SetTarget(client);
+		elem.SendRequest();
 		// TODO: server can send: steamids[], steamid, or none (manager knows who was connected)
 
-		JSONObject temp = new JSONObject();
-		temp.SetString("type", "text");
-		temp.SetString("text", "Blah blah blah");
-		JSONObject defaults = new JSONObject();
-		defaults.SetString("title", "Test Element");
-		JSONObject pos = new JSONObject();
-		pos.SetInt("x", 200);
-		pos.SetInt("y", 200);
-		defaults.Set("pos", pos);
-		temp.Set("defaults", defaults);
-		bool result = SendEvent_RegisterTempUI("temp", 180, temp);
-		ReplyToCommand(client, result ? "Sent" : "Error");
+		// JSONObject temp = new JSONObject();
+		// temp.SetString("type", "text");
+		// temp.SetString("text", "Blah blah blah");
+		// JSONObject defaults = new JSONObject();
+		// defaults.SetString("title", "Test Element");
+		// JSONObject pos = new JSONObject();
+		// pos.SetInt("x", 200);
+		// pos.SetInt("y", 200);
+		// defaults.Set("pos", pos);
+		// temp.Set("defaults", defaults);
+		// bool result = SendEvent_RegisterTempUI("temp", 180, temp);
+		// ReplyToCommand(client, result ? "Sent" : "Error");
 	} else if(StrEqual(arg, "trigger_login")) {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientInGame(i) && !IsFakeClient(i)) {
 				GetClientAuthId(i, AuthId_Steam2, steamidCache[i], 32);
-				SendEvent_PlayerJoined(steamidCache[i]);
+				Send_PlayerJoined(steamidCache[i]);
 			}
 		}	
 	} else if(StrEqual(arg, "connect")) {
@@ -185,14 +206,14 @@ public void OnClientAuthorized(int client, const char[] auth) {
 		ConnectManager();
 	if(!IsFakeClient(client)) {
 		GetClientAuthId(client, AuthId_Steam2, steamidCache[client], 32);
-		SendEvent_PlayerJoined(steamidCache[client]);
+		Send_PlayerJoined(steamidCache[client]);
 	}
 }
 
 void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && !IsFakeClient(client)) {
-		SendEvent_PlayerLeft(steamidCache[client]);
+		Send_PlayerLeft(steamidCache[client]);
 	}
 	if(GetClientCount(false) == 0) {
 		DisconnectManager();
@@ -346,10 +367,10 @@ void DisconnectManager() {
 	}
 }
 
-bool SendEvent_PlayerJoined(const char[] steamid) {
+bool Send_PlayerJoined(const char[] steamid) {
 	if(!isManagerReady()) return false;
 	JSONObject obj = new JSONObject();
-	obj.SetString("type", OUT_EVENT_IDS[Event_PlayerJoin]);
+	obj.SetString("type", OUT_REQUEST_IDS[Request_PlayerJoin]);
 	obj.SetString("steamid", steamid);
 	g_ws.Write(obj);
 	obj.Clear();
@@ -357,10 +378,10 @@ bool SendEvent_PlayerJoined(const char[] steamid) {
 	return true;
 }
 
-bool SendEvent_PlayerLeft(const char[] steamid) {
+bool Send_PlayerLeft(const char[] steamid) {
 	if(!isManagerReady()) return false;
 	JSONObject obj = new JSONObject();
-	obj.SetString("type", OUT_EVENT_IDS[Event_PlayerLeft]);
+	obj.SetString("type", OUT_REQUEST_IDS[Request_PlayerLeft]);
 	obj.SetString("steamid", steamid);
 	g_ws.Write(obj);
 	obj.Clear();
@@ -368,85 +389,93 @@ bool SendEvent_PlayerLeft(const char[] steamid) {
 	return true;
 }
 
-bool SendEvent_RegisterTempUI(const char[] elemId, int expiresSeconds = 0, JSONObject element) {
-	if(!isManagerReady()) return false;
-	JSONObject obj = new JSONObject();
-	obj.SetString("type", OUT_EVENT_IDS[Event_RegisterTempUI]);
-	obj.SetString("elem_id", elemId);
-	if(expiresSeconds > 0)
-		obj.SetInt("expires_seconds", expiresSeconds);
-	obj.Set("element", element);
-	g_ws.Write(obj);
-	obj.Clear();
-	delete obj;
-	return true;
+methodmap Element < JSONObject {
+	public Element(const char[] elemId, const char[] templateId, JSONObject state, ElementOptions options) {
+		JSONObject obj = new JSONObject();
+		obj.SetString("elem_id", elemId);
+		obj.SetString("template_id", templateId);
+		obj.Set("state", state);
+		obj.Set("options", options);
+
+		return view_as<Element>(obj);
+	}
+
+	public static Element CreateTemp(const char[] templateId, JSONObject state, ElementOptions options) {
+		// TODO: make uuid later
+		char id[32];
+		Format(id, sizeof(id), "temp:%d%d%d%d", GetURandomInt(), GetURandomInt(), GetURandomInt(), GetURandomInt());
+		return new Element(id, templateId, state, options);
+	}
+
+	property JSONObject InternalObj 
+	{
+		public get()
+		{
+			return view_as<JSONObject>(this);
+		}
+	}
+
+	property JSONObject State
+	{
+		public get() {
+			return view_as<JSONObject>(this.InternalObj.Get("state"));
+		}
+		public set(JSONObject newState) {
+			this.InternalObj.Set("state", newState);
+		}
+	}
+
+	// Set the target to a single steamid
+	public void SetTargetSteamID(const char[] steamid) {
+		this.InternalObj.SetString("target", steamid);
+	}
+	public void SetTarget(int client) {
+		this.InternalObj.SetString("target", steamidCache[client]);
+	}
+	public void SetTargetSteamIDs(JSONArray list) {
+		this.InternalObj.Set("target", list);
+	}
+	// Set the target to all online players
+	public void SetTargetAll() {
+		this.InternalObj.SetNull("target");
+	}
+
+	// Sends the initial request to create element
+	public void SendRequest() {
+		this.InternalObj.SetString("type", OUT_REQUEST_IDS[Request_RequestElement]);
+		g_ws.Write(this.InternalObj);
+	}
+	// Sends an update request, updating just the state and options
+	public void SendUpdate() {
+		// TODO: update doesn't need template_id, delete?
+		this.InternalObj.SetString("type", OUT_REQUEST_IDS[Request_UpdateElement]);
+		g_ws.Write(this.InternalObj);
+	}
+}
+
+methodmap ElementOptions < JSONObject {
+	public ElementOptions() {
+		JSONObject obj = new JSONObject();
+		return view_as<ElementOptions>(obj);
+	}
+
+	property JSONObject InternalObj 
+	{
+		public get()
+		{
+			return view_as<JSONObject>(this);
+		}
+	}
+
+	// property int ExampleOption {
+	// 	public get() {
+	// 	}
+	// }
 }
 
 methodmap PlayerList < JSONArray {
 }
 
-// namespace optional
-bool SendEvent_UpdateUI(const char[] elemNamespace, const char[] elemId, bool visibility, JSONObject variables) {
-	if(!isManagerReady()) return false;
-	JSONObject obj = new JSONObject();
-	if(elemNamespace[0] != '\0')
-		obj.SetString("namespace", elemNamespace);
-	obj.SetString("elem_id", elemId);
-	obj.SetBool("visibility", visibility);
-	obj.Set("variables", variables);
-	g_ws.Write(obj);
-	obj.Clear();
-	delete obj;
-	return true;
-}
-
-//SendTempUI(int client, const char[] id, int lifetime, JSONObject element);
-any Native_SendTempUI(Handle plugin, int numParams) {
-	if(!isManagerReady()) return false;
-
-	int client = GetNativeCell(1);
-	if (client <= 0 || client > MaxClients) {
-		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%d)", client);
-	} else if (!IsClientConnected(client) || steamidCache[client][0] == '\0') {
-		return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not connected/authorized yet", client);
-	}
-
-	char id[64];
-	GetNativeString(2, id, sizeof(id));
-
-	int lifetime = GetNativeCell(3);
-
-	JSONObject obj = GetNativeCell(4);
-
-	SendEvent_RegisterTempUI(id, lifetime, obj);
-	return true;
-}
-
-//ShowUI(int client, const char[] elemNamespace, const char[] elemId, JSONObject variables);
-any Native_ShowUI(Handle plugin, int numParams) {
-	if(!isManagerReady()) return false;
-
-	char elemNamespace[64], id[64];
-	GetNativeString(1, elemNamespace, sizeof(elemNamespace));
-	GetNativeString(2, id, sizeof(id));
-
-	JSONObject variables = GetNativeCell(3);
-
-	SendEvent_UpdateUI(elemNamespace, id, true, variables);
-	return true;
-}
-
-//HideUI(int client, const char[] elemNamespace, const char[] elemId);
-any Native_HideUI(Handle plugin, int numParams) {
-	if(!isManagerReady()) return false;
-
-	char elemNamespace[64], id[64];
-	GetNativeString(1, elemNamespace, sizeof(elemNamespace));
-	GetNativeString(2, id, sizeof(id));
-
-	SendEvent_UpdateUI(elemNamespace, id, false, null);
-	return true;
-}
 
 //PlayAudio(int client, const char[] url);
 any Native_PlayAudio(Handle plugin, int numParams) {
@@ -456,56 +485,6 @@ any Native_PlayAudio(Handle plugin, int numParams) {
 	GetNativeString(1, url, sizeof(url));
 
 	return false;
-	return true;
-}
-
-any Native_UpdateUI(Handle plugin, int numParams) {
-	if(!isManagerReady()) return false;
-
-	UIElement elem = GetNativeCell(1);
-	JSONObject obj = view_as<JSONObject>(elem);
-
-	JSONArray arr = view_as<JSONArray>(obj.Get("steamids"));
-	if(numParams == 0) {
-		arr.Clear();
-	} else if(numParams == 1) {
-		int client = GetNativeCell(2);
-		if (client <= 0 || client > MaxClients) {
-			return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%d)", client);
-		} else if (!IsClientConnected(client) || steamidCache[client][0] == '\0') {
-			return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not connected/authorized yet", client);
-		}
-		arr.PushString(steamidCache[client]);
-	}
-
-	g_ws.Write(view_as<JSON>(elem));
-	arr.Clear();
-
-	return true;
-}
-
-any Native_UpdateTempUI(Handle plugin, int numParams) {
-	if(!isManagerReady()) return false;
-
-	TempUI elem = GetNativeCell(1);
-	JSONObject obj = view_as<JSONObject>(elem);
-
-	JSONArray arr = view_as<JSONArray>(obj.Get("steamids"));
-	if(numParams == 0) {
-		arr.Clear();
-	} else if(numParams == 1) {
-		int client = GetNativeCell(2);
-		if (client <= 0 || client > MaxClients) {
-			return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%d)", client);
-		} else if (!IsClientConnected(client) || steamidCache[client][0] == '\0') {
-			return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not connected/authorized yet", client);
-		}
-		arr.PushString(steamidCache[client]);
-	}
-
-	g_ws.Write(view_as<JSON>(elem));
-	arr.Clear();
-
 	return true;
 }
 

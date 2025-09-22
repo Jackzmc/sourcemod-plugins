@@ -309,11 +309,11 @@ methodmap GuessWhoGame < BaseGame {
 	}
 
 	public void PopulateCoins() {
-		float pos[3];
-		for(int i = 0; i < this.TargetCoinCount; i++) {
-			movePoints.GetRandomPoint(pos);
+		// float pos[3];
+		// for(int i = 0; i < this.TargetCoinCount; i++) {
+		// 	movePoints.GetRandomPoint(pos);
 			
-		}
+		// }
 	}
 }
 
