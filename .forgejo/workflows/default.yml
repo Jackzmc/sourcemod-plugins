@@ -2,12 +2,16 @@ on: [push]
 jobs:
   build:
     runs-on: docker
+    strategy:
+      matrix:
+        sm-version: [ '1.11.x', '1.12.x', '1.13.x']
+    name: Sourcemod v${{ matrix.sm-version }}
     steps:
       - uses: actions/checkout@v5
       - name: Setup sourcepawn
         uses: https://github.com/rumblefrog/setup-sp@bb7306e551914d48b2d8405dba17ddc46a4a12a2
         with:
-          version: '1.12.x'
+          version: ${{ matrix.sm-version }}
       - name: Build Plugins
         env:
           SPCOMP_PATH: spcomp
