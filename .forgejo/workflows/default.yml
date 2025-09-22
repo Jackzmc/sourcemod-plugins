@@ -19,5 +19,5 @@ jobs:
       - name: Upload artifacts 
         uses: https://data.forgejo.org/forgejo/upload-artifact@v4
         with: 
-          name: plugins.zip
+          name: plugins-${{ matrix.sm-version }}.zip
           path: plugins/*
