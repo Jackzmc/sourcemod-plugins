@@ -38,6 +38,8 @@
 #define MAX_RANDOM_SPAWNS 1700.0
 #define DATE_FORMAT "%F at %I:%M %p"
 
+#define EXTRADEFIB_MAX_CLOSET_DISTANCE 3000.0 // The max distance from dead survivor to check for closed closets
+
 
 
 /// DONT CHANGE
@@ -105,6 +107,8 @@ bool g_isOfficialMap;
 
 bool g_isSpeaking[MAXPLAYERS+1];
 
+char steamid2Cache[MAXPLAYERS+1][32];
+
 enum Difficulty {
 	Difficulty_Easy,
 	Difficulty_Normal,
@@ -161,12 +165,12 @@ enum struct PlayerData {
 		char name[32];
 		GetClientName(client, name, sizeof(name));
 		this.scrollMax = strlen(name);
-		for(int i = 0; i < this.scrollMax; i++) {
-			// if(IsCharMB(name[i])) {
-			// 	this.scrollMax--;
-			// 	name[i] = '\0';
-			// }
-		}
+		// for(int i = 0; i < this.scrollMax; i++) {
+		// 	// if(IsCharMB(name[i])) {
+		// 	// 	this.scrollMax--;
+		// 	// 	name[i] = '\0';
+		// 	// }
+		// }
 		
 		Format(this.nameCache, 64, "%s %s", name, name);
 		this.ResetScroll();
@@ -231,6 +235,23 @@ enum struct Cabinet {
 }
 static Cabinet cabinets[10]; //Store 10 cabinets
 
+enum struct RespawnCloset {
+	int door;
+	float pos[3];
+	bool isOpen;
+
+	void Reset() {
+		this.door = -1;
+		this.pos[0] = 0.0;
+		this.pos[1] = 0.0;
+		this.pos[2] = 0.0;
+		this.isOpen = false;
+	}
+}
+
+#define MAX_RESPAWN_CLOSETS 10
+RespawnCloset g_respawnClosets[MAX_RESPAWN_CLOSETS]; // collection of RespawnCloset
+
 enum EPI_FinaleTankState {
 	Stage_Inactive = 0,
 	Stage_Active = 1, // Finale has started
@@ -256,6 +277,7 @@ public void OnPluginStart() {
 		SetFailState("This plugin is for L4D2 only.");	
 	}
 
+ 	// g_respawnClosets = new ArrayList(); // ArrayList<RespawnCloset>
 	weaponMaxClipSizes = new StringMap();
 	pInv = new StringMap();
 	g_ammoPacks = new ArrayList(2); //<int entityID, ArrayList clients>
@@ -269,15 +291,16 @@ public void OnPluginStart() {
 
 	HookEvent("round_end", 			Event_RoundEnd);
 	HookEvent("map_transition", 	Event_MapTransition);
-	HookEvent("game_start", 		Event_GameStart);
-	HookEvent("game_end", 			Event_GameStart);
+	HookEvent("game_start", 		Event_GameStartEnd);
+	HookEvent("game_end", 			Event_GameStartEnd);
 	HookEvent("finale_start",       Event_FinaleStart);
 
 	//Special Event Tracking
 	HookEvent("player_info", Event_PlayerInfo);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 	HookEvent("player_death", Event_PlayerDeath);
-	HookEvent("player_incapacitated", Event_PlayerIncapped);
+	HookEvent("player_death", Director_Event_PlayerDeath);
+	HookEvent("player_incapacitated", Director_Event_PlayerIncapped);
 
 	HookEvent("charger_carry_start", Event_ChargerCarry);
 	HookEvent("charger_carry_end", Event_ChargerCarry);
@@ -299,7 +322,10 @@ public void OnPluginStart() {
 	HookEvent("bot_player_replace", Event_PlayerFromIdle);
 
 	
-
+	HookEntityOutput("prop_door_rotating", "OnOpen", OnDoorOpen);
+	HookEntityOutput("prop_door_rotating", "OnFullyClosed", OnDoorFullyClosed);
+	HookEntityOutput("func_door_rotating", "OnOpen", OnDoorOpen);
+	HookEntityOutput("func_door_rotating", "OnFullyClosed", OnDoorFullyClosed);
 
 
 	hExtraItemBasePercentage  = CreateConVar("epi_item_chance", "0.034", "The base chance (multiplied by player count) of an extra item being spawned.", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -353,6 +379,7 @@ public void OnPluginStart() {
 	if(g_isLateLoaded) {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
+				GetClientAuthId(i, AuthId_Steam2, steamid2Cache[i], 32);
 				if(GetClientTeam(i) == 2) {
 					SaveInventory(i);
 				}
@@ -379,6 +406,7 @@ public void OnPluginStart() {
 		// RegAdminCmd("sm_epi_val", Command_EPIValue);
 		RegAdminCmd("sm_epi_trigger", Command_Trigger, ADMFLAG_CHEATS);
 	#endif
+	RegAdminCmd("sm_epi_find_closet", Command_FindCloset, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_epi_restore", Command_RestoreInventory, ADMFLAG_KICK);
 	RegAdminCmd("sm_epi_save", Command_SaveInventory, ADMFLAG_KICK);
 	CreateTimer(DIRECTOR_TIMER_INTERVAL, Timer_Director, _, TIMER_REPEAT);
@@ -418,15 +446,25 @@ public void OnClientPutInServer(int client) {
 	}
 }
 
+public void OnClientAuthorized(int client, const char[] auth) {
+	GetClientAuthId(client, AuthId_Steam2, steamid2Cache[client], 32);
+	if(!IsFakeClient(client))
+		DebugPrintInventory(steamid2Cache[client]);
+}
+
 public void OnClientDisconnect(int client) {
 	// For when bots disconnect in saferoom transitions, empty:
 	if(playerData[client].state == State_PendingEmpty)
 		playerData[client].state = State_Empty;
 		
-	if(!IsFakeClient(client) && IsClientInGame(client) && GetClientTeam(client) == 2)
+	if(!IsFakeClient(client) && IsClientInGame(client) && GetClientTeam(client) == 2) {
 		SaveInventory(client);
+	}
+
 	g_isSpeaking[client] = false;
 	g_saveTimer[client] = null;
+	steamid2Cache[client][0] = '\0';
+
 }
 
 public void OnPluginEnd() {
@@ -639,6 +677,9 @@ Action Command_Trigger(int client, int args) {
 		g_extraKitsAmount = 4;
 		IncreaseKits(L4D_IsMissionFinalMap());
 		ReplyToCommand(client, "Kits spawned. Finale: %b", L4D_IsMissionFinalMap());
+	} else if(StrEqual(arg, "closets")) {
+		FindRespawnClosets();
+		ReplyToCommand(client, "See console");
 	} else if(StrEqual(arg, "addbot")) {
 		if(GetFeatureStatus(FeatureType_Native, "NextBotCreatePlayerBotSurvivorBot") != FeatureStatus_Available){
 			ReplyToCommand(client, "Unsupported.");
@@ -776,6 +817,78 @@ Action Command_GetKitAmount(int client, int args) {
 	ReplyToCommand(client, "isCheckpointReached %b, g_isLateLoaded %b, firstGiven %b", g_isCheckpointReached, g_isLateLoaded, g_startCampaignGiven);
 	return Plugin_Handled;
 }
+enum DoorState {
+	Door_Any,
+	Door_Opened,
+	Door_Closed
+}
+
+// Returns index of closet RespawnCloset, or -1 if none found in max distance. Max distance of 0 is unlimited
+int FindClosestRespawnClosetIndex(const float pos[3], DoorState doorState = Door_Any, float maxDist = 0.0) {
+	maxDist = maxDist * maxDist; // distance check doesn't squareroot
+
+	int chosenIndex = -1;
+	float closestDistance = 0.0;
+	for(int i = 0; i < MAX_RESPAWN_CLOSETS; i++) {
+		// Not a valid entry, end of list
+		if(g_respawnClosets[i].door <= 0) break;
+		// Filter out any open/closed door depending on setting
+		if(doorState != Door_Any) {
+			if(!g_respawnClosets[i].isOpen && doorState == Door_Opened) {
+				continue;
+			}
+			if(g_respawnClosets[i].isOpen && doorState == Door_Closed) {
+				continue;
+			}
+		}
+
+		float dist = GetVectorDistance(pos, g_respawnClosets[i].pos, true);
+		// Check if exceeds max distance
+		if(maxDist > 0.0 && dist >= maxDist) continue;
+		if(chosenIndex == -1 || dist < closestDistance) {
+			chosenIndex = i;
+			closestDistance = dist;
+		}
+	}
+	
+	return chosenIndex;
+}
+
+Action Command_FindCloset(int client, int args) {
+	float clientPos[3];
+	GetClientAbsOrigin(client, clientPos);
+	PrintToConsole(client, "%.1f %.1f %.1ff", clientPos[0], clientPos[1], clientPos[2]);
+
+	// RespawnCloset closet;
+	int chosenIndex = -1;
+	float closestDistance = 0.0;
+	int colorGreen[3] = { 0, 255, 0 };
+	int colorRed[3] = { 255, 0, 0 };
+	for(int i = 0; i < MAX_RESPAWN_CLOSETS; i++) {
+		if(g_respawnClosets[i].door <= 0) break;
+
+		GlowEntity(g_respawnClosets[i].door, 6.0, g_respawnClosets[i].isOpen ? colorGreen : colorRed);
+
+		float dist = GetVectorDistance(clientPos, g_respawnClosets[i].pos);
+		PrintToConsole(client, "%d - %.1f %.1f %.1f - dist=%f", g_respawnClosets[i].door, g_respawnClosets[i].pos[0], g_respawnClosets[i].pos[1], g_respawnClosets[i].pos[2], dist);
+
+		if(chosenIndex == -1 || dist < closestDistance) {
+			chosenIndex = i;
+			closestDistance = dist;
+		}
+	}
+	
+	if(chosenIndex != -1) {
+		// RespawnCloset closet = g_respawnClosets[chosenIndex];
+		// g_respawnClosets.GetArray(chosenIndex, closet);
+		L4D2_SetEntityGlow(g_respawnClosets[chosenIndex].door, L4D2Glow_Constant, 0, 0, { 0, 0, 255 }, true);
+		ReplyToCommand(client, "Found closet %d - %.1f away", g_respawnClosets[chosenIndex].door, closestDistance);
+	} else {
+		ReplyToCommand(client, "No closet found");
+	}
+	return Plugin_Handled;
+}
+
 Action Command_Debug(int client, int args) {
 	PrintToConsole(client, "g_survivorCount = %d | g_realSurvivorCount = %d", g_survivorCount, g_realSurvivorCount);
 	Director_PrintDebug(client);
@@ -828,6 +941,20 @@ Action Command_DebugStats(int client, int args) {
 /////////////////////////////////////
 /// EVENTS
 ////////////////////////////////////
+void OnDoorOpen(const char[] output, int caller, int activator, float delay) {
+	_MarkRespawnDoor(caller, true);
+}
+void OnDoorFullyClosed(const char[] output, int caller, int activator, float delay) {
+	_MarkRespawnDoor(caller, false);
+}
+void _MarkRespawnDoor(int door, bool isOpen) {
+	for(int i = 0; i < MAX_RESPAWN_CLOSETS; i++) {
+		if(g_respawnClosets[i].door == door) {
+			g_respawnClosets[i].isOpen = isOpen;
+			break;
+		}
+	}
+}
 void OnTakeDamageAlivePost(int victim, int attacker, int inflictor, float damage, int damagetype) {
 	if(victim <= MaxClients && attacker <= MaxClients && attacker > 0 && GetClientTeam(victim) == 2 && !IsFakeClient(victim))
 		QueueSaveInventory(attacker);
@@ -859,7 +986,7 @@ public void OnGetWeaponsInfo(int pThis, const char[] classname) {
 ///////////////////////////////////////////////////////
 
 //Called on the first spawn in a mission. 
-void Event_GameStart(Event event, const char[] name, bool dontBroadcast) {
+void Event_GameStartEnd(Event event, const char[] name, bool dontBroadcast) {
 	g_startCampaignGiven = false;
 	g_extraKitsAmount = 0;
 	g_extraKitsStart = 0;
@@ -980,6 +1107,62 @@ void Event_PlayerInfo(Event event, const char[] name, bool dontBroadcast) {
 	if(client && !IsFakeClient(client)) {
 		playerData[client].Setup(client);
 	}
+}
+
+void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
+	if(!IsEPIActive()) return;
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0) {
+		int team = GetClientTeam(client);
+		if(team == 2) {
+			float pos[3];
+			GetClientAbsOrigin(client, pos);
+			PrintDebug(DEBUG_GENERIC, "EXTRADEFIBS: Player died, checking for potentional defib spawn");
+
+
+			// If someone has defib, cancel extra spawn
+			if(GetPlayersWithItemCount("weapon_defibrillator") > 0) {
+				PrintDebug(DEBUG_GENERIC, "EXTRADEFIBS: Cancelled, another player has defib");
+				return;
+			}
+
+			// Skip checking respawn closets is finale is active - they won't respawn there
+			if(g_finaleState == view_as<int>(Stage_Inactive)) {
+				// If nearest respawn closet is not already opened, cancel spawn
+				int index = FindClosestRespawnClosetIndex(pos, Door_Closed, EXTRADEFIB_MAX_CLOSET_DISTANCE);
+				if(index != -1) {
+					PrintDebug(DEBUG_GENERIC, "EXTRADEFIBS, available respawn closets nearby");
+					return;
+				}
+			}
+			
+			// TODO: check for any nearby spawned defibs?
+
+			// Otherwise, spawn an extra defib somewhere
+			// find max flow
+			// int highestSurvivor = L4D_GetHighestFlowSurvivor();
+			float minFlow = L4D2Direct_GetFlowDistance(client) - 100.0;
+			float maxFlow = minFlow + 250.0;
+
+			PrintDebug(DEBUG_GENERIC, "EXTRADEFIBS: Finding position for defib, flow %.0f..%.0f", minFlow, maxFlow);
+			if(GetRandomSurvivorPos(pos, minFlow, maxFlow, 2)) {
+				PrintDebug(DEBUG_GENERIC, "EXTRADEFIBS: Created extra defib at %f %f %f", pos[0], pos[1], pos[2]);
+				int entity = CreateWeaponSpawn(pos, "weapon_defibrillator");
+				GlowEntity(entity, 10.0, { 255, 0, 0 }); // temp TODO: remove
+			} else {
+				PrintDebug(DEBUG_GENERIC, "EXTRADEFIBS: Failed to find position for extra defib");
+			}
+
+			// int index = FindClosestRespawnClosetIndex(pos, Door_Any);
+			// if(index != -1) {
+			// 	bool isDoorOpen = GetEntProp(g_respawnClosets[i].door, Prop_Data, "m_toggle_state") == 1;
+			// 	if(isDoorOpen) {
+			// 		// Player is not gonna respawn here as its open, 
+			// 		// TODO: some logic to determine if it really makes sense to spawn defib
+			// 	}
+			// }
+		}
+	} 
 }
 
 Action Timer_DropSurvivor(Handle h, int client) {
@@ -1343,6 +1526,8 @@ public void L4D2_OnChangeFinaleStage_Post(int stage) {
 }
 
 public void OnMapStart() {
+	FindRespawnClosets();
+
 	g_extraKitsSpawnedFinale = false;
 	char map[32];
 	GetCurrentMap(map, sizeof(map));
@@ -1437,6 +1622,7 @@ int TIER_MAXES[] = { 10, 18, 28, 31 };
 /**
  * Creates a weapon_*_spawn at position, with a random orientation. If classname not provided, it will be randomly selected
  * @param classname the full classname of weapon to spawn
+ * @param tier - the highest tier to spawn if no classname provided
  * @return returns -1 on error, or entity index
  */
 int CreateWeaponSpawn(const float pos[3], const char[] classname = "", int tier = 0) {
@@ -1479,6 +1665,7 @@ public void OnConfigsExecuted() {
 }
 
 public void OnMapEnd() {
+
 	g_isFinaleEnding = false;
 	// Reset the ammo packs, deleting the internal arraylist
 	for(int i = 0; i < g_ammoPacks.Length; i++) {
@@ -1778,6 +1965,38 @@ Action Timer_UpdateHud(Handle h) {
 // Methods
 ///////////////////////////////////////////////////////////////////////////////
 
+void FindRespawnClosets() {
+	// g_respawnClosets.Clear();
+	
+	int entity = -1;
+	float pos[3];
+
+	int index = 0;
+
+	while((entity = FindEntityByClassname(entity, "prop_door_rotating")) != INVALID_ENT_REFERENCE) {
+		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
+		Address nav = L4D_GetNearestNavArea(pos);
+		if(nav != Address_Null) {
+			int attributes = L4D_GetNavArea_SpawnAttributes(nav);
+			if(attributes & NAV_SPAWN_RESCUE_CLOSET) {
+
+				PrintDebug(DEBUG_ANY, "Found rescue closet door (door=%d, nav=%d, pos=%.1f %.1f %.1f)", entity, nav, pos[0], pos[1], pos[2]);
+				g_respawnClosets[index].door = entity;
+				g_respawnClosets[index].pos = pos;
+
+				index++;
+				if(index >= MAX_RESPAWN_CLOSETS) {
+					PrintDebug(DEBUG_SPAWNLOGIC, "Warn: Hit max respawn closet count (%d)", index);
+					break;
+				}
+			}
+		}
+	}
+	PrintDebug(DEBUG_SPAWNLOGIC, "Found %d respawn closets", index);
+	// Clear out the rest of array that wasn't used
+	while(index < MAX_RESPAWN_CLOSETS) { g_respawnClosets[index].Reset(); index++; }
+}
+
 void PopulateItems() {
 	if(g_areItemsPopulated) return;
 	UpdateSurvivorCount();
@@ -1835,6 +2054,51 @@ int CalculateExtraDefibCount() {
 	} else {
 		return 0;
 	}
+}
+
+// Finds a random position for survivors between min and max flows
+// @param maxFlow -1.0 for infinity
+// @param minWalls # of walls to check for, -1 to ignore
+bool GetRandomSurvivorPos(float outPos[3], float minFlow = 0.0, float maxFlow = -1.0, int minWalls = 4) {
+	if(maxFlow <= 0.0) {
+		maxFlow = L4D2Direct_GetMapMaxFlowDistance();
+	}
+
+	ArrayList navs = new ArrayList();
+	L4D_GetAllNavAreas(navs);
+	float pos[3];
+	navs.Sort(Sort_Random, Sort_Integer);
+	for(int i = 0; i < navs.Length; i++) {
+		Address nav = navs.Get(i);
+
+		float flow = L4D2Direct_GetTerrorNavAreaFlow(nav);
+		if(flow < minFlow || flow > maxFlow) continue;
+
+		int spawnFlags = L4D_GetNavArea_SpawnAttributes(nav);
+		int baseFlags = L4D_GetNavArea_AttributeFlags(nav);
+		if((!(baseFlags & NAV_BASE_FLOW_BLOCKED)) &&
+			!(spawnFlags & (NAV_SPAWN_ESCAPE_ROUTE|NAV_SPAWN_DESTROYED_DOOR|NAV_SPAWN_CHECKPOINT|NAV_SPAWN_NO_MOBS|NAV_SPAWN_STOP_SCAN))) 
+		{
+			L4D_FindRandomSpot(view_as<int>(nav), pos);
+			bool north = IsWallNearby(pos, Wall_North);
+			bool east = IsWallNearby(pos, Wall_East);
+			bool south = IsWallNearby(pos, Wall_South);
+			bool west = IsWallNearby(pos, Wall_West);
+			// TODO: collision check (windows like c1m1)
+			int wallCount = 0;
+			if(north) wallCount++;
+			if(east) wallCount++;
+			if(south) wallCount++;
+			if(west) wallCount++;
+			if(wallCount >= minWalls) {
+				outPos = pos;
+				delete navs;
+				return true;
+			}
+		}
+	}
+	delete navs;
+	return false;
 }
 
 void PopulateItemSpawns(int minWalls = 4) {
@@ -2007,6 +2271,26 @@ Action Timer_SaveInventory(Handle h, int client) {
 	g_saveTimer[client] = null;
 	return Plugin_Stop;
 }
+bool DebugPrintInventory(const char[] steamid2) {
+	PlayerInventory inv;
+	if(!pInv.GetArray(steamid2, inv, sizeof(inv))) {
+		if(StrEqual(steamid2, "BOT")) return false; // ignore bots
+		PrintToConsoleAll("[EPI:inv] No saved inventory for %s", steamid2);
+		return false;
+	}
+	char buffer[64];
+	PrintToConsoleAll("[EPI:inv] Saved inventory for %s:", steamid2);
+	FormatTime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", inv.timestamp);
+	PrintToConsoleAll("  Updated: %s", buffer);
+	PrintToConsoleAll("  Alive:%b Health:%d", inv.isAlive, inv.primaryHealth);
+	PrintToConsoleAll("  SurvivorType:%d %s", inv.survivorType, inv.model);
+	for(int i = 5; i >= 0; i--) {
+		PrintToConsoleAll(" slot:%d item:%d", i, inv.itemID[i]);
+	}
+	PrintToConsoleAll(" melee:%d lasers:%b", inv.meleeID, inv.lasers);
+
+	return true;
+}
 void QueueSaveInventory(int client) {
 	int time = GetTime();
 	if(time - playerData[client].joinTime < MIN_JOIN_TIME) return;
@@ -2029,7 +2313,6 @@ void SaveInventory(int client) {
 	inventory.survivorType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
 
 	int weapon;
-	static char buffer[32];
 	for(int i = 5; i >= 0; i--) {
 		weapon = GetPlayerWeaponSlot(client, i);
 		inventory.itemID[i] = IdentifyWeapon(weapon);
@@ -2041,8 +2324,7 @@ void SaveInventory(int client) {
 	if(inventory.itemID[0] != WEPID_NONE)
 		inventory.lasers = GetEntProp(weapon, Prop_Send, "m_upgradeBitVec") == 4;
 	
-	GetClientAuthId(client, AuthId_Steam3, buffer, sizeof(buffer));
-	pInv.SetArray(buffer, inventory, sizeof(inventory));
+	pInv.SetArray(steamid2Cache[client], inventory, sizeof(inventory));
 	g_lastInvSave[client] = GetTime();
 }
 
@@ -2076,9 +2358,7 @@ void RestoreInventory(int client, PlayerInventory inventory) {
 }
 
 bool GetLatestInventory(int client, PlayerInventory inventory) {
-	static char buffer[32];
-	GetClientAuthId(client, AuthId_Steam3, buffer, sizeof(buffer));
-	return pInv.GetArray(buffer, inventory, sizeof(inventory));
+	return pInv.GetArray(steamid2Cache[client], inventory, sizeof(inventory));
 }
 
 bool GetInventory(const char[] steamid, PlayerInventory inventory) {
@@ -2086,16 +2366,12 @@ bool GetInventory(const char[] steamid, PlayerInventory inventory) {
 }
 
 bool HasSavedInventory(int client) {
-	char buffer[32];
-	GetClientAuthId(client, AuthId_Steam3, buffer, sizeof(buffer));
-	return pInv.ContainsKey(buffer);
+	return pInv.ContainsKey(steamid2Cache[client]);
 }
 
 bool DoesInventoryDiffer(int client) {
-	static char buffer[32];
-	GetClientAuthId(client, AuthId_Steam3, buffer, sizeof(buffer));
 	PlayerInventory inventory;
-	if(!pInv.GetArray(buffer, inventory, sizeof(inventory)) || inventory.timestamp == 0) {
+	if(!pInv.GetArray(steamid2Cache[client], inventory, sizeof(inventory)) || inventory.timestamp == 0) {
 		return false;
 	}
 
@@ -2247,6 +2523,19 @@ stock bool DoesClientHaveKit(int client) {
 	return false;
 }
 
+int GetPlayersWithItemCount(const char[] wpnName) {
+	int count = 0;
+	char buffer[64];
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientInGame(i) && GetClientTeam(i) == 2 && !IsFakeClient(i)) {
+			if(GetClientWeaponName(i, 3, buffer, sizeof(buffer)) && StrEqual(buffer, wpnName)) {
+				count++;
+			}
+		}
+	}
+	return count;
+}
+
 stock bool UseExtraKit(int client) {
 	if(g_extraKitsAmount > 0) {
 		playerData[client].itemGiven = true;
@@ -2266,8 +2555,8 @@ stock void PrintDebug(int level, const char[] format, any ... ) {
 	if(level <= DEBUG_LEVEL) {
 		char buffer[256];
 		VFormat(buffer, sizeof(buffer), format, 3);
-		PrintToServer("[Debug] %s", buffer);
-		PrintToConsoleAll("[Debug] %s", buffer);
+		PrintToServer("[EPI::Debug] %s", buffer);
+		PrintToConsoleAll("[EPI::Debug] %s", buffer);
 	}
 	#endif
 }
