@@ -39,11 +39,11 @@ void AdminMenu_Spawn(TopMenu topmenu, TopMenuAction action, TopMenuObject object
 	if(action == TopMenuAction_DisplayOption) {
 		Format(buffer, maxlength, "Spawn Props");
 	} else if(action == TopMenuAction_SelectOption) {
-		ConVar cheats = FindConVar("sm_cheats");
-		if(cheats != null && !cheats.BoolValue) {
-			CReplyToCommand(param, "\x04[Editor] \x01Set \x05sm_cheats\x01 to \x051\x01 to use the prop spawner");
-			return;
-		}
+		// ConVar cheats = FindConVar("sm_cheats");
+		// if(cheats != null && !cheats.BoolValue) {
+		// 	CReplyToCommand(param, "\x04[Editor] \x01Set \x05sm_cheats\x01 to \x051\x01 to use the prop spawner");
+		// 	return;
+		// }
 		ShowSpawnRoot(param);
 	}
 }
