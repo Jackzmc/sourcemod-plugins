@@ -10,9 +10,10 @@ Useful things:
 1. **Netprop Viewer** [L4D2 Netprops](https://jackz.me/netprops/l4d2/netprops) and [L4D2 Datamaps](https://jackz.me/netprops/l4d2/datamaps)
 
 ## Compilation
-Currently plugins are only compiled and tested with **SM 1.12-7177** and **SM 1.12-7202**.
 
-Latest compiled plugins can be found under my forgejo's instances actions page [https://git.jackz.me/jackz/sourcemod-plugins/actions?workflow=&actor=0&status=1](https://git.jackz.me/jackz/sourcemod-plugins/actions?workflow=&actor=0&status=1)
+The plugins found in the plugins folder are manually compiled by me, and may be outdated. They are compiled using **SM 1.12-7177**.
+
+Latest compiled plugins for 1.11.x, 1.12.x, 1.13.x can be found under my forgejo's instances actions page [https://git.jackz.me/jackz/sourcemod-plugins/actions?workflow=&actor=0&status=1](https://git.jackz.me/jackz/sourcemod-plugins/actions?workflow=&actor=0&status=1)
 
 Otherwise the plugins folder in this repo exist, which are manually compiled by me and may be outdated.
 
