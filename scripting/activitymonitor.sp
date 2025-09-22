@@ -34,6 +34,8 @@ static Handle pushTimer;
 static ConVar hLogCvarChanges;
 static char lastMap[64];
 
+static char steamidCache[MAXPLAYERS+1][32];
+
 //Plugin related
 static bool lateLoaded;
 static EngineVersion g_Game;
@@ -91,6 +93,11 @@ public void OnPluginStart() {
 
 	if(!lateLoaded) {
 		AddLog("INFO", "", "", "Server has started up");
+		for(int i = 1; i <= MaxClients; i++) {
+			if(IsClientInGame(i) && !IsFakeClient(i)) {
+				GetClientAuthId(i, AuthId_Steam2, steamidCache[i], sizeof(steamidCache[i]));
+			}
+		}
 	}
 
 	pushTimer = CreateTimer(PUSH_TIMER, Timer_PushLogs, _, TIMER_REPEAT);
@@ -117,6 +124,19 @@ public void OnMapStart() {
 		AddLog("INFO", "", "", curMap);
 	}
 	TriggerTimer(pushTimer, true);
+}
+
+public void OnClientPutInServer(int client) {
+	if(!IsFakeClient(client)) {
+		// don't validate it - still want steamid for join/leave, even if spoofed
+		GetClientAuthId(client, AuthId_Steam2, steamidCache[client], sizeof(steamidCache[client]), false);
+	}
+}
+
+public void OnClientAuthorized(int client, const char[] auth) {
+	if(!IsFakeClient(client)) {
+		// GetClientAuthId(client, AuthId_Steam2, steamidCache[client], sizeof(steamidCache[client]));
+	}
 }
 
 public void CVAR_GamemodeChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
@@ -185,17 +205,19 @@ void SQL_TransactionFailed(Database db, any data, int numQueries, const char[] e
 public void Event_Connection(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && !IsFakeClient(client)) {
-		static char clientName[32];
-		if(GetClientAuthId(client, AuthId_Steam2, clientName, sizeof(clientName))) {
-			if(name[7] == 'f') {
-				AddLog("JOIN", clientName, "", "");
-				GetClientName(client, playerLastName[client], 32);
-			} else {
-				static char reason[64];
-				event.GetString("reason", reason, sizeof(reason));
-				Format(reason, sizeof(reason), " left: \"%s\"", reason);
-				AddLog("QUIT", clientName, "", reason);
-			}
+		// Ignore users who haven't validated (yet?), or bots
+		if(steamidCache[client][0] == '\0' || steamidCache[client][0] == 'B') return;
+		// Check if event is 'first_player_spawn', aka join
+		if(name[7] == 'f') {
+			AddLog("JOIN", steamidCache[client], "", "");
+			// Record player's name
+			GetClientName(client, playerLastName[client], 32); 
+		} else {
+			static char reason[64];
+			event.GetString("reason", reason, sizeof(reason));
+			Format(reason, sizeof(reason), " left: \"%s\"", reason);
+
+			AddLog("QUIT", steamidCache[client], "", reason);
 		}
 	}
 }
@@ -203,11 +225,8 @@ public void Event_Connection(Event event, const char[] name, bool dontBroadcast)
 public void Event_PlayerInfo(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && !IsFakeClient(client) && GetUserAdmin(client) == INVALID_ADMIN_ID) {
-		char clientName[32];
-		if(GetClientAuthId(client, AuthId_Steam2, clientName, sizeof(clientName))) {
-			AddLogCustom("INFO", clientName, "", "\"%s\" changed their name to \"%L\"", playerLastName[client], client);
-			GetClientName(client, playerLastName[client], 32);
-		}
+		AddLogCustom("INFO", steamidCache[client], "", "\"%s\" changed their name to \"%L\"", playerLastName[client], client);
+		GetClientName(client, playerLastName[client], 32);
 	}
 }
 
@@ -217,10 +236,21 @@ public Action OnLogAction(Handle source, Identity identity, int client, int targ
 
 	static char clientName[32], targetName[32];
 	if(client == 0) clientName = "Server";
-	else if(client > 0) GetClientAuthId(client, AuthId_Steam2, clientName, sizeof(clientName));
+	else if(client > 0) {
+		strcopy(clientName, sizeof(clientName), steamidCache[client]);
+		// if(!GetClientAuthId(client, AuthId_Steam2, clientName, sizeof(clientName), false)) {
+		// 	PrintToServer("[ActivityMonitor] WARN: Failed to get auth ID for client %s")
+		// 	return Plugin_Continue;
+		// }
+	}
 	else clientName[0] = '\0';
 
-	if(target > 0 && !IsFakeClient(target)) GetClientAuthId(target, AuthId_Steam2, targetName, sizeof(targetName));
+	if(target > 0 && !IsFakeClient(target)) {
+		strcopy(targetName, sizeof(targetName), steamidCache[target]);
+		// if(!GetClientAuthId(target, AuthId_Steam2, targetName, sizeof(targetName))) {
+		// 	return Plugin_Continue;
+		// }
+	}
 	else targetName[0] = '\0';
 
 	AddLog("ACTION", clientName, targetName, message);
@@ -229,9 +259,7 @@ public Action OnLogAction(Handle source, Identity identity, int client, int targ
 
 public void OnClientSayCommand_Post(int client, const char[] command, const char[] sArgs) {
 	if(client > 0 && !IsFakeClient(client)) {
-		static char clientName[32];
-		GetClientAuthId(client, AuthId_Steam2, clientName, sizeof(clientName));
-		AddLog("CHAT", clientName, "", sArgs);
+		AddLog("CHAT", steamidCache[client], "", sArgs);
 	}
 }
 
@@ -242,11 +270,11 @@ public void Event_L4D2_Death(Event event, const char[] name, bool dontBroadcast)
 		static char victimName[32], attackerName[32];
 
 		if(IsFakeClient(victim)) GetClientName(victim, victimName, sizeof(victimName));
-		else GetClientAuthId(victim, AuthId_Steam2, victimName, sizeof(victimName));
+		else strcopy(victimName, sizeof(victimName), steamidCache[victim]);
 
 		if(attacker > 0 && attacker != victim) { 
 			if(IsFakeClient(attacker)) GetClientName(attacker, attackerName, sizeof(attackerName));
-			else GetClientAuthId(attacker, AuthId_Steam2, attackerName, sizeof(attackerName));
+			else strcopy(attackerName, sizeof(attackerName), steamidCache[attacker]);
 
 			if(GetClientTeam(attacker) == 2) {
 				char weaponName[32];
@@ -270,11 +298,11 @@ public void Event_L4D2_Incapped(Event event, const char[] name, bool dontBroadca
 	if(victim > 0 && GetClientTeam(victim) == 2) { 
 		static char victimName[32], attackerName[32];
 		if(IsFakeClient(victim)) GetClientName(victim, victimName, sizeof(victimName));
-		else GetClientAuthId(victim, AuthId_Steam2, victimName, sizeof(victimName));
+		else strcopy(victimName, sizeof(victimName), steamidCache[victim]);
 
 		if(attacker > 0 && attacker != victim) {
 			if(IsFakeClient(attacker)) GetClientName(attacker, attackerName, sizeof(attackerName));
-			else GetClientAuthId(attacker, AuthId_Steam2, attackerName, sizeof(attackerName));
+			else strcopy(attackerName, sizeof(attackerName), steamidCache[attacker]);
 			
 			if(GetClientTeam(attacker) == 2) {
 				char weaponName[32];
