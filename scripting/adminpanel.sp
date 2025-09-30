@@ -49,7 +49,6 @@ int numberOfViewers;
 int campaignStartTime;
 int uptime;
 bool isL4D1Survivors;
-int lastReceiveTime;
 
 char steamidCache[MAXPLAYERS+1][32];
 char nameCache[MAXPLAYERS+1][MAX_NAME_LENGTH];
@@ -61,7 +60,7 @@ Handle receiveTimeoutTimer = null;
 int pendingAuthTries = 3;
 
 Socket g_socket;
-int g_lastPayloadSent;
+int g_lastPayloadTimeSent, g_lastPayloadTimeRecv; 
 
 char gameVersion[32];
 int gameAppId;
@@ -424,7 +423,7 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 		return;
 	}
 
-	lastReceiveTime = GetTime();
+	g_lastPayloadTimeRecv = GetTime();
 	switch(response) {
 		case Live_VoiceState: {
 			bool connected = receiveBuffer.ReadByte() == 1;
@@ -811,8 +810,9 @@ Action Command_PanelDebug(int client, int args) {
 		}
 	} else if(StrEqual(arg, "info")) {
 		ReplyToCommand(client, "Connected: %b\tAuthState: %s\tGameState: %s", g_socket.Connected, AUTH_STATE_LABEL[view_as<int>(authState)+1], GAME_STATE_LABEL[view_as<int>(g_gameState)]);
-		int timeFromLastPayload = g_lastPayloadSent > 0 ? GetTime() - g_lastPayloadSent : -1;
-		ReplyToCommand(client, "Last Payload: %ds\tBuffer Size: %d", timeFromLastPayload, BUFFER_SIZE);
+		int timeFromLastPayloadSent = g_lastPayloadTimeSent > 0 ? GetTime() - g_lastPayloadTimeSent : -1;
+		int timeFromLastPayloadRecv = g_lastPayloadTimeRecv > 0 ? GetTime() - g_lastPayloadTimeRecv : -1;
+		ReplyToCommand(client, "Last Payload: sent %ds    recv %ds", timeFromLastPayloadSent, timeFromLastPayloadRecv);
 		ReplyToCommand(client, "#Viewers: %d\t#Players: %d", numberOfViewers, numberOfPlayers);
 		ReplyToCommand(client, "Target Host: %s:%d", serverIp, serverPort);
 		ReplyToCommand(client, "Can Send: %b\tCan Force-Send: %b", CanSendPayload(), CanSendPayload(true));
@@ -1572,7 +1572,7 @@ void SendPayload() {
 	}
 	int len = sendBuffer.Finish();
 	Debug("Sending %d bytes of data (records = %s)", len, pendingRecords);
-	g_lastPayloadSent = GetTime();
+	g_lastPayloadTimeSent = GetTime();
 	g_socket.Send(sendBuffer.buffer, len);
 }
 
