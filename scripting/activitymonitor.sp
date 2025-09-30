@@ -218,6 +218,8 @@ public void Event_Connection(Event event, const char[] name, bool dontBroadcast)
 			Format(reason, sizeof(reason), " left: \"%s\"", reason);
 
 			AddLog("QUIT", steamidCache[client], "", reason);
+
+			steamidCache[client][0] = '\0';
 		}
 	}
 }
