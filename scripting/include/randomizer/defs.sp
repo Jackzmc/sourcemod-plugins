@@ -127,10 +127,7 @@ enum struct SelectedSceneData {
 	ArrayList selectedVariantIndexes;
 }
 
-enum struct GascanSpawnerData {
-	float origin[3];
-	float angles[3];
-}
+
 
 enum struct MapData {
 	StringMap scenesKv;
