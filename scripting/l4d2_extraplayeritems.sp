@@ -262,6 +262,8 @@ enum EPI_FinaleTankState {
 EPI_FinaleTankState g_epiTankState;
 int g_finaleState;
 
+bool shouldLockDoor; // If EPI was enabled on prev chapter
+
 //// Definitions completSe
 
 #include <epi/director.sp>
@@ -1531,9 +1533,11 @@ public void OnMapStart() {
 	g_extraKitsSpawnedFinale = false;
 	char map[32];
 	GetCurrentMap(map, sizeof(map));
-	// If map starts with c#m#, 98% an official map
+
+	// If map starts with c#m or C##m, 98% an official map
 	g_isOfficialMap = map[0] == 'c' && IsCharNumeric(map[1]) && (map[2] == 'm' || map[3] == 'm');
 	g_isCheckpointReached = false;
+
 	//If previous round was a failure, restore the amount of kits that were left directly after map transition
 	if(g_isFailureRound) {
 		g_extraKitsAmount = g_extraKitsStart;
@@ -1546,17 +1550,16 @@ public void OnMapStart() {
 		g_currentChapter++;
 	}
 
+	// Disable split tank on some finales
 	if(L4D_IsMissionFinalMap()) {
-		// Disable tank split on hard rain finale
-		g_extraFinaleTankEnabled = true;
-		if(StrEqual(map, "c4m5_milltown_escape") || StrEqual(map, "c14m2_lighthouse")) {
-			g_extraFinaleTankEnabled = false;
-		}
+		// hard rain, last stand
+		g_extraFinaleTankEnabled = !StrEqual(map, "c4m5_milltown_escape") && !StrEqual(map, "c14m2_lighthouse");
 	}
 
-	//Lock the beginning door
-	if(hMinPlayersSaferoomDoor.FloatValue > 0.0) {
+	//Lock the beginning door only if enabled & EPI was enabled previously
+	if(hMinPlayersSaferoomDoor.FloatValue > 0.0 && shouldLockDoor) {
 		int entity = -1;
+		// find first saferoom door - the checkpoint door that is locked
 		while ((entity = FindEntityByClassname(entity, "prop_door_rotating_checkpoint")) != -1 && entity > MaxClients) {
 			bool isLocked = GetEntProp(entity, Prop_Send, "m_bLocked") == 1;
 			if(isLocked) {
@@ -1574,15 +1577,16 @@ public void OnMapStart() {
 		
 	}
 
-	//Hook the end saferoom as event
+	//Hook entering the end saferoom as event
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 
+	// Reset states:
 	g_epiTankState = Stage_Inactive;
+	g_areItemsPopulated = false;
 
 	L4D2_RunScript(HUD_SCRIPT_CLEAR);
 	Director_OnMapStart();
-	g_areItemsPopulated = false;
 
 	if(g_isLateLoaded) {
 		UpdateSurvivorCount();
@@ -1683,6 +1687,8 @@ public void OnMapEnd() {
 	delete updateHudTimer;
 	g_finaleVehicleStartTime = 0;
 	Director_OnMapEnd();
+
+	shouldLockDoor = IsEPIActive();
 }
 
 void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
@@ -1708,7 +1714,9 @@ public void EntityOutput_OnStartTouchSaferoom(const char[] output, int caller, i
 }
 
 void SetExtraKits(int playerCount) {
-	int extraPlayers = playerCount - 4;
+	int extraPlayers = playerCount - 4; // don't include the 4 base characters
+
+	// Give bonus kits if needed
 	float averageTeamHP = GetAverageHP();
 	if(averageTeamHP <= 30.0) extraPlayers += (extraPlayers / 2); //if perm. health < 30, give an extra 4 on top of the extra
 	else if(averageTeamHP <= 50.0) extraPlayers += (extraPlayers / 3); //if the team's average health is less than 50 (permament) then give another
@@ -1739,9 +1747,9 @@ void Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
 public void OnEntityCreated(int entity, const char[] classname) {
 	if(StrEqual(classname, "weapon_pain_pills_spawn") || StrEqual(classname, "weapon_first_aid_kit_spawn")) {
 		SDKHook(entity, SDKHook_SpawnPost, Hook_CabinetItemSpawn);
-	}else if(StrEqual(classname, "prop_health_cabinet", true)) {
+	} else if(StrEqual(classname, "prop_health_cabinet", true)) {
 		SDKHook(entity, SDKHook_SpawnPost, Hook_CabinetSpawn);
-	}else if (StrEqual(classname, "upgrade_ammo_explosive") || StrEqual(classname, "upgrade_ammo_incendiary")) {
+	} else if (StrEqual(classname, "upgrade_ammo_explosive") || StrEqual(classname, "upgrade_ammo_incendiary")) {
 		int index = g_ammoPacks.Push(entity);
 		g_ammoPacks.Set(index, new ArrayList(1), AMMOPACK_USERS);
 		SDKHook(entity, SDKHook_Use, OnUpgradePackUse);
