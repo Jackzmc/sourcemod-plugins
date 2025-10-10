@@ -71,7 +71,7 @@ public void OnClientAuthorized(int client, const char[] auth) {
     if(!StrEqual(auth, "BOT", true)) {
         static char query[256], ip[32];
         GetClientIP(client, ip, sizeof(ip));
-        g_db.Format(query, sizeof(query), "SELECT `reason`, `steamid`, `expired`, `public_message`, `flags`, `id` FROM `bans` WHERE `expired` = 0 AND `steamid` LIKE 'STEAM_%%:%%:%s' OR ip = '%s'", auth[10], ip);
+        g_db.Format(query, sizeof(query), "SELECT `reason`, `steamid`, `expired`, `public_message`, `flags`, `id` FROM `bans` WHERE `expired` = 0 AND SUBSTRING(steamid, 11) = '%s' OR ip = '%s'", auth, ip);
         g_db.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
     }
 }
