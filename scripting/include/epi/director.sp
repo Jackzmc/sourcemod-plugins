@@ -15,6 +15,7 @@ ConVar directorSpawnChance; // Base chance of a special spawning, changed by pla
 #define DIRECTOR_ESCAPE_TANK_MIN_TIME_S 20 // The min time in seconds that must elapse since escape vehicle arrival until tank can spawn
 
 #define DIRECTOR_DEBUG_SPAWN 1 // Dont actually spawn
+#define MAX_CLIENTS_PER_TEAM 15
 
 /// DEFINITIONS
 #define NUM_SPECIALS 6
@@ -41,7 +42,8 @@ enum specialType {
 };
 enum directorState {
 	DState_Normal,
-	DState_NoPlayersOrNotCoop,
+	DState_NoSurvivors,
+	DState_EPI_Inactive,
 	DState_PendingMinFlow,
 	DState_Disabled,
 	DState_MaxSpecialTime,
@@ -51,9 +53,10 @@ enum directorState {
 	DState_HighStress,
 	DState_MaxDirectorSpecials,
 }
-char DIRECTOR_STATE[10][] = {
+char DIRECTOR_STATE[11][] = {
 	"normal",
-	"no players / not coop",
+	"no survivors",
+	"EPI inactive",
 	"pending minflow",
 	"disabled",
 	"max special in window",
@@ -75,7 +78,7 @@ static float g_minFlowSpawn; // The minimum flow for specials to start spawning 
 static float g_maxStressIntensity; // The max stress that specials arent allowed to spawn
 
 int g_extraWitchCount;
-static int g_infectedCount;
+static int g_specialCount;
 int g_restCount;
 static Handle witchSpawnTimer = null;
 
@@ -96,7 +99,7 @@ void Director_OnMapStart() {
 	}
 	g_highestFlowAchieved = 0.0;
 	g_lastSpecialSpawnTime = time;
-	g_infectedCount = 0;
+	g_specialCount = 0;
 	g_restCount = 0;
 	Director_RandomizeThings();
 }
@@ -148,7 +151,7 @@ void Director_CheckClient(int client) {
 		float time = GetGameTime();
 		g_lastSpawnTime[class] = time;
 		g_lastSpecialSpawnTime = time;
-		g_infectedCount++;
+		g_specialCount++;
 
 	}
 }
@@ -245,9 +248,9 @@ void Director_Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 			if(g_spawnCount[class] < 0) {
 				g_spawnCount[class] = 0;
 			}
-			g_infectedCount--;
-			if(g_infectedCount < 0) {
-				g_infectedCount = 0;
+			g_specialCount--;
+			if(g_specialCount < 0) {
+				g_specialCount = 0;
 			}
 		} else if(team == 2) {
 			TryGrantRest();
@@ -299,16 +302,16 @@ void InitExtraWitches() {
 }
 
 void Director_PrintDebug(int client) {
-	PrintToConsole(client, "State: %s(%d)", DIRECTOR_STATE[g_lastState], g_lastState);
-	float eCount = float(g_survivorCount - 3);
-	float chance = (eCount - float(g_infectedCount)) / eCount;
-	PrintToConsole(client, "Player Scale Chance: %f%%", chance * 100.0);
+	PrintToConsole(client, "State: %d %s", g_lastState, DIRECTOR_STATE[g_lastState]);
+	float curAvgStress = L4D_GetAvgSurvivorIntensity();
+	PrintToConsole(client, "Spawn Chance[NEW]: %f%% - p(%.4f) s(%.4f) i(%.4f)", GetSpawnChance(g_survivorCount, g_specialCount, curAvgStress), GetPlayerScale(g_survivorCount), GetSpecialScale(g_survivorCount, g_specialCount), GetIntensityScale(curAvgStress));
+	PrintToConsole(client, "Spawn Chance[OLD]: %f%%", directorSpawnChance.FloatValue + ((0.5 - curAvgStress) / 10.0));
 	PrintToConsole(client, "Map Bounds: [%f, %f]", FLOW_CUTOFF, L4D2Direct_GetMapMaxFlowDistance() - (FLOW_CUTOFF*2.0));
 	PrintToConsole(client, "Total Witches Spawned: %d | Target: %d", g_spawnCount[Special_Witch], g_extraWitchCount);
 	for(int i = 0; i < g_extraWitchCount && i < DIRECTOR_WITCH_MAX_WITCHES; i++) {
 		PrintToConsole(client, "%d. %f", i+1, g_extraWitchFlowPositions[i]);
 	}
-	PrintToConsole(client, "highestFlow = %f, g_minFlowSpawn = %f, current flow = %f", g_highestFlowAchieved, g_minFlowSpawn, L4D2Direct_GetFlowDistance(client));
+	PrintToConsole(client, "highestFlow = %f, g_minFlowSpawn = %f, current flow = %f", g_highestFlowAchieved, g_minFlowSpawn, client > 0 ? L4D2Direct_GetFlowDistance(client) : -1.0);
 	PrintToConsole(client, "g_maxStressIntensity = %f, current avg = %f", g_maxStressIntensity, L4D_GetAvgSurvivorIntensity());
 	PrintToConsole(client, "TankInPlay=%b, FinaleStage=%d, FinaleEscapeReady=%b, DirectorTankCheck:%b", L4D2_IsTankInPlay(), g_epiTankState, g_isFinaleEnding, L4D2_IsTankInPlay() && !g_isFinaleEnding);
 	char buffer[128];
@@ -319,13 +322,23 @@ void Director_PrintDebug(int client) {
 	}
 	PrintToConsole(client, "\t%s", buffer);
 	buffer[0] = '\0';
-	PrintToConsole(client, "Spawn Counts: (%d/%d)", g_infectedCount, g_survivorCount - 4);
+	PrintToConsole(client, "Spawn Counts: specials(%d) survivors(%d) specialBugCount(%d)", g_specialCount, g_survivorCount - 4, GetRealAliveSpecials());
 	for(int i = 0; i < TOTAL_NUM_SPECIALS; i++) {
 		Format(buffer, sizeof(buffer), "%s %s=%d/%d", buffer, SPECIAL_IDS[i], g_spawnCount[i], g_spawnLimit[i]);
 	}
 	PrintToConsole(client, "\t%s", buffer);
 	PrintToConsole(client, "timer interval=%.0f, rest count=%d, rest time left=%.0fs", DIRECTOR_TIMER_INTERVAL, g_restCount, float(g_restCount) * DIRECTOR_TIMER_INTERVAL);
 	PrintToConsole(client, "g_finaleVehicleStartTime = %d (%ds ago)", g_finaleVehicleStartTime, GetTime() - g_finaleVehicleStartTime);
+}
+
+int GetRealAliveSpecials() {
+	int count;
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientInGame(i) && GetClientTeam(i) == 3) {
+			count++;
+		}
+	}
+	return count;
 }
 
 void Director_RandomizeLimits() {
@@ -364,13 +377,13 @@ void Director_CheckSpawnCounts() {
 	for(int i = 0; i < TOTAL_NUM_SPECIALS; i++) {
 		g_spawnCount[i] = 0;
 	}
-	g_infectedCount = 0;
+	g_specialCount = 0;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientInGame(i) && GetClientTeam(i) == 3) {
 			int class = GetEntProp(i, Prop_Send, "m_zombieClass") - 1; // make it 0-based
 			if(class > view_as<int>(Special_Tank)) continue;
 			g_spawnCount[class]++;
-			g_infectedCount++;
+			g_specialCount++;
 		}
 	}
 }
@@ -380,12 +393,12 @@ void Director_CheckSpawnCounts() {
 // TODO: maybe make specials spaw nmore during horde events (alarm car, etc)
 // less during calms, making that the automatic rest periods?
 directorState Director_Think() { 
-	if(!IsEPIActive()) return DState_NoPlayersOrNotCoop;
+	if(!IsEPIActive()) return DState_EPI_Inactive;
 	float time = GetGameTime();
 
 	// Calculate the new highest flow
 	int highestPlayer = L4D_GetHighestFlowSurvivor();
-	if(highestPlayer <= 0) return DState_NoPlayersOrNotCoop;
+	if(highestPlayer <= 0) return DState_NoSurvivors;
 	float flow = L4D2Direct_GetFlowDistance(highestPlayer);
 	if(flow > g_highestFlowAchieved) { 
 		g_highestFlowAchieved = flow;
@@ -398,6 +411,7 @@ directorState Director_Think() {
 	// C. Special spawning is enabled
 	gd_maxSpecials = L4D2_GetScriptValueInt("MaxSpecials", 0);
 	if(gd_maxSpecials <= 0) return DState_MaxDirectorSpecials;
+	if(g_specialCount >= g_survivorCount) return DState_MaxDirectorSpecials;
 	if(~cvEPISpecialSpawning.IntValue & 1 ) return DState_Disabled;
 	if(!L4D_HasAnySurvivorLeftSafeArea() || g_highestFlowAchieved < g_minFlowSpawn) return DState_PendingMinFlow;
 
@@ -405,48 +419,62 @@ directorState Director_Think() {
 	if(Director_ShouldRest()) {
 		return DState_Resting;
 	}
+	// Don't spawn specials when tanks active, but have a small chance (DIRECTOR_SPECIAL_TANK_CHANCE) to bypass
+	if((L4D2_IsTankInPlay() && !g_isFinaleEnding) && GetURandomFloat() > DIRECTOR_SPECIAL_TANK_CHANCE) {
+		return DState_TankInPlay;
+	}
 
 	// Only spawn more than one special within 2s at 10%
 	// TODO: randomized time between spawns? 0, ?? instead of repeat timer?
-	if(time - g_lastSpecialSpawnTime < 1.0 && GetURandomFloat() > 0.45) return DState_MaxSpecialTime;
+	// if(time - g_lastSpecialSpawnTime < 1.0 && GetURandomFloat() > 0.45) return DState_MaxSpecialTime;
 
 	if(GetURandomFloat() < DIRECTOR_CHANGE_LIMIT_CHANCE) {
 		Director_RandomizeLimits();
 	}
 
-	// Decrease chance of spawning based on how close to infected count 
-	// abmExtraCount=6 g_infectedCount=0   chance=1.0   ((abmExtraCount-g_infectedCount)/abmExtraCount)
-	// abmExtraCount=6 g_infectedCount=1   chance=0.9   ((6-1)/6)) = (5/6)
-	// abmExtraCount=6 g_infectedCount=6   chance=0.2
-	// TODO: in debug calculate this
-	float eCount = float(g_survivorCount - 3);
-	float chance = (eCount - float(g_infectedCount)) / eCount;
-	// TODO: verify (abmExtraCount-4)
-	if(GetURandomFloat() > chance) return DState_PlayerChance;
-
-
 	float curAvgStress = L4D_GetAvgSurvivorIntensity();
-	// Don't spawn specials when tanks active, but have a small chance (DIRECTOR_SPECIAL_TANK_CHANCE) to bypass
-	if((L4D2_IsTankInPlay() && !g_isFinaleEnding) && GetURandomFloat() > DIRECTOR_SPECIAL_TANK_CHANCE) {
-		return DState_TankInPlay;
-	} else if(curAvgStress >= g_maxStressIntensity) {
+	if(curAvgStress >= g_maxStressIntensity) {
 		// Stop spawning when players are stressed from a random value chosen by [DIRECTOR_STRESS_CUTOFF, 1.0]
 		return DState_HighStress;
 	}
-	// Scale the chance where stress = 0.0, the chance is 50% more, and stress = 1.0, the chance is 50% less
-	float spawnChance = directorSpawnChance.FloatValue + ((0.5 - curAvgStress) / 10.0);
-	for(int i = 0; i < NUM_SPECIALS; i++) {
-		specialType special = view_as<specialType>(i);
-		// Skip if we hit our limit, or too soon:
-		if(g_spawnCount[i] >= g_spawnLimit[i]) continue;
-		if(time - g_lastSpawnTime[i] < DIRECTOR_MIN_SPAWN_TIME) continue;
+	if(ShouldSpawn(g_survivorCount, g_specialCount, curAvgStress)) {
+		// Pick a special to spawn at random. Gives every special a chance 
 
-		if(GetURandomFloat() <= spawnChance) {
-			DirectorSpawn(special);
-		}
+		int special = GetURandomInt() % NUM_SPECIALS;
+		PrintDebug(DEBUG_SPAWNLOGIC, "spawning %s %d", SPECIAL_IDS[special], special);
+		DirectorSpawn(special);
 	}
+	
 
 	return DState_Normal;
+}
+float GetPlayerScale(int numSurvivors) {
+	return float(numSurvivors - 4) / float(MAX_CLIENTS_PER_TEAM);
+}
+float GetSpecialScale(int numSurvivors, int numSpecials) {
+	return float((numSurvivors+4)-(numSpecials)) / float(MAX_CLIENTS_PER_TEAM);
+}
+float GetIntensityScale(float intensity) {
+	return 1.0 - intensity;
+}
+
+/** Returns the chance (0.0 - 1.0) that a special can spawn. Number of survivors should be above 4 */
+/** Tries to scale based on: # of survivors (positively), # of specials (negatively), % of stress (negatively) */
+float GetSpawnChance(int numSurvivors, int numSpecials, float avgIntensity) {
+	if(numSurvivors <= 4) return 0.0;
+	float playerScale = GetPlayerScale(numSurvivors);
+	float specialScale = GetSpecialScale(numSurvivors, numSpecials);
+	float intensityScale = GetIntensityScale(avgIntensity); 
+
+	float spawnChance = ClampFloat(playerScale * specialScale * intensityScale, 0.0, 1.0);
+	
+	// PrintToConsoleAll("%f%% p(%.4f) s(%.4f) i(%.4f)", spawnChance, playerScale, specialScale, intensityScale);
+	return spawnChance;
+}
+
+/** Returns if EPI director should spawn a special, based on GetSpawnChance(...) */
+bool ShouldSpawn(int numSurvivors, int numSpecials, float avgIntensity) {
+	return GetURandomFloat() <= GetSpawnChance(numSurvivors, numSpecials, avgIntensity);
 }
 
 Action Timer_Director(Handle h) {

@@ -757,6 +757,7 @@ Action Command_SetSurvivorCount(int client, int args) {
 		GetCmdArg(1, arg, sizeof(arg));
 		if(arg[0] == 'c') {
 			g_forcedSurvivorCount = false;
+			g_epiEnabled = false;
 			ReplyToCommand(client, "Cleared forced survivor count.");
 			UpdateSurvivorCount();
 			return Plugin_Handled;
@@ -782,6 +783,7 @@ Action Command_SetSurvivorCount(int client, int args) {
 		}
 		g_survivorCount = survivorCount;
 		g_forcedSurvivorCount = true;
+		g_epiEnabled = true;
 		ReplyToCommand(client, "Forced survivor count %d -> %d", oldSurvivorCount, survivorCount);
 	} else {
 		ReplyToCommand(client, "Survivor Count = %d | Real Survivor Count = %d", g_survivorCount, g_realSurvivorCount);
@@ -1114,7 +1116,9 @@ void Event_PlayerInfo(Event event, const char[] name, bool dontBroadcast) {
 void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	if(!IsEPIActive()) return;
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(client > 0) {
+	int dmgType = event.GetInt("type");
+	// Don't spawn extra defibs when someone fell - it's mostly always pointless
+	if(client > 0 && !(dmgType & DMG_FALL)) {
 		int team = GetClientTeam(client);
 		if(team == 2) {
 			float pos[3];
@@ -1149,8 +1153,12 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 			PrintDebug(DEBUG_GENERIC, "EXTRADEFIBS: Finding position for defib, flow %.0f..%.0f", minFlow, maxFlow);
 			if(GetRandomSurvivorPos(pos, minFlow, maxFlow, 2)) {
 				PrintDebug(DEBUG_GENERIC, "EXTRADEFIBS: Created extra defib at %f %f %f", pos[0], pos[1], pos[2]);
-				int entity = CreateWeaponSpawn(pos, "weapon_defibrillator");
-				GlowEntity(entity, 10.0, { 255, 0, 0 }); // temp TODO: remove
+				// TODO: delay spawn
+				if(GetRandomFloat() < 0.1) return;
+				float time = GetRandomFloat(0.0, 18.0);
+				DataPack pack;
+				CreateDataTimer(time, Timer_SpawnExtraDefib, pack);
+				pack.WriteFloatArray(pos, 3);
 			} else {
 				PrintDebug(DEBUG_GENERIC, "EXTRADEFIBS: Failed to find position for extra defib");
 			}
@@ -1165,6 +1173,16 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 			// }
 		}
 	} 
+}
+
+Action Timer_SpawnExtraDefib(Handle h, DataPack pack) {
+	pack.Reset();
+	float pos[3];
+	pack.ReadFloatArray(pos, 3);
+
+	int entity = CreateWeaponSpawn(pos, "weapon_defibrillator");
+	GlowEntity(entity, 18.0, { 255, 0, 0 }); // temp TODO: remove
+	return Plugin_Handled;
 }
 
 Action Timer_DropSurvivor(Handle h, int client) {
@@ -1336,7 +1354,7 @@ Action Timer_SetupNewClient(Handle h, int userid) {
 		// Gets the nav area of lowest client, and finds a random spot inside
 		float pos[3];
 		GetClientAbsOrigin(lowestClient, pos);
-		int nav = L4D_GetNearestNavArea(pos);
+		int nav = L4D_GetNearestNavArea(pos, 400.0);
 		if(nav > 0) {
 			L4D_FindRandomSpot(nav, pos);
 		}

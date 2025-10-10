@@ -1033,3 +1033,10 @@ stock int GetAppData(char[] outVersion, int maxlen) {
 	delete file;
     return appId;
 }
+
+
+float ClampFloat(float value, float min, float max) {
+	if(value > max) value = max;
+	else if(value < min) value = min;
+	return value;
+}
