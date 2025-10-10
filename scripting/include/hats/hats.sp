@@ -501,6 +501,7 @@ int AttachPointHandler(Menu menu, MenuAction action, int client, int param2) {
 			GetEntityClassname(hat, classname, sizeof(classname));
 			EquipHat(client, hat, classname, hatData[client].flags, attachPoint);
 			CReplyToCommand(client, "Attachment point set to {olive}%s", attachPoint);
+			ShowAttachPointMenu(client);
 		}
 	} else if (action == MenuAction_End)	
 		delete menu;
@@ -747,7 +748,7 @@ void EquipHat(int client, int entity, const char[] classname = "", int flags = H
 			} else {
 				hatData[client].offset[2] += 4.2;
 			}
-		} else {
+		} else if(StrEqual(attachPoint, "eyes")) {
 			float mins[3], maxs[3];
 			GetEntPropVector(modifyEntity, Prop_Send, "m_vecMaxs", maxs);
 			GetEntPropVector(modifyEntity, Prop_Send, "m_vecMins", mins);
