@@ -6,7 +6,7 @@
 #define DIRECTOR_WITCH_MAX_WITCHES 5 // The maximum amount of extra witches to spawn 
 #define DIRECTOR_WITCH_ROLLS 4 // The number of dice rolls, increase if you want to increase freq
 #define DIRECTOR_MIN_SPAWN_TIME 13.0 // Possibly randomized, per-special, in seconds
-ConVar directorSpawnChance; // Base chance of a special spawning, changed by player stress
+ConVar directorSpawnChance; // Multiplier for chance of a special spawning
 #define DIRECTOR_CHANGE_LIMIT_CHANCE 0.05 // The chance that the maximum amount per-special is changed
 #define DIRECTOR_SPECIAL_TANK_CHANCE 0.05 // The chance that specials can spawn when a tank is active
 #define DIRECTOR_STRESS_CUTOFF 0.75 // The minimum chance a random cut off stress value is chosen [this, 1.0]
@@ -466,7 +466,7 @@ float GetSpawnChance(int numSurvivors, int numSpecials, float avgIntensity) {
 	float specialScale = GetSpecialScale(numSurvivors, numSpecials);
 	float intensityScale = GetIntensityScale(avgIntensity); 
 
-	float spawnChance = ClampFloat(playerScale * specialScale * intensityScale, 0.0, 1.0);
+	float spawnChance = ClampFloat(playerScale * specialScale * intensityScale * directorSpawnChance.FloatValue, 0.0, 1.0);
 	
 	// PrintToConsoleAll("%f%% p(%.4f) s(%.4f) i(%.4f)", spawnChance, playerScale, specialScale, intensityScale);
 	return spawnChance;
