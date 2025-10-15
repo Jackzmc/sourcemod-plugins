@@ -300,8 +300,8 @@ stock int GiveClientWeapon(int client, const char[] wpnName) {
 		return -1;
 	}
 }
-stock int GetNearestEntity(int client, char[] classname)
-{
+stock int GetNearestEntity(int client, char[] classname) {
+	#pragma unused client
 	int nearestEntity = -1;
 	float clientVecOrigin[3], entityVecOrigin[3];
 	
@@ -866,7 +866,7 @@ stock bool IsNearGround(int ref, float distFromGround = 15.0) {
 	GetEntPropVector(ref, Prop_Send, "m_vecOrigin", sPos);
 	ePos[0] = sPos[0];
 	ePos[1] = sPos[1];
-	ePos[2] = sPos[2] -= 15.0;
+	ePos[2] = sPos[2] -= distFromGround;
 	TR_TraceRayFilter(sPos, ePos, MASK_SOLID, RayType_EndPoint, Filter_IgnorePlayer, ref);
 	if(TR_DidHit()) {
 		return true;
@@ -875,7 +875,7 @@ stock bool IsNearGround(int ref, float distFromGround = 15.0) {
 }
 
 stock bool IsAreaClear(const float pos[3], const float ang[3], const float minBound[3], const float maxBound[3]) { 
-
+	#pragma unused ang
 	TR_TraceHullFilter(pos, pos, minBound, maxBound, MASK_SOLID, Filter_World);
 	if(TR_DidHit()) {
 		return false;
@@ -924,8 +924,8 @@ stock void GlowPoint(const float pos[3], float lifetime = 5.0) {
 	CreateTimer(lifetime, Timer_KillEntity, entity);
 }
 
-stock void GlowEntity(int entity, float lifetime = 10.0, int glowColor[3] = _glowColor) {
-	L4D2_SetEntityGlow(entity, L4D2Glow_Constant, 10000, 0, glowColor, false);
+stock void GlowEntity(int entity, float lifetime = 10.0, int glowColor[3] = _glowColor, bool flashing = false) {
+	L4D2_SetEntityGlow(entity, L4D2Glow_Constant, 10000, 0, glowColor, flashing);
 	if(lifetime > 0.0)
 		CreateTimer(lifetime, Timer_ClearGlow, EntIndexToEntRef(entity));
 }
@@ -1035,7 +1035,7 @@ stock int GetAppData(char[] outVersion, int maxlen) {
 }
 
 
-float ClampFloat(float value, float min, float max) {
+stock float ClampFloat(float value, float min, float max) {
 	if(value > max) value = max;
 	else if(value < min) value = min;
 	return value;
