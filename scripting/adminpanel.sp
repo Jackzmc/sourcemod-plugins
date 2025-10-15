@@ -173,7 +173,7 @@ public void OnPluginStart() {
 	char auth[32];
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientInGame(i)) {
-			if(GetClientAuthId(i, AuthId_Steam2, auth, sizeof(auth))) {
+			if(GetClientAuthId(i, AuthId_Steam2, auth, sizeof(auth), false)) {
 				OnClientAuthorized(i, auth);
 				OnClientPutInServer(i);
 			}
@@ -838,6 +838,10 @@ Action Command_PanelDebug(int client, int args) {
 			ReplyToCommand(client, "Result: %d (type=%d)", result, view_as<int>(type));
 		
 		ReplyToCommand(client, "Output: %s", output);
+	} else if(StrEqual(arg, "debug")) {
+		for(int i = 1; i <= MaxClients; i++) {
+			ReplyToCommand(client, "#%d STEAM=%s NAME=%s", i, steamidCache[i], nameCache[i]);
+		}
 	} else if(g_socket.Connected) {
 		if(StrEqual(arg, "game")) {
 			if(StartPayload(true)) {
@@ -1027,12 +1031,7 @@ void RecalculatePlayerCount() {
 
 void SendPlayers() {
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientInGame(i)) {
-			if(StartPayload(true)) {
-				AddPlayerRecord(i, Client_Connected);
-				SendPayload();
-			}
-		}
+		SendNewClient(i);
 	}
 }
 
@@ -1079,6 +1078,8 @@ public void OnClientPutInServer(int client) {
 			SendPayload();
 		}
 	}
+	// Get their steamid - but don't validate (steam issues). Just don't trust them here
+	GetClientAuthId(client, AuthId_Steam2, steamidCache[client], sizeof(steamidCache[client]), false);
 	SDKHook(client, SDKHook_WeaponEquipPost, OnWeaponPickUp);
 	SDKHook(client, SDKHook_OnTakeDamageAlivePost, OnTakeDamagePost);
 	// We wait a frame because Event_PlayerFirstSpawn sets their join time
