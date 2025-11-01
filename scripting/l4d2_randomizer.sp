@@ -774,10 +774,29 @@ void spawnEntity(VariantEntityData entity) {
 			return;
 		}
 		CreateRope(entity);
+	} else if(StrEqual(entity.type, "script_nav_blocker")) {
+		Randomizer_CreateNavBlocker(entity);
 	} else {
 		LogError("Unsupported entity type \"%s\"", entity.type);
 	}
 }
+
+int Randomizer_CreateNavBlocker(VariantEntityData entity) {
+	int blocker = CreateNavBlocker(entity.targetname, entity.origin, entity.angles, entity.scale, -1, false);
+	entity.ApplyProperties(blocker);
+	return blocker;
+}
+int CreateNavBlocker(const char[] targetname, const float origin[3], const float angles[3], const float size[3], int teamToBlock, bool affectsFlow) {
+	int entity = CreateEntityByName("script_nav_blocker");
+	DispatchKeyValue(entity, "targetname", targetname);
+	DispatchKeyValueVector(entity, "extent", size);
+	DispatchKeyValueVector(entity, "origin", origin);
+	DispatchKeyValueVector(entity, "angles", angles);
+	DispatchKeyValueInt(entity, "teamToBlock", teamToBlock);
+	DispatchKeyValueInt(entity, "affectsFlow", affectsFlow ? 1 : 0);
+	DispatchSpawn(entity);
+	return entity;
+}	
 
 int CreateRope(VariantEntityData data) {
 	char targetName[32], nextKey[32];
