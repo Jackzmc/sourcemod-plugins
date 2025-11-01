@@ -441,7 +441,6 @@ directorState Director_Think() {
 		// Pick a special to spawn at random. Gives every special a chance 
 
 		int special = GetURandomInt() % NUM_SPECIALS;
-		PrintDebug(DEBUG_SPAWNLOGIC, "spawning %s %d", SPECIAL_IDS[special], special);
 		DirectorSpawn(special);
 	}
 	

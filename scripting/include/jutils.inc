@@ -884,7 +884,7 @@ stock bool IsAreaClear(const float pos[3], const float ang[3], const float minBo
 }
 
 stock Action Timer_KillEntity(Handle h, int entity) {
-	
+	#pragma unused h
 	RemoveEntity(entity);
 	return Plugin_Handled;
 }
