@@ -95,7 +95,7 @@ public void OnPluginStart() {
 		AddLog("INFO", "", "", "Server has started up");
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientInGame(i) && !IsFakeClient(i)) {
-				GetClientAuthId(i, AuthId_Steam2, steamidCache[i], sizeof(steamidCache[i]));
+				GetClientAuthId(i, AuthId_Steam2, steamidCache[i], sizeof(steamidCache[i]), false);
 			}
 		}
 	}
@@ -130,12 +130,6 @@ public void OnClientPutInServer(int client) {
 	if(!IsFakeClient(client)) {
 		// don't validate it - still want steamid for join/leave, even if spoofed
 		GetClientAuthId(client, AuthId_Steam2, steamidCache[client], sizeof(steamidCache[client]), false);
-	}
-}
-
-public void OnClientAuthorized(int client, const char[] auth) {
-	if(!IsFakeClient(client)) {
-		// GetClientAuthId(client, AuthId_Steam2, steamidCache[client], sizeof(steamidCache[client]));
 	}
 }
 

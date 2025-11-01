@@ -42,6 +42,13 @@ public void OnClientPutInServer(int client) {
 	iJoinTime[client] = GetTime();
 }
 
+public void OnClientDisconnect(int client) {
+	if(disableFFClient == client) {
+		disableFFClient = -1;
+		ffDamageCount = 0;
+	}
+}
+
 public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast) {
 	if(!event.GetBool("disconnect")) {
 		int team = event.GetInt("team");
@@ -54,6 +61,9 @@ public void Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast)
 		}
 	}
 }
+
+
+
 public Action VoteStart(int client, const char[] command, int argc) {
 	if(!IsClientInGame(client)) {
 		PrintToServer("Preventing vote from user not in game: %N", client);
@@ -73,9 +83,10 @@ public Action VoteStart(int client, const char[] command, int argc) {
 				int target = GetClientOfUserId(StringToInt(option));
 				if(target <= 0 || target >= MaxClients || !IsClientInGame(target)) return Plugin_Continue; //invalid, pass it through
 				AdminId targetAdmin = GetUserAdmin(target);
-				bool isCallerAdmin = GetUserFlagBits(client) != 0;
-				bool isTargetAdmin = GetUserFlagBits(target) != 0;
+				bool isCallerAdmin = CheckCommandAccess(client, "sm_kick", ADMFLAG_KICK);
+				bool isTargetAdmin = CheckCommandAccess(target, "sm_kick", ADMFLAG_KICK);
 				PrintToServer("Caller Admin: %b | Target admin: %b", isCallerAdmin, isTargetAdmin);
+
 				//Only run if vote is against an admin
 				if(isTargetAdmin) { 
 					for(int i = 1; i <= MaxClients; i++) {
@@ -83,10 +94,12 @@ public Action VoteStart(int client, const char[] command, int argc) {
 							PrintToChat(i, "%N attempted to vote-kick admin %N", client, target);
 						}
 					}
+					LogAction(client, target, "\"%L\" attemped to vote kick admin \"%L\"", client, target);
+
 					// Kick player if they are not an admin and just recently joined.
 					// Else, just tell the target
 					if(!isCallerAdmin && GetTime() - iJoinTime[client] <= ANTI_ADMIN_KICK_MIN_TIME) {
-						if(GetClientTeam(target) >= 2) {
+						if(GetClientTeam(target) == 2) {
 							KickClient(client, "No.");
 							PrintToChat(target, "%N has attempted to vote kick you and was kicked.", client);
 						} else {
@@ -96,6 +109,7 @@ public Action VoteStart(int client, const char[] command, int argc) {
 					} else {
 						PrintToChat(target, "%N has attempted to vote kick you.", client);
 					}
+
 					// TODO: remove debug
 					targetAdmin.GetUsername(option, sizeof(option));
 					PrintToServer("debug: admin immunity is %d. username: %s", targetAdmin.ImmunityLevel, option);
@@ -104,15 +118,25 @@ public Action VoteStart(int client, const char[] command, int argc) {
 				} else if(isCallerAdmin) {
 					PrintToServer("Vote kick by admin, instantly passing");
 					for(int i = 1; i <= MaxClients; i++) {
-						if(IsClientConnected(i) && !IsFakeClient(i) && GetClientTeam(i) == GetClientTeam(target)) {
+						if(IsClientInGame(i) && !IsFakeClient(i) && GetClientTeam(i) == GetClientTeam(target)) {
 							ClientCommand(i, "vote Yes");
 						}
 					}
 				}
+
+				if(GetTime() - iJoinTime[client] <= ANTI_ADMIN_KICK_MIN_TIME) {
+					PrintToServer("Preventing kick vote from user who recently joined", client);
+					PrintToConsoleAll("Vote blocked from %N: recently joined", client);
+
+					return Plugin_Handled;
+				}
+
+				// Disable target from doing FF while they are pending being vote kicked
 				if(GetClientTeam(target) == 2) {
 					disableFFClient = target;
 					ffDamageCount = 0;
 				}
+				
 				PrintToServer("VOTE KICK STARTED | Target=%N | Caller=%N", target, client);
 				return Plugin_Continue;
 			}	
@@ -122,6 +146,7 @@ public Action VoteStart(int client, const char[] command, int argc) {
 }
 
 public Action VotePassFail(UserMsg msg_id, BfRead msg, const int[] players, int playersNum, bool reliable, bool init) {
+	// Vote failed, re-enable ff for target
 	disableFFClient = -1;
 	ffDamageCount = 0;
 	return Plugin_Continue;
@@ -132,7 +157,7 @@ public Action OnTakeDamage(int victim,  int& attacker, int& inflictor, float& da
 		if(forceKickFFThreshold.IntValue > -1 && ffDamageCount > 0.0) {
 			//auto kick
 			if(ffDamageCount > forceKickFFThreshold.FloatValue) {
-				BanClient(disableFFClient, 0, 0, "Kicked for excessive friendly fire", "Dick-Be-Gone", "noFF");
+				BanClient(disableFFClient, 0, 0, "Kicked for excessive friendly fire", "Dick-Be-Gone", "kickProtection");
 			}
 		}
 		return Plugin_Handled;

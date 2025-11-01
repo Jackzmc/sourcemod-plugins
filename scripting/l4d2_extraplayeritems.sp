@@ -381,7 +381,7 @@ public void OnPluginStart() {
 	if(g_isLateLoaded) {
 		for(int i = 1; i <= MaxClients; i++) {
 			if(IsClientConnected(i) && IsClientInGame(i)) {
-				GetClientAuthId(i, AuthId_Steam2, steamid2Cache[i], 32);
+				GetClientAuthId(i, AuthId_Steam2, steamid2Cache[i], 32, false);
 				if(GetClientTeam(i) == 2) {
 					SaveInventory(i);
 				}
@@ -1154,8 +1154,8 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 			if(GetRandomSurvivorPos(pos, minFlow, maxFlow, 2)) {
 				PrintDebug(DEBUG_GENERIC, "EXTRADEFIBS: Created extra defib at %f %f %f", pos[0], pos[1], pos[2]);
 				// TODO: delay spawn
-				if(GetRandomFloat() < 0.1) return;
-				float time = GetRandomFloat(0.0, 18.0);
+				// if(GetRandomFloat() < 0.1) return;
+				float time = GetRandomFloat(0.0, 15.0);
 				DataPack pack;
 				CreateDataTimer(time, Timer_SpawnExtraDefib, pack);
 				pack.WriteFloatArray(pos, 3);

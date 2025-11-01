@@ -74,7 +74,8 @@ public void Event_PlayerInfo(Event event, const char[] name, bool dontBroadcast)
 			char buffer[64];
 			Format(buffer, sizeof(buffer), "Excessive name changing (%d in %d seconds)", nameChangeCount[client], diff);
 			BanClient(client, 20, BANFLAG_AUTO, "Excessive name changing", buffer);
-			GetClientAuthId(client, AuthId_Steam2, buffer, sizeof(buffer));
+			
+			GetClientAuthId(client, AuthId_Steam2, buffer, sizeof(buffer), false);
 			PrintChatToAdmins("%N (steamid %s) hit excessive name change and has been banned temporarily", client, buffer);
 		} 
 		lastNameChange[client] = time;

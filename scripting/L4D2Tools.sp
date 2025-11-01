@@ -601,7 +601,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && !IsFakeClient(client)) {
 		char auth[32];
-		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
+		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth), false);
 		SteamIDs.Remove(auth);
 	}
 }
@@ -695,12 +695,23 @@ public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadca
 					if(!StrEqual(buffer, "weapon_melee"))
 						RemoveEntity(currentWeapon);
 				}
-				EquipPlayerWeapon(client, botDropMeleeWeapon[bot]);
+				// Possibly causing crashes
+				DataPack pack = new DataPack();
+				RequestFrame(Frame_ReequipMelee, pack);
+				pack.WriteCell(client);
+				pack.WriteCell(botDropMeleeWeapon[bot]);
 				botDropMeleeWeapon[bot] = -1;
 			}
 		}
 		SDKUnhook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 	}
+}
+void Frame_ReequipMelee(DataPack pack) {
+	pack.Reset();
+	int client = pack.ReadCell();
+	int melee = pack.ReadCell();
+	EquipPlayerWeapon(client, melee);
+	delete pack;
 }
 Action Event_OnWeaponDrop(int client, int weapon) {
 	if(!IsValidEntity(weapon) || !IsFakeClient(client)) return Plugin_Continue;
