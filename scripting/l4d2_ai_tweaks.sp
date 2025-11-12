@@ -71,7 +71,7 @@ public Action OnFriendAction( BehaviorAction action, int actor, BehaviorAction p
 			}
 		} 
 		// If they are not black and white, also stop
-		if(!GetEntProp(target, Prop_Send, "m_bIsOnThirdStrike") && idleTimeStart[realPlayer] < ALLOW_HEALING_MIN_IDLE_TIME) { //If real player and not black and white, stop
+		if(!GetEntProp(target, Prop_Send, "m_bIsOnThirdStrike") && GetTime() - idleTimeStart[realPlayer] < ALLOW_HEALING_MIN_IDLE_TIME) { //If real player and not black and white, stop
 			result.type = DONE;
 			return Plugin_Handled;
 		}
