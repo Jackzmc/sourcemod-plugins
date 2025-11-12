@@ -35,6 +35,7 @@ public void OnPluginStart()
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
 
 	RegConsoleCmd("sm_vgag", Cmd_VGag, "Gags a player\'s vocalizations locally");
+	RegConsoleCmd("sm_lvgag", Cmd_VGag, "Gags a player\'s vocalizations locally");
 	AddNormalSoundHook(SoundHook);
 }
 
@@ -67,7 +68,7 @@ public Action Cmd_VGag(int client, int args) {
 				client,
 				target_list,
 				MAXPLAYERS,
-				COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_IMMUNITY,
+				COMMAND_FILTER_NO_IMMUNITY,
 				target_name,
 				sizeof(target_name),
 				tn_is_ml)) <= 0)
@@ -93,9 +94,7 @@ public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PL
 	if(numClients > 0 && entity > 0 && entity <= MaxClients) {
 		if(StrContains(sample, "survivor\\voice") > -1) {
 			for(int i = 0; i < numClients; i++) {
-                int client = clients[i];
-                if(gaggedPlayers[client].FindValue(entity) > -1) {
-					// Swap gagged player to end of list, then reduce array count by one.
+                if(gaggedPlayers[clients[i]].FindValue(entity) > -1) {
 					clients[i] = 0;
                 }
             }
