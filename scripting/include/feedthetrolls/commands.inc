@@ -557,7 +557,7 @@ public Action Command_Stagger(int client, int args) {
 			client,
 			target_list,
 			MaxClients,
-			COMMAND_FILTER_ALIVE,
+			COMMAND_FILTER_ALIVE | COMMAND_FILTER_NO_IMMUNITY,
 			target_name,
 			sizeof(target_name),
 			tn_is_ml)) <= 0

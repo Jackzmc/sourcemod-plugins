@@ -685,6 +685,14 @@ stock void SetParent(int child, int parent) {
 	AcceptEntityInput(child, "SetParent", parent);
 }
 
+stock void SetParentOffset(int child, int parent, float offset[3]) {
+	float pos[3];
+	GetEntPropVector(parent, Prop_Send, "m_vecOrigin", pos);
+	AddVectors(pos, offset, pos);
+	TeleportEntity(child, pos);
+	SetParent(child, parent);
+}
+
 stock void SetParentAttachment(int child, const char[] attachment, bool withOffset = false) {
 	SetVariantString(attachment);
 	if(withOffset)

@@ -776,6 +776,10 @@ void spawnEntity(VariantEntityData entity) {
 		CreateRope(entity);
 	} else if(StrEqual(entity.type, "script_nav_blocker")) {
 		Randomizer_CreateNavBlocker(entity);
+		float mins[3];
+		mins = entity.scale;
+		NegateVector(mins);
+		Effect_DrawBeamBoxRotatableToAll(entity.origin, mins, entity.scale, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {0, 255, 0, 255}, 0);
 	} else {
 		LogError("Unsupported entity type \"%s\"", entity.type);
 	}
