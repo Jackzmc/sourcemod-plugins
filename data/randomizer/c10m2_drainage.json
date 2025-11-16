@@ -994,12 +994,34 @@
                             -1.0,
                             -1.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            -8394.3828125,
+                            -5954.65673828125,
+                            -318.9542236328125
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
                     }
                 ],
                 "inputs": [
                     {
                         "hammerid": 286780,
                         "input": "_allow_ladder"
+                    },
+                    {
+                        "hammerid": 613134,
+                        "input": "break"
+                    },
+                    {
+                        "hammerid": 613142,
+                        "input": "break"
                     }
                 ]
             }
@@ -1088,6 +1110,175 @@
                             -11244.2041015625,
                             -8188.748046875,
                             -478.780517578125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_c17/truss02h.mdl",
+                        "origin": [
+                            -11137.046875,
+                            -8190.43212890625,
+                            -478.48788452148438
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "safe-roof-alt": {
+        "chance": 0.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            -6659.4345703125,
+                            -6071.9609375,
+                            213.73419189453125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -6675.62060546875,
+                            -6078.6953125,
+                            265.30105590820312
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_street/police_barricade_496in.mdl",
+                        "origin": [
+                            -6724.34130859375,
+                            -5748.9853515625,
+                            -67.38763427734375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_street/police_barricade2.mdl",
+                        "origin": [
+                            -6720.17578125,
+                            -5424.7890625,
+                            -64.905738830566406
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_nuke/truck_nuke.mdl",
+                        "origin": [
+                            -7414.373046875,
+                            -5527.908203125,
+                            -65.281867980957031
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "scale": [
+                            8.0,
+                            318.0,
+                            1026.0
+                        ],
+                        "type": "env_physics_blocker",
+                        "model": "",
+                        "origin": [
+                            -7820.595703125,
+                            -5724.01513671875,
+                            258.88873291015625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -7548.72412109375,
+                            -5334.14306640625,
+                            256.28125
+                        ],
+                        "angles": [
+                            0.0,
+                            -270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -7652.15673828125,
+                            -5347.7685546875,
+                            255.77955627441406
+                        ],
+                        "angles": [
+                            0.0,
+                            -270.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -7869.376953125,
+                            -5601.63623046875,
+                            256.77249145507812
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            -6485.416015625,
+                            -6068.66845703125,
+                            316.52352905273438
                         ],
                         "angles": [
                             0.0,

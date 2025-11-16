@@ -1,302 +1,825 @@
 {
     "offices": {
-        "chance": 0.3,
+        "chance": 0.29999999999999999,
         "variants": [
             {
                 "entities": [
                     {
                         "model": "models/props_unique/airport/luggage1.mdl",
-                        "origin": [1147.47, 4246.60, 296.03],
-                        "angles": [0.00, -89.73, 0.00]
+                        "origin": [
+                            1147.47,
+                            4246.6000000000004,
+                            296.02999999999997
+                        ],
+                        "angles": [
+                            0.0,
+                            -89.730000000000004,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage1.mdl",
-                        "origin": [1168.18, 4244.57, 296.03],
-                        "angles": [0.00, -97.57, 0.00]
+                        "origin": [
+                            1168.1800000000001,
+                            4244.5699999999997,
+                            296.02999999999997
+                        ],
+                        "angles": [
+                            0.0,
+                            -97.569999999999993,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage1.mdl",
-                        "origin": [1189.41, 4249.77, 296.03],
-                        "angles": [0.00, -89.19, 0.00]
+                        "origin": [
+                            1189.4100000000001,
+                            4249.7700000000004,
+                            296.02999999999997
+                        ],
+                        "angles": [
+                            0.0,
+                            -89.189999999999998,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage1.mdl",
-                        "origin": [1185.79, 4251.60, 329.68],
-                        "angles": [0.00, -76.25, 0.00]
+                        "origin": [
+                            1185.79,
+                            4251.6000000000004,
+                            329.68000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            -76.25,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage3.mdl",
-                        "origin": [1153.48, 4249.00, 336.53],
-                        "angles": [0.00, -91.28, 0.00]
+                        "origin": [
+                            1153.48,
+                            4249.0,
+                            336.52999999999997
+                        ],
+                        "angles": [
+                            0.0,
+                            -91.280000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage3.mdl",
-                        "origin": [1146.67, 4234.73, 349.75],
-                        "angles": [0.00, -95.32, 0.00]
+                        "origin": [
+                            1146.6700000000001,
+                            4234.7299999999996,
+                            349.75
+                        ],
+                        "angles": [
+                            0.0,
+                            -95.319999999999993,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage3.mdl",
-                        "origin": [1184.46, 4233.38, 349.03],
-                        "angles": [0.00, -89.24, 0.00]
+                        "origin": [
+                            1184.46,
+                            4233.3800000000001,
+                            349.02999999999997
+                        ],
+                        "angles": [
+                            0.0,
+                            -89.239999999999995,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage2.mdl",
-                        "origin": [1184.51, 4229.51, 330.09],
-                        "angles": [0.00, 94.59, 0.00]
+                        "origin": [
+                            1184.51,
+                            4229.5100000000002,
+                            330.08999999999997
+                        ],
+                        "angles": [
+                            0.0,
+                            94.590000000000003,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage2.mdl",
-                        "origin": [1144.33, 4231.13, 330.26],
-                        "angles": [0.00, 83.52, 0.00]
+                        "origin": [
+                            1144.3299999999999,
+                            4231.1300000000001,
+                            330.25999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            83.519999999999996,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage1.mdl",
-                        "origin": [1135.85, 4229.80, 291.06],
-                        "angles": [0.00, -88.56, 0.00]
+                        "origin": [
+                            1135.8499999999999,
+                            4229.8000000000002,
+                            291.06
+                        ],
+                        "angles": [
+                            0.0,
+                            -88.560000000000002,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage1.mdl",
-                        "origin": [1157.39, 4227.95, 291.41],
-                        "angles": [0.00, -93.15, 0.00]
+                        "origin": [
+                            1157.3900000000001,
+                            4227.9499999999998,
+                            291.41000000000003
+                        ],
+                        "angles": [
+                            0.0,
+                            -93.150000000000006,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage1.mdl",
-                        "origin": [1177.43, 4226.32, 290.88],
-                        "angles": [0.00, -90.76, 0.00]
+                        "origin": [
+                            1177.4300000000001,
+                            4226.3199999999997,
+                            290.88
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.760000000000005,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage1.mdl",
-                        "origin": [1197.07, 4227.81, 293.57],
-                        "angles": [0.00, -84.67, 0.00]
+                        "origin": [
+                            1197.0699999999999,
+                            4227.8100000000004,
+                            293.56999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            -84.670000000000002,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "wallskip": {
-        "chance": 0.36,
+        "chance": 0.35999999999999999,
+        "entities": [
+            {
+                "model": "models/props_unique/airport/luggage_pile1.mdl",
+                "origin": [
+                    1210.96,
+                    5075.6199999999999,
+                    289.00999999999999
+                ],
+                "angles": [
+                    0.0,
+                    -16.210000000000001,
+                    0.0
+                ]
+            },
+            {
+                "type": "hammerid",
+                "model": "4692585",
+                "origin": [
+                    801.37,
+                    5283.5,
+                    295.92000000000002
+                ],
+                "angles": [
+                    0.13,
+                    269.47000000000003,
+                    360.0
+                ]
+            },
+            {
+                "type": "hammerid",
+                "model": "4692613",
+                "origin": [
+                    931.53999999999996,
+                    5016.1300000000001,
+                    301.91000000000003
+                ],
+                "angles": [
+                    360.0,
+                    270.25999999999999,
+                    360.0
+                ]
+            },
+            {
+                "type": "hammerid",
+                "model": "4692625",
+                "origin": [
+                    1076.3399999999999,
+                    5106.4700000000003,
+                    293.94
+                ],
+                "angles": [
+                    360.0,
+                    0.040000000000000001,
+                    360.0
+                ]
+            }
+        ],
         "variants": [
             {
                 "inputs": [
-                    {"targetname": "door06", "input": "Open"},
-                    {"targetname": "door06", "input": "Lock"},
-                    {"targetname": "breakwall01", "input": "Break"}
+                    {
+                        "targetname": "door07",
+                        "input": "Open"
+                    },
+                    {
+                        "targetname": "door06",
+                        "input": "_lock_nobreak"
+                    },
+                    {
+                        "targetname": "breakwall01",
+                        "input": "Break"
+                    }
+                ],
+                "entities": []
+            },
+            {
+                "inputs": [
+                    {
+                        "targetname": "door07",
+                        "input": "Open"
+                    },
+                    {
+                        "targetname": "door06",
+                        "input": "_lock_nobreak"
+                    },
+                    {
+                        "targetname": "breakwall01",
+                        "input": "Break"
+                    }
                 ],
                 "entities": [
                     {
-                        "model": "models/props_unique/airport/luggage_pile1.mdl",
-                        "origin": [1210.96, 5075.62, 289.01],
-                        "angles": [0.00, -16.21, 0.00]
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/fortification_indoor_01.mdl",
+                        "origin": [
+                            1153.0206298828125,
+                            5069.14404296875,
+                            318.25924682617188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
                     },
                     {
-                        "type": "hammerid",
-                        "model": "4692585",
-                        "origin": [801.37, 5283.50, 295.92],
-                        "angles": [0.13, 269.47, 360.00]
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/airport/luggage3.mdl",
+                        "origin": [
+                            1126.8240966796875,
+                            5035.3203125,
+                            347.17730712890625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
                     },
                     {
-                        "type": "hammerid",
-                        "model": "4692613",
-                        "origin": [931.54, 5016.13, 301.91],
-                        "angles": [360.00, 270.26, 360.00]
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/airport/luggage1.mdl",
+                        "origin": [
+                            1140.9581298828125,
+                            5044.0498046875,
+                            327.9700927734375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
                     },
                     {
-                        "type": "hammerid",
-                        "model": "4692625",
-                        "origin": [1076.34, 5106.47, 293.94],
-                        "angles": [360.00, 0.04, 360.00]
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/airport/luggage1.mdl",
+                        "origin": [
+                            1119.0113525390625,
+                            5025.14794921875,
+                            374.867431640625
+                        ],
+                        "angles": [
+                            90.0,
+                            30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/airport/luggage4.mdl",
+                        "origin": [
+                            1147.95263671875,
+                            5064.20654296875,
+                            347.977294921875
+                        ],
+                        "angles": [
+                            60.0,
+                            0.0,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
-    "room": {
-        "chance": 0.2,
+    "roomblock": {
+        "chance": 0.40000000000000002,
         "variants": [
             {
                 "inputs": [
-                    {"hammerid": 3849141, "input": "Break"}
+                    {
+                        "hammerid": 3849141,
+                        "input": "Break"
+                    }
                 ],
                 "entities": [
                     {
                         "model": "models/props_unique/zombiebreakwallexteriorairport01_main.mdl",
-                        "origin": [-140.98, 5632.17, 359.71],
-                        "angles": [0.00, 0.85, 0.00]
+                        "origin": [
+                            -139.0,
+                            5632.1700000000001,
+                            360
+                        ],
+                        "angles": [
+                            0.0,
+                            0.84999999999999998,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/zombiebreakwallexteriorairport01_main.mdl",
-                        "origin": [-138.98, 5505.42, 360.73],
-                        "angles": [0.00, 0.85, 0.00]
+                        "origin": [
+                            -140.0,
+                            5505.4200000000001,
+                            360
+                        ],
+                        "angles": [
+                            0.0,
+                            0.84999999999999998,
+                            0.0
+                        ]
                     }
                 ]
             },
             {
                 "inputs": [
-                    {"hammerid": 6765365, "input": "Break"},
-                    {"hammerid": 6765323, "input": "Break"}
+                    {
+                        "hammerid": 6765365,
+                        "input": "Break"
+                    },
+                    {
+                        "hammerid": 6765323,
+                        "input": "Break"
+                    }
                 ]
             },
             {
                 "inputs": [
-                    {"hammerid": 6765365, "input": "Break"},
-                    {"hammerid": 6765323, "input": "Break"},
-                    {"hammerid": 3849141, "input": "Break"}
+                    {
+                        "hammerid": 6765365,
+                        "input": "Break"
+                    },
+                    {
+                        "hammerid": 6765323,
+                        "input": "Break"
+                    },
+                    {
+                        "hammerid": 3849141,
+                        "input": "Break"
+                    }
                 ],
                 "entities": [
                     {
                         "model": "models/props_unique/zombiebreakwallexteriorairport01_main.mdl",
-                        "origin": [-140.98, 5632.17, 359.71],
-                        "angles": [0.00, 0.85, 0.00]
+                        "origin": [
+                            -140.97999999999999,
+                            5632.1700000000001,
+                            359.70999999999998
+                        ],
+                        "angles": [
+                            0.0,
+                            0.84999999999999998,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/zombiebreakwallexteriorairport01_main.mdl",
-                        "origin": [-138.98, 5505.42, 360.73],
-                        "angles": [0.00, 0.85, 0.00]
+                        "origin": [
+                            -138.97999999999999,
+                            5505.4200000000001,
+                            360.73000000000002
+                        ],
+                        "angles": [
+                            0.0,
+                            0.84999999999999998,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "altbathroom": {
-        "chance": 0.2,
+        "chance": 0.20000000000000001,
         "variants": [
             {
                 "inputs": [
-                    {"targetname": "breakwall02", "input": "Break"}
+                    {
+                        "targetname": "breakwall02",
+                        "input": "Break"
+                    }
                 ],
                 "entities": [
                     {
                         "model": "models/props_fortifications/barricade001_64_reference.mdl",
-                        "origin": [-478.22, 4378.12, 16.03],
-                        "angles": [0.00, 108.59, 0.00]
+                        "origin": [
+                            -478.22000000000003,
+                            4378.1199999999999,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            108.59,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [-413.52, 4448.54, 16.03],
-                        "angles": [0.00, 90.39, 0.00]
+                        "origin": [
+                            -413.51999999999998,
+                            4448.54,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            90.390000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [-309.98, 4452.00, 16.28],
-                        "angles": [0.00, 89.13, 0.00]
+                        "origin": [
+                            -309.98000000000002,
+                            4452.0,
+                            16.280000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            89.129999999999995,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [-206.66, 4456.59, 16.03],
-                        "angles": [0.00, 89.78, 0.00]
+                        "origin": [
+                            -206.66,
+                            4456.5900000000001,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            89.780000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [-12.66, 4530.94, 15.52],
-                        "angles": [0.00, 84.90, 0.00]
+                        "origin": [
+                            -12.66,
+                            4530.9399999999996,
+                            15.52
+                        ],
+                        "angles": [
+                            0.0,
+                            84.900000000000006,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [93.15, 4544.95, 16.03],
-                        "angles": [0.00, 87.17, 0.00]
+                        "origin": [
+                            93.150000000000006,
+                            4544.9499999999998,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            87.170000000000002,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [207.10, 4521.70, 16.03],
-                        "angles": [0.00, 86.27, 0.00]
+                        "origin": [
+                            207.09999999999999,
+                            4521.6999999999998,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            86.269999999999996,
+                            0.0
+                        ]
                     }
                 ]
             },
             {
                 "inputs": [
-                    {"targetname": "breakwall02", "input": "Break"}
+                    {
+                        "targetname": "breakwall02",
+                        "input": "Break"
+                    }
                 ],
                 "entities": [
                     {
                         "model": "models/props_fortifications/barricade001_64_reference.mdl",
-                        "origin": [-478.22, 4378.12, 16.03],
-                        "angles": [0.00, 108.59, 0.00]
+                        "origin": [
+                            -478.22000000000003,
+                            4378.1199999999999,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            108.59,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [-413.52, 4448.54, 16.03],
-                        "angles": [0.00, 90.39, 0.00]
+                        "origin": [
+                            -413.51999999999998,
+                            4448.54,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            90.390000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [-309.98, 4452.00, 16.28],
-                        "angles": [0.00, 89.13, 0.00]
+                        "origin": [
+                            -309.98000000000002,
+                            4452.0,
+                            16.280000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            89.129999999999995,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [-206.66, 4456.59, 16.03],
-                        "angles": [0.00, 89.78, 0.00]
+                        "origin": [
+                            -206.66,
+                            4456.5900000000001,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            89.780000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [-12.66, 4530.94, 15.52],
-                        "angles": [0.00, 84.90, 0.00]
+                        "origin": [
+                            -12.66,
+                            4530.9399999999996,
+                            15.52
+                        ],
+                        "angles": [
+                            0.0,
+                            84.900000000000006,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [93.15, 4544.95, 16.03],
-                        "angles": [0.00, 87.17, 0.00]
+                        "origin": [
+                            93.150000000000006,
+                            4544.9499999999998,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            87.170000000000002,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [207.10, 4521.70, 16.03],
-                        "angles": [0.00, 86.27, 0.00]
+                        "origin": [
+                            207.09999999999999,
+                            4521.6999999999998,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            86.269999999999996,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [464.11, 4481.46, 16.03],
-                        "angles": [0.00, 90.92, 0.00]
+                        "origin": [
+                            464.11000000000001,
+                            4481.46,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            90.920000000000002,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [582.05, 4487.41, 16.03],
-                        "angles": [0.00, 92.57, 0.00]
+                        "origin": [
+                            582.04999999999995,
+                            4487.4099999999999,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            92.569999999999993,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "breakwall03": {
-        "chance": 0.2,
+        "chance": 0.20000000000000001,
         "variants": [
             {
                 "inputs": [
-                    {"targetname": "breakwall03", "input": "Break"}
+                    {
+                        "targetname": "breakwall03",
+                        "input": "Break"
+                    }
                 ],
                 "entities": [
                     {
                         "model": "models/props_street/police_barricade3.mdl",
-                        "origin": [-219.01, 3160.10, 17.22],
-                        "angles": [0.00, -111.55, 0.00]
+                        "origin": [
+                            -219.00999999999999,
+                            3160.0999999999999,
+                            17.219999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            -111.55,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "statue": {
-        "chance": 0.1,
+        "chance": 0.10000000000000001,
         "variants": [
             {
                 "entities": [
                     {
                         "model": "models/props_street/police_barricade_496in.mdl",
-                        "origin": [1816.64, 1949.75, 16.47],
-                        "angles": [0.00, -178.00, 0.00]
+                        "origin": [
+                            1816.6400000000001,
+                            1949.75,
+                            16.469999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            -178.0,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [1862.91, 1645.13, 53.64],
-                        "angles": [0.00, 49.98, 0.00]
+                        "origin": [
+                            1862.9100000000001,
+                            1645.1300000000001,
+                            53.640000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            49.979999999999997,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [1889.04, 1524.60, 50.64],
-                        "angles": [0.00, -26.45, 0.00]
+                        "origin": [
+                            1889.04,
+                            1524.5999999999999,
+                            50.640000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            -26.449999999999999,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [1829.59, 1417.40, 16.03],
-                        "angles": [0.00, -61.03, 0.00]
+                        "origin": [
+                            1829.5899999999999,
+                            1417.4000000000001,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            -61.030000000000001,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "light_dynamic",
+                        "origin": [
+                            1621.3543701171875,
+                            2494.347412109375,
+                            153.92142486572266
+                        ],
+                        "color": [
+                            240,
+                            240,
+                            245,
+                            1
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            400.0,
+                            -1.0,
+                            -1.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/refrigerator03.mdl",
+                        "origin": [
+                            1997.05224609375,
+                            2554.580322265625,
+                            31.888851165771484
+                        ],
+                        "angles": [
+                            -90.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "light_dynamic",
+                        "origin": [
+                            1953.2926025390625,
+                            2581.03125,
+                            153.83824920654297
+                        ],
+                        "color": [
+                            128,
+                            128,
+                            128,
+                            1
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            100.0,
+                            -1.0,
+                            -1.0
+                        ]
                     }
                 ]
             }
@@ -309,18 +832,42 @@
                 "entities": [
                     {
                         "model": "models/props_unique/airport/luggage_pile1.mdl",
-                        "origin": [2875.19, 3604.47, 152.03],
-                        "angles": [0.00, 66.00, 0.00]
+                        "origin": [
+                            2875.1900000000001,
+                            3604.4699999999998,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            66.0,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage_pile1.mdl",
-                        "origin": [2990.65, 3669.06, 152.03],
-                        "angles": [0.00, 51.44, 0.00]
+                        "origin": [
+                            2990.6500000000001,
+                            3669.0599999999999,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            51.439999999999998,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage_pile1.mdl",
-                        "origin": [3082.52, 3639.42, 152.03],
-                        "angles": [0.00, 59.95, 0.00]
+                        "origin": [
+                            3082.52,
+                            3639.4200000000001,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            59.950000000000003,
+                            0.0
+                        ]
                     }
                 ]
             },
@@ -328,48 +875,120 @@
                 "entities": [
                     {
                         "model": "models/props_unique/airport/luggage_pile1.mdl",
-                        "origin": [2875.19, 3604.47, 152.03],
-                        "angles": [0.00, 66.00, 0.00]
+                        "origin": [
+                            2875.1900000000001,
+                            3604.4699999999998,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            66.0,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage_pile1.mdl",
-                        "origin": [2990.65, 3669.06, 152.03],
-                        "angles": [0.00, 51.44, 0.00]
+                        "origin": [
+                            2990.6500000000001,
+                            3669.0599999999999,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            51.439999999999998,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/luggage_pile1.mdl",
-                        "origin": [3082.52, 3639.42, 152.03],
-                        "angles": [0.00, 59.95, 0.00]
+                        "origin": [
+                            3082.52,
+                            3639.4200000000001,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            59.950000000000003,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2812.56, 4447.31, 152.03],
-                        "angles": [0.00, 143.85, 0.00]
+                        "origin": [
+                            2812.5599999999999,
+                            4447.3100000000004,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            143.84999999999999,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2754.86, 4335.61, 152.03],
-                        "angles": [0.00, 174.51, 0.00]
+                        "origin": [
+                            2754.8600000000001,
+                            4335.6099999999997,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            174.50999999999999,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2748.37, 4191.77, 152.03],
-                        "angles": [0.00, 174.65, 0.00]
+                        "origin": [
+                            2748.3699999999999,
+                            4191.7700000000004,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            174.65000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2751.36, 4023.23, 152.03],
-                        "angles": [0.00, -166.95, 0.00]
+                        "origin": [
+                            2751.3600000000001,
+                            4023.23,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            -166.94999999999999,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2780.87, 3907.01, 152.03],
-                        "angles": [0.00, 178.93, 0.00]
+                        "origin": [
+                            2780.8699999999999,
+                            3907.0100000000002,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            178.93000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2782.72, 3749.46, 152.03],
-                        "angles": [0.00, 176.93, 0.00]
+                        "origin": [
+                            2782.7199999999998,
+                            3749.46,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            176.93000000000001,
+                            0.0
+                        ]
                     }
                 ]
             },
@@ -377,62 +996,386 @@
                 "entities": [
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2915.69, 3666.13, 152.03],
-                        "angles": [0.00, -90.83, 0.00]
+                        "origin": [
+                            2915.6900000000001,
+                            3666.1300000000001,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.829999999999998,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [3084.18, 3652.62, 152.03],
-                        "angles": [0.00, -92.63, 0.00]
+                        "origin": [
+                            3084.1799999999998,
+                            3652.6199999999999,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            -92.629999999999995,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2812.56, 4447.31, 152.03],
-                        "angles": [0.00, 143.85, 0.00]
+                        "origin": [
+                            2812.5599999999999,
+                            4447.3100000000004,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            143.84999999999999,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2754.86, 4335.61, 152.03],
-                        "angles": [0.00, 174.51, 0.00]
+                        "origin": [
+                            2754.8600000000001,
+                            4335.6099999999997,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            174.50999999999999,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2748.37, 4191.77, 152.03],
-                        "angles": [0.00, 174.65, 0.00]
+                        "origin": [
+                            2748.3699999999999,
+                            4191.7700000000004,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            174.65000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2751.36, 4023.23, 152.03],
-                        "angles": [0.00, -166.95, 0.00]
+                        "origin": [
+                            2751.3600000000001,
+                            4023.23,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            -166.94999999999999,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2780.87, 3907.01, 152.03],
-                        "angles": [0.00, 178.93, 0.00]
+                        "origin": [
+                            2780.8699999999999,
+                            3907.0100000000002,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            178.93000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2782.72, 3749.46, 152.03],
-                        "angles": [0.00, 176.93, 0.00]
+                        "origin": [
+                            2782.7199999999998,
+                            3749.46,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            176.93000000000001,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "saferoomgates": {
-        "chance": 0.4,
+        "chance": 0.40000000000000002,
         "variants": [
             {
                 "entities": [
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2813.23, 4734.70, 152.03],
-                        "angles": [0.00, 177.29, 0.00]
+                        "origin": [
+                            2813.23,
+                            4734.6999999999998,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            177.28999999999999,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_unique/airport/temp_barricade.mdl",
-                        "origin": [2811.95, 4583.77, 152.03],
-                        "angles": [0.00, 176.79, 0.00]
+                        "origin": [
+                            2811.9499999999998,
+                            4583.7700000000004,
+                            152.03
+                        ],
+                        "angles": [
+                            0.0,
+                            176.78999999999999,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "airport-escalator-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris256pile001a.mdl",
+                        "origin": [
+                            -172.47244262695312,
+                            5314.9912109375,
+                            318.30712890625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [
+                            -305.86358642578125,
+                            5356.0068359375,
+                            297.9610595703125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/concrete_debris256barricade001a.mdl",
+                        "origin": [
+                            -443.71295166015625,
+                            5277.19189453125,
+                            320.44064331054688
+                        ],
+                        "angles": [
+                            0.0,
+                            60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/airport/temp_barricade.mdl",
+                        "origin": [
+                            -318.03329467773438,
+                            5231.97412109375,
+                            297.9610595703125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "scaffold": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_equipment/scaffolding_norails.mdl",
+                        "origin": [
+                            152.18373107910156,
+                            4599.6259765625,
+                            14.129121780395508
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "PEANUT": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            2529.96923828125,
+                            1251.4892578125,
+                            16.251893997192383
+                        ],
+                        "angles": [
+                            0.0,
+                            60.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "closet-doors": {
+        "chance": 0.85000002384185791,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [],
+                "inputs": [
+                    {
+                        "hammerid": 3760244,
+                        "input": "Open"
+                    },
+                    {
+                        "hammerid": 4168405,
+                        "input": "Open"
+                    },
+                    {
+                        "hammerid": 3907522,
+                        "input": "Open"
+                    },
+                    {
+                        "hammerid": 3824703,
+                        "input": "Open"
+                    }
+                ]
+            }
+        ]
+    },
+    "FRED": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            3056.88818359375,
+                            6664.69140625,
+                            171.27311706542969
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "light_dynamic",
+                        "origin": [
+                            3060.714599609375,
+                            6662.68896484375,
+                            200.71099853515625
+                        ],
+                        "color": [
+                            128,
+                            128,
+                            255,
+                            1
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            300.0,
+                            -1.0,
+                            -1.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "GNOME": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_junk/gnome.mdl",
+                        "origin": [
+                            4121.6800000000003,
+                            4059.6300000000001,
+                            314.69999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "properties": [
+                            {
+                                "type": "netprop",
+                                "key": "m_flModelScale",
+                                "float": 2.0
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "PEANUT2": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            -198.9417724609375,
+                            4164.375,
+                            562.5850830078125
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
                     }
                 ]
             }

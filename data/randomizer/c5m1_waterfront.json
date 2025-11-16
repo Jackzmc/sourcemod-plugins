@@ -187,6 +187,16 @@
                             2.0
                         ]
                     }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 461105,
+                        "input": "_allow_ladder"
+                    },
+                    {
+                        "hammerid": 1725482,
+                        "input": "_allow_ladder"
+                    }
                 ]
             }
         ]
@@ -341,6 +351,10 @@
                 "inputs": [
                     {
                         "classname": "env_player_blocker",
+                        "input": "kill"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_cliprework_roofandwindows",
                         "input": "kill"
                     },
                     {
@@ -665,10 +679,78 @@
                     {
                         "type": "env_physics_blocker",
                         "origin": [
--2945.315185, -1070.225585, -39.968750
+                            -2945.3151849999999,
+                            -1070.2255849999999,
+                            -39.96875
                         ],
                         "scale": [
-                            300, 20, 200
+                            300,
+                            20,
+                            200
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "cafe-wall-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets_break03.mdl",
+                        "origin": [
+                            -3110.7568359375,
+                            -159.58102416992188,
+                            -359.43670654296875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "color": [
+                            100,
+                            100,
+                            100,
+                            255
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/brickpallets.mdl",
+                        "origin": [
+                            -3162.048583984375,
+                            -127.25258636474609,
+                            -342.638916015625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "color": [
+                            155,
+                            155,
+                            155,
+                            255
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_street/trashbin01.mdl",
+                        "origin": [
+                            -3177.08056640625,
+                            -113.44709777832031,
+                            -311.28179931640625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
                         ]
                     }
                 ]

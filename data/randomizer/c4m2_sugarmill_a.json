@@ -7,6 +7,62 @@
                 "entities": [
                     {
                         "type": "prop_dynamic",
+                        "model": "models/props_office/file_cabinet_03.mdl",
+                        "origin": [
+                            3924.687255859375,
+                            -3306.417236328125,
+                            116.19631958007812
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_office/file_cabinet_03.mdl",
+                        "origin": [
+                            3923.47314453125,
+                            -3312.97021484375,
+                            171.45976257324219
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_office/file_cabinet_03.mdl",
+                        "origin": [
+                            3924.4443359375,
+                            -3343.823486328125,
+                            117.04027557373047
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            3886.169189453125,
+                            -3355.546142578125,
+                            117.03683471679688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
                         "model": "models/props_vehicles/cement_truck01.mdl",
                         "origin": [
                             3938.6396484375,
@@ -747,6 +803,10 @@
                     {
                         "hammerid": 1318903,
                         "input": "_allow_ladder"
+                    },
+                    {
+                        "hammerid": 1328053,
+                        "input": "_allow_ladder"
                     }
                 ]
             }
@@ -864,16 +924,6 @@
                 ]
             }
         ],
-        "inputs": [
-            {
-                "hammerid": 1048039,
-                "input": "_allow_ladder"
-            },
-            {
-                "classname": "env_player_blocker",
-                "input": "kill"
-            }
-        ],
         "variants": [
             {
                 "weight": 1,
@@ -933,6 +983,100 @@
                             0.0,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            2132.64892578125,
+                            -6093.51806640625,
+                            107.76553344726562
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            2134.938720703125,
+                            -6094.169921875,
+                            97.057151794433594
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            2132.42724609375,
+                            -6093.82470703125,
+                            102.25717926025391
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            2122.223388671875,
+                            -6113.62548828125,
+                            107.20168304443359
+                        ],
+                        "angles": [
+                            30.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            2133.253173828125,
+                            -6092.2333984375,
+                            99.657157897949219
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            2131.474609375,
+                            -6092.1162109375,
+                            105.16552734375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 1048039,
+                        "input": "_allow_ladder"
+                    },
+                    {
+                        "classname": "env_player_blocker",
+                        "input": "kill"
                     }
                 ]
             }
@@ -1043,55 +1187,42 @@
                             -78.700004577636719,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "origin": [
+                            -598.50091552734375,
+                            -7503.9814453125,
+                            111.66455841064453
+                        ],
+                        "scale": [
+                            25.0,
+                            30.0,
+                            40.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "pipe": {
-        "chance": 0.60000002384185791,
+        "chance": 0.86000001430511475,
         "variants": [
             {
                 "weight": 1,
                 "entities": [
                     {
                         "type": "prop_dynamic",
-                        "model": "models/props_pipes/pipeset32d_256_001a.mdl",
+                        "model": "models/props_pipes/pipeset32d_512_001a.mdl",
                         "origin": [
-                            -684.09722900390625,
-                            -7820.384765625,
-                            239.37014770507812
+                            2606.10791015625,
+                            -4821.8740234375,
+                            420.04766845703125
                         ],
                         "angles": [
-                            15.0,
-                            90.0,
+                            0.0,
+                            0.0,
                             90.0
-                        ],
-                        "color": [
-                            254,
-                            254,
-                            254,
-                            255
-                        ]
-                    },
-                    {
-                        "type": "prop_dynamic",
-                        "model": "models/props_pipes/pipeset32d_256_001a.mdl",
-                        "origin": [
-                            -734.09722900390625,
-                            -7820.384765625,
-                            239.37014770507812
-                        ],
-                        "angles": [
-                            15.0,
-                            90.0,
-                            90.0
-                        ],
-                        "color": [
-                            205,
-                            205,
-                            205,
-                            255
                         ]
                     }
                 ]
@@ -1383,7 +1514,10 @@
                     }
                 ],
                 "inputs": [
-                    {"hammerid": 405225, "input": "_lock_nobreak"}
+                    {
+                        "hammerid": 405225,
+                        "input": "_lock_nobreak"
+                    }
                 ]
             }
         ]

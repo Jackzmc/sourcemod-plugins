@@ -1,0 +1,561 @@
+{
+    "minigun": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/sandbags_line2.mdl",
+                        "origin": [
+                            -4469.33984375,
+                            9754.546875,
+                            -205.22393798828125
+                        ],
+                        "angles": [
+                            0.0,
+                            30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_minigun_l4d1",
+                        "model": "models/w_models/weapons/w_minigun.mdl",
+                        "origin": [
+                            -4444.4638671875,
+                            9764.298828125,
+                            -191.84381103515625
+                        ],
+                        "angles": [
+                            0.0,
+                            210.0,
+                            0.0
+                        ],
+                        "properties": [
+                            {
+                                "type": "netprop",
+                                "key": "m_maxYaw",
+                                "float": 60.0
+                            }
+                        ]
+                    }
+                ],
+                "inputs": [
+                    { "hammerid": "4178838", "input": "kill" }
+                ]
+            }
+        ]
+    },
+    "wreck-block": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/airliner_wreckage3.mdl",
+                        "origin": [
+                            -5044.6611328125,
+                            11316.90625,
+                            -112.09513854980469
+                        ],
+                        "angles": [
+                            0.0,
+                            -150.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/airliner_wreckage8_seats.mdl",
+                        "origin": [
+                            -5578.80078125,
+                            11409.98828125,
+                            -365.00579833984375
+                        ],
+                        "angles": [
+                            -30.0,
+                            60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/cara_95sedan_wrecked.mdl",
+                        "origin": [
+                            -5631.16455078125,
+                            11213.16796875,
+                            -147.08285522460938
+                        ],
+                        "angles": [
+                            30.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/airliner_wreckage9_seatrow.mdl",
+                        "origin": [
+                            -5604.8330078125,
+                            11204.1767578125,
+                            -108.13125610351562
+                        ],
+                        "angles": [
+                            60.0,
+                            30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/airliner_wreckage9_seatrow.mdl",
+                        "origin": [
+                            -5544.32568359375,
+                            11217.087890625,
+                            -157.92106628417969
+                        ],
+                        "angles": [
+                            30.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "fuel-block-2": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer_freestanding.mdl",
+                        "origin": [
+                            -5619.13818359375,
+                            9027.548828125,
+                            -196.29385375976562
+                        ],
+                        "angles": [
+                            0.0,
+                            46.299999237060547,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/airport/luggage_pile1.mdl",
+                        "origin": [
+                            -5279.4287109375,
+                            8655.8916015625,
+                            -204.45623779296875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_64_reference.mdl",
+                        "origin": [
+                            -5659.619140625,
+                            9173.6474609375,
+                            -191.81120300292969
+                        ],
+                        "angles": [
+                            0.0,
+                            132.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_unique/airport/luggage4.mdl",
+                        "origin": [
+                            -5626.3447265625,
+                            9152.34375,
+                            -191.00212097167969
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_unique/airport/luggage1.mdl",
+                        "origin": [
+                            -5608.19189453125,
+                            9146.421875,
+                            -199.83552551269531
+                        ],
+                        "angles": [
+                            0.0,
+                            -6.7999992370605469,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_unique/airport/luggage3.mdl",
+                        "origin": [
+                            -5642.74658203125,
+                            9138.95703125,
+                            -192.67828369140625
+                        ],
+                        "angles": [
+                            0.0,
+                            61.699996948242188,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -5320.185546875,
+                            9242.392578125,
+                            -191.39437866210938
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -5213.6240234375,
+                            9223.3740234375,
+                            -191.9334716796875
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -5109.091796875,
+                            9188.34765625,
+                            -192.4407958984375
+                        ],
+                        "angles": [
+                            0.0,
+                            60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/airport/luggage_pile1.mdl",
+                        "origin": [
+                            -5307.9287109375,
+                            9071.345703125,
+                            -194.50996398925781
+                        ],
+                        "angles": [
+                            0.0,
+                            -30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "origin": [
+                            -5745.65966796875,
+                            9154.7802734375,
+                            0.86318206787109397
+                        ],
+                        "scale": [
+                            65.0,
+                            80.0,
+                            30.0
+                        ]
+                    },
+                    {
+                        "scale": [
+                            2.8861095905303955,
+                            6.0359086990356445,
+                            8.1074743270874023
+                        ],
+                        "type": "hammerid",
+                        "model": "4376594",
+                        "origin": [
+                            -5205.6416015625,
+                            9277.1650390625,
+                            -190.19029235839844
+                        ],
+                        "angles": [
+                            90.0,
+                            329.9853515625,
+                            0.0
+                        ]
+                    },
+                    {
+                        "scale": [
+                            2.8861095905303955,
+                            6.0359086990356445,
+                            8.1074743270874023
+                        ],
+                        "type": "hammerid",
+                        "model": "4376676",
+                        "origin": [
+                            -5198.60498046875,
+                            9284.546875,
+                            -190.40583801269531
+                        ],
+                        "angles": [
+                            90.0,
+                            59.9853515625,
+                            0.0
+                        ]
+                    },
+                    {
+                        "scale": [
+                            2.8861095905303955,
+                            6.0359086990356445,
+                            8.1074743270874023
+                        ],
+                        "type": "hammerid",
+                        "model": "4376652",
+                        "origin": [
+                            -5191.30224609375,
+                            9276.1083984375,
+                            -190.05056762695312
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "scale": [
+                            2.8861095905303955,
+                            6.0359086990356445,
+                            8.1074743270874023
+                        ],
+                        "type": "hammerid",
+                        "model": "4376596",
+                        "origin": [
+                            -5170.8505859375,
+                            9287.345703125,
+                            -189.73649597167969
+                        ],
+                        "angles": [
+                            87.01171875,
+                            297.9931640625,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "fuel-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_junk/wood_pallet001a.mdl",
+                        "origin": [
+                            -4879.6865234375,
+                            8747.3515625,
+                            -163.53768920898438
+                        ],
+                        "angles": [
+                            60.0,
+                            30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_nuke/truck_nuke.mdl",
+                        "origin": [
+                            -5080.20166015625,
+                            8853.619140625,
+                            -191.54290771484375
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_nuke/truck_nuke_glass.mdl",
+                        "origin": [
+                            -5080.20166015625,
+                            8853.619140625,
+                            -191.54290771484375
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -5051.87158203125,
+                            8824.169921875,
+                            -150.93794250488281
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -4884.71044921875,
+                            8883.548828125,
+                            -115.39032745361328
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -4884.244140625,
+                            8883.654296875,
+                            -153.87017822265625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -4884.41650390625,
+                            8884.5263671875,
+                            -191.3941650390625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -4835.5341796875,
+                            8882.0908203125,
+                            -207.5169677734375
+                        ],
+                        "angles": [
+                            60.0,
+                            -30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            -4814.90625,
+                            8924.8330078125,
+                            -201.3558349609375
+                        ],
+                        "angles": [
+                            60.0,
+                            -30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "4376596",
+                        "origin": [
+                            -4998.37451171875,
+                            8825.083984375,
+                            -149.85421752929688
+                        ],
+                        "angles": [
+                            87.01171875,
+                            297.9931640625,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "4376676",
+                        "origin": [
+                            -5017.32470703125,
+                            8823.87109375,
+                            -150.74755859375
+                        ],
+                        "angles": [
+                            90.0,
+                            59.9853515625,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "4376652",
+                        "origin": [
+                            -5017.78662109375,
+                            8812.16796875,
+                            -150.26344299316406
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "4376594",
+                        "origin": [
+                            -5028.1494140625,
+                            8817.0009765625,
+                            -151.8570556640625
+                        ],
+                        "angles": [
+                            90.0,
+                            329.9853515625,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

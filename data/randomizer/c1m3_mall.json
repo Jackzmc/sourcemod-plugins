@@ -1,0 +1,619 @@
+{
+    "start-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            6613.14453125,
+                            -1686.1954345703125,
+                            64.3154296875
+                        ],
+                        "angles": [
+                            15.0,
+                            0.0,
+                            -90.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            6654.0517578125,
+                            -1691.6641845703125,
+                            24.28125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "start-right-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            6330.3603515625,
+                            -1933.720458984375,
+                            24.28125
+                        ],
+                        "angles": [
+                            0.0,
+                            45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_assault/box_stack1.mdl",
+                        "origin": [
+                            6162.359375,
+                            -1759.6331787109375,
+                            24.16200065612793
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_64_reference.mdl",
+                        "origin": [
+                            6361.10009765625,
+                            -2016.5179443359375,
+                            24.281251907348633
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "start-top-left-block": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            6240.7119140625,
+                            -3082.94775390625,
+                            281.03683471679688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/shelvingstore01.mdl",
+                        "origin": [
+                            6210.640625,
+                            -3071.773193359375,
+                            305.88037109375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            90.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            6234.55029296875,
+                            -2987.392578125,
+                            281.03683471679688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            6235.984375,
+                            -2987.041748046875,
+                            321.07366943359375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/shelvinggrocery01.mdl",
+                        "origin": [
+                            6215.3974609375,
+                            -2945.25927734375,
+                            281.85745239257812
+                        ],
+                        "angles": [
+                            0.0,
+                            -45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/shelvinggrocery01.mdl",
+                        "origin": [
+                            6223.5615234375,
+                            -2871.2080078125,
+                            281.85745239257812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "start-top-right-block": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_base.mdl",
+                        "origin": [
+                            6332.31005859375,
+                            -2208.55419921875,
+                            281.01123046875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_female_base.mdl",
+                        "origin": [
+                            6310.998046875,
+                            -2167.79638671875,
+                            281.01123046875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_base.mdl",
+                        "origin": [
+                            6334.72509765625,
+                            -2136.3642578125,
+                            281.01123046875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_female_base.mdl",
+                        "origin": [
+                            6302.0908203125,
+                            -2106.47705078125,
+                            281.01123046875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_base.mdl",
+                        "origin": [
+                            6331.193359375,
+                            -2077.67724609375,
+                            281.01123046875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_female_base.mdl",
+                        "origin": [
+                            6304.36669921875,
+                            -2047.3115234375,
+                            281.01123046875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_female_rarm2.mdl",
+                        "origin": [
+                            6254.96337890625,
+                            -2180.502197265625,
+                            282.01663208007812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_larm2.mdl",
+                        "origin": [
+                            6225.2744140625,
+                            -2137.423828125,
+                            281.82601928710938
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_female_larm1.mdl",
+                        "origin": [
+                            6278.6767578125,
+                            -2159.123291015625,
+                            281.60003662109375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_base.mdl",
+                        "origin": [
+                            6327.90625,
+                            -2137.8125,
+                            284.1875
+                        ],
+                        "angles": [
+                            284.9853515625,
+                            58.0078125,
+                            277.7783203125
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_female_torso1.mdl",
+                        "origin": [
+                            6242.5009765625,
+                            -2064.9130859375,
+                            281.189697265625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_torso2.mdl",
+                        "origin": [
+                            6307.36083984375,
+                            -2047.9537353515625,
+                            328.48193359375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_female_torso3.mdl",
+                        "origin": [
+                            6283.79736328125,
+                            -2091.334716796875,
+                            280.99908447265625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_female_lleg.mdl",
+                        "origin": [
+                            6262.06787109375,
+                            -2116.723388671875,
+                            281.015625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_rarm1.mdl",
+                        "origin": [
+                            6351.82470703125,
+                            -2063.974365234375,
+                            282.20803833007812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_female_larm1.mdl",
+                        "origin": [
+                            6307.3779296875,
+                            -2000.950927734375,
+                            306.18624877929688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_mall/mall_mannequin_female_larm2.mdl",
+                        "origin": [
+                            6324.4140625,
+                            -1995.5865478515625,
+                            327.55084228515625
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "PEANUT": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            2776.045654296875,
+                            -1309.551513671875,
+                            0.25189435482025146
+                        ],
+                        "angles": [
+                            0.0,
+                            -180.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "FRED": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            1418.770751953125,
+                            -943.76971435546875,
+                            364.05422973632812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "bathroom-alt": {
+        "chance": 0.0099999997764825821,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            311.12847900390625,
+                            -2489.891357421875,
+                            280.28125
+                        ],
+                        "angles": [
+                            90.0,
+                            45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            315.2550048828125,
+                            -2487.875,
+                            411.13912963867188
+                        ],
+                        "angles": [
+                            0.0,
+                            45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            310.53579711914062,
+                            -2488.494140625,
+                            411.35787963867188
+                        ],
+                        "angles": [
+                            -90.0,
+                            45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            197.02394104003906,
+                            -2554.56103515625,
+                            280.095703125
+                        ],
+                        "angles": [
+                            90.0,
+                            45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            265.16836547851562,
+                            -2535.67138671875,
+                            410.5748291015625
+                        ],
+                        "angles": [
+                            0.0,
+                            45.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "safe-escalator": {
+        "chance": 0.0099999997764825821,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_mall/mall_escalator.mdl",
+                        "origin": [
+                            -1659.419921875,
+                            -4222.87841796875,
+                            378.1566162109375
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {"hammerid": 661464, "input": "kill"},
+                    {
+                        "hammerid": 661636,
+                        "input": "kill"
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_mall/mall_escalator.mdl",
+                        "origin": [
+                            -1407.419921875,
+                            -4222.87841796875,
+                            378.1566162109375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {"hammerid": 661724, "input": "kill"},
+                    {
+                        "hammerid": 661312,
+                        "input": "kill"
+                    }
+                ]
+            }
+        ]
+    }
+}

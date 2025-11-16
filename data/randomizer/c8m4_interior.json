@@ -1,6 +1,21 @@
 {
     "elevator": {
         "chance": 0.29999999999999999,
+        "entities": [
+            {
+                "type": "env_physics_blocker",
+                "origin": [
+                    12327.55078125,
+                    13604.0029296875,
+                    424.75125122070312
+                ],
+                "scale": [
+                    15.0,
+                    40.0,
+                    500.0
+                ]
+            }
+        ],
         "variants": [
             {
                 "inputs": [
@@ -683,6 +698,30 @@
                             0.63,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "light_dynamic",
+                        "origin": [
+                            12917.96875,
+                            15093.3154296875,
+                            541.41546630859375
+                        ],
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            1
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            300.0,
+                            -1.0,
+                            -1.0
+                        ]
                     }
                 ]
             }
@@ -716,6 +755,20 @@
                         "angles": [
                             0.0,
                             -15.199999999999999,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_prodigy/concretebags3.mdl",
+                        "origin": [
+                            12763.27734375,
+                            14085.2705078125,
+                            5533.85205078125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
                             0.0
                         ]
                     }
@@ -811,6 +864,20 @@
                             -134.88,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_prodigy/concretebags3.mdl",
+                        "origin": [
+                            12763.27734375,
+                            14085.2705078125,
+                            5533.85205078125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
                     }
                 ]
             },
@@ -845,6 +912,20 @@
                         "angles": [
                             0.0,
                             90.079999999999998,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_prodigy/concretebags3.mdl",
+                        "origin": [
+                            12763.27734375,
+                            14085.2705078125,
+                            5533.85205078125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
                             0.0
                         ]
                     }
@@ -1109,10 +1190,111 @@
                             90.0,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "origin": [
+                            12415.6103515625,
+                            14639.0400390625,
+                            466.72271728515625
+                        ],
+                        "scale": [
+                            7.0,
+                            50.0,
+                            100.0
+                        ]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "origin": [
+                            12502.5771484375,
+                            14726.939453125,
+                            453.17965698242188
+                        ],
+                        "scale": [
+                            35.0,
+                            8.0,
+                            100.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            12592.103515625,
+                            14939.21875,
+                            424.53118896484375
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            12591.9775390625,
+                            14985.48828125,
+                            426.10830688476562
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
                     }
                 ],
                 "inputs": [
-                    {"hammerid": 5694222, "input": "SetUnbreakable"}
+                    {
+                        "hammerid": 5694222,
+                        "input": "SetUnbreakable"
+                    }
+                ]
+            }
+        ]
+    },
+    "top-pass-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            11877.1875,
+                            13897.7900390625,
+                            5536.470703125
+                        ],
+                        "angles": [
+                            0.0,
+                            -60.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/plywood_leaning.mdl",
+                        "origin": [
+                            11948.189453125,
+                            14020.9501953125,
+                            5536.13134765625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "targetname": "construction wall board A 38",
+                        "input": "break"
+                    }
                 ]
             }
         ]

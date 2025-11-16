@@ -21,6 +21,20 @@
                     },
                     {
                         "type": "prop_dynamic",
+                        "model": "models/props_vehicles/van_glass.mdl",
+                        "origin": [
+                            3359.1982421875,
+                            3433.04638671875,
+                            -68.673934936523438
+                        ],
+                        "angles": [
+                            0.0,
+                            21.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
                         "model": "models/props_vehicles/flatnose_truck.mdl",
                         "origin": [
                             3585.08251953125,

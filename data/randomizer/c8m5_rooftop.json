@@ -1,85 +1,124 @@
 {
-    "roofa-block": {
-        "chance": 0.40000000596046448,
+    "rage-cage": {
+        "chance": 0.35,
+        "entities": [
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_wasteland/exterior_fence002b.mdl",
+                "origin": [
+                    6200.67041015625,
+                    8028.759765625,
+                    6176.37451171875
+                ],
+                "angles": [
+                    0.0,
+                    90.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_wasteland/exterior_fence002d.mdl",
+                "origin": [
+                    6237.33203125,
+                    7887.11279296875,
+                    6177.46630859375
+                ],
+                "angles": [
+                    0.0,
+                    360.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_wasteland/exterior_fence002c.mdl",
+                "origin": [
+                    6238.4423828125,
+                    7699.25634765625,
+                    6176.5244140625
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_wasteland/exterior_fence002b.mdl",
+                "origin": [
+                    5981.6689453125,
+                    8029.06787109375,
+                    6171.36376953125
+                ],
+                "angles": [
+                    0.0,
+                    -270.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_wasteland/exterior_fence002c.mdl",
+                "origin": [
+                    5915.05322265625,
+                    7954.1533203125,
+                    6175.73486328125
+                ],
+                "angles": [
+                    0.0,
+                    -180.0,
+                    0.0
+                ]
+            }
+        ],
         "variants": [
             {
-                "weight": 1,
                 "entities": [
                     {
+                        "type": "prop_dynamic",
                         "model": "models/props_wasteland/exterior_fence002c.mdl",
                         "origin": [
-                            5915.05322265625,
-                            7954.1533203125,
-                            6175.73486328125
-                        ],
-                        "angles": [
-                            0.0,
-                            -180.0,
-                            0.0
-                        ]
-                    },
-                    {
-                        "model": "models/props_wasteland/exterior_fence002b.mdl",
-                        "origin": [
-                            5981.6689453125,
-                            8029.06787109375,
-                            6171.36376953125
-                        ],
-                        "angles": [
-                            0.0,
-                            -270.0,
-                            0.0
-                        ]
-                    },
-                    {
-                        "model": "models/props_wasteland/exterior_fence002c.mdl",
-                        "origin": [
-                            6096.92578125,
-                            8014.52880859375,
-                            6150.994140625
+                            6090.01806640625,
+                            8003.89794921875,
+                            6157.1318359375
                         ],
                         "angles": [
                             0.0,
                             -90.0,
                             0.0
                         ]
+                    }
+                ]
+            },
+            {
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
+                        "origin": [
+                            6075.82373046875,
+                            8019.2421875,
+                            6185.78955078125
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ]
                     },
                     {
-                        "model": "models/props_wasteland/exterior_fence002b.mdl",
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence003_128.mdl",
                         "origin": [
-                            6200.41064453125,
-                            8031.73828125,
-                            6177.41259765625
+                            6106.8828125,
+                            8019.0830078125,
+                            6186.10888671875
                         ],
                         "angles": [
                             0.0,
                             90.0,
-                            0.0
-                        ]
-                    },
-                    {
-                        "model": "models/props_wasteland/exterior_fence002d.mdl",
-                        "origin": [
-                            6245.02392578125,
-                            7887.26220703125,
-                            6177.67578125
-                        ],
-                        "angles": [
-                            0.0,
-                            360.0,
-                            0.0
-                        ]
-                    },
-                    {
-                        "model": "models/props_wasteland/exterior_fence002c.mdl",
-                        "origin": [
-                            6245.30322265625,
-                            7698.5712890625,
-                            6176.59716796875
-                        ],
-                        "angles": [
-                            0.0,
-                            0.0,
                             0.0
                         ]
                     }
@@ -88,7 +127,7 @@
         ]
     },
     "pipes-1": {
-        "chance": 0.5,
+        "chance": 0.3,
         "variants": [
             {
                 "weight": 1,
@@ -189,7 +228,7 @@
         ]
     },
     "cocomello-slide": {
-        "chance": 0.60000002384185791,
+        "chance": 0.10000002384185792,
         "variants": [
             {
                 "weight": 1,
@@ -223,6 +262,34 @@
                         "angles": [
                             0.79999995231628418,
                             140.20001220703125,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/plywood_leaning.mdl",
+                        "origin": [
+                            7682.396484375,
+                            8786.37890625,
+                            5772.69482421875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            7683.04541015625,
+                            8778.12109375,
+                            5794.31005859375
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
                             0.0
                         ]
                     }
@@ -384,7 +451,7 @@
         ]
     },
     "crashed-heli": {
-        "chance": 0.5,
+        "chance": 0.29999999999999999,
         "variants": [
             {
                 "weight": 1,
@@ -510,7 +577,7 @@
         ]
     },
     "item-block": {
-        "chance": 0.44999998807907104,
+        "chance": 0.26,
         "variants": [
             {
                 "weight": 1,
@@ -588,7 +655,63 @@
                         "scale": [
                             48,
                             12,
-                            80
+                            120
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            5566.9453125,
+                            8509.1689453125,
+                            6052.06494140625
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            5567.44970703125,
+                            8461.533203125,
+                            6047.11376953125
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            5566.57275390625,
+                            8414.4091796875,
+                            6035.45947265625
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            5566.42724609375,
+                            8368.3544921875,
+                            6037.46533203125
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
                         ]
                     }
                 ]
@@ -596,17 +719,12 @@
         ]
     },
     "guns-alt": {
-        "chance": 0.5,
+        "chance": 0.22,
         "variants": [
             {
                 "weight": 1,
                 "entities": [
                     {
-                        "scale": [
-                            33.316013336181641,
-                            1.6402918100357056,
-                            9.5148429870605469
-                        ],
                         "type": "hammerid",
                         "model": "3079455",
                         "origin": [
@@ -621,11 +739,6 @@
                         ]
                     },
                     {
-                        "scale": [
-                            24.644960403442383,
-                            2.04140305519104,
-                            7.0064492225646973
-                        ],
                         "type": "hammerid",
                         "model": "3079449",
                         "origin": [
@@ -640,11 +753,6 @@
                         ]
                     },
                     {
-                        "scale": [
-                            30.749414443969727,
-                            1.0600012540817261,
-                            6.7138762474060059
-                        ],
                         "type": "hammerid",
                         "model": "3079447",
                         "origin": [
@@ -659,11 +767,6 @@
                         ]
                     },
                     {
-                        "scale": [
-                            12.935267448425293,
-                            16.983663558959961,
-                            6.1097126007080078
-                        ],
                         "type": "hammerid",
                         "model": "3079433",
                         "origin": [
@@ -676,20 +779,212 @@
                             13.974609375,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "4263973",
+                        "origin": [
+                            7216.04345703125,
+                            8721.9541015625,
+                            6097.65478515625
+                        ],
+                        "angles": [
+                            87.01171875,
+                            328.0078125,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "4263977",
+                        "origin": [
+                            7214.06298828125,
+                            8739.0498046875,
+                            6096.58984375
+                        ],
+                        "angles": [
+                            87.01171875,
+                            238.0078125,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "4263957",
+                        "origin": [
+                            7204.44921875,
+                            8727.009765625,
+                            6097.294921875
+                        ],
+                        "angles": [
+                            90.0,
+                            300.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "scale": [
+                            2.8861095905303955,
+                            6.0359086990356445,
+                            8.1074743270874023
+                        ],
+                        "type": "hammerid",
+                        "model": "4263981",
+                        "origin": [
+                            7203.6162109375,
+                            8732.3046875,
+                            6095.7646484375
+                        ],
+                        "angles": [
+                            87.01171875,
+                            177.978515625,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "hammerid",
+                        "model": "4263977",
+                        "origin": [
+                            7258.96240234375,
+                            8744.6806640625,
+                            6098.12841796875
+                        ],
+                        "angles": [
+                            87.01171875,
+                            238.0078125,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "4263973",
+                        "origin": [
+                            7261.55078125,
+                            8733.904296875,
+                            6097.43994140625
+                        ],
+                        "angles": [
+                            87.01171875,
+                            328.0078125,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "4263957",
+                        "origin": [
+                            7283.00048828125,
+                            8745.923828125,
+                            6061.80322265625
+                        ],
+                        "angles": [
+                            90.0,
+                            300.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "3079433",
+                        "origin": [
+                            7158.30078125,
+                            8410.162109375,
+                            6094.68603515625
+                        ],
+                        "angles": [
+                            0.0,
+                            13.974609375,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "3079455",
+                        "origin": [
+                            7186.6748046875,
+                            8428.2353515625,
+                            6056.552734375
+                        ],
+                        "angles": [
+                            0.0,
+                            116.982421875,
+                            270.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "3079447",
+                        "origin": [
+                            7192.759765625,
+                            8406.6845703125,
+                            6057.9482421875
+                        ],
+                        "angles": [
+                            0.0,
+                            57.48046875,
+                            270.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "3079449",
+                        "origin": [
+                            7205.0517578125,
+                            8402.8447265625,
+                            6059.04150390625
+                        ],
+                        "angles": [
+                            0.0,
+                            252.9931640625,
+                            90.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "3079439",
+                        "origin": [
+                            7154.38623046875,
+                            8379.576171875,
+                            6057.0205078125
+                        ],
+                        "angles": [
+                            0.0,
+                            318.515625,
+                            90.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "4310138",
+                        "origin": [
+                            7169.74853515625,
+                            8386.26171875,
+                            6056.03466796875
+                        ],
+                        "angles": [
+                            0.0,
+                            318.515625,
+                            90.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "minigun-alt": {
-        "chance": 0.69999998807907104,
+        "chance": 0.5,
         "variants": [
             {
                 "weight": 1,
                 "entities": [
                     {
-                        "type": "prop_minigun_l4d1",
-                        "model": "models/w_models/weapons/w_minigun.mdl",
+                        "type": "hammerid",
+                        "model": "3087232",
                         "origin": [
                             6322.20947265625,
                             9263.95703125,

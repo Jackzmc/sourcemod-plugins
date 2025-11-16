@@ -270,6 +270,54 @@
                             166.05000000000001,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            11025.6171875,
+                            5998.08251953125,
+                            17.219310760498047
+                        ],
+                        "angles": [
+                            102.0,
+                            22.700000762939453,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_02.mdl",
+                        "origin": [
+                            11029.7744140625,
+                            6038.36181640625,
+                            16.28125
+                        ],
+                        "angles": [
+                            90.0,
+                            -8.8000001907348633,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_02.mdl",
+                        "origin": [
+                            11037.3486328125,
+                            6085.7021484375,
+                            16.281246185302734
+                        ],
+                        "angles": [
+                            90.0,
+                            -11.899999618530273,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 7803954,
+                        "input": "_allow_ladder"
                     }
                 ]
             }
@@ -836,6 +884,30 @@
                             0.0,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "light_dynamic",
+                        "origin": [
+                            13679.96875,
+                            8104.546875,
+                            -135.42755126953125
+                        ],
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            1
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            200.0,
+                            -1.0,
+                            -1.0
+                        ]
                     }
                 ]
             },
@@ -1009,7 +1081,11 @@
                     },
                     {
                         "type": "light_dynamic",
-                        "origin": [13474, 11964, 259],
+                        "origin": [
+                            13474,
+                            11964,
+                            259
+                        ],
                         "angles": [
                             57.0,
                             0.0,
@@ -1074,31 +1150,130 @@
     },
     "warehouse-up-alt": {
         "chance": 0.30000001192092896,
+        "entities": [
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_interiors/sheetrock_leaning.mdl",
+                "origin": [
+                    12219.8095703125,
+                    8230.5546875,
+                    9.3333139419555664
+                ],
+                "angles": [
+                    0.0,
+                    -150.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_industrial/warehouse_shelf003.mdl",
+                "origin": [
+                    12254.6357421875,
+                    8187.71826171875,
+                    14.559464454650879
+                ],
+                "angles": [
+                    0.0,
+                    30.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_industrial/warehouse_shelf004.mdl",
+                "origin": [
+                    12535.9423828125,
+                    8061.42041015625,
+                    16.417850494384766
+                ],
+                "angles": [
+                    0.0,
+                    -90.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_highway/billboard_ladder.mdl",
+                "origin": [
+                    11903.6181640625,
+                    8318.71875,
+                    17.496654510498047
+                ],
+                "angles": [
+                    0.0,
+                    90.0,
+                    0.0
+                ],
+                "properties": [
+                    {
+                        "type": "netprop",
+                        "key": "m_nSolidType",
+                        "integer": 0
+                    }
+                ]
+            },
+            {
+                "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                "origin": [
+                    12259.389999999999,
+                    8216.5599999999995,
+                    16.25
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "model": "models/props_industrial/pallet_stack_docks.mdl",
+                "origin": [
+                    12775.65,
+                    8196.9099999999999,
+                    16.16
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        ],
+        "inputs": [
+            {
+                "hammerid": 2325456,
+                "input": "_allow_ladder"
+            }
+        ],
         "variants": [
             {
                 "weight": 1,
-                "entities": [
+                "inputs": [
                     {
-                        "type": "prop_dynamic",
-                        "model": "models/props_interiors/sheetrock_leaning.mdl",
-                        "origin": [
-                            12219.8095703125,
-                            8230.5546875,
-                            9.3333139419555664
-                        ],
-                        "angles": [
-                            0.0,
-                            -150.0,
-                            0.0
-                        ]
-                    },
+                        "hammerid": 2325456,
+                        "input": "_allow_ladder"
+                    }
+                ],
+                "entities": []
+            },
+            {
+                "weight": 1,
+                "inputs": [
+                    {
+                        "hammerid": 2325456,
+                        "input": "_allow_ladder"
+                    }
+                ],
+                "entities": [
                     {
                         "type": "prop_dynamic",
                         "model": "models/props_industrial/warehouse_shelf003.mdl",
                         "origin": [
                             12254.6357421875,
                             8187.71826171875,
-                            14.559464454650879
+                            144.55946445465088
                         ],
                         "angles": [
                             0.0,
@@ -1112,7 +1287,7 @@
                         "origin": [
                             12535.9423828125,
                             8061.42041015625,
-                            16.417850494384766
+                            144.41785049438477
                         ],
                         "angles": [
                             0.0,
@@ -1121,24 +1296,122 @@
                         ]
                     },
                     {
-                        "type": "prop_dynamic",
-                        "model": "models/props_highway/billboard_ladder.mdl",
+                        "type": "light_dynamic",
                         "origin": [
-                            11903.6181640625,
-                            8318.71875,
-                            17.496654510498047
+                            11900.833984375,
+                            8294.96875,
+                            242.215087890625
+                        ],
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            1
                         ],
                         "angles": [
                             0.0,
-                            90.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            600.0,
+                            -1.0,
+                            -1.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            11916.4306640625,
+                            8221.9306640625,
+                            15.199092864990234
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
                             0.0
                         ]
-                    }
-                ],
-                "inputs": [
+                    },
                     {
-                        "hammerid": 2325456,
-                        "input": "_allow_ladder"
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            11905.5107421875,
+                            8269.8984375,
+                            14.477977752685547
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            11863.0185546875,
+                            8273.1416015625,
+                            15.411434173583984
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            11896.576171875,
+                            8270.1650390625,
+                            54.083305358886719
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            11953.34375,
+                            8265.85546875,
+                            17.359760284423828
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "light_dynamic",
+                        "origin": [
+                            12603.96875,
+                            8146.1923828125,
+                            369.66534423828125
+                        ],
+                        "color": [
+                            255,
+                            255,
+                            225,
+                            6
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            150.0,
+                            -1.0,
+                            -1.0
+                        ]
                     }
                 ]
             }

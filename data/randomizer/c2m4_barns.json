@@ -1,84 +1,293 @@
 {
     "entrance": {
-        "chance": 0.3,
+        "chance": 0.29999999999999999,
         "variants": [
-            { 
+            {
                 "entities": [
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [3039.32, 2738.29, -192.58],
-                        "angles": [0.00, 155.80, 0.00]
+                        "origin": [
+                            3039.3200000000002,
+                            2738.29,
+                            -192.58000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            155.80000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [2973.80, 2644.08, -191.74],
-                        "angles": [0.00, 152.21, 0.00]
+                        "origin": [
+                            2973.8000000000002,
+                            2644.0799999999999,
+                            -191.74000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            152.21000000000001,
+                            0.0
+                        ]
                     }
                 ]
             },
-            { 
+            {
                 "inputs": [
-                    {"targetname":"randompath_1_props", "input": "Break"}
+                    {
+                        "targetname": "randompath_1_props",
+                        "input": "Break"
+                    }
                 ],
                 "entities": [
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [3039.32, 2738.29, -192.58],
-                        "angles": [0.00, 155.80, 0.00]
+                        "origin": [
+                            3039.3200000000002,
+                            2738.29,
+                            -192.58000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            155.80000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [2973.80, 2644.08, -191.74],
-                        "angles": [0.00, 152.21, 0.00]
+                        "origin": [
+                            2973.8000000000002,
+                            2644.0799999999999,
+                            -191.74000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            152.21000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [2962.58, 3029.43, -188.48],
-                        "angles": [0.00, -159.47, 0.00]
+                        "origin": [
+                            2962.5799999999999,
+                            3029.4299999999998,
+                            -188.47999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            -159.47,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/barricade001_128_reference.mdl",
-                        "origin": [2935.62, 3151.34, -191.85],
-                        "angles": [0.00, -165.28, 0.00]
+                        "origin": [
+                            2935.6199999999999,
+                            3151.3400000000001,
+                            -191.84999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            -165.28,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "barnskip": {
-        "chance": 0.3,
+        "chance": 0.29999999999999999,
         "variants": [
             {
                 "entities": [
                     {
                         "model": "models/props_fortifications/concrete_block001_128_reference.mdl",
-                        "origin": [-312.48, 389.01, -195.27],
-                        "angles": [0.00, -87.39, 0.00]
+                        "origin": [
+                            -312.48000000000002,
+                            389.00999999999999,
+                            -195.27000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            -87.390000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/concrete_block001_128_reference.mdl",
-                        "origin": [-317.17, 340.43, -195.56],
-                        "angles": [0.00, -88.74, 0.00]
+                        "origin": [
+                            -317.17000000000002,
+                            340.43000000000001,
+                            -195.56
+                        ],
+                        "angles": [
+                            0.0,
+                            -88.739999999999995,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/concrete_block001_128_reference.mdl",
-                        "origin": [-322.14, 340.64, -155.73],
-                        "angles": [0.00, -89.05, 0.00]
+                        "origin": [
+                            -322.13999999999999,
+                            340.63999999999999,
+                            -155.72999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            -89.049999999999997,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/concrete_block001_128_reference.mdl",
-                        "origin": [-321.61, 296.32, -193.12],
-                        "angles": [0.00, -90.88, 0.00]
+                        "origin": [
+                            -321.61000000000001,
+                            296.31999999999999,
+                            -193.12
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.879999999999995,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/concrete_block001_128_reference.mdl",
-                        "origin": [-318.58, 296.40, -152.87],
-                        "angles": [0.00, -90.27, 0.00]
+                        "origin": [
+                            -318.57999999999998,
+                            296.39999999999998,
+                            -152.87
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.269999999999996,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_fortifications/concrete_block001_128_reference.mdl",
-                        "origin": [-316.63, 298.77, -113.46],
-                        "angles": [0.00, -87.83, 0.00]
+                        "origin": [
+                            -316.63,
+                            298.76999999999998,
+                            -113.45999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            -87.829999999999998,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "fence-skip": {
+        "chance": 0.67000001668930054,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/concrete_block001_128_reference.mdl",
+                        "origin": [
+                            -2317.80078125,
+                            -597.5185546875,
+                            -148.95407104492188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/concrete_block001_128_reference.mdl",
+                        "origin": [
+                            -2319.302001953125,
+                            -597.19317626953125,
+                            -189.85202026367188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/concrete_block001_128_reference.mdl",
+                        "origin": [
+                            -2274.00732421875,
+                            -598.94903564453125,
+                            -193.06474304199219
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/billboard_ladder.mdl",
+                        "origin": [
+                            -2185.00830078125,
+                            -498.10382080078125,
+                            -421.24530029296875
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 699855,
+                        "input": "_allow_ladder"
+                    }
+                ]
+            }
+        ]
+    },
+    "GATE": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            -2399.16357421875,
+                            1637.320556640625,
+                            -227.64230346679688
+                        ],
+                        "angles": [
+                            0.0,
+                            -120.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            -2366.422607421875,
+                            1690.325439453125,
+                            -258.23275756835938
+                        ],
+                        "angles": [
+                            0.0,
+                            -120.0,
+                            0.0
+                        ]
                     }
                 ]
             }

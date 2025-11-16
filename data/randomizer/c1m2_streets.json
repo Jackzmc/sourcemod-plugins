@@ -1,0 +1,770 @@
+{
+    "PEANUT": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            -1150.3753662109375,
+                            4095.159423828125,
+                            668.2327880859375
+                        ],
+                        "angles": [
+                            0.0,
+                            -92.500015258789062,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "dumpster-force-alt": {
+        "chance": 0.25,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/plywood_leaning.mdl",
+                        "origin": [
+                            -2329.479736328125,
+                            2448.57080078125,
+                            0.26496979594230652
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -2315.928466796875,
+                            2823.01904296875,
+                            1.0368320941925049
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/outhouse002.mdl",
+                        "origin": [
+                            -2453.380859375,
+                            2896.05224609375,
+                            0.28125885128974915
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -2423.892333984375,
+                            2946.733642578125,
+                            41.073654174804688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -2425.981201171875,
+                            2946.56298828125,
+                            1.0368282794952393
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -2377.829833984375,
+                            2942.453369140625,
+                            1.0368359088897705
+                        ],
+                        "angles": [
+                            0.0,
+                            -13.90000057220459,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/traffic_barrel.mdl",
+                        "origin": [
+                            -2274.133056640625,
+                            2836.43310546875,
+                            1.5472290515899658
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/traffic_barrel.mdl",
+                        "origin": [
+                            -2187.68603515625,
+                            2839.952880859375,
+                            1.5472328662872314
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/traffic_barrel.mdl",
+                        "origin": [
+                            -2295.046875,
+                            2948.9052734375,
+                            1.5472290515899658
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "origin": [
+                            -2462.71826171875,
+                            2955.109375,
+                            31.737180709838867
+                        ],
+                        "scale": [
+                            15.0,
+                            30.0,
+                            40.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "FRED": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            -4283.759765625,
+                            1335.8009033203125,
+                            450.06170654296875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            -4432.20458984375,
+                            1739.8382568359375,
+                            448.05422973632812
+                        ],
+                        "angles": [
+                            0.0,
+                            -60.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            -4596.7822265625,
+                            1391.3206787109375,
+                            664.6341552734375
+                        ],
+                        "angles": [
+                            0.0,
+                            -60.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            -4218.61669921875,
+                            979.67523193359375,
+                            191.68899536132812
+                        ],
+                        "angles": [
+                            15.0,
+                            390.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "truck-stair-alt": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [
+                            -4653.49267578125,
+                            825.7467041015625,
+                            179.196533203125
+                        ],
+                        "angles": [
+                            0.0,
+                            -14.30000114440918,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_street/police_barricade.mdl",
+                        "origin": [
+                            -4693.0888671875,
+                            793.16204833984375,
+                            189.6375732421875
+                        ],
+                        "angles": [
+                            0.0,
+                            -5.3000001907348633,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_street/police_barricade.mdl",
+                        "origin": [
+                            -4680.2197265625,
+                            838.51611328125,
+                            193.29466247558594
+                        ],
+                        "angles": [
+                            0.0,
+                            -5.3000001907348633,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [
+                            -4636.35107421875,
+                            954.15032958984375,
+                            256.23629760742188
+                        ],
+                        "angles": [
+                            0.0,
+                            -13.500001907348633,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_truck3.mdl",
+                        "origin": [
+                            -5391.45263671875,
+                            477.781005859375,
+                            285.92257690429688
+                        ],
+                        "angles": [
+                            -6.9000005722045898,
+                            639.60009765625,
+                            -8.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/longnose_truck_glass.mdl",
+                        "origin": [
+                            -5391.45263671875,
+                            477.781005859375,
+                            285.92257690429688
+                        ],
+                        "angles": [
+                            -6.9000005722045898,
+                            639.60009765625,
+                            -8.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/traffic_barrier001.mdl",
+                        "origin": [
+                            -5097.2529296875,
+                            599.8375244140625,
+                            248.04444885253906
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/traffic_barrel.mdl",
+                        "origin": [
+                            -5070.0107421875,
+                            548.0262451171875,
+                            248.6861572265625
+                        ],
+                        "angles": [
+                            8.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/traffic_barrier001.mdl",
+                        "origin": [
+                            -5088.13818359375,
+                            496.35787963867188,
+                            250.70294189453125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/traffic_barrier001.mdl",
+                        "origin": [
+                            -5091.94873046875,
+                            396.78659057617188,
+                            249.8089599609375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/traffic_barrel.mdl",
+                        "origin": [
+                            -5067.1513671875,
+                            356.58956909179688,
+                            246.73916625976562
+                        ],
+                        "angles": [
+                            8.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/traffic_barrier001.mdl",
+                        "origin": [
+                            -5079.6005859375,
+                            306.12786865234375,
+                            249.70782470703125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "env_player_blocker",
+                        "origin": [
+                            -4654.84130859375,
+                            900.2137451171875,
+                            290.63240051269531
+                        ],
+                        "scale": [
+                            15.0,
+                            140.0,
+                            100.0
+                        ]
+                    },
+                    {
+                        "type": "env_player_blocker",
+                        "origin": [
+                            -4619.61328125,
+                            1037.646240234375,
+                            297.13125610351562
+                        ],
+                        "scale": [
+                            15.0,
+                            30.0,
+                            100.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "gunshop-item-alt": {
+        "chance": 0.50000002384185793,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "hammerid",
+                        "model": "1357954",
+                        "origin": [
+                            -5305.4052734375,
+                            -1844.573974609375,
+                            463.81488037109375
+                        ],
+                        "angles": [
+                            90.0,
+                            329.9853515625,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "1357960",
+                        "origin": [
+                            -5304.876953125,
+                            -1855.68212890625,
+                            461.31832885742188
+                        ],
+                        "angles": [
+                            90.0,
+                            300.0146484375,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "1357893",
+                        "origin": [
+                            -5286.576171875,
+                            -1834.9825439453125,
+                            462.64788818359375
+                        ],
+                        "angles": [
+                            90.0,
+                            75.0146484375,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "1357930",
+                        "origin": [
+                            -5274.55419921875,
+                            -1815.950439453125,
+                            463.00592041015625
+                        ],
+                        "angles": [
+                            90.0,
+                            345.0146484375,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "upgrade_laser_sight",
+                        "model": "models/w_models/Weapons/w_laser_sights.mdl",
+                        "origin": [
+                            -4776.67919921875,
+                            -1797.737548828125,
+                            496.50067138671875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "1846231",
+                        "origin": [
+                            -4803.25390625,
+                            -2119.726806640625,
+                            493.7996826171875
+                        ],
+                        "angles": [
+                            0.0,
+                            120.0146484375,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -4803.6025390625,
+                            -2118.168212890625,
+                            455.6259765625
+                        ],
+                        "angles": [
+                            0.0,
+                            17.80000114440918,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "GNOME": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_junk/gnome.mdl",
+                        "origin": [
+                            -7525.43896484375,
+                            -2202.435546875,
+                            498.51541137695312
+                        ],
+                        "angles": [
+                            0.0,
+                            168.40000915527344,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "parking-tent": {
+        "chance": 0.56000000238418579,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_misc/triage_tent.mdl",
+                        "origin": [
+                            -8406.8779296875,
+                            -4159.8505859375,
+                            384.28125
+                        ],
+                        "angles": [
+                            0.0,
+                            1.8000005483627319,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/ceda_easel01.mdl",
+                        "origin": [
+                            -8488.115234375,
+                            -4036.7822265625,
+                            384.30032348632812
+                        ],
+                        "angles": [
+                            0.0,
+                            -68.599998474121094,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/chair01.mdl",
+                        "origin": [
+                            -8486.7919921875,
+                            -4232.11962890625,
+                            408.62799072265625
+                        ],
+                        "angles": [
+                            0.0,
+                            104.80001068115234,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/chair01.mdl",
+                        "origin": [
+                            -8464.61328125,
+                            -4313.31494140625,
+                            407.2880859375
+                        ],
+                        "angles": [
+                            0.0,
+                            104.80001068115234,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/chair01.mdl",
+                        "origin": [
+                            -8382.4482421875,
+                            -4309.1123046875,
+                            407.2880859375
+                        ],
+                        "angles": [
+                            0.0,
+                            104.80001068115234,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/chair01.mdl",
+                        "origin": [
+                            -8382.98046875,
+                            -4206.65087890625,
+                            407.2880859375
+                        ],
+                        "angles": [
+                            0.0,
+                            104.80001068115234,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/chair01.mdl",
+                        "origin": [
+                            -8303.97265625,
+                            -4290.5107421875,
+                            407.2880859375
+                        ],
+                        "angles": [
+                            0.0,
+                            104.80001068115234,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/chair01.mdl",
+                        "origin": [
+                            -8307.53125,
+                            -4140.04541015625,
+                            405.89691162109375
+                        ],
+                        "angles": [
+                            0.0,
+                            114.90000915527344,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_furniture/it_mkt_table2.mdl",
+                        "origin": [
+                            -8353.0126953125,
+                            -4003.54052734375,
+                            386.10000610351562
+                        ],
+                        "angles": [
+                            0.0,
+                            91.900016784667969,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "weapon_vomitjar",
+                        "model": "models/w_models/weapons/w_eq_bile_flask.mdl",
+                        "origin": [
+                            -8373.5849609375,
+                            -4009.203857421875,
+                            427.32754516601562
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "weapon_vomitjar",
+                        "model": "models/w_models/weapons/w_eq_bile_flask.mdl",
+                        "origin": [
+                            -8343.22265625,
+                            -4008.7109375,
+                            427.32754516601562
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "weapon_vomitjar",
+                        "model": "models/w_models/weapons/w_eq_bile_flask.mdl",
+                        "origin": [
+                            -8312.447265625,
+                            -4004.828369140625,
+                            427.32754516601562
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

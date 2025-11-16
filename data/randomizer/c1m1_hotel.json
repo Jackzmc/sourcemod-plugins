@@ -1,23 +1,362 @@
 {
     "group1": {
-        "chance": 0.1,
-        "exclusions": ["group2"],
+        "chance": 0.10000000000000001,
+        "exclusions": [
+            "group2"
+        ],
         "variants": [
             {
                 "weight": 1,
                 "entities": [
-                    
                     {
-                        "origin": [1421.24, 5780.23, 2881.16],
-                        "angles": [0.00, 0.00, 0.00],
-                        "size": [5.00, 5.00, 5.00],
+                        "origin": [
+                            1421.24,
+                            5780.2299999999996,
+                            2881.1599999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "size": [
+                            5.0,
+                            5.0,
+                            5.0
+                        ],
                         "model": "models/props/cs_assault/forklift.mdl"
                     },
                     {
-                        "origin": [1139.59, 5685.23, 2883.25],
-                        "angles": [0.00, 0.00, 0.00],
-                        "size": [5.00, 5.00, 5.00],
+                        "origin": [
+                            1139.5899999999999,
+                            5685.2299999999996,
+                            2883.25
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "size": [
+                            5.0,
+                            5.0,
+                            5.0
+                        ],
                         "model": "models/props_unique/airportdeparturescreen01.mdl"
+                    }
+                ]
+            }
+        ]
+    },
+    "window-alt": {
+        "chance": 0.20000000298023224,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/hotel_cart.mdl",
+                        "origin": [
+                            1544.307373046875,
+                            5599.65869140625,
+                            2657.03125
+                        ],
+                        "angles": [
+                            0.0,
+                            -135.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/luggagecarthotel01.mdl",
+                        "origin": [
+                            1532.4486083984375,
+                            5653.92236328125,
+                            2655.3974609375
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/bed_motel.mdl",
+                        "origin": [
+                            1585.0147705078125,
+                            5611.3017578125,
+                            2690.892822265625
+                        ],
+                        "angles": [
+                            90.0,
+                            30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            1571.0887451171875,
+                            5635.49853515625,
+                            2746.037353515625
+                        ],
+                        "angles": [
+                            180.0,
+                            -60.0,
+                            90.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            1550.207275390625,
+                            5662.2265625,
+                            2744.292236328125
+                        ],
+                        "angles": [
+                            180.0,
+                            -60.0,
+                            90.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "3262051",
+                        "origin": [
+                            1607.9754638671875,
+                            6013.484375,
+                            2658.3017578125
+                        ],
+                        "angles": [
+                            0.3515625,
+                            30.05859375,
+                            360.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            1495.53271484375,
+                            6263.96875,
+                            2678.734130859375
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            -30.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            1535.2854736328125,
+                            6343.9794921875,
+                            2678.51416015625
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            1534.7376708984375,
+                            6477.59912109375,
+                            2678.51416015625
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            1607.9854736328125,
+                            6343.9794921875,
+                            2678.51416015625
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            1607.7376708984375,
+                            6477.59912109375,
+                            2678.51416015625
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/stage_scaffold_128.mdl",
+                        "origin": [
+                            1589.1243896484375,
+                            6301.58837890625,
+                            2670.543701171875
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/stage_scaffold_128.mdl",
+                        "origin": [
+                            1572.396728515625,
+                            6528.8671875,
+                            2670.543701171875
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/stage_scaffold_128.mdl",
+                        "origin": [
+                            1576.0584716796875,
+                            6415.76123046875,
+                            2670.543701171875
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_debris/paintbucket01.mdl",
+                        "origin": [
+                            1585.010009765625,
+                            6235.259765625,
+                            2680.0625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_debris/paintbucket01.mdl",
+                        "origin": [
+                            1584.920654296875,
+                            6234.40087890625,
+                            2657.03125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_junk/metal_paintcan001b.mdl",
+                        "origin": [
+                            1581.7044677734375,
+                            6217.04296875,
+                            2663.57275390625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "classname": "env_player_blocker",
+                        "input": "kill"
+                    },
+                    {
+                        "hammerid": 2624381,
+                        "input": "break"
+                    },
+                    {
+                        "hammerid": 2624532,
+                        "input": "break"
+                    },
+                    {
+                        "hammerid": 329433,
+                        "input": "break"
+                    }
+                ]
+            }
+        ]
+    },
+    "PEANUT": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            1264.0826416015625,
+                            5292.51025390625,
+                            1184.251953125
+                        ],
+                        "angles": [
+                            0.0,
+                            -105.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "FRED": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            1721.8505859375,
+                            4260.404296875,
+                            1220.2266845703125
+                        ],
+                        "angles": [
+                            0.0,
+                            60.0,
+                            0.0
+                        ]
                     }
                 ]
             }

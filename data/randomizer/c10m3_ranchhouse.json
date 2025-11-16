@@ -343,31 +343,21 @@
                     {
                         "hammerid": 1977470,
                         "input": "_allow_ladder"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_commonhop_stationroof",
+                        "input": "kill"
                     }
                 ]
             }
         ]
     },
     "bus-alt": {
-        "chance": 0.20000000298023224,
+        "chance": 0.14000000298023224,
         "variants": [
             {
                 "weight": 1,
                 "entities": [
-                    {
-                        "type": "prop_dynamic",
-                        "model": "models/props_exteriors/wood_stairs_120.mdl",
-                        "origin": [
-                            -8811.7373046875,
-                            -4662.97900390625,
-                            -28.848186492919922
-                        ],
-                        "angles": [
-                            15.0,
-                            -120.0,
-                            0.0
-                        ]
-                    },
                     {
                         "type": "prop_dynamic",
                         "model": "models/props_foliage/swamp_rock01.mdl",
@@ -789,10 +779,14 @@
                     {
                         "type": "env_physics_blocker",
                         "origin": [
--3030.610839, 1025.387817, 176.856323
+                            -3030.6108389999999,
+                            1025.387817,
+                            176.856323
                         ],
                         "scale": [
-                            50, 50, 100
+                            60,
+                            50,
+                            100
                         ]
                     },
                     {
@@ -862,6 +856,179 @@
                         "angles": [
                             0.0,
                             -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "origin": [
+                            -2964.57958984375,
+                            1031.7593994140625,
+                            233.562255859375
+                        ],
+                        "scale": [
+                            30.0,
+                            40.0,
+                            100.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "train-shipment": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            -12290.255859375,
+                            -5918.82666015625,
+                            -7.3540401458740234
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            -12231.6220703125,
+                            -5918.4755859375,
+                            -7.3540325164794922
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            -12230.427734375,
+                            -5990.38720703125,
+                            -7.3540401458740234
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            -12290.734375,
+                            -5991.16064453125,
+                            -7.3540439605712891
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            -12290.60546875,
+                            -6060.23681640625,
+                            -7.3540210723876953
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            -12228.4560546875,
+                            -6058.982421875,
+                            -7.3540363311767578
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            -12284.908203125,
+                            -6134.10107421875,
+                            -7.3952922821044922
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_misc/standing_tarp_narrow.mdl",
+                        "origin": [
+                            -12263.6943359375,
+                            -6248.6005859375,
+                            -7.5627627372741699
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_assault/forklift.mdl",
+                        "origin": [
+                            -12230.7421875,
+                            -6180.35009765625,
+                            -5.439753532409668
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "start-flatcar": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/train_flatcar.mdl",
+                        "origin": [
+                            -9040.1728515625,
+                            -5550.70166015625,
+                            -66.243804931640625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
                             0.0
                         ]
                     }

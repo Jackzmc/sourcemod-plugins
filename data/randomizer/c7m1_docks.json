@@ -483,7 +483,7 @@
                 "inputs": [
                     {
                         "hammerid": 330025,
-                        "input": "Lock"
+                        "input": "_lock"
                     }
                 ],
                 "entities": [

@@ -1,59 +1,280 @@
 {
     "start-alt": {
         "chance": 0.40000000596046448,
+        "entities": [
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_urban/dumpster001.mdl",
+                "origin": [
+                    5308.4248046875,
+                    6920.1064453125,
+                    25.169086456298828
+                ],
+                "angles": [
+                    -1.5000008344650269,
+                    103.40000152587891,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_junk/trashcluster01b.mdl",
+                "origin": [
+                    5209.81689453125,
+                    7154.80615234375,
+                    55.612800598144531
+                ],
+                "angles": [
+                    0.0,
+                    -95.100013732910156,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_junk/trashcluster01a_corner.mdl",
+                "origin": [
+                    5261.0595703125,
+                    7144.83837890625,
+                    46.737380981445312
+                ],
+                "angles": [
+                    5.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_junk/trashcluster01a.mdl",
+                "origin": [
+                    5358.21484375,
+                    6682.91259765625,
+                    29.321983337402344
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_urban/oil_drum001.mdl",
+                "origin": [
+                    5426.12939453125,
+                    6638.36279296875,
+                    17.809951782226562
+                ],
+                "angles": [
+                    7.6000003814697266,
+                    24.100000381469727,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_urban/oil_drum001.mdl",
+                "origin": [
+                    5429.46875,
+                    6604.92822265625,
+                    29.448982238769531
+                ],
+                "angles": [
+                    -82.199989318847656,
+                    24.100000381469727,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_junk/trashbin01a.mdl",
+                "origin": [
+                    5373.4501953125,
+                    6532.28955078125,
+                    34.293220520019531
+                ],
+                "angles": [
+                    -75.800010681152344,
+                    4.5,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_street/garbage_can_static.mdl",
+                "origin": [
+                    5398.517578125,
+                    6508.919921875,
+                    18.223224639892578
+                ],
+                "angles": [
+                    11.899999618530273,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_urban/oil_drum001.mdl",
+                "origin": [
+                    5389.021484375,
+                    6468.48583984375,
+                    12.516086578369141
+                ],
+                "angles": [
+                    7.6000003814697266,
+                    24.100000381469727,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_debris/floor_rubble1.mdl",
+                "origin": [
+                    5280.78271484375,
+                    6657.7119140625,
+                    30.978446960449219
+                ],
+                "angles": [
+                    3.1000010967254639,
+                    15.700000762939453,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_destruction/general_dest_roof_set.mdl",
+                "origin": [
+                    5329.025390625,
+                    6546.79052734375,
+                    33.724609375
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_destruction/general_dest_concrete_set.mdl",
+                "origin": [
+                    5177.81884765625,
+                    6430.6640625,
+                    28.732749938964844
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_debris/floor_rubble1.mdl",
+                "origin": [
+                    5283.03564453125,
+                    6385.65478515625,
+                    16.448760986328125
+                ],
+                "angles": [
+                    3.1000010967254639,
+                    15.700000762939453,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_junk/food_pile02.mdl",
+                "origin": [
+                    5400.0390625,
+                    6411.52587890625,
+                    8.7405548095703125
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_debris/burnt_building_debrispile_01.mdl",
+                "origin": [
+                    5366.70361328125,
+                    6447.970703125,
+                    16.390380859375
+                ],
+                "angles": [
+                    0.0,
+                    32.099998474121094,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_debris/burnt_building_debrispile_01.mdl",
+                "origin": [
+                    5366.70361328125,
+                    6447.970703125,
+                    16.390380859375
+                ],
+                "angles": [
+                    0.0,
+                    32.099998474121094,
+                    0.0
+                ]
+            }
+        ],
         "variants": [
+            {
+                "weight": 1,
+                "entities": []
+            },
             {
                 "weight": 1,
                 "entities": [
                     {
                         "type": "prop_dynamic",
-                        "model": "models/props_urban/dumpster001.mdl",
+                        "model": "models/props_vehicles/ceda_trailer_closed.mdl",
                         "origin": [
-                            5308.4248046875,
-                            6920.1064453125,
-                            25.169086456298828
-                        ],
-                        "angles": [
-                            -1.5000008344650269,
-                            103.40000152587891,
-                            0.0
-                        ]
-                    },
-                    {
-                        "type": "prop_dynamic",
-                        "model": "models/props_junk/trashcluster01b.mdl",
-                        "origin": [
-                            5209.81689453125,
-                            7154.80615234375,
-                            55.612800598144531
+                            5150.98876953125,
+                            6651.8427734375,
+                            36.16168212890625
                         ],
                         "angles": [
                             0.0,
-                            -95.100013732910156,
+                            -90.0,
                             0.0
                         ]
-                    },
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
                     {
                         "type": "prop_dynamic",
-                        "model": "models/props_junk/trashcluster01a_corner.mdl",
+                        "model": "models/props_crates/static_crate_40.mdl",
                         "origin": [
-                            5261.0595703125,
-                            7144.83837890625,
-                            46.737380981445312
+                            5360.271484375,
+                            6786.72265625,
+                            46.501834869384766
                         ],
                         "angles": [
-                            5.0,
                             0.0,
+                            48.200004577636719,
                             0.0
                         ]
                     },
                     {
                         "type": "prop_dynamic",
-                        "model": "models/props_junk/trashcluster01a.mdl",
+                        "model": "models/props_crates/static_crate_40.mdl",
                         "origin": [
-                            5358.21484375,
-                            6682.91259765625,
-                            29.321983337402344
+                            5241.7255859375,
+                            7060.89404296875,
+                            54.205196380615234
                         ],
                         "angles": [
                             0.0,
@@ -63,95 +284,11 @@
                     },
                     {
                         "type": "prop_dynamic",
-                        "model": "models/props_urban/oil_drum001.mdl",
+                        "model": "models/props_debris/dead_cow.mdl",
                         "origin": [
-                            5426.12939453125,
-                            6638.36279296875,
-                            17.809951782226562
-                        ],
-                        "angles": [
-                            7.6000003814697266,
-                            24.100000381469727,
-                            0.0
-                        ]
-                    },
-                    {
-                        "type": "prop_dynamic",
-                        "model": "models/props_urban/oil_drum001.mdl",
-                        "origin": [
-                            5429.46875,
-                            6604.92822265625,
-                            29.448982238769531
-                        ],
-                        "angles": [
-                            -82.199989318847656,
-                            24.100000381469727,
-                            0.0
-                        ]
-                    },
-                    {
-                        "type": "prop_dynamic",
-                        "model": "models/props_junk/trashbin01a.mdl",
-                        "origin": [
-                            5373.4501953125,
-                            6532.28955078125,
-                            34.293220520019531
-                        ],
-                        "angles": [
-                            -75.800010681152344,
-                            4.5,
-                            0.0
-                        ]
-                    },
-                    {
-                        "type": "prop_dynamic",
-                        "model": "models/props_street/garbage_can_static.mdl",
-                        "origin": [
-                            5398.517578125,
-                            6508.919921875,
-                            18.223224639892578
-                        ],
-                        "angles": [
-                            11.899999618530273,
-                            0.0,
-                            0.0
-                        ]
-                    },
-                    {
-                        "type": "prop_dynamic",
-                        "model": "models/props_urban/oil_drum001.mdl",
-                        "origin": [
-                            5389.021484375,
-                            6468.48583984375,
-                            12.516086578369141
-                        ],
-                        "angles": [
-                            7.6000003814697266,
-                            24.100000381469727,
-                            0.0
-                        ]
-                    },
-                    {
-                        "type": "prop_dynamic",
-                        "model": "models/props_debris/floor_rubble1.mdl",
-                        "origin": [
-                            5280.78271484375,
-                            6657.7119140625,
-                            30.978446960449219
-                        ],
-                        "angles": [
-                            3.1000010967254639,
-                            15.700000762939453,
-                            0.0
-                        ]
-                    },
-                    {
-                        "type": "prop_dynamic",
-                        "model": "models/props_destruction/general_dest_roof_set.mdl",
-                        "origin": [
-                            5329.025390625,
-                            6546.79052734375,
-                            33.724609375
+                            5291.47314453125,
+                            7043.365234375,
+                            60.37060546875
                         ],
                         "angles": [
                             0.0,
@@ -161,11 +298,11 @@
                     },
                     {
                         "type": "prop_dynamic",
-                        "model": "models/props_destruction/general_dest_concrete_set.mdl",
+                        "model": "models/props_debris/concrete_debris128pile001a.mdl",
                         "origin": [
-                            5177.81884765625,
-                            6430.6640625,
-                            28.732749938964844
+                            5288.65283203125,
+                            6967.09130859375,
+                            62.224666595458984
                         ],
                         "angles": [
                             0.0,
@@ -175,57 +312,29 @@
                     },
                     {
                         "type": "prop_dynamic",
-                        "model": "models/props_debris/floor_rubble1.mdl",
+                        "model": "models/props_debris/concrete_debris128pile001b.mdl",
                         "origin": [
-                            5283.03564453125,
-                            6385.65478515625,
-                            16.448760986328125
+                            5300.25390625,
+                            6935.48974609375,
+                            55.157478332519531
                         ],
                         "angles": [
-                            3.1000010967254639,
-                            15.700000762939453,
-                            0.0
-                        ]
-                    },
-                    {
-                        "type": "prop_dynamic",
-                        "model": "models/props_junk/food_pile02.mdl",
-                        "origin": [
-                            5400.0390625,
-                            6411.52587890625,
-                            8.7405548095703125
-                        ],
-                        "angles": [
-                            0.0,
+                            24.5,
                             0.0,
                             0.0
                         ]
                     },
                     {
                         "type": "prop_dynamic",
-                        "model": "models/props_debris/burnt_building_debrispile_01.mdl",
+                        "model": "models/props_debris/concrete_section64floor001b.mdl",
                         "origin": [
-                            5366.70361328125,
-                            6447.970703125,
-                            16.390380859375
+                            5317.1455078125,
+                            6862.50341796875,
+                            52.688323974609375
                         ],
                         "angles": [
                             0.0,
-                            32.099998474121094,
-                            0.0
-                        ]
-                    },
-                    {
-                        "type": "prop_dynamic",
-                        "model": "models/props_debris/burnt_building_debrispile_01.mdl",
-                        "origin": [
-                            5366.70361328125,
-                            6447.970703125,
-                            16.390380859375
-                        ],
-                        "angles": [
                             0.0,
-                            32.099998474121094,
                             0.0
                         ]
                     }
@@ -504,11 +613,114 @@
                             -15.0,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade_gate001_64_reference.mdl",
+                        "origin": [
+                            4642.2734375,
+                            4495.2666015625,
+                            5.5195746421813965
+                        ],
+                        "angles": [
+                            10.600000381469727,
+                            -63.300003051757812,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            4593.60498046875,
+                            4442.60205078125,
+                            1.8526506423950195
+                        ],
+                        "angles": [
+                            0.0,
+                            -18.700000762939453,
+                            0.0
+                        ]
                     }
                 ]
             },
             {
-                "weight": 1,
+                "weight": 2,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/pickup_truck_78.mdl",
+                        "origin": [
+                            4714.91015625,
+                            4406.25146484375,
+                            4.8689870834350586
+                        ],
+                        "angles": [
+                            0.0,
+                            -15.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            4585.20068359375,
+                            4478.55615234375,
+                            0.028656542301177979
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            4578.431640625,
+                            4446.95751953125,
+                            1.2493748664855957
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            4675.77490234375,
+                            4409.201171875,
+                            62.015235900878906
+                        ],
+                        "angles": [
+                            0.0,
+                            -15.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_01.mdl",
+                        "origin": [
+                            4668.521484375,
+                            4375.49658203125,
+                            62.162021636962891
+                        ],
+                        "angles": [
+                            0.0,
+                            -15.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 2,
                 "entities": [
                     {
                         "type": "prop_dynamic",
@@ -700,7 +912,7 @@
                         ],
                         "angles": [
                             0.0,
-                            0.0,
+                            180.0,
                             0.0
                         ]
                     },
@@ -728,7 +940,7 @@
                         ],
                         "angles": [
                             0.0,
-                            0.0,
+                            160.0,
                             0.0
                         ]
                     },
@@ -885,13 +1097,13 @@
                         "type": "prop_dynamic",
                         "model": "models/props/de_nuke/truck_nuke_glass.mdl",
                         "origin": [
-                            3515.88427734375,
-                            1614.8341064453125,
-                            11.004230499267578
+                            3615.87451171875,
+                            1646.78369140625,
+                            -2.4683876037597656
                         ],
                         "angles": [
                             0.0,
-                            0.0,
+                            270.0,
                             0.0
                         ]
                     }
@@ -1088,6 +1300,151 @@
                         ]
                     }
                 ]
+            },
+            {
+                "weight": 2,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/van.mdl",
+                        "origin": [
+                            6043.01416015625,
+                            -1750.896728515625,
+                            -8.7329282760620117
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/van_glass.mdl",
+                        "origin": [
+                            6043.01416015625,
+                            -1750.896728515625,
+                            -8.7329282760620117
+                        ],
+                        "angles": [
+                            0.0,
+                            180.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_urban/oil_drum001.mdl",
+                        "origin": [
+                            6281.375,
+                            -1657.3125,
+                            17.71875
+                        ],
+                        "angles": [
+                            354.55078125,
+                            8.349609375,
+                            2.5927734375
+                        ]
+                    },
+                    {
+                        "type": "prop_physics",
+                        "model": "models/props_urban/oil_drum001.mdl",
+                        "origin": [
+                            6236.125,
+                            -1665.4375,
+                            12.4375
+                        ],
+                        "angles": [
+                            353.2763671875,
+                            12.6123046875,
+                            0.087890625
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_misc/standing_tarp_narrow.mdl",
+                        "origin": [
+                            6283.32470703125,
+                            -1579.944580078125,
+                            7.7888870239257812
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/oil_drum001.mdl",
+                        "origin": [
+                            6426.9150390625,
+                            -1713.5809326171875,
+                            125.70280456542969
+                        ],
+                        "angles": [
+                            -90.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/fence_cover001_64.mdl",
+                        "origin": [
+                            6464.63623046875,
+                            -1731.8641357421875,
+                            141.64137268066406
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            90.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/van.mdl",
+                        "origin": [
+                            6403.78125,
+                            -1604.8970947265625,
+                            30.066864013671875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            4.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/van_glass.mdl",
+                        "origin": [
+                            6403.78125,
+                            -1604.8970947265625,
+                            30.066864013671875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            4.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/flatnose_truck.mdl",
+                        "origin": [
+                            5988.1025390625,
+                            -1958.951171875,
+                            -3.2239837646484375
+                        ],
+                        "angles": [
+                            0.0,
+                            120.0,
+                            0.0
+                        ]
+                    }
+                ]
             }
         ]
     },
@@ -1133,6 +1490,58 @@
                             0.0,
                             0.0,
                             0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "car-scramble": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "hammerid",
+                        "model": "2967114",
+                        "origin": [
+                            6406.259765625,
+                            -1005.8436279296875,
+                            9.4493179321289062
+                        ],
+                        "angles": [
+                            366.29998779296875,
+                            171.69999694824219,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "2974444",
+                        "origin": [
+                            5807.16796875,
+                            -1325.2437744140625,
+                            -6.5869054794311523
+                        ],
+                        "angles": [
+                            -7.153904914855957,
+                            207.40155029296875,
+                            354.7265625
+                        ]
+                    },
+                    {
+                        "type": "hammerid",
+                        "model": "2968580",
+                        "origin": [
+                            6034.09326171875,
+                            -945.08135986328125,
+                            -3.6646385192871089
+                        ],
+                        "angles": [
+                            359.1650390625,
+                            65.789840698242188,
+                            1.6259765625
                         ]
                     }
                 ]

@@ -581,6 +581,20 @@
                     },
                     {
                         "type": "prop_dynamic",
+                        "model": "models/props/de_nuke/truck_nuke_glass.mdl",
+                        "origin": [
+                            334.34182739257812,
+                            5404.47998046875,
+                            100.17530059814453
+                        ],
+                        "angles": [
+                            0.0,
+                            -14.899999618530273,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
                         "model": "models/props/cs_militia/shelves_wood.mdl",
                         "origin": [
                             237.07989501953125,
@@ -1472,6 +1486,30 @@
                         "angles": [
                             0.0,
                             185.60000610351562,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "porta": {
+        "chance": 0.5,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/outhouse002.mdl",
+                        "origin": [
+                            -5882.15771484375,
+                            6640.36962890625,
+                            96.25
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
                             0.0
                         ]
                     }

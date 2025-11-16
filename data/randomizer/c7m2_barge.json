@@ -584,7 +584,7 @@
                         ]
                     },
                     {
-                        "type": "prop_physics",
+                        "type": "prop_dynamic_override",
                         "model": "models/props/de_prodigy/wood_pallet_01.mdl",
                         "origin": [
                             -431.03125,
@@ -682,7 +682,7 @@
                         ]
                     },
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props/de_prodigy/wood_pallet_01.mdl",
                         "origin": [
                             -464.99362182617188,
@@ -696,7 +696,7 @@
                         ]
                     },
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props_highway/plywood_02.mdl",
                         "origin": [
                             -617.21160888671875,
@@ -800,7 +800,7 @@
                         ]
                     },
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props_junk/wood_pallet001a.mdl",
                         "origin": [
                             -2864.699951171875,
@@ -814,7 +814,7 @@
                         ]
                     },
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props_junk/wood_pallet001a.mdl",
                         "origin": [
                             -2867.632080078125,
@@ -828,7 +828,7 @@
                         ]
                     },
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props_junk/wood_pallet001a.mdl",
                         "origin": [
                             -2933.9638671875,
@@ -893,7 +893,7 @@
                         ]
                     },
                     {
-                        "type": "prop_dynamic",
+                        "type": "prop_dynamic_override",
                         "model": "models/props/de_prodigy/wood_pallet_01.mdl",
                         "origin": [
                             -5622.47021484375,

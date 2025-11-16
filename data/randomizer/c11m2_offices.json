@@ -8,148 +8,300 @@
         }
     ],
     "saferoomS": {
-        "chance": 0.2,
+        "chance": 0.20000000000000001,
         "variants": [
             {
                 "entities": [
                     {
                         "model": "models/props/cs_militia/boxes_frontroom.mdl",
-                        "origin": [5497.94, 3211.28, 49.03],
-                        "angles": [0.00, -57.02, 0.00]
+                        "origin": [
+                            5497.9399999999996,
+                            3211.2800000000002,
+                            49.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            -57.020000000000003,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "sand": {
-        "chance": 0.2,
+        "chance": 0.20000000000000001,
         "variants": [
             {
                 "entities": [
                     {
                         "model": "models/props/cs_assault/box_stack2.mdl",
-                        "origin": [5300.51, 3406.92, 21.28],
-                        "angles": [0.00, 78.46, 0.00]
+                        "origin": [
+                            5300.5100000000002,
+                            3406.9200000000001,
+                            21.280000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            78.459999999999994,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props/cs_militia/boxes_frontroom.mdl",
-                        "origin": [5284.87, 3436.16, 81.84],
-                        "angles": [0.00, -178.31, 0.00]
+                        "origin": [
+                            5284.8699999999999,
+                            3436.1599999999999,
+                            81.840000000000003
+                        ],
+                        "angles": [
+                            0.0,
+                            -178.31,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "sandreturn": {
-        "chance": 0.2,
+        "chance": 0.20000000000000001,
         "variants": [
             {
                 "entities": [
                     {
                         "model": "models/props/cs_militia/boxes_frontroom.mdl",
-                        "origin": [5165.14, 3359.43, 77.22],
-                        "angles": [0.00, -178.31, 0.00]
+                        "origin": [
+                            5165.1400000000003,
+                            3359.4299999999998,
+                            77.219999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            -178.31,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props/cs_assault/box_stack2.mdl",
-                        "origin": [5139.48, 3382.97, 13.70],
-                        "angles": [0.00, 96.07, 0.00]
+                        "origin": [
+                            5139.4799999999996,
+                            3382.9699999999998,
+                            13.699999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            96.069999999999993,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "stairup": {
-        "chance": 0.3,
+        "chance": 0.29999999999999999,
         "variants": [
             {
                 "inputs": [
-                    {"hammerid": 8815285, "input": "Break"}
+                    {
+                        "hammerid": 8815285,
+                        "input": "Break"
+                    }
                 ],
                 "entities": [
                     {
                         "type": "hammerid",
                         "model": "8860853",
-                        "origin": [5576.47, 2463.30, 639.64],
-                        "angles": [0.00, -91.15, 0.00]
+                        "origin": [
+                            5576.4700000000003,
+                            2463.3000000000002,
+                            639.63999999999999
+                        ],
+                        "angles": [
+                            0.0,
+                            -91.150000000000006,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "stairup2": {
-        "chance": 0.3,
+        "chance": 0.29999999999999999,
         "variants": [
             {
                 "inputs": [
-                    {"hammerid": 8860339, "input": "Break"}
+                    {
+                        "hammerid": 8860339,
+                        "input": "Break"
+                    }
                 ],
                 "entities": [
                     {
                         "model": "models/props_interiors/bookcase_64_96.mdl",
-                        "origin": [5699.36, 2765.89, 576.03],
-                        "angles": [0.00, -95.24, 0.00]
+                        "origin": [
+                            5699.3599999999997,
+                            2765.8899999999999,
+                            576.02999999999997
+                        ],
+                        "angles": [
+                            0.0,
+                            -95.239999999999995,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "dumpsterarea": {
-        "chance": 0.2,
+        "chance": 0.20000000000000001,
         "variants": [
             {
                 "entities": [
                     {
                         "model": "models/props/cs_assault/box_stack2.mdl",
-                        "origin": [6349.16, 3544.99, 527.87],
-                        "angles": [0.00, 4.68, 0.00]
+                        "origin": [
+                            6349.1599999999999,
+                            3544.9899999999998,
+                            527.87
+                        ],
+                        "angles": [
+                            0.0,
+                            4.6799999999999997,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "dumpster": {
-        "chance": 0.1,
+        "chance": 0.10000000000000001,
         "variants": [
             {
                 "entities": [
                     {
                         "type": "targetname",
                         "model": "dumpster path 1",
-                        "origin": [7086.604004, 3674.348389, 580.0],
-                        "angles": [0, 0, 0]
+                        "origin": [
+                            7086.6040039999998,
+                            3674.3483890000002,
+                            580.0
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
                     },
                     {
                         "type": "hammerid",
                         "model": "6368973",
-                        "origin": [7086.604004, 3674.348389, 980.0],
-                        "angles": [0, 0, 0]
+                        "origin": [
+                            7086.6040039999998,
+                            3674.3483890000002,
+                            980.0
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
                     },
                     {
-                        "type": "hammerid", 
+                        "type": "hammerid",
                         "model": "5794315",
-                        "origin": [0, 0, 0],
-                        "angles": [0, 90.0, 0]
+                        "origin": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "angles": [
+                            0,
+                            90.0,
+                            0
+                        ]
                     },
                     {
                         "type": "targetname",
                         "model": "dumpster path 0",
-                        "origin": [7086.604004, 3674.348389, 980.0],
-                        "angles": [0, 0, 0]
+                        "origin": [
+                            7086.6040039999998,
+                            3674.3483890000002,
+                            980.0
+                        ],
+                        "angles": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_02.mdl",
+                        "origin": [
+                            6860.31494140625,
+                            3588.268798828125,
+                            643.74786376953125
+                        ],
+                        "angles": [
+                            -0.60000085830688477,
+                            1.7000007629394531,
+                            33.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            6884.86962890625,
+                            3625.17919921875,
+                            669.95953369140625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            6971.7509765625,
+                            3624.933349609375,
+                            670.0911865234375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "window": {
-        "chance": 0.2,
+        "chance": 0.20000000000000001,
         "variants": [
             {
                 "entities": [
                     {
                         "model": "models/props/cs_office/shelves_metal1.mdl",
-                        "origin": [8358.66, 3528.48, 672.81],
-                        "angles": [0.00, 173.54, 0.00]
+                        "origin": [
+                            8358.6599999999999,
+                            3528.48,
+                            672.80999999999995
+                        ],
+                        "angles": [
+                            0.0,
+                            173.53999999999999,
+                            0.0
+                        ]
                     }
                 ]
             },
@@ -157,40 +309,96 @@
                 "entities": [
                     {
                         "model": "models/props_interiors/desk_metal.mdl",
-                        "origin": [8364.85, 3290.26, 673.16],
-                        "angles": [0.00, -0.38, 0.00]
+                        "origin": [
+                            8364.8500000000004,
+                            3290.2600000000002,
+                            673.15999999999997
+                        ],
+                        "angles": [
+                            0.0,
+                            -0.38,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_interiors/desk_metal.mdl",
-                        "origin": [8360.38, 3284.38, 704.49],
-                        "angles": [0.00, -176.31, 0.00]
+                        "origin": [
+                            8360.3799999999992,
+                            3284.3800000000001,
+                            704.49000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            -176.31,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "pills": {
-        "chance": 0.35,
+        "chance": 0.34999999999999998,
         "variants": [
             {
                 "inputs": [
-                    {"hammerid": 8885909, "input": "Break"},
-                    {"hammerid": 8815310, "input": "Close"},
-                    {"hammerid": 8815310, "input": "Lock"}
+                    {
+                        "hammerid": 8885909,
+                        "input": "Break"
+                    },
+                    {
+                        "hammerid": 8815310,
+                        "input": "_lock"
+                    },
+                    {
+                        "hammerid": 8815545,
+                        "input": "unlock"
+                    },
+                    {
+                        "hammerid": 8815260,
+                        "input": "unlock"
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    {
+                        "hammerid": 8885909,
+                        "input": "Break"
+                    },
+                    {
+                        "hammerid": 8815310,
+                        "input": "unlock"
+                    },
+                    {
+                        "hammerid": 8815545,
+                        "input": "_lock"
+                    },
+                    {
+                        "hammerid": 8815260,
+                        "input": "_lock"
+                    }
                 ]
             }
         ]
     },
     "officelvl1": {
-        "chance": 0.3,
+        "chance": 0.29999999999999999,
         "variants": [
             {
                 "entities": [
-
                     {
                         "model": "models/props_interiors/file_cabinet1_group.mdl",
-                        "origin": [9170.09, 4451.08, 360.03],
-                        "angles": [0.00, 178.33, 0.00]
+                        "origin": [
+                            9170.0900000000001,
+                            4451.0799999999999,
+                            360.02999999999997
+                        ],
+                        "angles": [
+                            0.0,
+                            178.33000000000001,
+                            0.0
+                        ]
                     }
                 ]
             },
@@ -198,141 +406,307 @@
                 "entities": [
                     {
                         "model": "models/props_interiors/file_cabinet1_group.mdl",
-                        "origin": [9177.65, 4094.57, 360.03],
-                        "angles": [0.00, -178.79, 0.00]
+                        "origin": [
+                            9177.6499999999996,
+                            4094.5700000000002,
+                            360.02999999999997
+                        ],
+                        "angles": [
+                            0.0,
+                            -178.78999999999999,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "exit": {
-        "chance": 0.4,
+        "chance": 0.40000000000000002,
         "variants": [
             {
                 "inputs": [
-                    {"hammerid": 4471449, "input": "_lock_nobreak"},
-                    {"hammerid": 4471462, "input": "_lock_nobreak"}
+                    {
+                        "hammerid": 4471449,
+                        "input": "sethealth 9999"
+                    },
+                    {
+                        "hammerid": 4471462,
+                        "input": "sethealth 9999"
+                    },
+                    {
+                        "hammerid": 8815465,
+                        "input": "_lock_nobreak"
+                    },
+                    {
+                        "hammerid": 8815335,
+                        "input": "_lock_nobreak"
+                    }
                 ],
                 "entities": [
                     {
                         "model": "models/props_interiors/file_cabinet1_group.mdl",
-                        "origin": [8890.45, 4586.22, 83.98],
-                        "angles": [0.00, -86.70, 0.00]
+                        "origin": [
+                            8890.4500000000007,
+                            4586.2200000000003,
+                            83.980000000000004
+                        ],
+                        "angles": [
+                            0.0,
+                            -86.700000000000003,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props/cs_office/file_cabinet2.mdl",
-                        "origin": [8936.59, 4590.64, 82.90],
-                        "angles": [0.00, -77.50, 0.00]
+                        "origin": [
+                            8936.5900000000001,
+                            4590.6400000000003,
+                            82.900000000000006
+                        ],
+                        "angles": [
+                            0.0,
+                            -77.5,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_highway/plywood_01.mdl",
-                        "origin": [8942.97, 4602.07, 145.93],
-                        "angles": [0.00, -0.87, 90.00]
+                        "origin": [
+                            8942.9699999999993,
+                            4602.0699999999997,
+                            145.93000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            -0.87,
+                            90.0
+                        ]
                     },
                     {
                         "model": "models/props_highway/plywood_01.mdl",
-                        "origin": [8942.97, 4602.07, 145.93],
-                        "angles": [0.00, -0.87, 90.00]
+                        "origin": [
+                            8942.9699999999993,
+                            4602.0699999999997,
+                            145.93000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            -0.87,
+                            90.0
+                        ]
                     }
                 ]
             },
             {
                 "weight": 3,
                 "inputs": [
-                    {"hammerid": 8815550, "input": "_lock_nobreak"}
-
+                    {
+                        "hammerid": 8815550,
+                        "input": "_lock_nobreak"
+                    }
                 ],
                 "entities": [
                     {
                         "model": "models/props_interiors/file_cabinet1_group.mdl",
-                        "origin": [9397.04, 3972.52, 16.03],
-                        "angles": [15.00, -90.00, 0.00]
+                        "origin": [
+                            9397.0400000000009,
+                            3972.52,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            15.0,
+                            -90.0,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "saferoomE": {
-        "chance": 0.35,
+        "chance": 0.34999999999999998,
         "variants": [
             {
                 "entities": [
                     {
                         "model": "models/props_highway/plywood_02.mdl",
-                        "origin": [7663.18, 5642.72, 120.21],
-                        "angles": [-90.00, -0.86, 90.00]
+                        "origin": [
+                            7663.1800000000003,
+                            5642.7200000000003,
+                            120.20999999999999
+                        ],
+                        "angles": [
+                            -90.0,
+                            -0.85999999999999999,
+                            90.0
+                        ]
                     },
                     {
                         "model": "models/props_highway/plywood_02.mdl",
-                        "origin": [7639.60, 5637.35, 121.25],
-                        "angles": [-90.00, -0.86, 90.00]
+                        "origin": [
+                            7639.6000000000004,
+                            5637.3500000000004,
+                            121.25
+                        ],
+                        "angles": [
+                            -90.0,
+                            -0.85999999999999999,
+                            90.0
+                        ]
                     }
                 ]
             },
             {
                 "inputs": [
-                    {"targetname": "storageL", "input": "_lock_nobreak"},
-                    {"targetname": "storageR", "input": "_lock_nobreak"}
+                    {
+                        "targetname": "storageL",
+                        "input": "_lock_nobreak"
+                    },
+                    {
+                        "targetname": "storageR",
+                        "input": "_lock_nobreak"
+                    }
                 ],
                 "entities": [
                     {
                         "model": "models/props_highway/plywood_02.mdl",
-                        "origin": [7663.18, 5642.72, 120.21],
-                        "angles": [-90.00, -0.86, 90.00]
+                        "origin": [
+                            7663.1800000000003,
+                            5642.7200000000003,
+                            120.20999999999999
+                        ],
+                        "angles": [
+                            -90.0,
+                            -0.85999999999999999,
+                            90.0
+                        ]
                     },
                     {
                         "model": "models/props_highway/plywood_02.mdl",
-                        "origin": [7639.60, 5637.35, 121.25],
-                        "angles": [-90.00, -0.86, 90.00]
+                        "origin": [
+                            7639.6000000000004,
+                            5637.3500000000004,
+                            121.25
+                        ],
+                        "angles": [
+                            -90.0,
+                            -0.85999999999999999,
+                            90.0
+                        ]
                     },
                     {
                         "model": "models/props_highway/plywood_02.mdl",
-                        "origin": [7663.18, 5642.72, 120.21],
-                        "angles": [-90.00, -0.86, 90.00]
+                        "origin": [
+                            7663.1800000000003,
+                            5642.7200000000003,
+                            120.20999999999999
+                        ],
+                        "angles": [
+                            -90.0,
+                            -0.85999999999999999,
+                            90.0
+                        ]
                     },
                     {
                         "model": "models/props_highway/plywood_02.mdl",
-                        "origin": [7639.60, 5637.35, 121.25],
-                        "angles": [-90.00, -0.86, 90.00]
+                        "origin": [
+                            7639.6000000000004,
+                            5637.3500000000004,
+                            121.25
+                        ],
+                        "angles": [
+                            -90.0,
+                            -0.85999999999999999,
+                            90.0
+                        ]
                     },
                     {
                         "model": "models/props_interiors/chairlobby01.mdl",
-                        "origin": [7543.81, 5702.64, 16.03],
-                        "angles": [0.00, -9.77, 0.00]
+                        "origin": [
+                            7543.8100000000004,
+                            5702.6400000000003,
+                            16.030000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            -9.7699999999999996,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_interiors/chairlobby01.mdl",
-                        "origin": [7546.89, 5697.96, 39.48],
-                        "angles": [0.00, -24.73, 0.00]
+                        "origin": [
+                            7546.8900000000003,
+                            5697.96,
+                            39.479999999999997
+                        ],
+                        "angles": [
+                            0.0,
+                            -24.73,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_interiors/chairlobby01.mdl",
-                        "origin": [7494.62, 5695.96, 16.68],
-                        "angles": [0.00, -20.46, 0.00]
+                        "origin": [
+                            7494.6199999999999,
+                            5695.96,
+                            16.68
+                        ],
+                        "angles": [
+                            0.0,
+                            -20.460000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_interiors/chairlobby01.mdl",
-                        "origin": [7495.03, 5695.39, 47.00],
-                        "angles": [0.00, -18.03, 0.00]
+                        "origin": [
+                            7495.0299999999997,
+                            5695.3900000000003,
+                            47.0
+                        ],
+                        "angles": [
+                            0.0,
+                            -18.030000000000001,
+                            0.0
+                        ]
                     },
                     {
                         "model": "models/props_interiors/chairlobby01.mdl",
-                        "origin": [7495.18, 5697.47, 76.64],
-                        "angles": [0.00, -26.58, 0.00]
+                        "origin": [
+                            7495.1800000000003,
+                            5697.4700000000003,
+                            76.640000000000001
+                        ],
+                        "angles": [
+                            0.0,
+                            -26.579999999999998,
+                            0.0
+                        ]
                     }
                 ]
             }
         ]
     },
     "saferoomEBlock": {
-        "chance": 0.2,
+        "chance": 0.20000000000000001,
         "variants": [
             {
                 "entities": [
                     {
                         "model": "models/props_industrial/warehouse_shelf001.mdl",
-                        "origin": [7659.42, 5864.99, 14.01],
-                        "angles": [0.00, -114.23, 0.00]
+                        "origin": [
+                            7659.4200000000001,
+                            5864.9899999999998,
+                            14.01
+                        ],
+                        "angles": [
+                            0.0,
+                            -114.23,
+                            0.0
+                        ]
                     }
                 ]
             }
