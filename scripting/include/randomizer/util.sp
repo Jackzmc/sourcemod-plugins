@@ -45,11 +45,17 @@ bool IdentifyEntityScene(int client, int entityIndex) {
 	GetEntPropVector(entityIndex, Prop_Send, "m_vecOrigin", origin);
 	char type[64];
 	GetEntityClassname(entityIndex, type, sizeof(type));
+	char model[128];
+	GetEntPropString(entityIndex, Prop_Data, "m_ModelName", model, sizeof(model));
+
+	PrintToServer("identify \"%s\" \"%s\" %.4f %.4f %.4f", type, model, origin[0], origin[1], origin[2]);
+	PrintToChat(client, "Identifying %s (%d)", type, entityIndex);
 
 	
 	SceneData scene;
 	SceneVariantData choice;
 	VariantEntityData entity;
+	bool hasMatch = false;
 	for(int i = 0; i < g_MapData.scenes.Length; i++) {
         g_MapData.scenes.GetArray(i, scene);
         for(int v = 0; v < scene.variants.Length; v++) {
@@ -57,20 +63,25 @@ bool IdentifyEntityScene(int client, int entityIndex) {
 			for(int j = 0; j < choice.entities.Length; j++) {
 				choice.entities.GetArray(j, entity);
 				if(StrEqual(entity.type, type)) {
-					if(FloatsEqual(origin[0], entity.origin[0], 1.0) 
-						&& FloatsEqual(origin[1], entity.origin[1], 1.0) 
-						&& FloatsEqual(origin[2], entity.origin[2], 1.0)) {
-							PrintToChat(client, "Scene: %s#%d - entity #%d", scene.name, v, j);
-							return true;
-						}
+					if(StrEqual(entity.model, model)) {
+						if(IsVectorEqual(entity.origin, origin, 0.1)) {
+							PrintToChat(client, "  Match %s#%d entity#%d", scene.name, v, j);
+							hasMatch = true;
+						} 
+
+						// return true;
+					}
 				}
 			}
 		} 
     }
-	PrintToChat(client, "Scene: None");
-	return false;
+	if(!hasMatch) PrintToChat(client, "Scene: None");
+	return hasMatch;
 }
 
 bool FloatsEqual(float a, float b, float diff) {
-	return a - b <= diff;
+	return FloatAbs(a - b) <= diff;
+}
+bool IsVectorEqual(const float a[3], const float b[3], float delta) {
+	return FloatsEqual(a[0], b[0], delta) && FloatsEqual(a[1], b[1], delta) && FloatsEqual(a[2], b[2], delta);
 }

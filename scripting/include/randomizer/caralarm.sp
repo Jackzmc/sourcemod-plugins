@@ -161,28 +161,28 @@ int SpawnAlarmCar(const char[] model, float vPos[3], float vAng[3], int color[4]
     strcopy(tempString, sizeof(tempString), model);
     ReplaceString(tempString, sizeof(tempString), ".mdl", "_glass.mdl");
     if(PrecacheModel(tempString))
-        CreateGlass(tempString, glassOnName, false, vPos, vAng, carName);
+        CreateGlass(carEntity, tempString, glassOnName, false, vPos, vAng, carName);
     // CreateGlass(glassOffName, true, vPos, vAng, carName);
 
     CreateSound(alarmSoundName, "16", "Car.Alarm", vPos, carName);
     CreateSound(chirpSoundName, "48", "Car.Alarm.Chirp2", vPos, carName);
 
-    CreateLights(lightsName, vPos, vAng, carName);
+    CreateLights(carEntity, lightsName, vPos, vAng, carName);
 
-    CreateHeadlights(headlightsName, vPos, vAng, carName);
+    CreateHeadlights(carEntity, headlightsName, vPos, vAng, carName);
 
-    CreateLogicTimer(timerName, lightsName, headlightsName, vPos, carName);
+    CreateLogicTimer(carEntity, timerName, lightsName, headlightsName, vPos, carName);
 
-    CreateRemark(remarkName, vPos, vAng, carName);
+    CreateRemark(carEntity, remarkName, vPos, vAng, carName);
 
-    CreateGameEvent(gameEventName, vPos, vAng, carName);
+    CreateGameEvent(carEntity, gameEventName, vPos, vAng, carName);
 
     return carEntity;
 }
 
 /****************************************************************************************************/
 
-void CreateGlass(const char[] model, char[] targetName, bool startDisabled, float vPos[3], float vAng[3], char[] carName)
+void CreateGlass(int parent, const char[] model, char[] targetName, bool startDisabled, float vPos[3], float vAng[3], char[] carName)
 {
     int entity = CreateEntityByName("prop_car_glass");
 
@@ -193,8 +193,7 @@ void CreateGlass(const char[] model, char[] targetName, bool startDisabled, floa
     DispatchKeyValueVector(entity, "angles", vAng);
     DispatchSpawn(entity);
 
-    SetVariantString(carName);
-    AcceptEntityInput(entity, "SetParent", entity, entity, 0);
+    SetParent(entity, parent);
 }
 
 /****************************************************************************************************/
@@ -222,7 +221,7 @@ void CreateSound(char[] targetName, char[] spawnFlags, char[] messageName, float
 
 /****************************************************************************************************/
 
-void CreateLights(char[] lightsName, float vPos[3], float vAng[3], char[] carName)
+void CreateLights(int parent, char[] lightsName, float vPos[3], float vAng[3], char[] carName)
 {
     float distance[6] = {DISTANCE_FRONT, DISTANCE_SIDETURN, DISTANCE_UPFRONT, DISTANCE_BACK, DISTANCE_SIDE, DISTANCE_UPBACK};
     float newPos[3];
@@ -233,29 +232,29 @@ void CreateLights(char[] lightsName, float vPos[3], float vAng[3], char[] carNam
     lightDistance[1] = distance[1]*-1.0;
     lightDistance[2] = distance[2];
     MoveVectorvPos3D(newPos, vAng, lightDistance); // front left
-    CreateVehicleLight(lightsName, COLOR_YELLOWLIGHT, newPos, carName);
+    CreateVehicleLight(parent, lightsName, COLOR_YELLOWLIGHT, newPos, carName);
 
     newPos = vPos;
     lightDistance[1] = distance[1];
     MoveVectorvPos3D(newPos, vAng, lightDistance); // front right
-    CreateVehicleLight(lightsName, COLOR_YELLOWLIGHT, newPos, carName);
+    CreateVehicleLight(parent, lightsName, COLOR_YELLOWLIGHT, newPos, carName);
 
     newPos = vPos;
     lightDistance[0] = distance[3]*-1.0;
     lightDistance[1] = distance[4]*-1.0;
     lightDistance[2] = distance[5];
     MoveVectorvPos3D(newPos, vAng, lightDistance); // back left
-    CreateVehicleLight(lightsName, COLOR_REDLIGHT, newPos, carName);
+    CreateVehicleLight(parent, lightsName, COLOR_REDLIGHT, newPos, carName);
 
     newPos = vPos;
     lightDistance[1] = distance[4];
     MoveVectorvPos3D(newPos, vAng, lightDistance); // back right
-    CreateVehicleLight(lightsName, COLOR_REDLIGHT, newPos, carName);
+    CreateVehicleLight(parent, lightsName, COLOR_REDLIGHT, newPos, carName);
 }
 
 /****************************************************************************************************/
 
-static void CreateVehicleLight(char[] targetName, char[] renderColor, float vPos[3], char[] carName)
+static void CreateVehicleLight(int parent, char[] targetName, char[] renderColor, float vPos[3], char[] carName)
 {
     int entity = CreateEntityByName("env_sprite");
 
@@ -270,13 +269,12 @@ static void CreateVehicleLight(char[] targetName, char[] renderColor, float vPos
     DispatchKeyValueVector(entity, "origin", vPos);
     DispatchSpawn(entity);
 
-    SetVariantString(carName);
-    AcceptEntityInput(entity, "SetParent", entity, entity, 0);
+    SetParent(entity, parent);
 }
 
 /****************************************************************************************************/
 
-void CreateHeadlights(char[] headlightsName, float vPos[3], float vAng[3], char[] carName)
+void CreateHeadlights(int parent, char[] headlightsName, float vPos[3], float vAng[3], char[] carName)
 {
     float distance[3] = {DISTANCE_FRONT, DISTANCE_SIDE, DISTANCE_UPFRONT};
     float newPos[3];
@@ -287,17 +285,17 @@ void CreateHeadlights(char[] headlightsName, float vPos[3], float vAng[3], char[
     headlightDistance[1] = distance[1]*-1.0;
     headlightDistance[2] = distance[2];
     MoveVectorvPos3D(newPos, vAng, headlightDistance); // front left
-    CreateHeadlight(headlightsName, newPos, vAng, carName);
+    CreateHeadlight(parent, headlightsName, newPos, vAng, carName);
 
     newPos = vPos;
     headlightDistance[1] = distance[1];
     MoveVectorvPos3D(newPos, vAng, headlightDistance); // front right
-    CreateHeadlight(headlightsName, newPos, vAng, carName);
+    CreateHeadlight(parent, headlightsName, newPos, vAng, carName);
 }
 
 /****************************************************************************************************/
 
-void CreateHeadlight(char[] targetName, float vPos[3], float vAng[3], char[] carName)
+void CreateHeadlight(int parent, char[] targetName, float vPos[3], float vAng[3], char[] carName)
 {
     int entity = CreateEntityByName("beam_spotlight");
 
@@ -314,13 +312,15 @@ void CreateHeadlight(char[] targetName, float vPos[3], float vAng[3], char[] car
     DispatchKeyValueVector(entity, "angles", vAng);
     DispatchSpawn(entity);
 
-    SetVariantString(carName);
-    AcceptEntityInput(entity, "SetParent", entity, entity, 0);
+    Effect_DrawBeamBoxRotatableToAll(vPos, { -5.0, -5.0, -5.0}, { 5.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {255, 255, 0, 255}, 0);
+    SetEntProp(entity, Prop_Send, "m_iGlowType", 3);
+
+    SetParent(entity, parent);
 }
 
 /****************************************************************************************************/
 
-void CreateLogicTimer(char[] targetName, char[] lightsName, char[] headlightsName, float vPos[3], char[] carName)
+void CreateLogicTimer(int parent, char[] targetName, char[] lightsName, char[] headlightsName, float vPos[3], char[] carName)
 {
     int entity = CreateEntityByName("logic_timer");
 
@@ -344,13 +344,12 @@ void CreateLogicTimer(char[] targetName, char[] lightsName, char[] headlightsNam
     DispatchKeyValueVector(entity, "origin", vPos);
     DispatchSpawn(entity);
 
-    SetVariantString(carName);
-    AcceptEntityInput(entity, "SetParent", entity, entity, 0);
+    SetParent(entity, parent);
 }
 
 /****************************************************************************************************/
 
-void CreateRemark(char[] targetName, float vPos[3], float vAng[3], char[] carName)
+void CreateRemark(int parent, char[] targetName, float vPos[3], float vAng[3], char[] carName)
 {
     int entity = CreateEntityByName("info_remarkable");
 
@@ -360,13 +359,12 @@ void CreateRemark(char[] targetName, float vPos[3], float vAng[3], char[] carNam
     DispatchKeyValueVector(entity, "angles", vAng);
     DispatchSpawn(entity);
 
-    SetVariantString(carName);
-    AcceptEntityInput(entity, "SetParent", entity, entity, 0);
+    SetParent(entity, parent);
 }
 
 /****************************************************************************************************/
 
-void CreateGameEvent(char[] targetName, float vPos[3], float vAng[3], char[] carName)
+void CreateGameEvent(int parent, char[] targetName, float vPos[3], float vAng[3], char[] carName)
 {
     int entity = CreateEntityByName("info_game_event_proxy");
 
@@ -378,8 +376,7 @@ void CreateGameEvent(char[] targetName, float vPos[3], float vAng[3], char[] car
     DispatchKeyValueVector(entity, "angles", vAng);
     DispatchSpawn(entity);
 
-    SetVariantString(carName);
-    AcceptEntityInput(entity, "SetParent", entity, entity, 0);
+    SetParent(entity, parent);
 }
 
 /****************************************************************************************************/

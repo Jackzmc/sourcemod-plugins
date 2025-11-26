@@ -947,7 +947,7 @@ Action Timer_ClearGlow(Handle h, int ref) {
 stock bool CompareVector(const float a[3], const float b[3], float delta) {
 	return a[0] < b[0] + delta && a[0] > b[0] - delta &&
 		a[1] < b[1] + delta && a[1] > b[1] - delta &&
-		a[2] < b[2] + delta && a[2] > b[2] - delta
+		a[2] < b[2] + delta && a[2] > b[2] - delta;
 }
 
 stock void CalculateWorldPosition(int entity, float pos[3]) {

@@ -365,11 +365,19 @@ enum struct VariantEntityData {
 	}
 
 	void _ApplyKeyvalue(int entity, const char[] key, JSONObject obj) {
-		if(obj.HasKey("buffer")) {
+		if(obj.HasKey("string")) {
 			char buffer[255];
 			obj.GetString("string", buffer, sizeof(buffer));
 			Debug("Dispatching kv %s: %s on %d", key, buffer, entity);
 			DispatchKeyValue(entity, key, buffer);
+		} else if(obj.HasKey("integer")) {
+			int val = obj.GetInt("integer");
+			Debug("Dispatching kv %s: %d on %d", key, val, entity);
+			DispatchKeyValueInt(entity, key, val);
+		} else if(obj.HasKey("float")) {
+			float val = obj.GetFloat("float");
+			Debug("Dispatching kv %s: %f on %d", key, val, entity);
+			DispatchKeyValueFloat(entity, key, val);
 		} else {
 			LogError("no value provided for entity %d with key %s", entity, key);
 		}
@@ -451,16 +459,33 @@ void TriggerEntityInput(int entity, const char[] input) {
 		char cmd[32];
 		// Split input "a b" to a with variant "b"
 		int len = SplitString(input, " ", cmd, sizeof(cmd));
-		if(len > -1) {
-			SetVariantString(input[len]);
-			AcceptEntityInput(entity, cmd);
-			Debug("_trigger(%d): %s (v=%s)", entity, cmd, input[len]);
-		} else {
-			Debug("_trigger(%d): %s", entity, input);
-			AcceptEntityInput(entity, input);
+		if(len == -1 || !_RunCustomInput(entity, cmd, input[len])) {
+			if(len > -1) {
+				SetVariantString(input[len]);
+				AcceptEntityInput(entity, cmd);
+				Debug("_trigger(%d): %s (v=%s)", entity, cmd, input[len]);
+			} else {
+				Debug("_trigger(%d): %s", entity, input);
+				AcceptEntityInput(entity, input);
+			}
 		}
-		
 	}
+}
+
+bool _RunCustomInput(int entity, const char[] cmd, const char[] arg) {
+	if(StrEqual(cmd, "_setmodel")) {
+		// Split input "a b" to a with variant "b"
+		if(arg[0] != '\0') {
+			if(PrecacheModel(arg))
+				SetEntityModel(entity, arg);
+			else
+				LogError("Entity (%d) _setmodel called with invalid model \"%s\"", entity, arg);
+		} else {
+			Log("Warn: Entity (%d) _setmodel called but no model set", entity);
+		}
+		return true;
+	} 
+	return false;
 }
 
 enum struct LumpEditData {

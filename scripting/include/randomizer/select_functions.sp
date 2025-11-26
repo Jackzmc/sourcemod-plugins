@@ -6,6 +6,7 @@ bool IsTraverseMapB(const char[] map) {
     return StrEqual(map, "c4m5_milltown_escape") || String_EndsWith(map, "_b");
 }
 
+// loadFlags
 public bool LoadRunGlobalMap(const char[] map, int flags) {
     // Unless FLAG_IGNORE_TRAVERSE_STORE, if the map is the _b variant, then load the stored _a value 
     SceneSelection selection;

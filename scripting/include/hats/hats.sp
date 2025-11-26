@@ -267,7 +267,7 @@ Action Command_DoAHat(int client, int args) {
 					delete hatData[client].yeetGroundTimer;
 				}
 				DataPack pack1;
-				hatData[client].yeetGroundTimer = CreateDataTimer(0.5, Timer_GroundKill, pack1, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+				hatData[client].yeetGroundTimer = CreateDataTimer(0.5, Timer_GroundKill, pack1, TIMER_REPEAT);
 				pack1.WriteCell(hatData[client].entity);
 				pack1.WriteCell(GetClientUserId(client));
 				DataPack pack2;
