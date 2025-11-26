@@ -317,7 +317,7 @@
                     },
                     {
                         "type": "prop_dynamic",
-                        "model": "models/props_vehicles/semi_truck3.mdl",
+                        "model": "models/props_vehicles/longnose_truck.mdl",
                         "origin": [
                             -5391.45263671875,
                             477.781005859375,

@@ -1156,6 +1156,20 @@
                             0.0,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            1622.2332763671875,
+                            4577.60205078125,
+                            -1130.8900146484375
+                        ],
+                        "angles": [
+                            90.0,
+                            0.0,
+                            0.0
+                        ]
                     }
                 ],
                 "inputs": [

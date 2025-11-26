@@ -1294,5 +1294,103 @@
                 ]
             }
         ]
+    },
+    "bar-up-path": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_equipment/snack_machine.mdl",
+                        "origin": [
+                            -1173.677734375,
+                            2385.173583984375,
+                            110.82582855224609
+                        ],
+                        "angles": [
+                            -30.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/furniture_desk01a.mdl",
+                        "origin": [
+                            -1157.8070068359375,
+                            2406.55419921875,
+                            93.098381042480469
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -1193.455078125,
+                            2393.281005859375,
+                            72.62152099609375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/boxes_garage_lower.mdl",
+                        "origin": [
+                            -1239.5029296875,
+                            2358.075439453125,
+                            73.033119201660156
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_militia/ladderwood.mdl",
+                        "origin": [
+                            -1218.6727294921875,
+                            2064.48876953125,
+                            184.75959777832031
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                         "properties": [
+                            {
+                                "type": "keyvalue",
+                                "key": "solid",
+                                "integer": "0"
+                            }
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 680799,
+                        "input": "_allow_ladder"
+                    }
+                ]
+            }
+        ]
     }
 }

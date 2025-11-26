@@ -86,8 +86,8 @@
                 "weight": 1,
                 "entities": [
                     {
-                        "type": "prop_dynamic",
-                        "model": "models/props_vehicles/semi_truck3.mdl",
+                        "type": "_car",
+                        "model": "models/props_vehicles/longnose_truck.mdl",
                         "origin": [
                             -5010.0419921875,
                             7734.44091796875,

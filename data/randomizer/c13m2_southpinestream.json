@@ -162,6 +162,20 @@
                             0.0,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_wasteland/rock_moss02.mdl",
+                        "origin": [
+                            8465.783203125,
+                            4763.5966796875,
+                            392.55938720703125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
                     }
                 ]
             }
