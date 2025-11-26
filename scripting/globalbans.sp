@@ -11,12 +11,10 @@
 #define BANFLAG_IPBANNED 1
 #define BANFLAG_SUSPENDED 2
 
+#include <db>
 #include <sourcemod>
 #include <sdktools>
 #include <anymap>
-#define LOG_PREFIX "GlobalBans"
-#define LOG_COMMAND "sm_ban"
-#define LOG_FLAG ADMFLAG_BAN
 #include <log>
 
 public Plugin myinfo = 
@@ -28,7 +26,7 @@ public Plugin myinfo =
     url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
 
-static Database g_db;
+static DatabaseManager g_db;
 static ConVar hKickType;
 static AnyMap pendingInsertQueries;
 
@@ -42,11 +40,10 @@ public void OnPluginStart() {
     cvarLogLevel = CreateConVar("sm_globalbans_log_level", "3", "Determines the highest log level to print. 0 = Nothing\n1 = ERROR only\n2 = WARN\n3 = INFO\n4 = DEBUG\n5 = TRACE", FCVAR_NONE, true, 0.0, true, 5.0);
     cvarLogLevel.AddChangeHook(LOG_OnCvarChange);
 
-    if(!SQL_CheckConfig(DB_NAME)) {
-        SetFailState("No database entry for " ... DB_NAME ... "; no database to connect to.");
-    } else if(!ConnectDB()) {
-        SetFailState("Failed to connect to database.");
-    }
+    Log_Init("GlobalBans", Log_Info, ADMFLAG_BAN, "sm_ban");
+
+    g_db = DatabaseManager.Init(DB_NAME);
+
 
     pendingInsertQueries = new AnyMap();
 
@@ -54,28 +51,7 @@ public void OnPluginStart() {
 
     AutoExecConfig(true, "globalbans");
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// DB Connections
-///////////////////////////////////////////////////////////////////////////////
-
-bool ConnectDB() {
-    static char error[255];
-    g_db = SQL_Connect(DB_NAME, true, error, sizeof(error));
-    if (g_db == null) {
-        Log(Log_Error, Target_ServerConsole, "Database error %s", error);
-        delete g_db;
-        return false;
-    } else {
-        SQL_LockDatabase(g_db);
-        SQL_FastQuery(g_db, "SET NAMES \"UTF8mb4\"");  
-        SQL_UnlockDatabase(g_db);
-        g_db.SetCharset("utf8mb4");
-        Log(Log_Info, Target_ServerConsole, "Connected to sm database " ... DB_NAME);
-        return true;
-    }
-}
-
+///////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 // EVENTS
@@ -112,7 +88,12 @@ public void OnClientAuthorized(int client, const char[] auth) {
 /// Checks for any client bans
 /// Returns true if check has started, false if any 
 void RequestClientCheck(int client, bool validate = true) {
-
+    if(!g_db.Connected) {
+        if(hKickType.IntValue == 2) {
+            KickClient(client, "Could not authenticate at this time.");
+        }
+        Log(Log_Warn, Target_All, "Not connected to database. Client \"%N\" not being checked", client);
+    }
     static char auth[32], ip[32];
     if(!GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth), validate)) {
         // SteamID invalid / missing (if validate set, then not authed yet), ignore request
@@ -126,8 +107,8 @@ void RequestClientCheck(int client, bool validate = true) {
     GetClientIP(client, ip, sizeof(ip));
 
     char query[256];
-    g_db.Format(query, sizeof(query), "SELECT reason, steamid, expired, public_message, flags, id FROM bans WHERE expired = 0 AND SUBSTRING(steamid, 11) = '%s' OR ip = '%s'", auth, ip);
-    g_db.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
+    g_db.Database.Format(query, sizeof(query), "SELECT reason, steamid, expired, public_message, flags, id FROM bans WHERE expired = 0 AND SUBSTRING(steamid, 11) = '%s' OR ip = '%s'", auth, ip);
+    g_db.Database.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
     Log(Log_Debug, Target_ServerConsole, "Checking client #%d (Name: %N) (ID: %s %s) (IP: %s)", client, client, auth, (validate ? "[CHECKED]" : "[UNCHECKED]"), ip);
 }
 
@@ -136,7 +117,7 @@ Action Timer_AuthTimeout(Handle h, int userid) {
     if(client > 0) {
         Log(Log_Debug, Target_Console, "AUTH TIMEOUT for %N %d, would kick", client, client);
         // TODO: impl kick after verified
-        KickClient(client, "Steam auth timed out.\nTry restarting your steam client");
+        KickClient(client, "Steam auth timed out.\nRestart steam client and try again until it works. Thanks steam.");
         PrintToChatAll("%N disconnected. (Reason: Steam auth timed out)", client);
         authTimeoutTimer[client] = null;
     }
