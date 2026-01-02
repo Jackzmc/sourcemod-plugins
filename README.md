@@ -75,7 +75,6 @@ Some do require newer includes for my modified plugins (such as my improved surv
 Allows you to spawn specials on cursor, or via director, forcefully, bypassing limits
 * **Convars:**
    * `manual_director_version|mandirector_version` - ... gets version
-   * `mandirector_notify_spawn <1/0>` - Should spawning specials notify on use?
    * `mandirector_announce_level <0/1/2/3>` - Announcement types. 0 - None, 1 - Only bosses, 2 - Only specials+, 3 - Everything
    * `mandirector_enable_tank <0/1>` - Should tanks be allowed to be spawned?
    * `mandirector_enable_witch <0/1>` - Should witches be allowed to be spawned?
