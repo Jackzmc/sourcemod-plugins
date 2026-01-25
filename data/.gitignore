@@ -1,1 +1,8 @@
 *.sh
+*
+!prop_spawner/**/*
+!randomizer/**/*
+!prophunt/**/*
+!guesswho/**/*
+!hat_presets.cfg
+!hideandseek.cfg
