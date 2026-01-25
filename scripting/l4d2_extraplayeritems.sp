@@ -1663,6 +1663,7 @@ int CreateWeaponSpawn(const float pos[3], const char[] classname = "", int tier 
 	ang[1] = GetRandomFloat(0.0, 360.0);
 	TeleportEntity(entity, pos, ang, NULL_VECTOR);
 	if(!DispatchSpawn(entity)) return -1;
+	AcceptEntityInput(entity, "EnableMotion");
 	return entity;
 }
 

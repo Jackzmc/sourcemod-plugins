@@ -109,7 +109,7 @@ void RequestClientCheck(int client, bool validate = true) {
     char query[256];
     g_db.Database.Format(query, sizeof(query), "SELECT reason, steamid, expired, public_message, flags, id FROM bans WHERE expired = 0 AND SUBSTRING(steamid, 11) = '%s' OR ip = '%s'", auth, ip);
     g_db.Database.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
-    Log(Log_Debug, Target_ServerConsole, "Checking client #%d (Name: %N) (ID: %s %s) (IP: %s)", client, client, auth, (validate ? "[CHECKED]" : "[UNCHECKED]"), ip);
+    Log(Log_Info, Target_ServerConsole, "Checking client #%d (Name: %N) (ID: %s %s) (IP: %s)", client, client, auth, (validate ? "[CHECKED]" : "[UNCHECKED]"), ip);
 }
 
 Action Timer_AuthTimeout(Handle h, int userid) {
@@ -179,7 +179,7 @@ enum struct PendingBanData {
     char reason[64];
 
     void GetPrecheckQuery(char[] buffer, int maxlen) {
-        g_db.Format(buffer, maxlen, 
+        g_db.GetConn().Format(buffer, maxlen, 
             "SELECT expired,flags FROM bans WHERE expired = 0 AND SUBSTRING(steamid, 11) = '%s' OR ip = '%s'",
             this.steamid,
             this.ip
@@ -189,7 +189,7 @@ enum struct PendingBanData {
     void GetInsertQuery(char[] buffer, int maxlen) {
         // Set expires to NULL if expires = 0
         // Set ip to NULL if ip = '' (empty)
-        g_db.Format(buffer, maxlen, 
+        g_db.GetConn().Format(buffer, maxlen, 
             "INSERT INTO bans (steamid, ip, reason, expires, executor, flags, timestamp)"
         ... "VALUES ('%s',NULLIF('%s',''),'%s','%s',NULLIF(%d,0),'%s',0,UNIX_TIMESTAMP()",
             this.steamid,
@@ -227,7 +227,7 @@ void EnqueueBan(const char[] steamid, const char[] ip, int minutes, int banFlags
     int queueId = ++iPendingCounter;
     pendingInsertQueries.SetArray(queueId, data, sizeof(data));
 
-    char query[256];
+    char query[512];
     data.GetPrecheckQuery(query, sizeof(query));
     g_db.Query(DB_OnBanPreCheck, query, queueId);
 }
@@ -335,7 +335,7 @@ void DB_OnConnectCheck(Database db, DBResultSet results, const char[] error, int
         }
 
         static char query[128];
-        g_db.Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);
+        g_db.GetConn().Format(query, sizeof(query), "UPDATE bans SET times_tried=times_tried+1 WHERE steamid = '%s'", steamid);
         g_db.Query(DB_GenericCallback, query);
         return;
     }
@@ -375,7 +375,7 @@ void DB_OnBanPreCheck(Database db, DBResultSet results, const char[] error, int 
 
 void DeleteBan(const char[] steamid) {
     static char query[128];
-    g_db.Format(query, sizeof(query), "DELETE FROM `bans` WHERE steamid = '%s'", steamid);
+    g_db.GetConn().Format(query, sizeof(query), "DELETE FROM `bans` WHERE steamid = '%s'", steamid);
     g_db.Query(DB_GenericCallback, query);
 
     Log(Log_Info, Target_AdminConsole, "Removing ban of %s", steamid);

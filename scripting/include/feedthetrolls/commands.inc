@@ -703,6 +703,8 @@ Action Command_SetReverseFF(int client, int args) {
 	} else if(StrEqual(arg, "0.5") || StrEqual(arg, ".5")) {
 		flag = 4;
 	} else if(StrEqual(arg, "3")) {
+		flag = 16;
+	} else if(StrEqual(arg, "4")) {
 		flag = 8;
 	} else if(StrEqual(arg, "1")) {
 		flag = 1;
@@ -715,7 +717,7 @@ Action Command_SetReverseFF(int client, int args) {
 		GetCmdArg(i, arg, sizeof(arg));
 		if(arg[0] == 'f') { // [f]ire
 			flag |= 32;
-		} else if(arg[0] == 'e' || arg[0] == 'b') { //[]blast or [e]xplode
+		} else if(arg[0] == 'e' || arg[0] == 'b') { //[b]last or [e]xplode
 			flag |= 64;
 		} else {
 			ReplyToCommand(client, "Unknown arg: %s", arg);

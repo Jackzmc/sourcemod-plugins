@@ -3,7 +3,7 @@
 
 //#define DEBUG
 
-#define ALLOW_HEALING_MIN_IDLE_TIME 180
+#define ALLOW_HEALING_MIN_IDLE_TIME 120
 #define MIN_IGNORE_IDLE_TIME 5
 #define PLUGIN_VERSION "1.0"
 
@@ -43,7 +43,7 @@ void Event_PlayerOutOfIdle(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0) {
 		// After saferooms, idle players get resumed then immediately idle - so ignore that
-		if(GetTime() - idleTimeStart[client] < MIN_IGNORE_IDLE_TIME) {
+		if(lastIdleTimeStart[client] > 0 && GetTime() - idleTimeStart[client] < MIN_IGNORE_IDLE_TIME) {
 			idleTimeStart[client] = lastIdleTimeStart[client];
 		}
 	}
@@ -62,16 +62,24 @@ public Action OnFriendAction( BehaviorAction action, int actor, BehaviorAction p
 	// Do not let idle bots heal non-idle bots
 	int target = action.Get(0x34) & 0xFFF; 
 	int realPlayer = GetClientOfUserId(GetEntProp(actor, Prop_Send, "m_humanSpectatorUserID"));
-   	if(realPlayer > 0) { // If idle bot
+
+	// If actor is an idle bot
+   	if(realPlayer > 0) {
+
 		if(IsFakeClient(target)) {
-			// If target is a bot, not idle player, ignore
+			// If target is a bot but not an idle player, prevent
 			if(GetEntProp(target, Prop_Send, "m_humanSpectatorUserID") == 0) {
 				result.type = DONE;
 				return Plugin_Handled;
 			}
 		} 
-		// If they are not black and white, also stop
-		if(!GetEntProp(target, Prop_Send, "m_bIsOnThirdStrike") && GetTime() - idleTimeStart[realPlayer] < ALLOW_HEALING_MIN_IDLE_TIME) { //If real player and not black and white, stop
+
+		// Stop healing if:
+		// (1) target is not black and white
+		// (2) actor has been idle for under min idle time
+		bool targetBlackAndWhite = GetEntProp(target, Prop_Send, "m_bIsOnThirdStrike");
+		int idleForSeconds = GetTime() - idleTimeStart[realPlayer];
+		if(!targetBlackAndWhite && idleForSeconds < ALLOW_HEALING_MIN_IDLE_TIME) { //If real player and not black and white, stop
 			result.type = DONE;
 			return Plugin_Handled;
 		}

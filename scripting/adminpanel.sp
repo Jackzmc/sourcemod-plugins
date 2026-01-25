@@ -114,10 +114,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart() {
 	if(!SQL_CheckConfig(DATABASE_NAME)) {
 		SetFailState("No database entry for '%s'; no database to connect to.", DATABASE_NAME);
-	} else if(!ConnectDB()) {
-		SetFailState("Failed to connect to database.");
+	} else {
+		ConnectDB();
 	}
-
 	LoadTranslations("common.phrases");
 
 	g_voiceState = new StringMap();
@@ -174,8 +173,8 @@ public void OnPluginStart() {
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientInGame(i)) {
 			if(GetClientAuthId(i, AuthId_Steam2, auth, sizeof(auth), false)) {
-				OnClientAuthorized(i, auth);
 				OnClientPutInServer(i);
+				OnClientAuthorized(i, auth);
 			}
 		}
 	}
@@ -212,6 +211,10 @@ bool ConnectDB() {
 //Setups a user, this tries to fetch user by steamid
 void SetupUserInDB(int client) {
 	if(client > 0 && !IsFakeClient(client)) {
+		if(g_db == null) {
+			LogError("SetupUserInDB called before database is ready");
+			return;
+		}
 		char country[128];
 		char region[128];
 		char ip[64];
@@ -918,8 +921,11 @@ void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) 
 	int client = GetClientOfUserId(userid);
 	if(client > 0) {
 		SetupUserInDB(client);
+		if(!IsClientAuthorized(client)) {
+			// TODO: notify when later
+		}
 		if(GetUserAdmin(client) != INVALID_ADMIN_ID && g_voiceState.Size > 0) {
-			PrintToChat(client, "There are %d users in discord voice.", g_voiceState.Size);
+			PrintToChat(client, "[Discord] There are %d users in voice.", g_voiceState.Size);
 		}
 	}
 }
@@ -1157,6 +1163,7 @@ Action Timer_UpdateItems(Handle h, int client) {
 
 void SendNewClient(int client) {
 	if(!IsClientInGame(client)) return;
+
 	if(StartPayload(true)) {
 		AddPlayerRecord(client, Client_Connected);
 		SendPayload();

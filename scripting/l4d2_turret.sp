@@ -87,7 +87,7 @@ int manualTarget = -1;
 
 ArrayList turretIds;
 Handle SDKCall_LookupPoseParameter;
-Handle SDKCall_LoadModel, SDKCall_DeleteModel;
+Handle SDKCall_LoadModel, SDKCall_DeleteModel, SDKCall_PopulatePoseParameters;
 int Animating_StudioHdr;
 
 /* TODO: 
@@ -163,6 +163,14 @@ public void OnPluginStart() {
 			SetFailState("Missing signature 'ModelSoundsCache_FinishModel'");
 		}
 
+		StartPrepSDKCall(SDKCall_Entity);
+		PrepSDKCall_SetFromConf(gameData, SDKConf_Signature, "CBaseAnimating::PopulatePoseParameters");
+		PrepSDKCall_SetVirtual(219);
+		if (!(SDKCall_PopulatePoseParameters = EndPrepSDKCall())) {
+			SetFailState("Missing signature 'CBaseAnimating::PopulatePoseParameters'");
+		}
+		
+
 		// TODO: REMOVE
 		Animating_StudioHdr = gameData.GetOffset("CBaseAnimating::StudioHdr");
 		if(Animating_StudioHdr == -1)
@@ -185,7 +193,7 @@ public void OnPluginStart() {
 	cv_autoBaseDamage = CreateConVar("turret_auto_damage", "50.0", "The base damage the automatic turret deals", FCVAR_NONE, true, 0.0);
 	cv_manualBaseDamage = CreateConVar("turret_manual_damage", "70.0", "The base damage the manual turret deals", FCVAR_NONE, true, 0.0);
 
-	RegAdminCmd("sm_turret", Command_SpawnTurret, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_mkturret", Command_SpawnTurret, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_rmturrets", Command_RemoveTurrets, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_rmlaser", Command_RemoveLaserTurret, ADMFLAG_CHEATS);
 	RegAdminCmd("sm_rmturret", Command_RemoveTurret, ADMFLAG_CHEATS);
@@ -453,6 +461,12 @@ public void OnEntityDestroyed(int entity) {
 		}
 		entityActiveTurret[entity] = 0;
 		entityActiveMounted[entity] = 0;
+		for(int i = 0; i < MAX_MOUNTED_TURRETS; i++) {
+			if(EntRefToEntIndex(MTurret[i].entity) == entity) {
+				MTurret[i].entity = INVALID_ENT_REFERENCE;
+				break;
+			}
+		}
 	}
 }
 
@@ -492,6 +506,7 @@ public Action Command_SpawnTurret(int client, int args) {
 		DispatchKeyValue(gun, "targetname", "turret");
 		DispatchKeyValue(gun, "model", MountedGunModel[type]);
 		TeleportEntity(gun, pos, ang, NULL_VECTOR);
+		SetEntPropFloat(gun, Prop_Send, "m_maxYaw", 60.0);
 		DispatchSpawn(gun);
 		AddMountedGun(gun, type);
 		ReplyToCommand(client, "New mounted gun spawned.");
@@ -612,12 +627,11 @@ Address GetStudioHdr(const char[] model) {
 	return m_pStudioHdr;
 }
 
-void SetPoseParameter(int entity, int iParameter, float flStart, float flEnd, float flValue)    {
+void SetPose(int entity, int index, float flStart, float flEnd, float flValue)    {
 	float ctlValue = (flValue - flStart) / (flEnd - flStart);
 	if (ctlValue < 0) ctlValue = 0.0;
 	if (ctlValue > 1) ctlValue = 1.0;
-	
-	SetEntPropFloat(entity, Prop_Send, "m_flPoseParameter", ctlValue, iParameter);
+	SetEntPropFloat(entity, Prop_Data, "m_flPoseParameter", ctlValue, index);
 }
 
 
@@ -633,18 +647,22 @@ void SetPoseControllerParameter(int entity, const char[] parameter, float flStar
 	PrintToServer("SetPoseControllerParameter: ent=%d param=%s value=%f", entity, parameter, ctlValue);
 }
 
+float GetPose(int entity, int index) {
+	return GetEntPropFloat(entity, Prop_Send, "m_flPoseParameter", index);
+} 
 
 public Action Timer_Think(Handle h) {
 	if( manualTargetter > 0) return Plugin_Continue;
 	// Probably better to just store from CreateParticle
 	static int entity; 
 	entity = -1;
-	// static char targetname[32];
 	static float pos[3], targetPos[3], angles[3], turretAngles[3];
 	static int count, target, tick;
 	for(int i = 0; i < MTurretCount; i++) {
+		if(MTurret[i].entity == INVALID_ENT_REFERENCE) continue;
 		GetEntPropVector(MTurret[i].entity, Prop_Send, "m_vecOrigin", pos);
 		GetEntPropVector(MTurret[i].entity, Prop_Send, "m_angRotation", turretAngles);
+		float curPose = GetPose(MTurret[i].entity, 0);
 		if(!IsTargetValid(MTurret[i].target)) {
 			MTurret[i].target = FindNearestVisibleEntity("infected", pos, TURRET_MAX_RANGE_INFECTED_OPTIMIZED, MTurret[i].entity);
 		}

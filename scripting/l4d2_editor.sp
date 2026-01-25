@@ -84,10 +84,10 @@ public void OnPluginStart() {
 
 	enabledBlacklist = CreateConVar("editor_denylist", "7", "The lists to check, add bits together.\n1 = classnames\n2 = models\n4 = targetnames", FCVAR_NONE, true, 0.0);
 
-	RegAdminCmd("sm_mkwall", Command_MakeWall, ADMFLAG_CUSTOM2);
-	RegAdminCmd("sm_edit", Command_Editor, ADMFLAG_CUSTOM2);
-	RegAdminCmd("sm_wall", Command_Editor, ADMFLAG_CUSTOM2);
-	RegAdminCmd("sm_prop", Command_Props, ADMFLAG_CUSTOM2);
+	RegAdminCmd("sm_mkwall", Command_MakeWall, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_edit", Command_Editor, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_wall", Command_Editor, ADMFLAG_CHEATS);
+	RegAdminCmd("sm_prop", Command_Props, ADMFLAG_CHEATS);
 	RegAdminCmd("+editor", Cmd_EditorGrab, ADMFLAG_CHEATS, "Grab the entity in your crosshair.");
 	RegAdminCmd("-editor", Cmd_EditorRelease, ADMFLAG_CHEATS, "Releases the entity you grabbed.");
 

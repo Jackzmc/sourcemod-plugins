@@ -245,11 +245,11 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			char buffer[32];
 			GetClientAuthId(client, AuthId_Steam2, buffer, sizeof(buffer));
 			// TODO: escape content
-			DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", menuNoteTarget, buffer, sArgs);
+			DB.Format(query, sizeof(query), "INSERT INTO notes (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", menuNoteTarget, buffer, sArgs);
 			DB.Query(DB_AddNote, query);
-			LogAction(client, -1, "added note for \"%s\" (%s): \"%s\"", client, menuNoteTargetName, menuNoteTarget, sArgs);
+			LogAction(client, -1, "\"%L\" added note for \"%s\" (%s): \"%s\"", client, menuNoteTargetName, menuNoteTarget, sArgs);
 			Format(buffer, sizeof(buffer), "%N: ", client);
-			CShowActivity2(client, buffer, "added a note for {green}%s: {default}\"%s\"", menuNoteTargetName, sArgs);
+			CShowActivity2(client, "[Notes] ", "added a note for {green}%s: {default}\"%s\"", menuNoteTargetName, sArgs);
 		}
 		return Plugin_Stop;
 	}

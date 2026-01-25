@@ -1,5 +1,6 @@
 TopMenuObject g_propSpawnerCategory;
 public void OnAdminMenuReady(Handle topMenuHandle) {
+	if (topMenuHandle == topMenuHandle) return;
 	TopMenu topMenu = TopMenu.FromHandle(topMenuHandle);
 	if(g_topMenu != topMenuHandle) { 
 		g_propSpawnerCategory = topMenu.AddCategory("hats_editor", Category_Handler, "sm_prop");

@@ -3,9 +3,15 @@
 
 //#define DEBUG
 
-#define PLUGIN_VERSION "1.0"
-#define MAX_TIME_ONLINE_SECONDS 172800 
-//604800
+
+/// (int) The maximum amount of seconds server being online 
+/// should the plugin start trying to find a time to restart
+#define MAX_TIME_ONLINE_SECONDS 60 * 60 * 24 * 1 // 1 day 
+
+/// (float) The interval to check for uptime & for an empty server when pending restart
+#define CHECK_TIME_INTERVAL 60.0 * 13.0 // 13 min
+
+#define PLUGIN_VERSION "1.1"
 
 #include <sourcemod>
 #include <sdktools>
@@ -36,7 +42,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_request_restart", Command_RequestRestart, ADMFLAG_GENERIC);
 	RegAdminCmd("sm_ar_status", Command_Status, ADMFLAG_GENERIC);
 
-	CreateTimer(780.0, Timer_Check, _, TIMER_REPEAT);
+	CreateTimer(CHECK_TIME_INTERVAL, Timer_Check, _, TIMER_REPEAT);
 }
 
 Action Command_Status(int client, int args) {
@@ -63,7 +69,7 @@ Action Command_RequestRestart(int client, int args) {
 	return Plugin_Handled;
 }
 
-public Action Timer_Check(Handle h) {
+Action Timer_Check(Handle h) {
 	if(IsServerEmptyWithOnlyBots()) {
 		if(++triesBots > 0) {
 			//Server is stuck in non-hibernation with only bots, quit
@@ -101,12 +107,13 @@ bool IsServerEmptyWithOnlyBots() {
 	bool hasBot;
 	for(int i = 1; i <= MaxClients; i++) {
 		if(IsClientConnected(i) && IsClientInGame(i)) {
-			if(IsFakeClient(i))
+			if(IsFakeClient(i)) {
 				//Has a bot, but there could be other players.
 				hasBot = true;
-			else
+			} else {
 				//Is player, not empty.
 				return false;
+			}
 
 		}
 	}

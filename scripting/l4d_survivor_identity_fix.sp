@@ -38,11 +38,14 @@ static ConVar hCookiesEnabled;
 static bool isLateLoad, cookieModelsSet, isL4D1Survivors;
 static int survivors;
 static bool IsTemporarilyL4D2[MAXPLAYERS];
-static int g_prevSurvivorIndex[MAXPLAYERS+1]; // prev survivor model to restore to + 1. 0 = inactive
+/// The previous survivor type of client. -1 if not changed
+static int g_prevSurvivorIndex[MAXPLAYERS+1] = { -1, ... };
 static char currentMap[16];
 Handle cookieModelTimer;
 
 static Menu chooseMenu;
+
+bool isHoldoutBotMap;
 
 // ------------------------------------------------------------------------
 //  Models & survivor names so bots can be renamed
@@ -299,7 +302,6 @@ public void OnClientCookiesCached(int client) {
 ///////////////////////////////////////////////////////////////////////////////
 //Prevent issues with L4D1 characters being TP'd and stuck in brain dead form
 public void OnMapStart() {
-
 	survivors = 0;
 
 	for(int i = 0; i < sizeof(survivor_models); i++) {
@@ -307,6 +309,7 @@ public void OnMapStart() {
 	}
 	
 	GetCurrentMap(currentMap, sizeof(currentMap));
+	isHoldoutBotMap = StrEqual(currentMap, "c6m1_riverbank") || StrEqual(currentMap, "c6m3_port");
 	RequestFrame(Frame_MapStart);
 }
 void Frame_MapStart() {
@@ -370,58 +373,73 @@ public Action Timer_SetAllCookieModels(Handle h) {
 }
 
 void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast) {
+	if(!isHoldoutBotMap) return;
+
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client > 0 && client <= MaxClients && GetClientTeam(client) == 2) {
-		if(StrEqual(currentMap, "c6m1_riverbank") || StrEqual(currentMap, "c6m3_port")) {
-			// In case they respawned - restore their model (death swaps)
-			// Otherwise, spawning in the map in saferoom, swap them
-			if(g_prevSurvivorIndex[client] > 0)
-				RevertSurvivor(client);
-			else
-				SwapSurvivor(client);
-		}
+		// In case they respawned - restore their model (death swaps)
+		// Otherwise, spawning in the map in saferoom, swap them
+		if(g_prevSurvivorIndex[client] >= 0)
+			RevertSurvivor(client);
+		else
+			SwapSurvivor(client);
 	}
 }
-Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
+	if(!isHoldoutBotMap) return;
+
 	//Switch players to L4D2 right before death.
-	if(StrEqual(currentMap, "c6m3_port") || StrEqual(currentMap, "c6m1_riverbank")) {
-		int client = GetClientOfUserId(event.GetInt("userid"));
-		if(client > 0 && GetClientTeam(client) == 2) {
-			SwapSurvivor(client);
-		}
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if(client > 0 && GetClientTeam(client) == 2) {
+		SwapSurvivor(client);
 	}
-	return Plugin_Continue;
 }
 
 
 //On finale start: Set back to their L4D1 character.
 void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
-	if(StrEqual(currentMap, "c6m3_port")) {
-		for(int i = 1; i <= MaxClients; i++) {
-			if(IsClientInGame(i) && GetClientTeam(i) == 2) {
-				RevertSurvivor(i);
-			}
+	if(!isHoldoutBotMap) return;
+
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientInGame(i) && GetClientTeam(i) == 2) {
+			RevertSurvivor(i);
 		}
 	}
 }
-void SwapSurvivor(int client, bool showMessage = true) {
-	int playerType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
-	//If character is L4D1 Character (4: bill, etc..) then swap
-	if(playerType > 3) {
-		if(showMessage && GetUserAdmin(client) != INVALID_ADMIN_ID) {
-			PrintToChat(client, "\x04NOTICE:\x01 Your survivor has been temporarily swapped. It should revert automatically, this is to prevent a game bug with l4d1 survivors.");
-		}
-	}
+
+/**
+ * 0: nick <- bill
+ * 1: rochelle <- zoey
+ * 2: coach <- louis
+ * 3: ellis <- francis
+ * 4: bill
+ * 5: zoey
+ * 6: francis
+ * 7: louis
+ */
+// Swap survivor types 4-7 (l4d1 in l4d2 map) to their l4d2 counterpart
+int SWAP_INDEX[8] = { 0, 1, 2, 3, 0, 1, 3, 2 };
+int GetSwappedSurivor(int survivorType) {
+	if(survivorType < 0 || survivorType > 7) return 0; // invalid value map to nick
+	return SWAP_INDEX[survivorType];
+}
+void SwapSurvivor(int client) {
 	RequestFrame(_swapSurvivor, client);
 }
+
 void _swapSurvivor(int client) {
 	if(!IsClientInGame(client)) return;
-	int playerType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
-	//If character is L4D1 Character (4: bill, etc..) then swap
-	if(playerType > 3) {
-		g_prevSurvivorIndex[client] = playerType + 1;
-		SetEntProp(client, Prop_Send, "m_survivorCharacter", playerType - 4);
-		LogMessage("SwapL4D1Survivor: Swapping %N (type=%d)", client, playerType);
+
+	int survType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
+	int swappedType = GetSwappedSurivor(survType);
+	// If survivor was swapped to l4d2, then notify & record
+	if(swappedType != survType) {
+		SetEntProp(client, Prop_Send, "m_survivorCharacter", swappedType);
+		g_prevSurvivorIndex[client] = survType;
+		if(GetUserAdmin(client) != INVALID_ADMIN_ID) {
+			PrintToChat(client, "\x04NOTICE:\x01 Your survivor has been temporarily swapped. It should revert automatically, this is to prevent a game bug with l4d1 survivors.");
+		}
+		LogMessage("SwapL4D1Survivor: Swapping %N (type=%d)", client, survType);
 	}
 }
 void RevertSurvivor(int client) {
@@ -429,10 +447,11 @@ void RevertSurvivor(int client) {
 }
 void _revertSurvivor(int client) {
 	if(!IsClientInGame(client)) return;
-	if(g_prevSurvivorIndex[client] > 0) {
-		SetEntProp(client, Prop_Send, "m_survivorCharacter", g_prevSurvivorIndex[client] - 1);
-		g_prevSurvivorIndex[client] = 0;
-		LogMessage("RevertSwappedSurvivor: Reverting %N (type=%d)", client, g_prevSurvivorIndex[client] - 1);
+	// If we had a swapped survivor, revert back
+	if(g_prevSurvivorIndex[client] >= 0) {
+		SetEntProp(client, Prop_Send, "m_survivorCharacter", g_prevSurvivorIndex[client]);
+		g_prevSurvivorIndex[client] = -1;
+		LogMessage("RevertSwappedSurvivor: Reverting %N (type=%d)", client, g_prevSurvivorIndex[client]);
 	}
 }
 

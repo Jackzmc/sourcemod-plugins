@@ -146,14 +146,14 @@ public void OnPluginStart() {
 
 	HookUserMessage(GetUserMessageId("VGUIMenu"), VGUIMenu, true);
 
-	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_KICK);
-	RegAdminCmd("sm_surv", Cmd_SetSurvivor, ADMFLAG_KICK);
+	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_GENERIC);
+	RegAdminCmd("sm_surv", Cmd_SetSurvivor, ADMFLAG_GENERIC);
 	RegAdminCmd("sm_respawn_all", Command_RespawnAll, ADMFLAG_CHEATS, "Makes all dead players respawn in a closet");
 	RegAdminCmd("sm_playsound", Command_PlaySound, ADMFLAG_KICK, "Plays a gamesound for player");
 	RegAdminCmd("sm_stopsound", Command_StopSound, ADMFLAG_GENERIC, "Stops the last played gamesound for player");
 	RegAdminCmd("sm_swap", Command_SwapPlayer, ADMFLAG_KICK, "Swarms two player's locations");
 	RegConsoleCmd("sm_pmodels", Command_ListClientModels, "Lists all player's models");
-	RegAdminCmd("sm_skipoutro", Command_SkipOutro, ADMFLAG_KICK, "Skips the outro");
+	RegAdminCmd("sm_skipoutro", Command_SkipOutro, ADMFLAG_GENERIC, "Skips the outro");
 
 	CreateTimer(8.0, Timer_CheckPlayerPings, _, TIMER_REPEAT);
 }

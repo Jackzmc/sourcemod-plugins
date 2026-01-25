@@ -45,7 +45,7 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 		//Clear the player's list of gagged
 		gaggedPlayers[client].Clear();
 		//Remove this player from any other player's gag list
-		for(int i = 0; i <= MaxClients; i++) {
+		for(int i = 1; i <= MaxClients; i++) {
 			int index = gaggedPlayers[i].FindValue(client);
 			if(index > -1) {
 				gaggedPlayers[i].Erase(index);
@@ -90,12 +90,25 @@ public Action Cmd_VGag(int client, int args) {
     return Plugin_Handled;
 }
 
-public Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char soundEntry[PLATFORM_MAX_PATH], int& seed) {
+Action SoundHook(int clients[MAXPLAYERS], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags, char soundEntry[PLATFORM_MAX_PATH], int& seed) {
 	if(numClients > 0 && entity > 0 && entity <= MaxClients) {
 		if(StrContains(sample, "survivor\\voice") > -1) {
 			for(int i = 0; i < numClients; i++) {
+				// PrintToConsoleAll("clients=%d entity=%N i=%d client=%N", numClients, entity, i, clients[i], sample);
                 if(gaggedPlayers[clients[i]].FindValue(entity) > -1) {
 					clients[i] = 0;
+					// Some audio are sent 1 per player instead of one large hook
+					// In such scenarios, we can just stop it entirely:
+					if(numClients == 1) {
+						return Plugin_Handled;
+					} else if(i != numClients - 1) {
+						// Swap to last in array if not already
+						int swap = clients[numClients-1];
+						clients[numClients-1] = clients[i];
+						clients[i] = swap;
+					}
+					// Drop last entry in array
+					numClients--;
                 }
             }
 		}

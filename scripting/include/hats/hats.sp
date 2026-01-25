@@ -371,7 +371,7 @@ Action Command_DoAHat(int client, int args) {
 			PrintToConsole(client, "[Hats] Selected a child entity, selecting parent (child %d -> parent %d)", entity, parent);
 			entity = parent;
 		} else if(entity <= MaxClients) { // Checks for hatting a player entity
-			if(IsFakeClient(entity) && L4D_GetIdlePlayerOfBot(entity) > 0) {
+			if(!isForced && IsFakeClient(entity) && L4D_GetIdlePlayerOfBot(entity) > 0) {
 				PrintToChat(client, "[Hats] Cannot hat idle bots");
 				return Plugin_Handled;
 			} else if(!isForced && GetClientTeam(entity) != 2 && ~cvar_sm_hats_flags.IntValue & view_as<int>(HatConfig_InfectedHats)) {
