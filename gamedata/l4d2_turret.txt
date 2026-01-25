@@ -16,6 +16,10 @@
 				"library"	"server"
 				"linux" "@_ZN14CBaseAnimating19LookupPoseParameterEP10CStudioHdrPKc"
 			}
+			"CBaseAnimating::PopulatePoseParameters"
+			{
+				"linux"		"219"
+			}
             "ModelSoundsCache_LoadModel"
             {
 				"library"	"server"

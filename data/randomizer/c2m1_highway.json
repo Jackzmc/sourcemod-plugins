@@ -1425,6 +1425,10 @@
                     {
                         "targetname": "anv_mapfixes_commonhop_barrier",
                         "input": "kill"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_shoppingcart_roof",
+                        "input": "kill"
                     }
                 ]
             },
@@ -1542,6 +1546,24 @@
                             0.0,
                             0.0
                         ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "hammerid": 2083132,
+                        "input": "_allow_ladder"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_cliprework_fence",
+                        "input": "kill"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_commonhop_barrier",
+                        "input": "kill"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_shoppingcart_roof",
+                        "input": "kill"
                     }
                 ]
             }
