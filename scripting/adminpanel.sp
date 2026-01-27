@@ -512,7 +512,7 @@ void ProcessCommand(int id, const char[] command, const char[] cmdNamespace = ""
 int GetPlayersOnline() {
 	int count;
 	for(int i = 1; i <= MaxClients; i++) {
-		if(IsClientInGame(i) && !IsFakeClient(i)) {
+		if(IsClientConnected(i) && !IsFakeClient(i)) {
 			count++;
 		}
 	}
@@ -1162,7 +1162,7 @@ Action Timer_UpdateItems(Handle h, int client) {
 }
 
 void SendNewClient(int client) {
-	if(!IsClientInGame(client)) return;
+	if(!IsClientConnected(client)) return;
 
 	if(StartPayload(true)) {
 		AddPlayerRecord(client, Client_Connected);
