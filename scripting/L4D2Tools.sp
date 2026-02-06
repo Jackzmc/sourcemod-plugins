@@ -5,15 +5,6 @@
 
 #define PLUGIN_VERSION "1.0"
 
-#define PRECACHE_SOUNDS_COUNT 6
-char PRECACHE_SOUNDS[PRECACHE_SOUNDS_COUNT][] = {
-	"custom/xen_teleport.mp3",
-	"custom/mariokartmusic.mp3",
-	"custom/airhorn.mp3",
-	"custom/spookyscaryskeletons.mp3",
-	"custom/wearenumberone2.mp3",
-	"custom/nevergonnagive.mp3"
-};
 
 #include <sourcemod>
 #include <sdkhooks>
@@ -57,6 +48,8 @@ static char lastSound[MAXPLAYERS+1][64], gamemode[32];
 AnyMap disabledItems;
 
 static float OUT_OF_BOUNDS[3] = {0.0, -1000.0, 0.0};
+
+bool g_inTransition;
 
 public Plugin myinfo = {
 	name = "L4D2 Misc Tools",
@@ -130,6 +123,8 @@ public void OnPluginStart() {
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);
 	HookEvent("weapon_drop", Event_WeaponDrop);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
+	HookEvent("map_transition", Event_MapTransition);
+
 
 	AutoExecConfig(true, "l4d2_tools");
 
@@ -146,14 +141,14 @@ public void OnPluginStart() {
 
 	HookUserMessage(GetUserMessageId("VGUIMenu"), VGUIMenu, true);
 
-	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_GENERIC);
-	RegAdminCmd("sm_surv", Cmd_SetSurvivor, ADMFLAG_GENERIC);
+	RegAdminCmd("sm_model", Command_SetClientModel, ADMFLAG_KICK);
+	RegAdminCmd("sm_surv", Cmd_SetSurvivor, ADMFLAG_KICK);
 	RegAdminCmd("sm_respawn_all", Command_RespawnAll, ADMFLAG_CHEATS, "Makes all dead players respawn in a closet");
 	RegAdminCmd("sm_playsound", Command_PlaySound, ADMFLAG_KICK, "Plays a gamesound for player");
 	RegAdminCmd("sm_stopsound", Command_StopSound, ADMFLAG_GENERIC, "Stops the last played gamesound for player");
 	RegAdminCmd("sm_swap", Command_SwapPlayer, ADMFLAG_KICK, "Swarms two player's locations");
 	RegConsoleCmd("sm_pmodels", Command_ListClientModels, "Lists all player's models");
-	RegAdminCmd("sm_skipoutro", Command_SkipOutro, ADMFLAG_GENERIC, "Skips the outro");
+	RegAdminCmd("sm_skipoutro", Command_SkipOutro, ADMFLAG_KICK, "Skips the outro");
 
 	CreateTimer(8.0, Timer_CheckPlayerPings, _, TIMER_REPEAT);
 }
@@ -589,20 +584,30 @@ public void OnClientPutInServer(int client) {
 public void OnClientDisconnect(int client) {
 	isHighPingIdle[client] = false;
 	iHighPingCount[client] = 0;
-	if(IsClientConnected(client) && IsClientInGame(client) && botDropMeleeWeapon[client] > -1 && IsValidEntity(botDropMeleeWeapon[client])) {
+	if(IsClientInGame(client) && botDropMeleeWeapon[client] > -1 && IsValidEntity(botDropMeleeWeapon[client])) {
 		float pos[3];
 		GetClientAbsOrigin(client, pos);
 		TeleportEntity(botDropMeleeWeapon[client], pos, NULL_VECTOR, NULL_VECTOR);
-		botDropMeleeWeapon[client] = -1;
 	}
+	botDropMeleeWeapon[client] = -1;
 }
 
-public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
+void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	if(client && !IsFakeClient(client)) {
 		char auth[32];
-		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth), false);
+		GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
 		SteamIDs.Remove(auth);
+	}
+}
+
+void Event_MapTransition(Event event, const char[] name, bool dontBroadcast) {
+	g_inTransition = true;
+	// Restore everyones melee right away, any later and can crash
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientInGame(i) && GetClientTeam(i) == 2 && !IsFakeClient(i)) {
+			RestoreDroppedMelee(i);
+		}
 	}
 }
 
@@ -629,20 +634,13 @@ public Action Timer_AllowKitPickup(Handle h, int entity) {
 	return Plugin_Handled;
 }
 public void OnMapStart() {
-	#if PRECACHE_SOUNDS_COUNT > 0
-	char buffer[128];
-	for(int i = 0; i < PRECACHE_SOUNDS_COUNT; i++) {
-		Format(buffer, sizeof(buffer), "sound/%s", PRECACHE_SOUNDS[i]);
-		AddFileToDownloadsTable(buffer);
-		PrecacheSound(PRECACHE_SOUNDS[i]);
-	}
-	#endif
 	for(int i = 0; i < 8; i++) {
 		PrecacheModel(MODELS[i]);
 	}
 	
 	HookEntityOutput("info_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
 	HookEntityOutput("trigger_changelevel", "OnStartTouch", EntityOutput_OnStartTouchSaferoom);
+	g_inTransition = false;
 }
 public void OnMapEnd() {
 	disabledItems.Clear();
@@ -684,28 +682,45 @@ public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadca
 	} else {
 		// Player replaced a bot
 		int client = GetClientOfUserId(event.GetInt("player"));
-		if(client && botDropMeleeWeapon[bot] > 0) {
-			int meleeOwnerEnt = GetEntPropEnt(botDropMeleeWeapon[bot], Prop_Send, "m_hOwnerEntity");
-			if(meleeOwnerEnt == -1) { 
-				int currentWeapon = GetPlayerWeaponSlot(client, 1);
-				if(currentWeapon > 0) {
-					char buffer[32];
-					GetEntityClassname(currentWeapon, buffer, sizeof(buffer));
-					// Only delete their duplicate pistols, let melees get thrown out (into the world)
-					if(!StrEqual(buffer, "weapon_melee"))
-						RemoveEntity(currentWeapon);
-				}
-				// Possibly causing crashes
-				DataPack pack = new DataPack();
-				RequestFrame(Frame_ReequipMelee, pack);
-				pack.WriteCell(client);
-				pack.WriteCell(botDropMeleeWeapon[bot]);
-				botDropMeleeWeapon[bot] = -1;
-			}
+		if(client) {
+			RestoreDroppedMelee(client);
 		}
-		SDKUnhook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 	}
 }
+
+bool RestoreDroppedMelee(int client) {
+	if(botDropMeleeWeapon[client] <= 0) return false;
+	// causing crashes on saferoom transitions. need to know if pre load or post load
+	if(g_inTransition) {
+		// Safety check, causes crashes other wise. Should restore on transition before any chance of idle
+		char buffer[32];
+		GetEntityClassname(botDropMeleeWeapon[client], buffer, sizeof(buffer));
+		LogMessage("Transition started. Not regiving melee \"%s\" to prevent crash", buffer);
+		botDropMeleeWeapon[client] = -1;
+		return true;
+	} 
+
+	int meleeOwnerEnt = GetEntPropEnt(botDropMeleeWeapon[client], Prop_Send, "m_hOwnerEntity");
+	if(meleeOwnerEnt == -1) { 
+		int currentWeapon = GetPlayerWeaponSlot(client, 1);
+		if(currentWeapon > 0) {
+			char buffer[32];
+			GetEntityClassname(currentWeapon, buffer, sizeof(buffer));
+			// Only delete their duplicate pistols, let melees get thrown out (into the world)
+			if(!StrEqual(buffer, "weapon_melee"))
+				RemoveEntity(currentWeapon);
+		}
+	
+		DataPack pack = new DataPack();
+		RequestFrame(Frame_ReequipMelee, pack);
+		pack.WriteCell(client);
+		pack.WriteCell(botDropMeleeWeapon[client]);
+		botDropMeleeWeapon[client] = -1;
+	}
+	SDKUnhook(client, SDKHook_WeaponDrop, Event_OnWeaponDrop);
+	return true;
+}
+
 void Frame_ReequipMelee(DataPack pack) {
 	pack.Reset();
 	int client = pack.ReadCell();
