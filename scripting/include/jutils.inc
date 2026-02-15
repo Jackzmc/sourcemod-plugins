@@ -723,6 +723,11 @@ stock void GetDirectionVector(float pos1[3], float angle[3], float rVec[3], floa
 }
 
 // Taken from https://gist.github.com/Aeldrion/48c82912f632eec4c8b9da7394b89c5d
+/**
+ * Convert HSV color to RGB color
+ * @param vec [hue, saturation, value]. hue: [0.0,360.0], saturation/value: [0.0-100.0]%
+ * @param out rgb value [ red, green, blue ] between [0, 255]
+ */
 stock void HSVToRGB(const float vec[3], float out[3]) {
 	// Translates HSV color to RGB color
 	// H: 0.0 - 360.0, S: 0.0 - 100.0, V: 0.0 - 100.0
@@ -735,7 +740,7 @@ stock void HSVToRGB(const float vec[3], float out[3]) {
 	float c = (value / 100.0) * (saturation / 100.0);
 	float x = c * (1.0 - FloatAbs(float(RoundToFloor(hue / 60) % 2) - 1));
 	float m = (value / 100.0) - c;
-	
+
 	if (hue >= 0 && hue < 60.0) {
 		out[0] = c;
 		out[1] = x;
@@ -762,21 +767,15 @@ stock void HSVToRGB(const float vec[3], float out[3]) {
 		out[2] = x;
 	}
 
-	out[0] += m;
-	out[1] += m;
-	out[2] += m;
-
-	out[0] * 255.0;
-	out[1] * 255.0;
-	out[2] * 255.0;
+	for(int i = 0; i < 3; i++) {
+		out[i] += m;
+		out[i] *= 255.0;
+	}
 }
-stock void HSVToRGBInt(const float vec[3], int out[3]) {
-	// Don't initialize memory, just use the existing memory as int out[3], just tell it that is a float
-	HSVToRGB(vec, view_as<float>(out));
-	// Convert float to int:
-	out[0] = RoundToFloor(view_as<float>(out[0]));
-	out[1] = RoundToFloor(view_as<float>(out[1]));
-	out[2] = RoundToFloor(view_as<float>(out[2]));
+stock void FloatArrayToIntArray(const float[] vec, int[] out, int numCells) {
+	for(int i = 0; i < numCells; i++) {
+		out[i] = RoundFloat(vec[i]);
+	}
 }
 
 stock bool GetCursorLocation(int client, float outPos[3]) {
