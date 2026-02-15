@@ -1,4 +1,4 @@
-#define STORE_KEY "gnome"
+static char STORE_KEY[] = "Gnome";
 
 void Gnome_OnActivate(int activator, int target, const char[] eventId) {
     ShowSorryAcceptMenu(activator, target, eventId);
@@ -12,10 +12,6 @@ void Gnome_OnActivate(int activator, int target, const char[] eventId) {
     SorryStore[target].SetValue(STORE_KEY, true);
 
     PrintToChat(activator, "One day your gnome will grow up, you better take care of it and give it a name.");
-}
-
-void Gnome_OnClientDisconnect(int client) {
-
 }
 
 Action Gnome_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
@@ -37,10 +33,19 @@ Action Gnome_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3]
 	return Plugin_Continue;
 }
 
+#define PRONOUNS 3
+char PRONOUN[PRONOUNS][] = {
+    "her",
+    "them",
+    "him"
+};
+
 Action Gnome_OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
     // RejectGnome
 	if(SorryStore[client].ContainsKey(STORE_KEY)) {
-		CPrintToChatAll("{blue}%N{default} : I love my gnome friend, I name him %s!", client, sArgs);
+        int pronounIndex = GetRandomInt(0, PRONOUNS - 1);
+
+		CPrintToChatAll("{blue}%N{default} : I love my gnome friend, I name %s %s!", client, PRONOUN[pronounIndex], sArgs);
 		LogAction(client, -1, "\"%L\" named their gnome \"%s\"", client, sArgs);
 		SorryStore[client].Remove(STORE_KEY);
 		// SDKUnhook(client, SDKHook_WeaponSwitch, Hook_NoGnomeDrop);
