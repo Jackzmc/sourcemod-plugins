@@ -84,7 +84,7 @@ static Action _timer_RequipWeapon(Handle hdl, DataPack pack) {
 
 
 // Sets color temp, does not set entity to support alpha, but does change value
-Handle TempSetColor(int entity, float duration, int color[4], bool reset = false) {
+Handle TempSetColorAlpha(int entity, float duration, int color[4], bool reset = false) {
 	int originalColor[4];
 	if(reset) {
 		originalColor[0] = originalColor[1] = originalColor[2] = originalColor[3] = 255;
@@ -98,6 +98,14 @@ Handle TempSetColor(int entity, float duration, int color[4], bool reset = false
 	pack.WriteCell(EntIndexToEntRef(entity));
 	pack.WriteCellArray(originalColor, 4);
 	return handle;
+}
+Handle TempSetColor(int entity, float duration, int color[3], bool reset = false) {
+	int colorAlpha[4];
+	colorAlpha[0] = color[0];
+	colorAlpha[1] = color[1];
+	colorAlpha[2] = color[2];
+	colorAlpha[3] = 255;
+	return TempSetColorAlpha(entity, duration, colorAlpha, reset);
 }
 static Action _timer_ClearTempColor(Handle h, DataPack pack) {
 	pack.Reset();

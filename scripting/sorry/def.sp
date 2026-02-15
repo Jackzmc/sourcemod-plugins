@@ -161,9 +161,6 @@ int RAINBOW_TABLE[RAINBOW_INDEX_MAX][3] = {
 	{ 0, 255, 255 }
 };
 
-
-
-
 int sorryBounds[2];
 
 bool isInSaferoom[MAXPLAYERS+1];

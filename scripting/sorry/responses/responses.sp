@@ -1,5 +1,6 @@
 #include "accept/FreeRevive.sp"
 #include "accept/UltimateSacrifice.sp"
+#include "accept/SpeedBoost.sp"
 
 #include "neutral/UnoReverse.sp"
 #include "neutral/ThirdParty.sp"
@@ -20,6 +21,7 @@
 void RegisterResponses() {
 	// ACCEPT
 	ResponseBuilder(Sorry_AcceptFreeRevive, Type_Accept, FreeRevive_OnActivate);
+	ResponseBuilder(Sorry_AcceptSpeedBoost, Type_Accept, SpeedBoost_OnActivate);
 
 	// NEUTRAL
 	ResponseBuilder(Sorry_ThirdParty, Type_Neutral, ThirdParty_OnActivate);
@@ -31,4 +33,5 @@ void RegisterResponses() {
 		.OnClientSayCommand(Gnome_OnClientSayCommand);
     ResponseBuilder(Sorry_RejectBecomeDisgruntled, Type_Reject, BecomeDisgruntled_OnActivate)
 		.OnClientSayCommand(BecomeDisgruntled_OnClientSayCommand);
+	ResponseBuilder(Sorry_RejectBecomeRandomPeanut, Type_Reject, BecomeRandomPeanut_OnActivate);
 }
