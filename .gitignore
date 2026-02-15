@@ -31,6 +31,7 @@ scripting/include/ssh.inc
 scripting/include/stats
 scripting/ssh.sp
 scripting/l4d2_witch_force_attack_cmd.sp
+
 l4d2_stats_plugin/
 !sql/*
 !scripting/.gitignore
