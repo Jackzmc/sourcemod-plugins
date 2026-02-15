@@ -154,12 +154,12 @@ Action Command_Debug_Store(int client, int args) {
 }
 
 Action Command_Debug_List(int client, int args) {
-	AnyMapSnapshot snapshot = g_sorryResponses2.Snapshot();
+	AnyMapSnapshot snapshot = g_sorryResponseHandlers.Snapshot();
 	SorryHandlerData data;
 	char buffer[64];
 	for(int i = 0; i < snapshot.Length; i++) {
 		sorryResponseValues id = view_as<sorryResponseValues>(snapshot.GetKey(i));
-		if(!g_sorryResponses2.GetArray(id, data, sizeof(data))) {
+		if(!g_sorryResponseHandlers.GetArray(id, data, sizeof(data))) {
 			ThrowError("array missing elem i=%d id=%d", i, id);
 		}
 		Format(buffer, sizeof(buffer), "  #%d. \"%d\"", i, id);

@@ -65,7 +65,7 @@ bool _debugSorry = false;
 #endif
 
 char currentMap[64];
-AnyMap g_sorryResponses2;
+AnyMap g_sorryResponseHandlers;
 // After all responses registered, this contains linear list of runcmd forwards for optimization
 ArrayList g_onPlayerRunCmdForwards;
 ArrayList g_onClientSayCommandForwards;
