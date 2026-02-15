@@ -123,10 +123,18 @@ Action Command_Debug_SorryHandler(int client, int args) {
 
 
 #if defined DEBUG_SORRY
-Action Command_Debug_Debug(int client, int args) {
-	char arg[32];
-	GetCmdArg(1, arg, sizeof(arg));
-	int player = GetSinglePlayer(client, arg, COMMAND_FILTER_NO_BOTS);
+Action Command_Debug_Store(int client, int args) {
+	int player = client;
+	if(args > 0) {
+		char arg[32];
+		GetCmdArg(1, arg, sizeof(arg));
+		player = GetSinglePlayer(client, arg, COMMAND_FILTER_NO_BOTS);
+		if(player <= 0) {
+			ReplyToCommand(client, "Provide player");
+			return Plugin_Handled;
+		}
+	}
+
 	StringMapSnapshot snapshot = SorryStore[player].Snapshot();
 	char key[64];
 	char buffer[256];
@@ -144,4 +152,29 @@ Action Command_Debug_Debug(int client, int args) {
 	delete snapshot;
 	return Plugin_Handled;
 }
+
+Action Command_Debug_List(int client, int args) {
+	AnyMapSnapshot snapshot = g_sorryResponses2.Snapshot();
+	SorryHandlerData data;
+	char buffer[64];
+	for(int i = 0; i < snapshot.Length; i++) {
+		sorryResponseValues id = view_as<sorryResponseValues>(snapshot.GetKey(i));
+		if(!g_sorryResponses2.GetArray(id, data, sizeof(data))) {
+			ThrowError("array missing elem i=%d id=%d", i, id);
+		}
+		Format(buffer, sizeof(buffer), "  #%d. \"%d\"", i, id);
+		if(data.OnPlayerRunCmd != null) {
+			g_onPlayerRunCmdForwards.Push(data.OnPlayerRunCmd);
+			Format(buffer, sizeof(buffer), "%s OnPlayerRunCmd", buffer);
+		}
+		if(data.OnClientSayCommand != null) {
+			g_onClientSayCommandForwards.Push(data.OnClientSayCommand);
+			Format(buffer, sizeof(buffer), "%s OnClientSayCommand", buffer);
+		}
+		ReplyToCommand(client, "%s", buffer);
+	}
+	delete snapshot;
+	return Plugin_Handled;
+}
 #endif 
+

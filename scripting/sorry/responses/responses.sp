@@ -13,3 +13,11 @@
 #include "reject/Spook.sp"
 #include "reject/Kill.sp"
 #include "reject/Gnome.sp"
+
+void RegisterResponses() {
+	ResponseBuilder(Sorry_RejectGnome, Type_Reject, Gnome_OnActivate)
+		.OnPlayerRunCmd(Gnome_OnPlayerRunCmd)
+		.OnClientSayCommand(Gnome_OnClientSayCommand);
+    ResponseBuilder(Sorry_RejectBecomeDisgruntled, Type_Reject, BecomeDisgruntled_OnActivate)
+		.OnClientSayCommand(BecomeDisgruntled_OnClientSayCommand);
+}

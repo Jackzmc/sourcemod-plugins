@@ -161,10 +161,6 @@ bool isInSaferoom[MAXPLAYERS+1];
 bool isUnderAttack[MAXPLAYERS+1];
 float saferoomPos[3]; bool foundSaferoomPos;
 
-char disgruntledOldName[MAXPLAYERS+1][64];
-bool waitingGnomeName[MAXPLAYERS+1];
-ArrayList disgruntledPhrases;
-#define DISGRUNTLED_LINE_LENGTH 128
 
 #define MAX_SORRY_DATA 4
 #define SORRY_NSLOT MAX_SORRY_DATA - 1
