@@ -728,49 +728,53 @@ stock void GetDirectionVector(float pos1[3], float angle[3], float rVec[3], floa
  * @param vec [hue, saturation, value]. hue: [0.0,360.0], saturation/value: [0.0-100.0]%
  * @param out rgb value [ red, green, blue ] between [0, 255]
  */
-stock void HSVToRGB(const float vec[3], float out[3]) {
+stock void HSVToRGB(const float hsv[3], float rgb[3]) {
 	// Translates HSV color to RGB color
 	// H: 0.0 - 360.0, S: 0.0 - 100.0, V: 0.0 - 100.0
 	// R, G, B: 0.0 - 1.0
 
-	float hue = vec[0];
-	float saturation = vec[1];
-	float value = vec[2];
+	float hue = hsv[0];
+	float saturation = hsv[1];
+	float value = hsv[2];
 
 	float c = (value / 100.0) * (saturation / 100.0);
 	float x = c * (1.0 - FloatAbs(float(RoundToFloor(hue / 60) % 2) - 1));
 	float m = (value / 100.0) - c;
 
 	if (hue >= 0 && hue < 60.0) {
-		out[0] = c;
-		out[1] = x;
-		out[2] = 0.0;
+		rgb[0] = c;
+		rgb[1] = x;
+		rgb[2] = 0.0;
 	} else if (hue >= 60.0 && hue < 120.0) {
-		out[0] = x;
-		out[1] = c;
-		out[2] = 0.0;
+		rgb[0] = x;
+		rgb[1] = c;
+		rgb[2] = 0.0;
 	} else if (hue >= 120.0 && hue < 180.0) {
-		out[0] = 0.0;
-		out[1] = c;
-		out[2] = x;
+		rgb[0] = 0.0;
+		rgb[1] = c;
+		rgb[2] = x;
 	} else if (hue >= 180.0 && hue < 240.0) {
-		out[0] = 0.0;
-		out[1] = x;
-		out[2] = c;
+		rgb[0] = 0.0;
+		rgb[1] = x;
+		rgb[2] = c;
 	} else if (hue >= 240.0 && hue < 300.0) {
-		out[0] = x;
-		out[1] = 0.0;
-		out[2] = c;
+		rgb[0] = x;
+		rgb[1] = 0.0;
+		rgb[2] = c;
 	} else if (hue >= 300.0 && hue < 360.0) {
-		out[0] = c;
-		out[1] = 0.0;
-		out[2] = x;
+		rgb[0] = c;
+		rgb[1] = 0.0;
+		rgb[2] = x;
 	}
 
 	for(int i = 0; i < 3; i++) {
-		out[i] += m;
-		out[i] *= 255.0;
+		rgb[i] += m;
+		rgb[i] *= 255.0;
 	}
+}
+stock void HSVToRGBInt(const float hsv[3], int rgb[3]) {
+	HSVToRGB(hsv, view_as<float>(rgb));
+	FloatArrayToIntArray(view_as<float>(rgb), rgb, 3);
 }
 stock void FloatArrayToIntArray(const float[] vec, int[] out, int numCells) {
 	for(int i = 0; i < numCells; i++) {

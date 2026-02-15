@@ -1,12 +1,13 @@
-static char STORE_RAINBOW_INDEX[] = "BecomeRandomPeanut.index";
-static char STORE_RAINBOW_TIMER[] = "BecomeRandomPeanut.handle";
+static char STORE_RAINBOW_HUE[] = "BecomeRandomPeanut.hue";
+static char STORE_RAINBOW_DIR[] = "BecomeRandomPeanut.increment";
+static char STORE_RAINBOW_TIMER[] = "BecomeRandomPeanut.timer";
 
 // apologizer: is apologizing to target
 // target: the one that picked this response outcome for the apologizer
 // eventId: id of event or blank string
 // Use SorryStore[apologizer] to record data
 void BecomeRandomPeanut_OnActivate(int apologizer, int target, const char[] eventId) {
-	int type = GetRandomInt(0, 3);
+	int type = GetRandomInt(0, 4);
 	float time = GetRandomFloat(10.0, 60.0);
 	PrecacheModel(MODEL_PEANUT);
 	TempSetModel(apologizer, time, MODEL_PEANUT);
@@ -15,10 +16,10 @@ void BecomeRandomPeanut_OnActivate(int apologizer, int target, const char[] even
 		float hsv[3];
 		hsv[0] = GetRandomFloat(0.0, 360.0);
 		hsv[1] = 100.0; // 100%
-		hsv[2] = 50.0; 	// 50%
-
+		hsv[2] = 100.0; 
+		
 		int rgb[3];
-		FloatArrayToIntArray(hsv, rgb, 3);
+		HSVToRGBInt(hsv, rgb);
 
 		TempSetColor(apologizer, time, rgb, true);
 		PrintToChat(apologizer, "Random colored peanut! ");
@@ -36,8 +37,9 @@ void BecomeRandomPeanut_OnActivate(int apologizer, int target, const char[] even
 	} else if(type == 4) {
 		// TODO: fix
 		// pick random start point to make it look bit more random
-		int rainbowIndex = GetRandomInt(0, RAINBOW_INDEX_MAX);
-		SorryStore[apologizer].SetValue(STORE_RAINBOW_INDEX, rainbowIndex);
+		float startingHue = GetRandomFloat(0.0, 360.0);
+		SorryStore[apologizer].SetValue(STORE_RAINBOW_HUE, startingHue);
+		SorryStore[apologizer].SetValue(STORE_RAINBOW_DIR, GetRandomFloat() > 0.5 ? 1.0 : -1.0);
 
 		int userid = GetClientUserId(apologizer);
 		Handle timer = CreateTimer(0.1, Timer_RainbowCycle, userid, TIMER_REPEAT);
@@ -51,27 +53,26 @@ void BecomeRandomPeanut_OnActivate(int apologizer, int target, const char[] even
 Action Timer_RainbowCycle(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0) {
-		int rainbowIndex;
-		SorryStore[client].GetValue(STORE_RAINBOW_INDEX, rainbowIndex);
-		int color[4];
-		GetEntityRenderColor(client, color[0], color[1], color[2], color[3]);
-		if(color[0] != RAINBOW_TABLE[rainbowIndex][0] 
-			&& color[1] != RAINBOW_TABLE[rainbowIndex][1] 
-			&& color[2] != RAINBOW_TABLE[rainbowIndex][2]
-		) {
-			for(int i = 0; i < 3; i++) {
-				if(color[i] < RAINBOW_TABLE[rainbowIndex][i]) color[i]++;
-				if(color[i] > RAINBOW_TABLE[rainbowIndex][i]) color[i]--;
-			}
-			SetEntityRenderColor(client, color[0], color[1], color[2], color[3]);
-		} else {
-			// Advance to next index, cycling back to 0
-			rainbowIndex += 1;
-			if(rainbowIndex >= RAINBOW_INDEX_MAX) {
-				rainbowIndex = 0;
-			}
-			SorryStore[client].SetValue(STORE_RAINBOW_INDEX, rainbowIndex);
+		float hsv[3];
+		SorryStore[client].GetValue(STORE_RAINBOW_HUE, hsv[0]); // hue
+		hsv[1] = 100.0; // 100% sat
+		hsv[2] = 50.0; 	//50% val
+
+		float increment;
+		SorryStore[client].GetValue(STORE_RAINBOW_DIR, increment);
+
+		hsv[0] += increment;
+		// Reverse the order when hit bounds
+		if(hsv[0] >= 360.0 || hsv[0] <= 0.0) {
+			increment *= -1;
+			SorryStore[client].SetValue(STORE_RAINBOW_DIR, increment);
 		}
+		SorryStore[client].SetValue(STORE_RAINBOW_HUE, hsv[0]);
+
+		int rgb[3];
+		HSVToRGBInt(hsv, rgb);
+		SetEntityRenderColor(client, rgb[0], rgb[1], rgb[2], 255);
+
 	}
 	return Plugin_Handled;
 }
@@ -79,9 +80,14 @@ Action Timer_RainbowCycle(Handle h, int userid) {
 Action Timer_StopRainbow(Handle h, int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0) {
-		if(rainbowData[client].timer != null) {
-			delete rainbowData[client].timer;
+		Handle timer;
+		if(SorryStore[client].GetValue(STORE_RAINBOW_TIMER, timer)) {
+			KillTimer(timer);
 		}
+
+		SorryStore[client].Remove(STORE_RAINBOW_HUE);
+		SorryStore[client].Remove(STORE_RAINBOW_DIR);
+		SorryStore[client].Remove(STORE_RAINBOW_TIMER);
 	}
 	return Plugin_Handled;
 }

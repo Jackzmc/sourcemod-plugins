@@ -145,22 +145,6 @@ Action SorryStore_ClearKey(Handle h, DataPack pack) {
 	return Plugin_Handled;
 }
 
-enum struct RainbowData {
-	Handle timer;
-	int index;
-}
-RainbowData rainbowData[MAXPLAYERS+1];
-
-#define RAINBOW_INDEX_MAX 6
-int RAINBOW_TABLE[RAINBOW_INDEX_MAX][3] = {
-	{ 255, 0, 0 },
-	{ 0, 255, 0 },
-	{ 0, 0, 255 },
-	{ 255, 255, 0 },
-	{ 80, 0, 0 },
-	{ 0, 255, 255 }
-};
-
 int sorryBounds[2];
 
 bool isInSaferoom[MAXPLAYERS+1];
