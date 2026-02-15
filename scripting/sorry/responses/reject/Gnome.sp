@@ -1,21 +1,20 @@
 static char STORE_KEY[] = "Gnome";
 
-void Gnome_OnActivate(int activator, int target, const char[] eventId) {
-    ShowSorryAcceptMenu(activator, target, eventId);
+void Gnome_OnActivate(int apologizer, int target, const char[] eventId) {
+    ShowSorryAcceptMenu(apologizer, target, eventId);
     int gnome = CreateEntityByName("weapon_gnome");
     float pos[3];
-    GetClientAbsOrigin(activator, pos);
+    GetClientAbsOrigin(apologizer, pos);
     TeleportEntity(gnome, pos, NULL_VECTOR, NULL_VECTOR);
     DispatchSpawn(gnome);
-    EquipPlayerWeapon(activator, gnome);
+    EquipPlayerWeapon(apologizer, gnome);
 
-    SorryStore[target].SetValue(STORE_KEY, true);
+    SorryStore[apologizer].SetValue(STORE_KEY, true);
 
-    PrintToChat(activator, "One day your gnome will grow up, you better take care of it and give it a name.");
+    PrintToChat(apologizer, "One day your gnome will grow up, you better take care of it and give it a name.");
 }
 
 Action Gnome_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
-	// RejectGnome handler
     if(SorryStore[client].ContainsKey(STORE_KEY)) {
 		if(weapon != 0) {
 			// Prevent weapon switch

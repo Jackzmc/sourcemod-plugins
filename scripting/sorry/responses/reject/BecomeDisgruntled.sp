@@ -1,15 +1,15 @@
 static char STORE_KEY[] = "BecomeDisgruntled";
 
-void BecomeDisgruntled_OnActivate(int activator, int target, const char[] eventId) {
+void BecomeDisgruntled_OnActivate(int apologizer, int target, const char[] eventId) {
 	// Store old name
 	char buffer[64+12]; // name maxlength 64? + "Disgruntled "
-    GetClientName(activator, buffer, sizeof(buffer));
-	SorryStore[target].SetString(STORE_KEY, buffer, sizeof(buffer));
+    GetClientName(apologizer, buffer, sizeof(buffer));
+	SorryStore[apologizer].SetString(STORE_KEY, buffer, sizeof(buffer));
 	
 	Format(buffer, sizeof(buffer), "Disgruntled %s", buffer);
-	SetClientName(activator, buffer);
+	SetClientName(apologizer, buffer);
 
-	CreateTimer(45.0, Timer_RemoveDisgruntled, GetClientUserId(activator));
+	CreateTimer(45.0, Timer_RemoveDisgruntled, GetClientUserId(apologizer));
 }
 
 Action BecomeDisgruntled_OnClientSayCommand(int client, const char[] command, const char[] sArgs) {

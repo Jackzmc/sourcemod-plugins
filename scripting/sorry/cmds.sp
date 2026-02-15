@@ -134,7 +134,7 @@ Action Command_Debug_Store(int client, int args) {
 			return Plugin_Handled;
 		}
 	}
-
+	ReplyToCommand(client, "Key Store for %N", player);
 	StringMapSnapshot snapshot = SorryStore[player].Snapshot();
 	char key[64];
 	char buffer[256];
@@ -142,10 +142,10 @@ Action Command_Debug_Store(int client, int args) {
 		snapshot.GetKey(i, key, sizeof(key));
 		any value;
 		if(SorryStore[client].GetValue(key, value)) {
-			ReplyToCommand(client, " %s: %d %f", key, value, value);
+			ReplyToCommand(client, " %s: int=%d float=%f", key, value, value);
 		} else if(SorryStore[client].GetString(key, buffer, sizeof(buffer))) {
 			ReplyToCommand(client, " %s: %s", key, buffer);
-		} else {
+		} else { 
 			ReplyToCommand(client, " %s: [ARRAY]", key);
 		}
 	}

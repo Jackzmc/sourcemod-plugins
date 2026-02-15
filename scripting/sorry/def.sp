@@ -115,6 +115,16 @@ methodmap SorryStore_t < StringMap {
 		this.SetString(key, value);
 		this._setupKeyClear(key, ttl);
 	}
+
+	/**
+	 * Increments the stored value by increment. If not set, defaults to increment
+	 */
+	public int IncrementValue(const char[] key, int increment) {
+		int value = 0;
+		this.GetValue(key, value);
+		value += increment;
+		this.SetValue(key, value);
+	}
 }
 
 void SorryStore_Setup() {
