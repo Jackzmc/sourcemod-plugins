@@ -16,8 +16,13 @@ jobs:
         env:
           SPCOMP_PATH: spcomp
         run: chmod +x compile_all.sh && ./compile_all.sh
-      - name: Upload artifacts 
+      - name: Upload artifacts
         uses: https://data.forgejo.org/forgejo/upload-artifact@v4
-        with: 
-          name: plugins-${{ matrix.sm-version }}.zip
-          path: plugins/*
+        with:
+          name: plugins-${{ matrix.sm-version }}
+          path: |
+            plugins/*
+            scripting/**/*
+            data/**/*
+            gamedata/*
+          compression-level: 8
