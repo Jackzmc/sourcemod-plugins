@@ -128,7 +128,7 @@ methodmap SorryStore_t < StringMap {
 }
 
 void SorryStore_Setup() {
-	for(int i = 1; i <= MaxClients; i++) {
+	for(int i = 0; i <= MaxClients; i++) {
 		SorryStore[i] = new SorryStore_t(i);
 	}
 }

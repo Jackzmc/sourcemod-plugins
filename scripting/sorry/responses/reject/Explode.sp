@@ -17,7 +17,7 @@ Action Timer_ExplodeBomb(Handle h, DataPack pack) {
 			GetClientEyePosition(client, pos);
 			// pos[2] += 10.0;
 			for(int i = 0; i < 3; i++) {
-				int pipe = L4D_PipeBombPrj(client, pos, NULL_VECTOR, false); 
+				int pipe = L4D_PipeBombPrj(-1, pos, NULL_VECTOR, false); 
 				pos[0] += GetRandomFloat(-5.0, 5.0);
 				pos[1] += GetRandomFloat(-5.0, 5.0);
 				L4D_DetonateProjectile(pipe);

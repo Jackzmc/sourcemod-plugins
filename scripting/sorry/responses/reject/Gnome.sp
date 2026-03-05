@@ -1,7 +1,6 @@
 static char STORE_KEY[] = "Gnome";
 
 void Gnome_OnActivate(int apologizer, int target, const char[] eventId) {
-    ShowSorryAcceptMenu(apologizer, target, eventId);
     int gnome = CreateEntityByName("weapon_gnome");
     float pos[3];
     GetClientAbsOrigin(apologizer, pos);
@@ -15,7 +14,7 @@ void Gnome_OnActivate(int apologizer, int target, const char[] eventId) {
 }
 
 Action Gnome_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
-    if(SorryStore[client].ContainsKey(STORE_KEY)) {
+    if(client > 0 && SorryStore[client].ContainsKey(STORE_KEY)) {
 		if(weapon != 0) {
 			// Prevent weapon switch
 			weapon = 0;
@@ -41,7 +40,7 @@ char PRONOUN[PRONOUNS][] = {
 
 Action Gnome_OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
     // RejectGnome
-	if(SorryStore[client].ContainsKey(STORE_KEY)) {
+	if(client > 0 && SorryStore[client].ContainsKey(STORE_KEY)) {
         int pronounIndex = GetRandomInt(0, PRONOUNS - 1);
 
 		CPrintToChatAll("{blue}%N{default} : I love my gnome friend, I name %s %s!", client, PRONOUN[pronounIndex], sArgs);

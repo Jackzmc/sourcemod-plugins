@@ -140,12 +140,12 @@ static Action _timer_ClearTempSetSpeed(Handle h, DataPack pack) {
 
 Handle TempSetGravity(int client, float duration, float gravity) {
 	// TOOD: impl
-	SetEntityGravity(client, 0.4);
+	SetEntityGravity(client, gravity);
 
 	DataPack pack;
 	Handle handle = CreateDataTimer(duration, _timer_ClearTempSetGravity, pack);
 	pack.WriteCell(GetClientUserId(client));
-	pack.WriteFloat(gravity);
+	pack.WriteFloat(1.0);
 	return handle;
 }
 static Action _timer_ClearTempSetGravity(Handle h, DataPack pack) {
