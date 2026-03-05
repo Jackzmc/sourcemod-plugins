@@ -107,7 +107,7 @@ void RequestClientCheck(int client, bool validate = true) {
     GetClientIP(client, ip, sizeof(ip));
 
     char query[256];
-    g_db.Database.Format(query, sizeof(query), "SELECT reason, steamid, expired, public_message, flags, id FROM bans WHERE expired = 0 AND SUBSTRING(steamid, 11) = '%s' OR ip = '%s'", auth, ip);
+    g_db.Database.Format(query, sizeof(query), "SELECT reason, steamid, expired, public_message, flags, id FROM bans WHERE expired = 0 AND SUBSTRING(steamid, 11) = SUBSTRING('%s', 11) OR ip = '%s'", auth, ip);
     g_db.Database.Query(DB_OnConnectCheck, query, GetClientUserId(client), DBPrio_High);
     Log(Log_Info, Target_ServerConsole, "Checking client #%d (Name: %N) (ID: %s %s) (IP: %s)", client, client, auth, (validate ? "[CHECKED]" : "[UNCHECKED]"), ip);
 }
