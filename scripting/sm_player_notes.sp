@@ -344,7 +344,7 @@ public Action Command_ListNotes(int client, int args) {
 		DB.Format(query, sizeof(query), "SELECT notes.content, stats_users.last_alias FROM `notes` JOIN stats_users ON markedBy = stats_users.steamid WHERE notes.`steamid` = '%s' ORDER BY id DESC", auth);
 		ReplyToCommand(client, "Fetching notes...");
 		DataPack pack = new DataPack();
-		pack.WriteCell(GetClientUserId(client));
+		pack.WriteCell(client > 0 ? GetClientUserId(client) : 0);
 		pack.WriteCell(GetClientUserId(target_list[0]));
 		pack.WriteString(auth);
 		DB.Query(DB_ListNotesForPlayer, query, pack);
