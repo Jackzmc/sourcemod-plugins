@@ -250,28 +250,16 @@
                 "weight": 2,
                 "entities": [
                     {
+                        "type": "prop_dynamic",
                         "model": "models/props_cemetery/cemetery_gate_128.mdl",
                         "origin": [
-                            3459.02,
-                            3771.5700000000002,
-                            -511.32999999999998
+                            3461.761474609375,
+                            3769.8134765625,
+                            -513.06842041015625
                         ],
                         "angles": [
                             0.0,
-                            -92.560000000000002,
-                            0.0
-                        ]
-                    },
-                    {
-                        "model": "models/props_cemetery/cemetery_gate_64.mdl",
-                        "origin": [
-                            3376.1599999999999,
-                            3769.75,
-                            -512.63
-                        ],
-                        "angles": [
-                            0.0,
-                            -89.140000000000001,
+                            -90.0,
                             0.0
                         ]
                     },
@@ -279,13 +267,27 @@
                         "type": "prop_dynamic",
                         "model": "models/props_cemetery/cemetery_gate_32.mdl",
                         "origin": [
-                            3467.93017578125,
-                            3766.38525390625,
-                            -510.01129150390625
+                            3465.451171875,
+                            3769.684814453125,
+                            -513.1639404296875
                         ],
                         "angles": [
                             0.0,
                             90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_cemetery/cemetery_gate_64.mdl",
+                        "origin": [
+                            3377.73046875,
+                            3768.80859375,
+                            -513.82611083984375
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
                             0.0
                         ]
                     }
@@ -1719,7 +1721,9 @@
                         "type": "prop_dynamic",
                         "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
                         "origin": [
-                            7640.38, 5628.86, 234.32
+                            7640.3800000000001,
+                            5628.8599999999997,
+                            234.31999999999999
                         ],
                         "angles": [
                             0.0,

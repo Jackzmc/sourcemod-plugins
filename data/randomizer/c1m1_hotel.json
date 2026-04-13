@@ -312,5 +312,129 @@
                 ]
             }
         ]
+    },
+    "start-blocker": {
+        "chance": 0.20000000298023224,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/hotel_cart.mdl",
+                        "origin": [
+                            901.21990966796875,
+                            5639.0068359375,
+                            2657.03125
+                        ],
+                        "angles": [
+                            0.0,
+                            30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/hotel_chair001.mdl",
+                        "origin": [
+                            918.4276123046875,
+                            5644.50048828125,
+                            2736.417724609375
+                        ],
+                        "angles": [
+                            -180.0,
+                            30.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/airport/luggage1.mdl",
+                        "origin": [
+                            906.9930419921875,
+                            5583.916015625,
+                            2665.812255859375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/airport/luggage2.mdl",
+                        "origin": [
+                            925.0103759765625,
+                            5585.14404296875,
+                            2667.783203125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_interiors/luggagecarthotel01.mdl",
+                        "origin": [
+                            913.56793212890625,
+                            5582.30029296875,
+                            2658.232666015625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_furniture/cafe_barstool1.mdl",
+                        "origin": [
+                            920.18035888671875,
+                            5663.09619140625,
+                            2657.501220703125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_furniture/cafe_barstool1.mdl",
+                        "origin": [
+                            928.27490234375,
+                            5640.74951171875,
+                            2657.501220703125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "env_physics_blocker",
+                        "origin": [
+                            915.94451904296875,
+                            5626.7265625,
+                            2659.534912109375
+                        ],
+                        "scale": [
+                            15.0,
+                            40.0,
+                            100.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    { "hammerid": 711428, "input": "Open" }
+                ]
+            }
+        ]
     }
 }

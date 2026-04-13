@@ -1271,30 +1271,6 @@
             }
         ]
     },
-    "store-caralarm": {
-        "chance": 0.5,
-        "variants": [
-            {
-                "weight": 1,
-                "entities": [
-                    {
-                        "type": "_car_alarm",
-                        "model": "models/props_vehicles/cara_69sedan.mdl",
-                        "origin": [
-                            -2612.9931640625,
-                            -794.23175048828125,
-                            63.162998199462891
-                        ],
-                        "angles": [
-                            0.0,
-                            0.0,
-                            0.0
-                        ]
-                    }
-                ]
-            }
-        ]
-    },
     "bar-up-path": {
         "chance": 0.30000001192092896,
         "variants": [

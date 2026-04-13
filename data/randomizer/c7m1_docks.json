@@ -1626,5 +1626,209 @@
                 ]
             }
         ]
+    },
+    "boardwalk": {
+        "chance": 0.30000001192092896,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_tall_256.mdl",
+                        "origin": [
+                            11971.90234375,
+                            -451.94390869140625,
+                            -78.125244140625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_rail_256_break.mdl",
+                        "origin": [
+                            11902.302734375,
+                            -447.92047119140625,
+                            -38.769660949707031
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_rail_256_break_a.mdl",
+                        "origin": [
+                            12037.953125,
+                            -447.88687133789062,
+                            -37.728527069091797
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_rail_chunk01.mdl",
+                        "origin": [
+                            12041.837890625,
+                            -597.4227294921875,
+                            -31.974609375
+                        ],
+                        "angles": [
+                            35.200000762939453,
+                            245.59999084472656,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_tall_128.mdl",
+                        "origin": [
+                            11984.04296875,
+                            -641.11541748046875,
+                            -90.726913452148438
+                        ],
+                        "angles": [
+                            -21.799999237060547,
+                            -168.80000305175781,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/alligator.mdl",
+                        "origin": [
+                            12068.849609375,
+                            -772.59405517578125,
+                            -100.21916961669922
+                        ],
+                        "angles": [
+                            -35.699996948242188,
+                            -265.5,
+                            26.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "targetname": "anv_mapfixes_bunnyhop_boat",
+                        "input": "Kill"
+                    }
+                ]
+            }
+        ]
+    },
+    "vent-path": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            4950.33544921875,
+                            1737.650146484375,
+                            334.72393798828125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            5083.0966796875,
+                            1742.685791015625,
+                            334.84701538085938
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            5129.478515625,
+                            1654.569091796875,
+                            339.86300659179688
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/plywood_03.mdl",
+                        "origin": [
+                            5003.8017578125,
+                            1654.5889892578125,
+                            335.580078125
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/scaffolding_cantilever.mdl",
+                        "origin": [
+                            5145.70166015625,
+                            1769.96240234375,
+                            340.42584228515625
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/billboard_ladder.mdl",
+                        "origin": [
+                            3984.367919921875,
+                            1580.337158203125,
+                            -100.57958984375
+                        ],
+                        "angles": [
+                            0.0,
+                            90.0,
+                            0.0
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "targetname": "anv_mapfixes_cliprework_ventshafts",
+                        "input": "Kill"
+                    },
+                    {
+                        "hammerid": 1258113,
+                        "input": "_allow_ladder"
+                    }
+                ]
+            }
+        ]
     }
 }

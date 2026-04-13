@@ -1579,5 +1579,29 @@
                 ]
             }
         ]
+    },
+    "wing-alt-skip": {
+        "chance": 0.0099999997764825821,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_debris/airliner_wreckage6_wing.mdl",
+                        "origin": [
+                            -2087.7109375,
+                            2763.33203125,
+                            -238.74909973144531
+                        ],
+                        "angles": [
+                            -30.0,
+                            60.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
     }
 }

@@ -2,7 +2,10 @@
     "elevator2": {
         "chance": 1.0,
         "inputs": [
-            {"hammerid": 3638150, "input": "_allow_ladder" }
+            {
+                "hammerid": 3638150,
+                "input": "_allow_ladder"
+            }
         ],
         "entities": [
             {
@@ -419,10 +422,55 @@
                             0.0,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_urban/metal_plate001.mdl",
+                        "origin": [
+                            12434.26953125,
+                            13552.4794921875,
+                            288.26422119140625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_prodigy/concretebags3.mdl",
+                        "origin": [
+                            12492.7060546875,
+                            13521.2998046875,
+                            306.65625
+                        ],
+                        "angles": [
+                            0.0,
+                            15.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/de_prodigy/pushcart.mdl",
+                        "origin": [
+                            12496.15234375,
+                            13517.9228515625,
+                            304.63772583007812
+                        ],
+                        "angles": [
+                            0.0,
+                            105.0,
+                            0.0
+                        ]
                     }
                 ],
                 "inputs": [
-                    {"hammerid": 3638150, "input": "_allow_ladder" }
+                    {
+                        "hammerid": 3638150,
+                        "input": "_allow_ladder"
+                    }
                 ]
             },
             {
@@ -696,7 +744,10 @@
                     }
                 ],
                 "inputs": [
-                    {"hammerid": 3638150, "input": "_allow_ladder" }
+                    {
+                        "hammerid": 3638150,
+                        "input": "_allow_ladder"
+                    }
                 ]
             }
         ]

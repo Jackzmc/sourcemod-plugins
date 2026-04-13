@@ -358,19 +358,6 @@
                     {
                         "model": "models/props_unique/zombiebreakwallexteriorairport01_main.mdl",
                         "origin": [
-                            -139.0,
-                            5632.1700000000001,
-                            360
-                        ],
-                        "angles": [
-                            0.0,
-                            0.84999999999999998,
-                            0.0
-                        ]
-                    },
-                    {
-                        "model": "models/props_unique/zombiebreakwallexteriorairport01_main.mdl",
-                        "origin": [
                             -140.0,
                             5505.4200000000001,
                             360
@@ -416,7 +403,7 @@
                         "origin": [
                             -140.97999999999999,
                             5632.1700000000001,
-                            359.70999999999998
+                            360.8
                         ],
                         "angles": [
                             0.0,

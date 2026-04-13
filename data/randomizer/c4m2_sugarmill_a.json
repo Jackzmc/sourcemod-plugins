@@ -542,6 +542,10 @@
                         "input": "_allow_ladder"
                     },
                     {
+                        "hammerid": 1390788,
+                        "input": "_allow_ladder"
+                    },
+                    {
                         "targetname": "anv_mapfixes_vent_roofb",
                         "input": "kill"
                     }
