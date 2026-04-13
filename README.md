@@ -6,8 +6,10 @@ Please note that these plugins are only guaranteed to work on Left 4 Dead **2**.
 
 Not always the latest versions. If you have any interest with a plugin, I can make sure to upload the latest.
 
-Useful things:
+Other projects:
 1. **Netprop Viewer** [L4D2 Netprops](https://jackz.me/netprops/l4d2/netprops) and [L4D2 Datamaps](https://jackz.me/netprops/l4d2/datamaps)
+2. **L4D2 Stats** [jackzmc/l4d2-stats-plugin](https://github.com/jackzmc/l4d2-stats-plugin)
+3. **SM Translate** [jackzmc/sm-translate](https://github.com/jackzmc/sm-translate)
 
 ## Compilation
 
@@ -47,6 +49,7 @@ Otherwise the plugins folder in this repo exist, which are manually compiled by 
   * [l4d2-ai-tweaks](#l4d2_ai_tweaks) - Very minor tweaks to survivor bots' behavior
   * [sm_player_notes](#sm_player_notes) - Add notes to players
   * [l4d2_randomizer](#l4d2_randomizer) - Randomizes official campaigns, changing flows, adding new paths, decorations, etc.
+  * [sm_translate](https://github.com/jackzmc/sm-translate) - automatic message translations
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
