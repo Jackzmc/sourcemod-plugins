@@ -438,10 +438,10 @@ void OnSocketReceive(Socket socket, const char[] receiveData, int dataSize, int 
 
 				g_voiceState.SetString(id, name);
 				// first person to join
-				PrintChatToAdmins("[Discord] %s has joined voice (%d in voice)", name, g_voiceState.Size);
+				PrintChatToAdmins("[Voice] %s has joined voice (%d in voice)", name, g_voiceState.Size);
 			} else {
 				g_voiceState.Remove(id);
-				PrintChatToAdmins("[Discord] %s has left voice (%d in voice)", name, g_voiceState.Size);
+				PrintChatToAdmins("[Voice] %s has left voice (%d in voice)", name, g_voiceState.Size);
 			}
 		}
 		case Live_RunCommand: {
@@ -925,7 +925,7 @@ void Event_PlayerFirstSpawn(Event event, const char[] name, bool dontBroadcast) 
 			// TODO: notify when later
 		}
 		if(GetUserAdmin(client) != INVALID_ADMIN_ID && g_voiceState.Size > 0) {
-			PrintToChat(client, "[Discord] There are %d users in voice.", g_voiceState.Size);
+			PrintToChat(client, "[Voice] There are %d users in voice.", g_voiceState.Size);
 		}
 	}
 }
@@ -1472,7 +1472,7 @@ void AddPlayerRecord(int client, ClientState state) {
 	sendBuffer.WriteString(nameCache[client]);
 	EndRecord();
 
-	if(state != Client_Disconnected) {
+	if(state != Client_Disconnected && IsClientInGame(client)) {
 		if(GetClientTeam(client) == 2) {
 			AddSurvivorRecord(client);
 			AddSurvivorItemsRecord(client);
