@@ -342,6 +342,7 @@ int GetRealAliveSpecials() {
 }
 
 void Director_RandomizeLimits() {
+	// TODO: g_spawnLimit be z_common_limit?
 	// We add +1 to spice it up
 	int max = RoundToCeil(float(g_survivorCount - 4) / 4) + 1;
 	for(int i = 0; i < NUM_SPECIALS; i++) {

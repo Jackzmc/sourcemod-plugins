@@ -27,7 +27,7 @@ Action Timer_RemoveDisgruntled(Handle h, int userid) {
 		SorryStore[client].GetString(STORE_KEY, buffer, sizeof(buffer));
 
 		SetClientName(client, buffer);
-		SorryStore[client].Remove(buffer);
+		SorryStore[client].Remove(STORE_KEY);
 	}
 	return Plugin_Handled;
 }

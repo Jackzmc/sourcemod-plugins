@@ -15,11 +15,10 @@ Action Timer_ExplodeBomb(Handle h, DataPack pack) {
 			L4D2_RemoveEntityGlow(client);
 			float pos[3];
 			GetClientEyePosition(client, pos);
-			// pos[2] += 10.0;
-			for(int i = 0; i < 3; i++) {
+			for(int i = 0; i < 8; i++) {
 				int pipe = L4D_PipeBombPrj(-1, pos, NULL_VECTOR, false); 
-				pos[0] += GetRandomFloat(-5.0, 5.0);
-				pos[1] += GetRandomFloat(-5.0, 5.0);
+				pos[0] += GetRandomFloat(-8.0, 8.0);
+				pos[1] += GetRandomFloat(-8.0, 8.0);
 				L4D_DetonateProjectile(pipe);
 			}
 			return Plugin_Handled;
