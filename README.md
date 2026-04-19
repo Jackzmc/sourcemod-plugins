@@ -6,15 +6,16 @@ Please note that these plugins are only guaranteed to work on Left 4 Dead **2**.
 
 Not always the latest versions. If you have any interest with a plugin, I can make sure to upload the latest.
 
-Useful things:
-1. **Netprop Viewer** [L4D2 Netprops](https://jackz.me/netprops/l4d2/netprops) and [L4D2 Datamaps](https://jackz.me/netprops/l4d2/datamaps)
+Other projects:
+1. **Netprop Viewer** [jackzmc/netprops-viewer](https://github.com/Jackzmc/netprops-viewer) - Links: [L4D2 Netprops](https://jackz.me/netprops/l4d2/netprops) and [L4D2 Datamaps](https://jackz.me/netprops/l4d2/datamaps)
+2. **L4D2 Stats** [jackzmc/l4d2-stats-plugin](https://github.com/jackzmc/l4d2-stats-plugin)
+3. **SM Translate** [jackzmc/sm-translate](https://github.com/jackzmc/sm-translate)
 
 ## Compilation
 
 The latest compiled plugins for 1.11.x, 1.12.x, 1.13.x can be found under my forgejo's instances actions page [https://git.jackz.me/jackz/sourcemod-plugins/actions?workflow=&actor=0&status=1](https://git.jackz.me/jackz/sourcemod-plugins/actions?workflow=&actor=0&status=1). Click on the top commit and on the left sidebar you'll see the 3 different versions.
 
-Otherwise the plugins folder in this repo exist, which are manually compiled by me on **SM 1.12-7177** and may be outdated.
-
+Otherwise the plugins folder in this repo exists which were manually compiled by me using **SM 1.12-7177** and may be outdated.
 
 ## Plugin List
 
@@ -47,6 +48,7 @@ Otherwise the plugins folder in this repo exist, which are manually compiled by 
   * [l4d2-ai-tweaks](#l4d2_ai_tweaks) - Very minor tweaks to survivor bots' behavior
   * [sm_player_notes](#sm_player_notes) - Add notes to players
   * [l4d2_randomizer](#l4d2_randomizer) - Randomizes official campaigns, changing flows, adding new paths, decorations, etc.
+  * [sm_translate](https://github.com/jackzmc/sm-translate) - automatic message translations
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
