@@ -1,0 +1,18 @@
+Land Vehicles
+models/props_vehicles/trains_lever.mdl Train Lever (no collision)
+models/props_vehicles/train_box.mdl Train Box
+models/props_vehicles/train_box_open.mdl Train Box Open (Weird Red/Green Lights)
+models/props_vehicles/train_boxwreck.mdl Train Box Wrecked
+models/props_vehicles/train_box_small.mdl Train Car-Small
+models/props_vehicles/train_orecar.mdl Ore Train Car
+models/props_vehicles/train_flatcar.mdl Train Flatcar
+models/props_vehicles/train_flatcar_small.mdl Train Flatcar Long
+models/props_vehicles/train_tank.mdl Tanker Train Car
+models/props_vehicles/train_tank_small.mdl Tanker Train Car-Small
+models/props_vehicles/c130.mdl c130 aircraft (No Collision
+models/props_vehicles/train_enginecar.mdl Train Engine Car
+models/props_vehicles/train_ladder.mdl Train Ladder (No Collision)
+models/props_trainstation/train_transporter.mdl Train for transporting cars
+models/props_unique/subwaycar_all_onetexture.mdl Subway Car No Doors
+models/props_unique/subwaycar_all_onetexture_enddoor.mdl subway car door-with door handle (Tank can be broken)
+models/props_unique/subwaycar_all_onetexture_sidedoor.mdl subway car door-no handle (Tank can be broken)

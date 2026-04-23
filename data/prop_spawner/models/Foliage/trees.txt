@@ -93,3 +93,4 @@ models/lighthouse/b_burnedtree03_04.mdl burned trees burning all 3
 models/lighthouse/b_fallentree01_01.mdl burned trees-fallen down-unburned
 models/lighthouse/b_fallentree01_03.mdl burned trees-fallen down-half burning
 models/lighthouse/b_fallentree01_02.mdl burned trees-fallen down-all burning
+models/bunny/b_tree_pine04.mdl "Bunny" Pine Tree

@@ -1,17 +1,4 @@
-Vehicles
-models/props_canal/boat001a.mdl Broken Blue Rowboat
-models/props_canal/boat001a_chunk01.mdl Blue Row Boat debris1
-models/props_canal/boat001a_chunk02.mdl Blue Row Boat debris2
-models/props_canal/boat001a_chunk03.mdl Blue Row Boat debris3
-models/props_canal/boat001a_chunk04.mdl Blue Row Boat debris4
-models/props_canal/boat001a_chunk05.mdl Blue Row Boat debris5
-models/props_canal/boat001a_chunk06.mdl Blue Row Boat debris6
-models/props_canal/boat001a_chunk07.mdl Blue Row Boat debris7
-models/props_canal/boat001a_chunk08.mdl Blue Row Boat debris8
-models/props_canal/boat001a_chunk09.mdl Blue Row Boat debris9
-models/props_canal/boat001a_chunk010.mdl Blue Row Boat debris10
-models/props_urban/boat002.mdl Row Boat 2
-models/props_urban/boat001.mdl Boat
+Land Vehicles
 models/props/cs_assault/forklift.mdl Forklift
 models/props/de_nuke/truck_nuke.mdl Moving Van (Open Back)
 models/props/de_nuke/truck_nuke_glass.mdl Moving Van (Glass)
@@ -22,13 +9,6 @@ models/props_vehicles/airport_baggage_tractor.mdl Airport Bagge Tractor
 models/props_vehicles/airport_catering_truck.mdl Airport Moving Truck
 models/props_vehicles/ambulance.mdl Ambulance
 models/props_vehicles/army_truck.mdl Army Truck
-models/props_vehicles/boat_rescue_tug.mdl Virgil's Boat With Light (No Collision)
-models/props_vehicles/boat_rescue_tug_sunshine.mdl Virgil's Boat (No Collision)
-models/props_vehicles/boat_fishing.mdl Fishing Boat (No Collision)
-models/props_vehicles/boat_fishing02_static.mdl Rescue Boat
-models/props_vehicles/boat_ski.mdl Speed Boat
-models/props_vehicles/boat_smash.mdl Speed Boat (Smashable)
-models/props_vehicles/sailboat.mdl Sailboat
 models/props_vehicles/church_bus01.mdl Church Bus
 models/props_vehicles/cara_69sedan.mdl '69 Sedan
 models/props_vehicles/cara_69sedan_glass.mdl '69 Sedan (Glass)
@@ -46,6 +26,9 @@ models/props_vehicles/cara_95sedan_wrecked_glass.mdl '95 Sedan Wrecked (Glass)
 models/props_vehicles/deliveryvan.mdl Delivery van-no window
 models/props_vehicles/deliveryvan_armored.mdl Armored Delivery Van
 models/props_vehicles/boat_trailer20ft.mdl Boat Trailer
+models/props_vehicles/trailer001a.mdl Small Box Trailer
+models/props_vehicles/trailer002a.mdl Small Wagon Trailer
+models/props_vehicles/wagon001a.mdl Tiny Wagon Trailer
 models/props_vehicles/bus01.mdl Bus 01
 models/props_vehicles/bus01_2.mdl Bus01_02
 models/props_vehicles/flatnose_truck.mdl Flatnose Truck
@@ -109,39 +92,4 @@ models/props_vehicles/news_van.mdl News Van
 models/props_vehicles/van.mdl Van
 models/props_vehicles/van_glass.mdl Van (Glass)
 models/props_vehicles/zapastl.mdl Wrecked Car Green
-models/props_vehicles/floodlight_generator_nolight_static.mdl Floodlight Generator
-models/props_vehicles/floodlight_generator_pose01_static.mdl Floodlight Generator w/Light1
-models/props_vehicles/floodlight_generator_pose02_static.mdl Floodlight Generator Tall
-models/props_vehicles/radio_generator.mdl Radio Generator Tall
-models/props_vehicles/radio_generator_fillup.mdl Radio Generator Fillcap
-models/props_vehicles/chopper_generic.mdl Helicopter
-models/props_vehicles/helicopter_news_downed.mdl Crashed Helicopter
-models/props_vehicles/helicopter_rescue.mdl Rescue Helicopter (No Collision)
-models/props_vehicles/helicopter_rescue_smashed.mdl Crashed Rescue Copter (No Collision)
-models/props_vehicles/trains_lever.mdl Train Lever (no collision)
-models/props_vehicles/train_box.mdl Train Box
-models/props_vehicles/train_box_open.mdl Train Box Open (Weird Red/Green Lights)
-models/props_vehicles/train_boxwreck.mdl Train Box Wrecked
-models/props_vehicles/train_box_small.mdl Train Car-Small
-models/props_vehicles/train_orecar.mdl Ore Train Car
-models/props_vehicles/train_flatcar.mdl Train Flatcar
-models/props_vehicles/train_flatcar_small.mdl Train Flatcar Long
-models/props_vehicles/train_tank.mdl Tanker Train Car
-models/props_vehicles/train_tank_small.mdl Tanker Train Car-Small
-models/props_vehicles/c130.mdl c130 aircraft (No Collision
-models/props_vehicles/train_enginecar.mdl Train Engine Car
-models/props_vehicles/train_ladder.mdl Train Ladder (No Collision)
-models/props_trainstation/train_transporter.mdl Train for transporting cars
-models/lostcoast/props_wasteland/boat_wooden01a_static.mdl Logging Row Boat 1
-models/lostcoast/props_wasteland/boat_wooden03a_static.mdl Logging Row Boat 2
 models/props_waterfront/tour_bus.mdl Midnight Riders Tour Bus
-models/c2m5_helicopter_extraction/c2m5_helicopter_small.mdl C2m5 Helicopter Small (No Collision)
-models/lighthouse/b_airplane01.mdl Aircraft (No Collision)
-models/props_unique/subwaycar_all_onetexture.mdl Subway Car No Doors
-models/props_unique/subwaycar_all_onetexture_enddoor.mdl subway car door-with door handle (Tank can be broken)
-models/props_unique/subwaycar_all_onetexture_sidedoor.mdl subway car door-no handle (Tank can be broken)
-models/f18/f18.mdl F18 (No Collision)
-models/missiles/f18_agm65maverick.mdl F18 Missile (No Collision)
-models/props_unique/stern_wheeler.mdl Giant Paddle Boat (no texture, no collision)
-models/props_urban/big_wheel001.mdl Big Wheel
-models/props_downtown/parade_float.mdl Parade Float

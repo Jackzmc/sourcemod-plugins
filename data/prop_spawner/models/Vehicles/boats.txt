@@ -1,0 +1,26 @@
+Boats
+models/props_canal/boat001a.mdl Broken Blue Rowboat
+models/props_canal/boat001a_chunk010.mdl Blue Row Boat debris10
+models/props_urban/boat002.mdl Row Boat 2
+models/props_urban/boat001.mdl Boat
+models/props_vehicles/boat_rescue_tug.mdl Virgil's Boat With Light (No Collision)
+models/props_vehicles/boat_rescue_tug_sunshine.mdl Virgil's Boat (No Collision)
+models/props_vehicles/boat_fishing.mdl Fishing Boat (No Collision)
+models/props_vehicles/boat_fishing02_static.mdl Rescue Boat
+models/props_vehicles/boat_ski.mdl Speed Boat
+models/props_vehicles/boat_smash.mdl Speed Boat (Smashable)
+models/props_vehicles/sailboat.mdl Sailboat
+models/lostcoast/props_wasteland/boat_wooden01a_static.mdl Logging Row Boat 1
+models/lostcoast/props_wasteland/boat_wooden03a_static.mdl Logging Row Boat 2
+models/props_unique/stern_wheeler.mdl Giant Paddle Boat (no texture, no collision)
+models/props_vehicles/boat_trailer20ft.mdl Boat Trailer
+models/props_canal/boat001a_chunk01.mdl Blue Row Boat debris1
+models/props_canal/boat001a_chunk02.mdl Blue Row Boat debris2
+models/props_canal/boat001a_chunk03.mdl Blue Row Boat debris3
+models/props_canal/boat001a_chunk04.mdl Blue Row Boat debris4
+models/props_canal/boat001a_chunk05.mdl Blue Row Boat debris5
+models/props_canal/boat001a_chunk06.mdl Blue Row Boat debris6
+models/props_canal/boat001a_chunk07.mdl Blue Row Boat debris7
+models/props_canal/boat001a_chunk08.mdl Blue Row Boat debris8
+models/props_canal/boat001a_chunk09.mdl Blue Row Boat debris9
+models/bunny/b_sailboat.mdl "Bunny" Speed Sail Boat

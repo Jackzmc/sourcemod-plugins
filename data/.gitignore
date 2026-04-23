@@ -1,8 +1,14 @@
 *.sh
+#ignore all
 *
-!prop_spawner/**/*
-!randomizer/**/*
-!prophunt/**/*
-!guesswho/**/*
+#allow folders
+!*/
+
+!prop_spawner/**
+!randomizer/**
+!prophunt/**
+!guesswho/**
 !hat_presets.cfg
 !hideandseek.cfg
+
+randomizer/sync.sh

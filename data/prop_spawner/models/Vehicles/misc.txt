@@ -1,0 +1,19 @@
+Misc Vehicles
+models/props/cs_assault/forklift.mdl Forklift
+models/props_fairgrounds/foodcart.mdl Food Cart
+models/props_vehicles/floodlight_generator_nolight_static.mdl Floodlight Generator
+models/props_vehicles/floodlight_generator_pose01_static.mdl Floodlight Generator w/Light1
+models/props_vehicles/floodlight_generator_pose02_static.mdl Floodlight Generator Tall
+models/props_vehicles/radio_generator.mdl Radio Generator Tall
+models/props_vehicles/radio_generator_fillup.mdl Radio Generator Fillcap
+models/props_vehicles/chopper_generic.mdl Helicopter
+models/props_vehicles/helicopter_news_downed.mdl Crashed Helicopter
+models/props_vehicles/helicopter_rescue.mdl Rescue Helicopter (No Collision)
+models/props_vehicles/helicopter_rescue_smashed.mdl Crashed Rescue Copter (No Collision)
+models/c2m5_helicopter_extraction/c2m5_helicopter_small.mdl C2m5 Helicopter Small (No Collision)
+models/lighthouse/b_airplane01.mdl Aircraft (No Collision)
+models/f18/f18.mdl F18 (No Collision)
+models/missiles/f18_agm65maverick.mdl F18 Missile (No Collision)
+models/props_urban/big_wheel001.mdl Big Wheel
+models/props_downtown/parade_float.mdl Parade Float
+models/bunny/b_helicopter_rescue.mdl "Bunny" Rescue Helicopter
