@@ -1,0 +1,2 @@
+Misc Weapons
+models/w_models/weapons/50_cal_broken.mdl 50cal (Broken)

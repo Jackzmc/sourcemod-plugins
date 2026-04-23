@@ -88,6 +88,7 @@ models/props_junk/metal_paintcan001b.mdl Paintcan
 models/props_junk/metal_paintcan001b_static.mdl paint can (solid)
 models/props_junk/petfoodbag01.mdl Pet Food
 models/props_junk/plasticcrate01a.mdl Plastic Crate
+models/lostcoast/props_wasteland/crabpot.mdl Crab Pot Crate
 models/props_junk/pooh_bucket_01.mdl Poop Bucket
 models/props_junk/propanecanister001a.mdl Gas barrel model
 models/props_junk/torchoven_01.mdl Torch Oven

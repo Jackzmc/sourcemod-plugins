@@ -117,3 +117,7 @@ models/props_c17/substation_transformer01b.mdl Power Plant-Transformer Edge Meas
 models/props_unique/generator.mdl large generator a-c8m2
 models/props_unique/generator01.mdl large generator b-c8m2
 models/conspiracy/cspy_radiotower.mdl Ultra-high radio tower
+models/props_waterfront/bridge_deck.mdl Massive Bridge Deck
+models/props/de_nuke/skylight01.mdl Skylight
+models/props_buildings/building_brick_destroyed01.mdl L-Shaped Burnt Brick Building (one-sided)
+models/props_docks/marina_dock.mdl Large Wooden Marina Dock

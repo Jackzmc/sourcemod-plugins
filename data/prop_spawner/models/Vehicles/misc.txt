@@ -17,3 +17,4 @@ models/missiles/f18_agm65maverick.mdl F18 Missile (No Collision)
 models/props_urban/big_wheel001.mdl Big Wheel
 models/props_downtown/parade_float.mdl Parade Float
 models/bunny/b_helicopter_rescue.mdl "Bunny" Rescue Helicopter
+models/props_vehicles/trafficjam01.mdl Traffic Jam (2 Lanes, 6 Cars Long)

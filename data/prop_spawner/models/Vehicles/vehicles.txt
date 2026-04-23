@@ -25,6 +25,7 @@ models/props_vehicles/cara_95sedan_wrecked.mdl '95 Sedan Wrecked
 models/props_vehicles/cara_95sedan_wrecked_glass.mdl '95 Sedan Wrecked (Glass)
 models/props_vehicles/deliveryvan.mdl Delivery van-no window
 models/props_vehicles/deliveryvan_armored.mdl Armored Delivery Van
+models/props_vehicles/van_interior.mdl Van (with Interior) (No collision)
 models/props_vehicles/boat_trailer20ft.mdl Boat Trailer
 models/props_vehicles/trailer001a.mdl Small Box Trailer
 models/props_vehicles/trailer002a.mdl Small Wagon Trailer
@@ -93,3 +94,16 @@ models/props_vehicles/van.mdl Van
 models/props_vehicles/van_glass.mdl Van (Glass)
 models/props_vehicles/zapastl.mdl Wrecked Car Green
 models/props_waterfront/tour_bus.mdl Midnight Riders Tour Bus
+models/props_vehicles/truck001a.mdl Broken Tow Truck
+models/props_vehicles/truck002a_cab.mdl Broken Semitruck Cab
+models/props_vehicles/truck003a.mdl Damaged Cargo Truck
+models/props_vehicles/car001a_hatchback.mdl Destroyed Hatchback
+models/props_vehicles/car001b_hatchback.mdl Crushed Hatchback
+models/props_vehicles/car002a.mdl Crushed Car 2a
+models/props_vehicles/car002b.mdl Crushed Car 2b
+models/props_vehicles/car003a.mdl Crushed Car 3a
+models/props_vehicles/car003b.mdl Crushed Car 3b
+models/props_vehicles/car004a.mdl Crushed Car 4a
+models/props_vehicles/car004b.mdl Crushed Car 4b
+models/props_vehicles/car005a.mdl Crushed Car 5a
+models/props_vehicles/car005b.mdl Crushed Car 5b

@@ -101,7 +101,8 @@ models/props_plants/claypot03_damage_04.mdl Broken Pottery 4-4
 models/props_plants/claypot03_damage_05.mdl Broken Pottery 4-5
 models/props_plants/claypot03_damage_06.mdl Broken Pottery 4-6
 models/props_interiors/luggagescale.mdl Luggage Scale
-models/props_interiors/sheetrock_leaning.mdl long iron plate-push stack
+models/props_interiors/sheetrock_leaning.mdl Metal Plate Stack Leaning (black backside)
+models/props/cs_militia/sheetrock_leaning.mdl Metal Plate Stack Leaning 2
 models/props_urban/hotel_bathroom_light001.mdl Bathroom Light
 models/props_urban/hotel_bathroom_showerhead001.mdl Bathroom Showerhead
 models/props_urban/hotel_bathroom_showerrod001.mdl Bathroom Showerrod
@@ -147,3 +148,9 @@ models/props_rooftop/cupola_01.mdl Cupola
 models/props_interiors/breakwall_interior.mdl Breakable Wall
 models/props_interiors/trashcan01.mdl Trashcan
 models/props_interiors/trashcankitchen01.mdl Kitchen Trashcan
+models/props/cs_office/bookshelf2.mdl Bookshelf
+models/props_collectables/backpack.mdl Backpack
+models/props_collectables/money_wad.mdl Cash
+models/props_downtown/booth.mdl Wooden Booth
+models/props_equipment/securitycheckpoint.mdl Security Scanner
+models/props_equipment/toolchest_01.mdl Tool Chest on Wheels

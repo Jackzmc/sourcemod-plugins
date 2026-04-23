@@ -24,3 +24,12 @@ models/props_canal/boat001a_chunk07.mdl Blue Row Boat debris7
 models/props_canal/boat001a_chunk08.mdl Blue Row Boat debris8
 models/props_canal/boat001a_chunk09.mdl Blue Row Boat debris9
 models/bunny/b_sailboat.mdl "Bunny" Speed Sail Boat
+models/lostcoast/props_wasteland/boat_drydock01a.mdl Massive Drydock Boat
+models/lostcoast/props_wasteland/boat_fishing01a.mdl Massive Fishing Boat
+models/lostcoast/props_wasteland/boat_wooden01a.mdl Wooden Boat (with Box)
+models/lostcoast/props_wasteland/boat_wooden02a.mdl Wooden Boat (Shorter1)
+models/lostcoast/props_wasteland/boat_wooden03a.mdl Wooden Boat
+models/props_vehicles/boat_cabin35ft.mdl Boat with Cabin
+models/props_vehicles/boat_covered.mdl Covered Boat
+models/props_vehicles/boat_fishing02.mdl Fishing Boat
+models/props_vehicles/boat_power.mdl Power Boat

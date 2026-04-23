@@ -115,3 +115,4 @@ models/props_interiors/handrail_hospital01_32.mdl wooden slats-short
 models/props_interiors/handrail_hospital01_64.mdl wooden slats-medium
 models/props_interiors/handrail_hospital01_128.mdl wooden slats-long
 models/props_interiors/handrail_hospital01_256.mdl wooden slats-very long
+models/props_docks/dock01_polecluster01d_256.mdl Tall Wooden Pole Cluster (256U) 

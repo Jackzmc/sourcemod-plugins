@@ -1,4 +1,5 @@
 Chairs
+models/props_wasteland/controlroom_chair001a.mdl Metal Chair
 models/props_interiors/bench01a.mdl Wooden bench
 models/props_interiors/bench_subway.mdl stone subway bench
 models/props_interiors/picnic_bench_toddler.mdl child's bench

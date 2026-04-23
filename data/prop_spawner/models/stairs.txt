@@ -44,3 +44,7 @@ models/props_urban/stoop001_96_32.mdl Urban Stoop 96x32 units
 models/props_urban/stoop002_128.mdl Urban Stoop2 128 units
 models/props_urban/stoop002_96.mdl Urban Stoop2 96 units
 models/props_urban/stoop003_48.mdl Urban Stoop2 48 units
+models/lostcoast/props_wasteland/cliff_stairs_deck01.mdl Lost Coast Deck
+models/lostcoast/props_wasteland/cliff_stairs_stepset03.mdl Lost Coast Stairs (Long)
+models/lostcoast/props_wasteland/cliff_stairs_stepset04.mdl Lost Coast Stairs (Med)
+models/lostcoast/props_wasteland/cliff_stairs_stepset05.mdl Lost Coast Stairs (Short)

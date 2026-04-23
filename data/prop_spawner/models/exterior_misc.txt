@@ -35,12 +35,18 @@ models/props_foliage/rock_coast02f.mdl Coastal Boulders
 models/props_foliage/rock_coast02_ls1.mdl Coastal Boulders ls1
 models/props_foliage/rock_coast02_ls2.mdl Coastal Boulders ls2
 models/lostcoast/props_wasteland/rock_coast02a.mdl Coastal Boulders c
+models/props_canal/rock_riverbed02b.mdl Riverbed Stones (Tiny)
+models/props_river/river_rocks_1.mdl Riverbed Stones (Large)
+models/props_river/river_rocks_2.mdl Riverbed Stones (Medium)
+models/props_river/river_rocks_large_1.mdl Riverbed Rock (Large)
+
 models/props_wasteland/rock_cliff01.mdl huge rock wall a
 models/props_wasteland/rockcliff_cluster01a.mdl huge rock wall b
 models/props_wasteland/rockcliff_cluster02c.mdl huge rock wall c
 models/props_wasteland/rockcliff_cluster03a.mdl huge rock wall d
 models/props_wasteland/rockcliff_cluster03a_river.mdl huge rock wall e
 models/props_rooftop/train_signalbox_01.mdl Train signal box
+models/props_trainstation/train_signals.mdl Tall Train signals
 models/props/cs_militia/fireplacechimney01.mdl fireplace chimney
 models/props_rooftop/vent_large1.mdl Ventilation pipe voltage box
 models/props_rooftop/acvent01.mdl roof ventilation window 01
@@ -146,3 +152,10 @@ models/props_urban/plastic_flamingo001.mdl Plastic Flamingo
 models/props_urban/plastic_water_jug001.mdl Water Jug
 models/props_urban/pontoon_drum001.mdl Pontoon Drum
 models/props_rooftop/roof_vent001.mdl Roof Vent
+models/props_docks/marina_firehosebox.mdl Marina Fire Hose Box
+models/generic/roof_ac.mdl Large Roof AC Unit
+models/lostcoast/props_wasteland/rock_cliff01e.mdl Lost Coast Stone
+models/lostcoast/props_wasteland/rock_cliff02a.mdl Lost Coast Stone
+models/lostcoast/props_wasteland/rock_cliff02b.mdl Lost Coast Stone
+models/lostcoast/props_wasteland/rock_cliff02c.mdl Lost Coast Stone
+models/lostcoast/props_wasteland/rock_cliff02d.mdl Lost Coast Stone

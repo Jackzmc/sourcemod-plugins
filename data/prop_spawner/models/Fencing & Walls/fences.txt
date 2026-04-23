@@ -77,3 +77,7 @@ models/props_urban/fence_post001.mdl Urban Chain Link Fence Post 1
 models/props_urban/fence_post002.mdl Urban Chain Link Fence Post 2
 models/props_urban/fence_post003.mdl Urban Chain Link Fence Post 3
 models/props_urban/gate_column001_32.mdl Urban Gate Column
+models/props_wasteland/exterior_fence001a.mdl Chain Link Sliding Fence Gate
+models/props_wasteland/exterior_fence001b.mdl Chain Link Sliding Fence Gate (Door Only)
+models/props_wasteland/exterior_fence002a.mdl Chain Link Fence (Skinny)
+models/props_wasteland/exterior_fence003a.mdl Chain Link Fence (Opening)

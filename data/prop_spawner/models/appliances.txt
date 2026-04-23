@@ -27,11 +27,13 @@ models/props_urban/fridge001.mdl Fridge 2 (Round no door)
 models/props_urban/fridge_door003.mdl Fridge 2 Door
 models/props_urban/fridge002.mdl Fridge Yellow (No Doors)
 models/props_urban/fridge_door001.mdl Fridge (Freezer Door)
+models/props/cs_militia/refrigerator01.mdl Gross Dirty Fridge
 models/props_unique/grocerystorechiller01.mdl Grocery Chiller Shelves
 models/props_interiors/tv.mdl CRT TV
 models/props_lab/monitor01a.mdl CRT Monitor
 models/props_lab/monitor02.mdl CRT Monitor 2
 models/props_office/computer_monitor_01.mdl Flat Screen Monitor
+models/props/cs_militia/television_console01.mdl TV Console
 models/props_unique/jukebox01.mdl Jukebox Records
 models/props_unique/jukebox01_body.mdl Jukebox Body
 models/props_unique/jukebox01_menu.mdl Jukebox Menu

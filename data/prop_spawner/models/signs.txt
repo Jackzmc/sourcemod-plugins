@@ -105,3 +105,5 @@ models/props_urban/street_banner01.mdl Street Banner
 models/props_misc/ceda_banner.mdl CEDA Banner
 models/props_highway/billboard_01.mdl Billboard Frame
 models/props_highway/billboard_ladder.mdl Billboard Ladder
+models/props_street/signdeercrossing01.mdl Deer Crossing Sign
+models/props_signs/boatyard_sign.mdl Boatyard Sign

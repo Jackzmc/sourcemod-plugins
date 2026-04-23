@@ -82,9 +82,10 @@ models/props_foliage/cane_field_split02.mdl Sugar Cane Field Split 1 (No Collisi
 models/props_foliage/cane_field_split03.mdl  Sugar Cane Field Split 2 (No Collision)
 models/props_foliage/cane_field_split04.mdl Sugar Cane Field Split 3 (No Collision)
 models/props_foliage/cane_field_split05.mdl Sugar Cane Field Split 4 (No Collision) 
-models/props_unique/haybails_single.mdl Hay Bail single
-models/props_unique/haybails_farmhouse.mdl a large pile of straw bales (no model on back half)
-models/props/de_inferno/hay_bail_stack.mdl hay bail stack
+models/props_unique/haybails_single.mdl hay bale rolled
+models/props/de_inferno/hay_bail_stack.mdl hay bale stack
+models/props/de_inferno/hay_bails.mdl single hay bale single
+models/props_unique/haybails_farmhouse.mdl a large pile of hay bales (no backside)
 models/props_plants/corndry_split02.mdl corn rice field-c12m5 (No Collision)
 models/props_plants/corndry_split01.mdl corn paddy field-flattened-c12m5 (No Collision)
 models/props_plants/planthanging01.mdl hanging plant

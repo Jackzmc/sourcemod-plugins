@@ -7,6 +7,7 @@ models/props_furniture/drawer1.mdl furniture 3 drawer dresser (breakable)
 models/props_furniture/dresser1.mdl Furniture wardrobe
 models/props_interiors/dresser_short.mdl Drawer chest-three layers
 models/props_interiors/dresser_tall.mdl Chest of drawers-5 layers
+models/props_waterfront/footlocker01.mdl Passing Footlocker 
 models/props/cs_militia/footlocker01_open.mdl militia metal footlocker open
 models/props/cs_militia/footlocker01_closed.mdl militia metal footlocker closed
 models/props_furniture/cafe_barstool1.mdl cafe barstool (breakable)
@@ -31,6 +32,7 @@ models/props_interiors/bed_motel.mdl Hotel Bed
 models/props_interiors/bed_houseboat.mdl Houseboat Bed (No bed frame)
 models/props_interiors/kids_bed.mdl Single kids bed
 models/props_unique/hospital/hospital_bed.mdl hospital bed
+models/props/de_inferno/bed.mdl wireframe bed and mattress
 models/props_interiors/baby_crib.mdl Baby Crib
 models/props_furniture/piano.mdl piano
 models/props_interiors/mounteddeerhead01.mdl Deer head specimen
@@ -39,3 +41,4 @@ models/props_unique/guncabinet01_main.mdl Metal Gun Cabinet
 models/props_unique/guncabinet01_ldoor.mdl Metal Gun Cabinet Left Door
 models/props_unique/guncabinet01_rdoor.mdl Metal Gun Cabinet Right Door
 models/lighthouse/props/wooden_cabinet.mdl Wooden cabinet cabin
+models/props/cs_militia/bar01.mdl Wooden bar
