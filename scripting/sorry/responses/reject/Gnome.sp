@@ -40,7 +40,7 @@ char PRONOUN[PRONOUNS][] = {
 
 Action Gnome_OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
     // RejectGnome
-	if(client > 0 && StrEqual(command, "name") && SorryStore[client].ContainsKey(STORE_KEY)) {
+	if(client > 0 && StrEqual(command, "say") && SorryStore[client].ContainsKey(STORE_KEY)) {
         int pronounIndex = GetRandomInt(0, PRONOUNS - 1);
 
 		CPrintToChatAll("{blue}%N{default} : I love my gnome friend, I name %s %s!", client, PRONOUN[pronounIndex], sArgs);

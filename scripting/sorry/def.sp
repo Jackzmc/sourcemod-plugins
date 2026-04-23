@@ -6,6 +6,8 @@
 #define MODEL_PEANUT "models/props_fairgrounds/Lil'Peanut_cutout001.mdl"
 #define MODEL_GNOME "models/props_junk/gnome.mdl"
 
+UserMsg g_FadeUserMsgId;
+
 enum sorryResponseValues {
 	Sorry_Accept = 1,
 	Sorry_Reject = 0,

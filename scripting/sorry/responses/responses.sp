@@ -17,6 +17,7 @@
 #include "reject/Spook.sp"
 #include "reject/Kill.sp"
 #include "reject/Gnome.sp"
+#include "reject/Kidnap.sp"
 
 void RegisterResponses() {
 	// ACCEPT
@@ -34,4 +35,5 @@ void RegisterResponses() {
     ResponseBuilder(Sorry_RejectBecomeDisgruntled, Type_Reject, BecomeDisgruntled_OnActivate)
 		.OnClientSayCommand(BecomeDisgruntled_OnClientSayCommand);
 	ResponseBuilder(Sorry_RejectBecomeRandomPeanut, Type_Reject, BecomeRandomPeanut_OnActivate);
+	ResponseBuilder(Sorry_RejectKidnap, Type_Reject, KidnapSorry_OnActivate);
 }

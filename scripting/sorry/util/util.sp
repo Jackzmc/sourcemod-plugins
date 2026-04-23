@@ -283,3 +283,33 @@ stock int CloneWeapon(int weapon) {
 	DispatchSpawn(entity);
 	return entity;
 }
+
+enum FadeFlags {
+	Fade_In  = 0x0001,
+	Fade_Out = 0x0002,
+	Fade_Modulate = 0x0004,
+	Fade_StayOut  = 0x0008,
+	Fade_Purge    = 0x0010
+}
+
+stock void SetPlayerBlindColor(int target, int color[4], int durationMs = 500, int flags = Fade_StayOut | Fade_In) {
+	int targets[1];
+	targets[0] = target;
+	
+	Handle message = StartMessageEx(g_FadeUserMsgId, targets, 1);
+	BfWrite bf = UserMessageToBfWrite(message);
+	bf.WriteShort(durationMs);
+	bf.WriteShort(0);
+	bf.WriteShort(flags);		
+	bf.WriteByte(color[0]);
+	bf.WriteByte(color[1]);
+	bf.WriteByte(color[2]);
+	bf.WriteByte(color[3]);
+	EndMessage();
+}
+
+stock void SetPlayerBlind(int target, int opacity, int durationMs = 500, int flags = Fade_StayOut | Fade_In) {
+	int color[4];
+	color[3] = opacity;
+	SetPlayerBlindColor(target, color, durationMs, flags);
+}
