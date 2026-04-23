@@ -528,7 +528,7 @@ stock int Client_GetClones(int client, int[] cloneList)
 	int x=0;
 	char ip_client[16], ip_player[16];
 
-	GetClientIP(client, ip_client, sizeof(client));
+	GetClientIP(client, ip_client, sizeof(ip_client));
 
 	for (int player=1; player <= MaxClients; player++) {
 

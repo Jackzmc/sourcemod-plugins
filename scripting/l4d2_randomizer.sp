@@ -459,11 +459,25 @@ Action Command_RandomizerBuild(int client, int args) {
 		float scale[3] = { 15.0, 30.0, 100.0 };
 		GetClientAbsOrigin(client, pos);
 		JSONObject obj = new JSONObject();
-		obj.SetString("type", "env_player_blocker");
+		obj.SetString("type", "env_physics_blocker");
 		obj.Set("origin", FromFloatArray(pos, 3));
 		obj.Set("scale", FromFloatArray(scale, 3));
 		g_builder.AddEntityData(obj);
 		ReplyToCommand(client, "Added wall to variant #%d", g_builder.selectedVariantIndex);
+	} else if(StrEqual(arg, "nav")) {
+		if(g_builder.selectedVariantData == null) {
+			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
+			return Plugin_Handled;
+		}
+		float pos[3];
+		float scale[3] = { 100.0, 150.0, 200.0 };
+		GetClientAbsOrigin(client, pos);
+		JSONObject obj = new JSONObject();
+		obj.SetString("type", "func_nav_blocker");
+		obj.Set("origin", FromFloatArray(pos, 3));
+		obj.Set("scale", FromFloatArray(scale, 3));
+		g_builder.AddEntityData(obj);
+		ReplyToCommand(client, "Added nav blocker to variant #%d", g_builder.selectedVariantIndex);
 	} else if(StrEqual(arg, "gascan")) {
 		if(g_builder.selectedVariantData == null) {
 			ReplyToCommand(client, "Please load map data, select a scene and a variant.");
@@ -696,100 +710,9 @@ void Command_RandomizerBuild_Variants(int client, int args) {
 	}
 }
 
-void spawnEntity(VariantEntityData entity) {
-	if(entity.type[0] == '_') {
-		if(StrEqual(entity.type, "_gascan")) {
-			AddGascanSpawner(entity);
-		} else if(StrContains(entity.type, "_car") != -1) {
-			SpawnCar(entity);
-		} else {
-			Log("WARN: Unknown custom entity type \"%s\", skipped", entity.type);
-		}
-	} else if(StrEqual(entity.type, "hammerid")) {
-		int targetId = StringToInt(entity.model);
-		if(targetId > 0) {
-			int ent = -1;
-			while((ent = FindEntityByClassname(ent, "*")) != INVALID_ENT_REFERENCE) {
-				int hammerId = GetEntProp(ent, Prop_Data, "m_iHammerID");
-				if(hammerId == targetId) {
-					Debug("moved entity (hammerid=%d) to %.0f %.0f %.0f rot %.0f %.0f %.0f", targetId, entity.origin[0], entity.origin[1], entity.origin[2], entity.angles[0], entity.angles[1], entity.angles[2]);
-					TeleportEntity(ent, entity.origin, entity.angles, NULL_VECTOR);
-					return;
-				}
-			}
-		}
-		Debug("Warn: Could not find entity (hammerid=%d) (model=%s)", targetId, entity.model);
-	} else if(StrEqual(entity.type, "targetname")) {
-		int ent = -1;
-		char targetname[64];
-		bool found = false;
-		while((ent = FindEntityByClassname(ent, "*")) != INVALID_ENT_REFERENCE) {
-			GetEntPropString(ent, Prop_Data, "m_iName", targetname, sizeof(targetname));
-			if(StrEqual(entity.model, targetname)) {
-				Debug("moved entity (targetname=%s) to %.0f %.0f %.0f rot %.0f %.0f %.0f", entity.model, entity.origin[0], entity.origin[1], entity.origin[2], entity.angles[0], entity.angles[1], entity.angles[2]);
-				TeleportEntity(ent, entity.origin, entity.angles, NULL_VECTOR);
-				found = true;
-			}
-		}
-		if(!found)
-			Debug("Warn: Could not find entity (targetname=%s)", entity.model);
-	} else if(StrEqual(entity.type, "classname")) {
-		int ent = -1;
-		char classname[64];
-		bool found;
-		while((ent = FindEntityByClassname(ent, classname)) != INVALID_ENT_REFERENCE) {
-			Debug("moved entity (classname=%s) to %.0f %.0f %.0f rot %.0f %.0f %.0f", entity.model, entity.origin[0], entity.origin[1], entity.origin[2], entity.angles[0], entity.angles[1], entity.angles[2]);
-			TeleportEntity(ent, entity.origin, entity.angles, NULL_VECTOR);
-			found = true;
-		}
-		if(!found)
-			Debug("Warn: Could not find entity (classname=%s)", entity.model);
-	}  else if(StrEqual(entity.type, "env_fire")) {
-		Debug("spawning \"%s\" at (%.1f %.1f %.1f) rot (%.0f %.0f %.0f)", entity.type, entity.origin[0], entity.origin[1], entity.origin[2], entity.angles[0], entity.angles[1], entity.angles[2]);
-		R_CreateFire(entity);
-	} else if(StrEqual(entity.type, "light_dynamic")) {
-		R_CreateLight(entity);	
-		Effect_DrawBeamBoxRotatableToAll(entity.origin, { -5.0, -5.0, -5.0}, { 5.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {255, 255, 0, 255}, 0);
-	} else if(StrEqual(entity.type, "env_physics_blocker") || StrEqual(entity.type, "env_player_blocker")) {
-		R_CreateEnvBlockerScaled(entity);
-	} else if(StrEqual(entity.type, "infodecal")) {
-		Effect_DrawBeamBoxRotatableToAll(entity.origin, { -1.0, -5.0, -5.0}, { 1.0, 5.0, 5.0}, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {73, 0, 130, 255}, 0);
-		R_CreateDecal(entity);
-	} else if(StrContains(entity.type, "weapon_") == 0 || StrContains(entity.type, "prop_") == 0 || StrEqual(entity.type, "prop_fuel_barrel")) {
-		if(entity.model[0] == '\0') {
-			LogError("Missing model for entity with type \"%s\"", entity.type);
-			return;
-		} else if(!PrecacheModel(entity.model)) {
-			LogError("Precache of entity model \"%s\" with type \"%s\" failed", entity.model, entity.type);
-			return;
-		}
-		R_CreateProp(entity);
-	} else if(StrEqual(entity.type, "move_rope")) {
-		if(!PrecacheModel(entity.model)) {
-			LogError("Precache of entity model \"%s\" with type \"%s\" failed", entity.model, entity.type);
-			return;
-		} else if(entity.keyframes == null) {
-			// should not happen
-			LogError("rope entity has no keyframes", entity.keyframes);
-			return;
-		}
-		CreateRope(entity);
-	} else if(StrEqual(entity.type, "script_nav_blocker")) {
-		Randomizer_CreateNavBlocker(entity);
-		float mins[3];
-		mins = entity.scale;
-		NegateVector(mins);
-		Effect_DrawBeamBoxRotatableToAll(entity.origin, mins, entity.scale, NULL_VECTOR, g_iLaserIndex, 0, 0, 0, 40.0, 0.1, 0.1, 0, 0.0, {0, 255, 0, 255}, 0);
-	} else {
-		LogError("Unsupported entity type \"%s\"", entity.type);
-	}
-}
 
-int Randomizer_CreateNavBlocker(VariantEntityData entity) {
-	int blocker = CreateNavBlocker(entity.targetname, entity.origin, entity.angles, entity.scale, -1, false);
-	entity.ApplyProperties(blocker);
-	return blocker;
-}
+
+
 int CreateNavBlocker(const char[] targetname, const float origin[3], const float angles[3], const float size[3], int teamToBlock, bool affectsFlow) {
 	int entity = CreateEntityByName("script_nav_blocker");
 	DispatchKeyValue(entity, "targetname", targetname);

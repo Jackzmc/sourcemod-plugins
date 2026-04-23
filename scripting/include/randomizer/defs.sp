@@ -14,6 +14,8 @@ AnyMap g_gascanSpawners; // Mapping of <entity index, GascanSpawnerData>, for wh
 
 int g_iLaserIndex;
 
+ArrayList g_navAreas;
+
 public void InitGlobals() {
 	g_gascanSpawners = new AnyMap();
     g_mapTraverseSelectionStack = new ArrayList(sizeof(TraverseData));

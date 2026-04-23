@@ -253,11 +253,14 @@ void loadChoiceEntity(ArrayList list, JSONObject entityData) {
 			vec[2] = vecArray.GetFloat(2);
 			entity.keyframes.PushArray(vec);
 		}
+	} else if(StrEqual(entity.type, "func_nav_blocker")) {
+		entity.type = "script_nav_blocker";
 	}
 	GetVector(entityData, "origin", entity.origin);
 	GetVector(entityData, "angles", entity.angles);
 	GetVector(entityData, "scale", entity.scale);
 	GetColor(entityData, "color", entity.color, DEFAULT_COLOR);
+	
 	if(entityData.HasKey("properties")) {
 		entity.properties = view_as<JSONArray>(entityData.Get("properties"));
 		// JSONObject propRoot = view_as<JSONObject>(entityData.Get("properties"));
