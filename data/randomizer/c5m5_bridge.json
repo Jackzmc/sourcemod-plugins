@@ -286,6 +286,13 @@
                             100.0,
                             20.0,
                             40.0
+                        ],
+                        "properties": [
+                            {
+                                "type": "keyvalue",
+                                "key": "BlockType",
+                                "integer": 1
+                            }
                         ]
                     }
                 ]

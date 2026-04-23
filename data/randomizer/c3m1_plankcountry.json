@@ -274,16 +274,114 @@
                         ]
                     },
                     {
-                        "model": "models/props_update/brick_128.mdl",
+                        "type": "prop_dynamic",
+                        "model": "models/props_mill/brickwall_broken01.mdl",
                         "origin": [
-                            -6150.87548828125,
-                            7333.244140625,
-                            104.00674438476562
+                            -6169.62451171875,
+                            7306.087890625,
+                            80.834617614746094
                         ],
                         "angles": [
-                            -90,
-                            90,
-                            0
+                            0.0,
+                            -135.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_mill/brickwall_broken01.mdl",
+                        "origin": [
+                            -6206.36865234375,
+                            7343.50634765625,
+                            160.50765991210938
+                        ],
+                        "angles": [
+                            180.0,
+                            45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_mill/brickwall_broken01.mdl",
+                        "origin": [
+                            -6150.70361328125,
+                            7308.748046875,
+                            85.000091552734375
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_mill/brickwall_broken01.mdl",
+                        "origin": [
+                            -6126.9609375,
+                            7308.44775390625,
+                            84.695449829101562
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_mill/brickwall_broken01.mdl",
+                        "origin": [
+                            -6116.685546875,
+                            7323.87158203125,
+                            81.325912475585938
+                        ],
+                        "angles": [
+                            0.0,
+                            -45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_mill/brickwall_broken01.mdl",
+                        "origin": [
+                            -6105.216796875,
+                            7311.03515625,
+                            80.356056213378906
+                        ],
+                        "angles": [
+                            0.0,
+                            -225.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_mill/brickwall_broken01.mdl",
+                        "origin": [
+                            -6199.30224609375,
+                            7336.97900390625,
+                            161.56999206542969
+                        ],
+                        "angles": [
+                            180.0,
+                            45.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "func_nav_blocker",
+                        "origin": [
+                            -6201.8310546875,
+                            7531.84716796875,
+                            48.03125
+                        ],
+                        "scale": [
+                            120.0,
+                            180.0,
+                            200.0
                         ]
                     }
                 ]
@@ -587,6 +685,9 @@
                             11.0
                         ]
                     }
+                ],
+                "inputs": [
+                    {"hammerid": 2207475, "input": "sethealth 99999"}
                 ]
             }
         ]
@@ -838,6 +939,30 @@
                         "angles": [
                             0.0,
                             0.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "boardwalk_ext": {
+        "chance": 0.20000000298023224,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_tall_256.mdl",
+                        "origin": [
+                            -5087.27001953125,
+                            6894.24267578125,
+                            14.682945251464844
+                        ],
+                        "angles": [
+                            0.0,
+                            -85.900009155273438,
                             0.0
                         ]
                     }
