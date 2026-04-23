@@ -678,9 +678,11 @@ public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadca
 	int bot = GetClientOfUserId(event.GetInt("bot"));
 	if(StrEqual(name, "player_bot_replace")) {
 		// Bot replaced player, hook any drop events
+
 		SDKHook(bot, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 	} else {
 		// Player replaced a bot
+
 		int client = GetClientOfUserId(event.GetInt("player"));
 		if(client) {
 			RestoreDroppedMelee(client);
@@ -689,18 +691,20 @@ public void Event_BotPlayerSwap(Event event, const char[] name, bool dontBroadca
 }
 
 bool RestoreDroppedMelee(int client) {
-	if(botDropMeleeWeapon[client] <= 0) return false;
+	if(botDropMeleeWeapon[client] == -1) return false;
+	int melee = EntRefToEntIndex(botDropMeleeWeapon[client]);
 	// causing crashes on saferoom transitions. need to know if pre load or post load
 	if(g_inTransition) {
 		// Safety check, causes crashes other wise. Should restore on transition before any chance of idle
 		char buffer[32];
-		GetEntityClassname(botDropMeleeWeapon[client], buffer, sizeof(buffer));
+		GetEntityClassname(melee, buffer, sizeof(buffer));
 		LogMessage("Transition started. Not regiving melee \"%s\" to prevent crash", buffer);
 		botDropMeleeWeapon[client] = -1;
 		return true;
 	} 
 
-	int meleeOwnerEnt = GetEntPropEnt(botDropMeleeWeapon[client], Prop_Send, "m_hOwnerEntity");
+	int meleeOwnerEnt = GetEntPropEnt(melee, Prop_Send, "m_hOwnerEntity");
+
 	if(meleeOwnerEnt == -1) { 
 		int currentWeapon = GetPlayerWeaponSlot(client, 1);
 		if(currentWeapon > 0) {
@@ -714,8 +718,9 @@ bool RestoreDroppedMelee(int client) {
 		DataPack pack = new DataPack();
 		RequestFrame(Frame_ReequipMelee, pack);
 		pack.WriteCell(client);
-		pack.WriteCell(botDropMeleeWeapon[client]);
+		pack.WriteCell(melee);
 		botDropMeleeWeapon[client] = -1;
+
 	}
 	SDKUnhook(client, SDKHook_WeaponDrop, Event_OnWeaponDrop);
 	return true;
@@ -725,20 +730,28 @@ void Frame_ReequipMelee(DataPack pack) {
 	pack.Reset();
 	int client = pack.ReadCell();
 	int melee = pack.ReadCell();
-	EquipPlayerWeapon(client, melee);
+	if(client > 0 && melee > 0)
+		EquipPlayerWeapon(client, melee);
+
 	delete pack;
 }
-Action Event_OnWeaponDrop(int client, int weapon) {
-	if(!IsValidEntity(weapon) || !IsFakeClient(client)) return Plugin_Continue;
-	if(GetEntProp(client, Prop_Send, "m_humanSpectatorUserID") > 0) {
+Action Event_OnWeaponDrop(int bot, int weapon) {
+	if(!IsValidEntity(weapon) || !IsFakeClient(bot)) return Plugin_Continue;
+	int humanUserId = GetEntProp(bot, Prop_Send, "m_humanSpectatorUserID");
+	if(humanUserId > 0) {
 		char wpn[32];
 		GetEdictClassname(weapon, wpn, sizeof(wpn));
 		if(StrEqual(wpn, "weapon_melee") || StrEqual(wpn, "weapon_pistol_magnum")) {
+			int client = GetClientOfUserId(humanUserId);
+			if(client == 0) {
+				// Should never occurred due to previous userId > 0 check
+				return Plugin_Continue;
+			}
 			#if defined DEBUG
-			PrintToServer("Bot %N dropped melee weapon %s", client, wpn);
+			PrintToServer("Bot %N dropped melee weapon %s", bot, wpn);
 			#endif
 			RequestFrame(Frame_HideEntity, weapon);
-			botDropMeleeWeapon[client] = weapon;
+			botDropMeleeWeapon[client] = EntIndexToEntRef(weapon);
 		}
 	}
 	return Plugin_Continue;
