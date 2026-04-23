@@ -321,13 +321,16 @@ void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
 }
 void StartHoldoutCheck() {
 	if(g_holdoutBotCheckTimer != null) return;
-	if(isHoldoutBotMap) {
-		g_holdoutBotCheckTimer = CreateTimer(1.0, Timer_CheckClients, 0, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	if(StrEqual(currentMap, "c6m3_port")) {
+		g_holdoutBotCheckTimer = CreateTimer(1.0, Timer_CheckClients, 0, TIMER_REPEAT);
 	}
 }
 public void OnMapEnd() {
 	if(g_holdoutBotCheckTimer != null) {
 		delete g_holdoutBotCheckTimer;
+	}
+	for(int i = 1; i <= MaxClients; i++) {
+		g_prevSurvivorIndex[i] = -1;
 	}
 }
 void Frame_MapStart() {
@@ -488,7 +491,6 @@ void _revertSurvivor(int client) {
 	PrintToServer("DEBUG: restore %N, prev=%d", client, g_prevSurvivorIndex);
 	if(g_prevSurvivorIndex[client] >= 0) {
 		SetEntProp(client, Prop_Send, "m_survivorCharacter", g_prevSurvivorIndex[client]);
-		g_prevSurvivorIndex[client] = -1;
 		LogMessage("RevertSwappedSurvivor: Reverting %N (type=%d)", client, g_prevSurvivorIndex[client]);
 	}
 }
