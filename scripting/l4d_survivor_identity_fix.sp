@@ -47,6 +47,8 @@ static Menu chooseMenu;
 
 bool isHoldoutBotMap;
 
+Handle g_holdoutBotCheckTimer;
+
 // ------------------------------------------------------------------------
 //  Models & survivor names so bots can be renamed
 // ------------------------------------------------------------------------
@@ -100,6 +102,7 @@ public void OnPluginStart()
 	HookEvent("finale_start", Event_FinaleStart);
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_death", Event_PlayerDeath);
+	HookEvent("round_start_post_nav", Event_RoundStart);
 
 	if(isLateLoad) {
 		for(int i = 1; i <= MaxClients; i++) {
@@ -310,10 +313,26 @@ public void OnMapStart() {
 	
 	GetCurrentMap(currentMap, sizeof(currentMap));
 	isHoldoutBotMap = StrEqual(currentMap, "c6m1_riverbank") || StrEqual(currentMap, "c6m3_port");
+	StartHoldoutCheck();
 	RequestFrame(Frame_MapStart);
+}
+void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
+	StartHoldoutCheck();
+}
+void StartHoldoutCheck() {
+	if(g_holdoutBotCheckTimer != null) return;
+	if(isHoldoutBotMap) {
+		g_holdoutBotCheckTimer = CreateTimer(1.0, Timer_CheckClients, 0, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	}
+}
+public void OnMapEnd() {
+	if(g_holdoutBotCheckTimer != null) {
+		delete g_holdoutBotCheckTimer;
+	}
 }
 void Frame_MapStart() {
 	isL4D1Survivors = L4D2_GetSurvivorSetMap() == 1;
+	PrintToServer("Survivor Set: L4D%b", !isL4D1Survivors);
 }
 
 //Either use preferred model OR find the least-used.
@@ -330,6 +349,19 @@ public void Event_PlayerDisconnect(Event event, const char[] name, bool dontBroa
 			survivors--;
 	}
 }
+
+Action Timer_CheckClients(Handle h) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(IsClientInGame(i) && GetClientTeam(i) == 2) {
+			int survType = GetEntProp(i, Prop_Send, "m_survivorCharacter");
+			if(survType >= 4) {
+				SwapSurvivor(i);
+			}
+		}
+	}
+	return Plugin_Continue;
+}
+
 public void Frame_CheckClient(int userid) {
 	int client = GetClientOfUserId(userid);
 	if(client > 0 && GetClientTeam(client) == 2 && !IsFakeClient(client)) {
@@ -398,6 +430,10 @@ void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 
 //On finale start: Set back to their L4D1 character.
 void Event_FinaleStart(Event event, const char[] name, bool dontBroadcast) {
+	if(g_holdoutBotCheckTimer != null) {
+		delete g_holdoutBotCheckTimer;
+	}
+
 	if(!isHoldoutBotMap) return;
 
 	for(int i = 1; i <= MaxClients; i++) {
@@ -432,6 +468,7 @@ void _swapSurvivor(int client) {
 
 	int survType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
 	int swappedType = GetSwappedSurivor(survType);
+	PrintToServer("DEBUG: swap %N, type=%d swapTo=%d", client, survType, swappedType);
 	// If survivor was swapped to l4d2, then notify & record
 	if(swappedType != survType) {
 		SetEntProp(client, Prop_Send, "m_survivorCharacter", swappedType);
@@ -448,6 +485,7 @@ void RevertSurvivor(int client) {
 void _revertSurvivor(int client) {
 	if(!IsClientInGame(client)) return;
 	// If we had a swapped survivor, revert back
+	PrintToServer("DEBUG: restore %N, prev=%d", client, g_prevSurvivorIndex);
 	if(g_prevSurvivorIndex[client] >= 0) {
 		SetEntProp(client, Prop_Send, "m_survivorCharacter", g_prevSurvivorIndex[client]);
 		g_prevSurvivorIndex[client] = -1;
