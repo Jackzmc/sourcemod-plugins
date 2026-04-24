@@ -13,7 +13,7 @@ void BecomeDisgruntled_OnActivate(int apologizer, int target, const char[] event
 }
 
 Action BecomeDisgruntled_OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
-    if(StrEqual(command, "say") && client > 0 && SorryStore[client].ContainsKey(STORE_KEY)) {
+    if((StrEqual(command, "say") || StrEqual(command, "say_team")) && client > 0 && SorryStore[client].ContainsKey(STORE_KEY)) {
 		CPrintToChatAll("{blue}%N{default} : I hate %s", client, sArgs);
 		return Plugin_Stop;
 	}
