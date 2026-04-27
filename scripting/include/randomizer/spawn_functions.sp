@@ -171,6 +171,10 @@ int R_CreateProp(VariantEntityData data) {
 	if(entity == -1) return -1;
     data.ApplyProperties(entity);
 	if(DispatchSpawn(entity)) {
+		int nav = L4D_GetNearestNavArea(data.origin, 100.0, false, false, false, 3);
+		if(nav != Address_Null) {
+			// TODO:
+		}
 		return entity;
 	}
 	return -1;
