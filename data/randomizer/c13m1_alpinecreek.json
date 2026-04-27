@@ -485,6 +485,62 @@
                             270.70001220703125,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_wasteland/rockcliff07b.mdl",
+                        "origin": [
+                            1021.0618896484375,
+                            2179.6826171875,
+                            547.10589599609375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_foliage/tree_trunk_fallen.mdl",
+                        "origin": [
+                            838.73284912109375,
+                            1999.347412109375,
+                            561.7799072265625
+                        ],
+                        "angles": [
+                            -225.0,
+                            150.0,
+                            30.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_rail_256_break_b.mdl",
+                        "origin": [
+                            1017.08447265625,
+                            2378.524169921875,
+                            765.24237060546875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_swamp/boardwalk_rail_chunk03.mdl",
+                        "origin": [
+                            1008.8934936523438,
+                            2633.92529296875,
+                            767.6636962890625
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
                     }
                 ]
             }

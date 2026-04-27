@@ -1204,5 +1204,83 @@
                 ]
             }
         ]
+    },
+    "tents": {
+        "chance": 0.10000000149011612,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -2373.63427734375,
+                            -1690.14306640625,
+                            -126.96893310546875
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -2353.520751953125,
+                            -1580.281494140625,
+                            -126.38398742675781
+                        ],
+                        "angles": [
+                            0.0,
+                            -15.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_misc/fairground_tent_closed.mdl",
+                        "origin": [
+                            -2266.367431640625,
+                            -1455.6971435546875,
+                            -123.19973754882812
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ],
+                        "color": [
+                            128,
+                            255,
+                            0,
+                            255
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_misc/fairground_tent_closed.mdl",
+                        "origin": [
+                            -2272.460205078125,
+                            -1310.422607421875,
+                            -126.38418579101562
+                        ],
+                        "angles": [
+                            0.0,
+                            270.0,
+                            0.0
+                        ],
+                        "color": [
+                            255,
+                            128,
+                            255,
+                            255
+                        ]
+                    }
+                ]
+            }
+        ]
     }
 }

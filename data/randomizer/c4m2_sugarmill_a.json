@@ -1081,6 +1081,10 @@
                     {
                         "classname": "env_player_blocker",
                         "input": "kill"
+                    },
+                    {
+                        "targetname": "anv_mapfixes_cliprework_millwheel",
+                        "input": "kill"
                     }
                 ]
             }
