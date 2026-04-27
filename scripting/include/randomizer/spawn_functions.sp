@@ -170,11 +170,13 @@ int R_CreateProp(VariantEntityData data) {
 	int entity = StartPropCreate(data.type, data.model, data.origin, data.angles, NULL_VECTOR);
 	if(entity == -1) return -1;
     data.ApplyProperties(entity);
+	SetEntityRenderColor(entity, data.color[0], data.color[1], data.color[2], data.color[3]);
+	SetEntityRenderMode(entity, RENDER_TRANSCOLOR);
 	if(DispatchSpawn(entity)) {
-		int nav = L4D_GetNearestNavArea(data.origin, 100.0, false, false, false, 3);
-		if(nav != Address_Null) {
-			// TODO:
-		}
+		// int nav = L4D_GetNearestNavArea(data.origin, 100.0, false, false, false, 3);
+		// if(nav != Address_Null) {
+		// 	// TODO:
+		// }
 		return entity;
 	}
 	return -1;
