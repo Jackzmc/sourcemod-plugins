@@ -120,6 +120,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_magnet", Command_SetMagnetShortcut, ADMFLAG_KICK, "");
 	RegAdminCmd("sm_csplat", Command_CarSplat, ADMFLAG_KICK, "");
 	RegAdminCmd("sm_typo", Command_AddTypo, ADMFLAG_GENERIC);
+	RegAdminCmd("sm_ftt_debug", Command_DebugPlugin, ADMFLAG_GENERIC);
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_first_spawn", Event_PlayerFirstSpawn);

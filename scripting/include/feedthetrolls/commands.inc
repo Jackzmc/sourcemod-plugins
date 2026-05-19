@@ -1,3 +1,23 @@
+Action Command_DebugPlugin(int client, int args) {
+	if(args == 1) {
+		char arg[32];
+		GetCmdArg(1, arg, sizeof(arg));
+		if(StrEqual(arg, "queue")) {
+			ReplyToCommand(client, "Len = %d", g_spSpawnQueue.Length);
+			SpecialSpawnRequest req;
+			for(int i = 0; i < g_spSpawnQueue.Length; i++) {
+				g_spSpawnQueue.GetArray(i, req, sizeof(req));
+				ReplyToCommand(client, "#%d - %s(%d) tuid=#%d", i, SPECIAL_NAMES[req.type-1], req.flags, req.targetUserId)
+			}
+		} else {
+			ReplyToCommand(client, "Unknown subcommand");
+		}
+		return Plugin_Handled;
+	}
+	ReplyToCommand(client, "g_spSpawnQueue.Length = %d", g_spSpawnQueue.Length);
+	return Plugin_Handled;
+}
+
 Action Command_InstaSpecial(int client, int args) {
 	if(args < 1) {
 		Menu menu = new Menu(Insta_PlayerHandler);

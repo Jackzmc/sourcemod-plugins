@@ -314,6 +314,9 @@ public void OnMapStart() {
 	GetCurrentMap(currentMap, sizeof(currentMap));
 	isHoldoutBotMap = StrEqual(currentMap, "c6m1_riverbank") || StrEqual(currentMap, "c6m3_port");
 	StartHoldoutCheck();
+	if(g_holdoutBotCheckTimer != null && !isHoldoutBotMap) {
+		delete g_holdoutBotCheckTimer;
+	}
 	RequestFrame(Frame_MapStart);
 }
 void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {

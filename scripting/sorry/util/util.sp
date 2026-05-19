@@ -299,7 +299,7 @@ stock void SetPlayerBlindColor(int target, int color[4], int durationMs = 500, i
 	Handle message = StartMessageEx(g_FadeUserMsgId, targets, 1);
 	BfWrite bf = UserMessageToBfWrite(message);
 	bf.WriteShort(durationMs);
-	bf.WriteShort(0);
+	bf.WriteShort(durationMs);
 	bf.WriteShort(flags);		
 	bf.WriteByte(color[0]);
 	bf.WriteByte(color[1]);
