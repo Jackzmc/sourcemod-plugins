@@ -1,22 +1,15 @@
-Action Timer_ZombieRunAwayItem(Handle h, DataPack pack) {
-	pack.Reset();
-	int activator = pack.ReadCell();
-	int wpn = pack.ReadCell();
-	SpawnZombieRunAway(activator, wpn);
-	return Plugin_Handled;
-}
-
 /**
  * Spawns a random special that runs away with entity for given survivor
  */
-void SpawnZombieRunAway(int survivor, int entityToRunWith) {
+void SpawnWeaponThief(int survivor, int entityToRunWith) {
 	float pos[3];
-	int zombie = GetRandomZombie(survivor, pos);
+	int zombie = SpawnRandomSpecial(survivor, pos);
 	if(zombie <= 0) {
 		PrintToServer("[Custom] SpawnZombieRunAway: failed to get zombie");
 		PrintHintText(survivor, "You got lucky...");
 		return;
 	}
+	SDKHooks_DropWeapon(survivor, entityToRunWith, NULL_VECTOR, NULL_VECTOR);
 	SetEntPropFloat(zombie, Prop_Send, "m_flLaggedMovementValue", 0.5);
 	PrintToChat(survivor, "%N has your melee/secondary weapon... better chase them", zombie);
 	GlowEntity(zombie, 0.0, { 255, 255, 255 }, false);

@@ -75,19 +75,19 @@ stock void CreateRagdoll(int client, const float vel[3]) {
 /** 
  * Gets existing zombie or spawns new one in random area around survivor
 */
-int GetRandomZombie(int survivor, float outPos[3], int tries = 5) {
-	int zombie = 0; // GetRandomInfected();
-	if(zombie == 0) {
-		float curFlow = L4D2Direct_GetFlowDistance(survivor);
-		float bounds = 25.0;
-		do {
-			GetRandomNearbyPos(curFlow, outPos, -bounds, bounds);
-			// Don't spawn smoker (0) because they don't listen to the run away
-			zombie = L4D2_SpawnSpecial(GetRandomInt(1, 6), outPos, NULL_VECTOR);
-			tries--;
-			bounds += 25.0;
-		} while(tries > 0 && zombie <= 0);
-	}
+int SpawnRandomSpecial(int survivor, float outPos[3], int tries = 5) {
+	int type = GetRandomInt(1, 6);
+	float curFlow = L4D2Direct_GetFlowDistance(survivor);
+	float bounds = 100.0;
+	int zombie = -1;
+	do {
+		if(GetRandomNearbyPos(curFlow, outPos, -bounds, bounds, 100.0)) {
+			zombie = L4D2_SpawnSpecial(type, outPos, NULL_VECTOR);
+		}
+		// Don't spawn smoker (0) because they don't listen to the run away
+		tries--;
+		bounds += 50.0;
+	} while(tries > 0 && zombie <= 0);
 	return zombie;
 }
 
@@ -142,7 +142,7 @@ int GetRandomRealPlayer(int ignore1, int ignore2) {
 	return GetClientOfUserId(player);
 }
 
-int SpawnPropAbovePlayer(int target, const char[] model, bool autoKill = true) {
+int SpawnPropAbovePlayer(int target, const char[] model, float autoKillTime = 0.0) {
 	// float min[3] = { -30.0, -30.0, -2.0};
 	// float max[3] = { 30.0, 30.0, 50.0 };
 	float pos[3];
@@ -153,7 +153,7 @@ int SpawnPropAbovePlayer(int target, const char[] model, bool autoKill = true) {
 	pos[2] += 60.0;
 	PrecacheModel(model);
 	int id = CreateProp("prop_physics", model, pos, ang, vel);
-	if(autoKill) CreateTimer(5.0, Timer_KillEntity, id);
+	if(autoKillTime > 0.0) CreateTimer(autoKillTime, Timer_KillEntity, id);
 	return id;
 }
 
