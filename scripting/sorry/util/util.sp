@@ -109,14 +109,17 @@ bool GetRandomNearbyPos(float curFlow, float pos[3], float flowBehindMinDelta = 
 	bool result = false;
 	// This finds the first nav area in range, usually closer
 	for(int i = 0; i < navs.Length; i++) {
-		float flow = L4D2Direct_GetTerrorNavAreaFlow(navs.Get(i));
+		Address nav = navs.Get(i);
+		float flow = L4D2Direct_GetTerrorNavAreaFlow(nav);
+		// PrintToServer("c=%f flow=%f min[%f]=%b max[%f]=%b dist=[%f]=%b", curFlow, flow, flowBehindMin, flow >= flowBehindMin, flowAheadMax, flow <= flowAheadMax, flowMinAway, flow - curFlow >= flowMinAway);
 		if(flow >= flowBehindMin && flow <= flowAheadMax && flow - curFlow >= flowMinAway) {
-			L4D_FindRandomSpot(navs.Get(i), pos);
+			L4D_FindRandomSpot(nav, pos);
 			result = true;
 			break;
 		}
 	}
 	delete navs;
+	PrintToServer("sory: warn GetRandomNearbyPos failed (curFlow=%f, range=[%f,%f] min=%f", curFlow, flowBehindMinDelta, flowAheadMaxDelta, flowMinAway);
 	return result;
 }
 
