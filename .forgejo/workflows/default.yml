@@ -9,10 +9,10 @@ jobs:
     steps:
       - uses: https://git.jackz.me/actions/checkout@v5
       - name: Setup sourcepawn
-        uses: https://git.jackz.me/actions/setup-sp@bb7306e551914d48b2d8405dba17ddc46a4a12a2
+        uses: https://git.jackz.me/jackz/setup-sp@v1.4.1
         with:
           version: ${{ matrix.sm-version }}
-          github-token: ${{ secrets.GH_REGISTRY_TOKEN }}
+          github-token: ${{ secrets.GH_PUBLIC_TOKEN }}
       - name: Build Plugins
         env:
           SPCOMP_PATH: spcomp
