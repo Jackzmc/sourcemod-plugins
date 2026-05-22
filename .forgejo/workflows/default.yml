@@ -12,6 +12,7 @@ jobs:
         uses: https://git.jackz.me/actions/setup-sp@bb7306e551914d48b2d8405dba17ddc46a4a12a2
         with:
           version: ${{ matrix.sm-version }}
+          github-token: ${{ secrets.GH_REGISTRY_TOKEN }}
       - name: Build Plugins
         env:
           SPCOMP_PATH: spcomp
