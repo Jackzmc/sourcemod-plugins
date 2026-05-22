@@ -7,7 +7,8 @@ jobs:
         sm-version: [ '1.11.x', '1.12.x', '1.13.x']
     name: Sourcemod v${{ matrix.sm-version }}
     steps:
-      - uses: https://git.jackz.me/actions/checkout@v5
+      - name: Checkout
+        uses: https://git.jackz.me/actions/checkout@v5
       - name: Setup sourcepawn
         uses: https://git.jackz.me/jackz/setup-sp@b466309e44923e2deaf065cea2b6fd2016ae256d
         with:
