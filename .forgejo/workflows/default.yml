@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: https://git.jackz.me/actions/checkout@v5
       - name: Setup sourcepawn
-        uses: https://git.jackz.me/jackz/setup-sp@b466309e44
+        uses: https://git.jackz.me/jackz/setup-sp@b466309e44923e2deaf065cea2b6fd2016ae256d
         with:
           version: ${{ matrix.sm-version }}
           github-token: ${{ secrets.GH_PUBLIC_TOKEN }}
