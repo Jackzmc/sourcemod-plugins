@@ -10,5 +10,6 @@
 !guesswho/**
 !hat_presets.cfg
 !hideandseek.cfg
+!sorry_responses.cfg
 
 randomizer/sync.sh

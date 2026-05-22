@@ -58,7 +58,8 @@ enum sorryResponseValues {
 	Sorry_RejectKidnap = -36,
 	Sorry_RejectSpook = -37,
 	Sorry_AcceptFreeRevive = 12,
-	Sorry_RejectSideways = -38
+	Sorry_RejectSideways = -38,
+	Sorry_AcceptHealingZombies = 13
 }
 
 #if defined DEBUG_SORRY

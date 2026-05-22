@@ -1,6 +1,7 @@
 #include "accept/FreeRevive.sp"
 #include "accept/UltimateSacrifice.sp"
 #include "accept/SpeedBoost.sp"
+#include "accept/HealingZombies.sp"
 
 #include "neutral/UnoReverse.sp"
 #include "neutral/ThirdParty.sp"
@@ -24,6 +25,7 @@ void RegisterResponses() {
 	// ACCEPT
 	ResponseBuilder(Sorry_AcceptFreeRevive, Type_Accept, FreeRevive_OnActivate);
 	ResponseBuilder(Sorry_AcceptSpeedBoost, Type_Accept, SpeedBoost_OnActivate);
+	ResponseBuilder(Sorry_AcceptHealingZombies, Type_Accept, HealingZombies_OnActivate);
 
 	// NEUTRAL
 	ResponseBuilder(Sorry_ThirdParty, Type_Neutral, ThirdParty_OnActivate);

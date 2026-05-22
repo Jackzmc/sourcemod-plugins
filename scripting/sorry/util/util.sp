@@ -316,3 +316,29 @@ stock void SetPlayerBlind(int target, int opacity, int durationMs = 500, int fla
 	color[3] = opacity;
 	SetPlayerBlindColor(target, color, durationMs, flags);
 }
+
+void SpawnZombiesNearby(const float center[3], int count, int targetUserId = 0, const char[] model = "") {
+	ArrayList list = SpawnZombiesNearbyList(center, count);
+	for(int i = 0; i < list.Length; i++) {
+		int common = list.Get(i);
+		if(model[0] != '\0') SetEntityModel(common, model);
+        if(targetUserId > 0) L4D2_RunScript("CommandABot({cmd=0,bot=EntIndexToHScript(%i),target=GetPlayerFromUserID(%i)})", common, targetUserId);
+	}
+	delete list;
+}
+#define SPAWN_ZOMBIE_MIN_DIST 40.0
+ArrayList SpawnZombiesNearbyList(const float center[3], int count) {
+	ArrayList list = new ArrayList();
+    float endPos[3];
+    endPos[2] = center[2];
+    for(int i = 0; i < count; i++) {
+        endPos[0] = center[0] + GetRandomFloat(-95.0, 95.0);
+        endPos[1] = center[1] + GetRandomFloat(-95.0, 95.0);
+        // Prevent zombies from spawning inside:
+        if(endPos[0] - center[0] < SPAWN_ZOMBIE_MIN_DIST) endPos[0] += SPAWN_ZOMBIE_MIN_DIST + 8.0;
+        if(endPos[1] - center[1] < SPAWN_ZOMBIE_MIN_DIST) endPos[1] += SPAWN_ZOMBIE_MIN_DIST + 8.0;
+        int common = L4D_SpawnCommonInfected(endPos);
+		list.Push(EntIndexToEntRef(common));
+    }
+	return list;
+}
