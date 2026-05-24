@@ -59,6 +59,7 @@ Handle updateHealthTimer[MAXPLAYERS+1];
 Handle updateItemTimer[MAXPLAYERS+1];
 Handle receiveTimeoutTimer = null;
 int pendingAuthTries = 3;
+PanelMoveType lastMoveType[MAXPLAYERS+1];
 
 Socket g_socket;
 int g_lastPayloadTimeSent, g_lastPayloadTimeRecv; 
@@ -1045,6 +1046,9 @@ void SendPlayers() {
 public void OnPlayerRunCmdPost(int client, int buttons, int impulse, const float vel[3], const float angles[3], int weapon, int subtype, int cmdnum, int tickcount, int seed, const int mouse[2]) {
 	// if(updateHealthTimer[client] != null)
 		// TriggerHealthUpdate(client);
+	PanelMoveType moveType = GetPlayerMovement(client);
+	if(moveType != lastMoveType[client]) TriggerHealthUpdate(client);
+	lastMoveType[client] = moveType;
 }
 
 public void OnMapStart() {
@@ -1260,7 +1264,7 @@ int GetAction(int client) {
 	return view_as<int>(L4D2_GetPlayerUseAction(client));
 }
 
-enum {
+enum PanelMoveType {
 	Move_UnderAttack = -3,
 	Move_Hanging = -2,
 	Move_Incapped = -1,
@@ -1278,7 +1282,7 @@ stock float GetPlayerSpeed(int client) {
 	return GetVectorLength(velocity, false);
 }
 
-int GetPlayerMovement(int client) {
+PanelMoveType GetPlayerMovement(int client) {
 	MoveType moveType = GetEntityMoveType(client);
 	if(moveType == MOVETYPE_LADDER) return Move_Ladder;
 	else if(GetEntProp(client, Prop_Send, "m_bDucked", 1)) return Move_Crouched;
@@ -1302,7 +1306,8 @@ enum {
 }
 
 stock bool IsPlayerBoomed(int client) {
-	return (GetEntPropFloat(client, Prop_Send, "m_vomitStart") + 20.1) > GetGameTime();
+	// For some reason was showing boomed when
+	return g_gameState != State_Transitioning && (GetEntPropFloat(client, Prop_Send, "m_vomitStart") + 20.1) > GetGameTime();
 }
 
 int GetSurvivorStates(int client) {
