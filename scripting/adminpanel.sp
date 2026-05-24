@@ -6,6 +6,7 @@
 #define MAX_ATTEMPT_TIMEOUT 120.0
 #define DEFAULT_SERVER_PORT 7888
 #define SOCKET_TIMEOUT_DURATION 90.0
+#define FULL_SYNC_INTERVAL_S 60.0
 
 #define DATABASE_NAME "adminpanel"
 
@@ -188,7 +189,7 @@ public void OnPluginStart() {
 
 	CommandArgRegex = new Regex("(?:[^\\s\"]+|\"[^\"]*\")+", 0);
 
-	CreateTimer(300.0, Timer_FullSync, _, TIMER_REPEAT);
+	CreateTimer(FULL_SYNC_INTERVAL_S, Timer_FullSync, _, TIMER_REPEAT);
 
 	gameAppId = GetAppData(gameVersion, sizeof(gameVersion));
 }
@@ -1042,8 +1043,8 @@ void SendPlayers() {
 }
 
 public void OnPlayerRunCmdPost(int client, int buttons, int impulse, const float vel[3], const float angles[3], int weapon, int subtype, int cmdnum, int tickcount, int seed, const int mouse[2]) {
-	if(updateHealthTimer[client] != null)
-		TriggerHealthUpdate(client);
+	// if(updateHealthTimer[client] != null)
+		// TriggerHealthUpdate(client);
 }
 
 public void OnMapStart() {
@@ -1123,7 +1124,7 @@ void Event_ItemUsed(Event event, const char[] name, bool dontBroadcast) {
 		// 	SendPayload();
 		// }
 		if(GetClientTeam(client) == 2)
-			TriggerHealthUpdate(client);
+			TriggerHealthUpdate(client, true);
 	}
 }
 
