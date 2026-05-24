@@ -1128,6 +1128,10 @@
                             -16.0
                         ]
                     }
+            
+                ],
+                "inputs": [
+                    {"hammerid": 372957, "input": "_allow_ladder"}
                 ]
             },
             {
@@ -1147,6 +1151,9 @@
                             -16.0
                         ]
                     }
+                ],
+                "inputs": [
+                    {"hammerid": 372959, "input": "_allow_ladder"}
                 ]
             }
         ]
