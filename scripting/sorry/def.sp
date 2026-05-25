@@ -1,6 +1,7 @@
 
 #define MODEL_CAR "models/props_vehicles/cara_95sedan.mdl"
-#define MODEL_CRATE "models/props_junk/wood_crate002a.mdl"
+#define MODEL_CRATE2 "models/props_junk/wood_crate002a.mdl"
+#define MODEL_CRATE "models/props_junk/wood_crate001a.mdl"
 #define SOUND_CAR_ALARM "vehicles/car_alarm/car_alarm2.wav"
 #define SOUND_EXPLODE_BOMB "weapons/hegrenade/beep.wav"
 #define MODEL_PEANUT "models/props_fairgrounds/Lil'Peanut_cutout001.mdl"

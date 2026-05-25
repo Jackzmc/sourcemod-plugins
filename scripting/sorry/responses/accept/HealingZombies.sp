@@ -23,7 +23,7 @@ void HealingZombies_OnActivate(int apologizer, int target, const char[] eventId)
         DispatchKeyValue(kit, "solid", "0");
         TeleportEntity(kit, pos);
         SetParent(kit, common);
-        SetParentAttachment(kit, "eyes", true);
+        SetParentAttachment(kit, "ValveBiped.Bip01_Head1", true);
         DispatchSpawn(kit);
     }
     delete list;

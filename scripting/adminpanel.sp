@@ -1496,19 +1496,19 @@ void AddSurvivorRecord(int client) {
 	int bot = L4D_GetBotOfIdlePlayer(client);
 	if(bot > 0) client = bot;
 
-	int survivor = GetEntProp(client, Prop_Send, "m_survivorCharacter");
+	int survivorType = GetEntProp(client, Prop_Send, "m_survivorCharacter");
 	// The icons are mapped for survivors as 4,5,6,7; so inc to that for L4D1 survivors
 	if(isL4D1Survivors) {
-		survivor += 4; 
+		survivorType += 4; 
 	}
-	if(survivor >= 8) {
-		LogError("invalid survivor %d", survivor);
-		return;
+	if(survivorType >= 8) {
+		PrintToServer("adminpanel: warn: invalid survivor type %d", survivorType);
+		survivorType = 7;
 	}
 
 	StartRecord(Live_Survivor);
 	sendBuffer.WriteInt(userid);
-	sendBuffer.WriteByte(survivor);
+	sendBuffer.WriteByte(survivorType);
 	sendBuffer.WriteByte(L4D_GetPlayerTempHealth(client)); //temp health
 	int health = IsPlayerAlive(client) ? GetEntProp(client, Prop_Send, "m_iHealth"): 0;
 	sendBuffer.WriteByte(health); //perm health
