@@ -28,9 +28,9 @@ ConVar enabledBlacklist;
 
 //int g_markedMode
 
-#include <editor/editor.sp>
-#include <editor/props/base.sp>
-#include <editor/natives.sp>
+#include "editor/editor.sp"
+#include "editor/props/base.sp"
+#include "editor/natives.sp"
 #include <editor>
 
 public Plugin myinfo = {
@@ -175,10 +175,12 @@ stock bool GetSmartCursorLocation(int client, float outPos[3]) {
 } 
 
 
+
 bool g_inRotate[MAXPLAYERS+1];
+int oldButtons[MAXPLAYERS+1];
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	float tick = GetGameTime();
-	int oldButtons = GetEntProp(client, Prop_Data, "m_nOldButtons");
+	int oldButtons = oldButtons[client]; //GetEntProp(client, Prop_Data, "m_nOldButtons");
 	if(g_pendingSaveClient == client) {
 		if(g_PropData[client].pendingSaveType == Save_Schematic) {
 			// move cursor? or should be editor anyway
@@ -217,10 +219,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			cmdThrottle[client] = tick;
 		}
 	} else if(Editor[client].IsActive()) { 
-		// if(buttons & IN_USE && buttons & IN_RELOAD) {
-		// 	ClientCommand(client, "sm_wall done");
-		// 	return Plugin_Handled;
-		// }
 		bool allowMove = true;
 		switch(Editor[client].mode) {
 			case MOVE_ORIGIN: {
@@ -235,6 +233,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 						buttons &= ~IN_JUMP;
 						Editor[client].CycleStacker();
 					} else if(!(oldButtons & IN_SPEED) && (buttons & IN_SPEED)) {
+						PrintHintText(client, "old=%d[%b] %d[%b]", oldButtons, oldButtons & IN_SPEED == IN_SPEED, buttons, buttons & IN_SPEED == IN_SPEED);
 						Editor[client].ToggleCollision();
 						return Plugin_Handled; 
 					}  else if(!(oldButtons & IN_DUCK) && (buttons & IN_DUCK)) {
@@ -348,10 +347,14 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		}
 
 		Editor[client].Draw(BUILDER_COLOR, 0.1, 0.1);
-		return allowMove ? Plugin_Continue : Plugin_Handled;
+		return allowMove ? Plugin_Continue : Plugin_Changed;
 	}
 
 	return Plugin_Continue;
+}
+
+public void OnPlayerRunCmdPost(int client, int buttons, int impulse, const float vel[3], const float angles[3], int weapon, int subtype, int cmdnum, int tickcount, int seed, const int mouse[2]) {
+	oldButtons[client] = buttons;
 }
 
 int IntAbs(int a) {
