@@ -221,7 +221,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		}
 	} else if(Editor[client].IsActive()) { 
 		bool allowMove = true;
-		EditorMenu[client].OnTick(tick, mouse, oldButtons, buttons);
+		EditorMenu[client].OnTick(tick, mouse, buttons);
 		buttons = Editor[client].menuData.buttons;
 		switch(Editor[client].mode) {
 			case MOVE_ORIGIN: {
