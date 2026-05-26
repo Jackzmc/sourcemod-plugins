@@ -58,6 +58,7 @@ models/lighthouse/junkyard_crane_arm.mdl Junkyard Crane-Arm
 models/lighthouse/junkyard_crane_base.mdl Junkyard Crane-Base
 models/lighthouse/junkyard_crane_magnet.mdl Junkyard Crane-Magnet (No Collision)
 models/props_junk/wheebarrow01a.mdl Wheelbarrow
+models/props_junk/wood_crate001a.mdl Woodcrate 1
 models/props_junk/wood_crate002a.mdl Woodcrate 2
 models/props_junk/wheelbarrow01a_static.mdl Push wheelbarrow (solid state)
 models/props/cs_assault/handtruck.mdl Handtruck
