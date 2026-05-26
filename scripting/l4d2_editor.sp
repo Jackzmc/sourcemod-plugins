@@ -312,17 +312,17 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				}
 			}
 			case COLOR: {
-				SetWeaponDelay(client, 0.5);
-				PrintHintText(client, "%d %d %d %d", Editor[client].color[0], Editor[client].color[1], Editor[client].color[2], Editor[client].color[3]);
-				if(buttons & IN_USE) {
-					Editor[client].CycleColorComponent(tick);
-				} else if(buttons & IN_ATTACK2) {
-					Editor[client].IncreaseColor(1);
-					allowMove = false;
-				} else if(buttons & IN_ATTACK) {
-					Editor[client].IncreaseColor(-1);
-					allowMove = false;
-				}
+				// SetWeaponDelay(client, 0.5);
+				// PrintHintText(client, "%d %d %d %d", Editor[client].color[0], Editor[client].color[1], Editor[client].color[2], Editor[client].color[3]);
+				// if(buttons & IN_USE) {
+				// 	Editor[client].CycleColorComponent(tick);
+				// } else if(buttons & IN_ATTACK2) {
+				// 	Editor[client].IncreaseColor(1);
+				// 	allowMove = false;
+				// } else if(buttons & IN_ATTACK) {
+				// 	Editor[client].IncreaseColor(-1);
+				// 	allowMove = false;
+				// }
 			}
 		}
 		if(buttons & IN_DUCK) {
@@ -592,6 +592,9 @@ stock bool GetInitialRayPosition(int client, float endPos[3]) {
 	return false;
 }
 
+/**
+ * Calculates position of editor preview (that becomes real placement), based off player's cursor
+ */
 stock bool CalculateEditorPosition(int client, TraceEntityFilter filter) {
 	if (client > 0 && client <= MaxClients && IsClientInGame(client)) {
 		float clientEye[3], clientAngle[3], direction[3];
@@ -610,6 +613,7 @@ stock bool CalculateEditorPosition(int client, TraceEntityFilter filter) {
 					GetEntPropVector(Editor[client].entity, Prop_Send, "m_vecMins", direction);
 					Editor[client].origin[2] -= direction[2];
 				}
+				// If enabled, rotate prop to have its ground be the same as the normal plane 
 				if(Editor[client].hasCollisionRotate) {
 					TR_GetPlaneNormal(INVALID_HANDLE, Editor[client].angles);
 					GetVectorAngles(Editor[client].angles, Editor[client].angles);
