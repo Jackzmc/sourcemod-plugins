@@ -123,6 +123,8 @@ enum struct EditorData {
 		if(this.entity != INVALID_ENT_REFERENCE && (this.flags & Edit_Preview) && IsValidEntity(this.entity)) {
 			RemoveEntity(this.entity);
 		}
+		// Ensure player always unfrozen
+		SetEntityFlags(this.client, GetEntityFlags(this.client) & ~FL_FROZEN);
 		this.stackerDirection = Stack_Off;
 		this.entity = INVALID_ENT_REFERENCE;
 		this.data[0] = '\0';
@@ -357,6 +359,7 @@ enum struct EditorData {
 
 	// Complete the edit, wall creation, or spawning
 	CompleteType Done(int& entity) {
+
 		CompleteType type;
 		if(this.flags & Edit_WallCreator) {
 			type = this._FinishWall(entity) ? Complete_WallSuccess : Complete_WallError;
