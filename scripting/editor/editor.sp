@@ -1189,7 +1189,7 @@ Action Cmd_EditorGrab(int client, int args) {
 		char targetname[32];
 		GetEntityClassname(entity, classname, sizeof(classname));
 		GetEntPropString(entity, Prop_Data, "m_target", targetname, sizeof(targetname));
-		PrintToChat(client, "\x04[Editor]\x01 Editing entity \x05%d (%s) [%s]\x01. End with \x05/edit done\x01", entity, classname, targetname);
+		PrintHintText(client, "Editing entity %d (%s) [%s]", entity, classname, targetname);
 	}
 	return Plugin_Handled;
 }
