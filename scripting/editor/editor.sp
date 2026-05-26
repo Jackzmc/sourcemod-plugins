@@ -163,7 +163,8 @@ enum struct EditorData {
 				this.angles[1] = RoundToNearestInterval(this.angles[1], this.snapAngle);
 				this.angles[2] = RoundToNearestInterval(this.angles[2], this.snapAngle);
 			}
-			TeleportEntity(this.entity, this.origin, this.angles, NULL_VECTOR);
+			float vel[3];
+			TeleportEntity(this.entity, this.origin, this.angles, vel);
 		}
 		Effect_DrawAxisOfRotationToAll(this.origin, this.angles, ORIGIN_SIZE, g_iLaserIndex, 0, 0, 30, 0.2, 0.1, 0.1, 0, 0.0, 0);
 	}
@@ -504,7 +505,7 @@ enum struct EditorData {
 		if(this.classname[0] != '\0') {
 			entity = CreateEntityByName(this.classname);
 		} else if(this.buildType == Build_Physics)
-			entity = CreateEntityByName("prop_physics");
+			entity = CreateEntityByName("prop_physics_override");
 		else
 			entity = CreateEntityByName("prop_dynamic_override");
 		if(entity == -1) return false;
@@ -762,7 +763,7 @@ methodmap IEditorMenu {
 		Editor[this.Client].menuData.Update(tick, mouse, buttons);
 		SetWeaponDelay(this.Client, 0.5);
 
-		// Get & reset flags
+		// Get & reset flags.
 		int playerFlags = GetEntityFlags(this.Client);
 		playerFlags &= ~FL_FROZEN
 		SetEntityFlags(this.Client, playerFlags);
