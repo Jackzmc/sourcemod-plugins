@@ -40,4 +40,6 @@ void RegisterResponses() {
 	ResponseBuilder(Sorry_RejectBecomeRandomPeanut, Type_Reject, BecomeRandomPeanut_OnActivate);
 	ResponseBuilder(Sorry_RejectKidnap, Type_Reject, Kidnap_OnActivate);
 	ResponseBuilder(Sorry_RejectSideways, Type_Reject, Sideways_OnActivate);
+	ResponseBuilder(Sorry_RejectProp, Type_Reject, RandomProp_OnActivate)
+		.OnPlayerRunCmd(RandomProp_OnPlayerRunCmd);
 }

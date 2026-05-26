@@ -803,8 +803,11 @@ bool Filter_World(int entity, int mask, int data) {
 	return entity == 0;
 }
 
-// Gets a position from where the cursor is upto distance away (basically <= distance, going against walls)
-stock bool GetCursorLimited(int client, float distance, float endPos[3], TraceEntityFilter filter)
+/**
+ * Gets a position from where the cursor is upto distance away (basically <= distance, going against walls)
+ * @returns 0 if trace didn't hit, -1 if entity index had no collision, -2 if invalid
+ */
+stock int GetCursorLimited(int client, float distance, float endPos[3], TraceEntityFilter filter)
 { 
 	if (client > 0 && client <= MaxClients && IsClientInGame(client)) {
 		float clientEye[3], clientAngle[3], direction[3];
@@ -818,11 +821,12 @@ stock bool GetCursorLimited(int client, float distance, float endPos[3], TraceEn
 		TR_TraceRayFilter(clientEye, endPos, MASK_OPAQUE, RayType_EndPoint, filter, client);
 		if (TR_DidHit(INVALID_HANDLE)) {
 			TR_GetEndPosition(endPos);
+			return TR_GetEntityIndex(INVALID_HANDLE);
 		}
-		return true;
+		return 0;
 	}
 
-	return false;
+	return -2;
 }
 
 stock void SetWeaponDelay(int client, float delay) {
