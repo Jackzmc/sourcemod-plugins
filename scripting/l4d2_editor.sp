@@ -109,7 +109,8 @@ public void OnPluginStart() {
 	}
 
 	for(int i = 1; i <= MaxClients; i++) {
-		Editor[i].client = i;
+		Editor[i].Init(i);
+		EditorMenu[i] = IEditorMenu(i);
 		Editor[i].Reset(true);
 		g_PropData[i].Init(i);
 	}
@@ -176,11 +177,11 @@ stock bool GetSmartCursorLocation(int client, float outPos[3]) {
 
 
 
-bool g_inRotate[MAXPLAYERS+1];
 int oldButtons[MAXPLAYERS+1];
 public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
 	float tick = GetGameTime();
-	int oldButtons = oldButtons[client]; //GetEntProp(client, Prop_Data, "m_nOldButtons");
+	// int oldButtons = oldButtons[client]; //
+	int oldButtons = GetEntProp(client, Prop_Data, "m_nOldButtons");
 	if(g_pendingSaveClient == client) {
 		if(g_PropData[client].pendingSaveType == Save_Schematic) {
 			// move cursor? or should be editor anyway
@@ -220,71 +221,67 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		}
 	} else if(Editor[client].IsActive()) { 
 		bool allowMove = true;
+		EditorMenu[client].OnTick(tick, mouse, oldButtons, buttons);
+		buttons = Editor[client].menuData.buttons;
 		switch(Editor[client].mode) {
 			case MOVE_ORIGIN: {
 				SetWeaponDelay(client, 0.5);
 				bool isRotate;
 				int flags = GetEntityFlags(client);
 				if(buttons & IN_RELOAD) {
-					if(!g_inRotate[client]) {
-						g_inRotate[client] = true;
-					}
 					if(!(oldButtons & IN_JUMP) && (buttons & IN_JUMP)) {
-						buttons &= ~IN_JUMP;
-						Editor[client].CycleStacker();
+						// buttons &= ~IN_JUMP;
+						// Editor[client].CycleStacker();
 					} else if(!(oldButtons & IN_SPEED) && (buttons & IN_SPEED)) {
-						PrintHintText(client, "old=%d[%b] %d[%b]", oldButtons, oldButtons & IN_SPEED == IN_SPEED, buttons, buttons & IN_SPEED == IN_SPEED);
-						Editor[client].ToggleCollision();
+						// Editor[client].ToggleCollision();
+						// buttons &= ~IN_SPEED;
 						return Plugin_Handled; 
 					}  else if(!(oldButtons & IN_DUCK) && (buttons & IN_DUCK)) {
-						Editor[client].ToggleCollisionRotate();
+						// Editor[client].ToggleCollisionRotate();
 						return Plugin_Handled; 
 					} else {
-						PrintCenterText(client, "%.1f %.1f %.1f", Editor[client].angles[0], Editor[client].angles[1], Editor[client].angles[2]);
-						isRotate = true;
-						SetEntityFlags(client, flags |= FL_FROZEN);
-						if(!(oldButtons & IN_ATTACK) && (buttons & IN_ATTACK)) Editor[client].CycleAxis();
-						else if(!(oldButtons & IN_ATTACK2) && (buttons & IN_ATTACK2))  Editor[client].CycleSnapAngle(tick);
+						// PrintCenterText(client, "%.1f %.1f %.1f", Editor[client].angles[0], Editor[client].angles[1], Editor[client].angles[2]);
+						// isRotate = true;
+						// SetEntityFlags(client, flags |= FL_FROZEN);
+						// if(!(oldButtons & IN_ATTACK) && (buttons & IN_ATTACK)) Editor[client].CycleAxis();
+						// else if(!(oldButtons & IN_ATTACK2) && (buttons & IN_ATTACK2))  Editor[client].CycleSnapAngle(tick);
 						
-						// Rotation control:
-						// Turn off rotate when player wants rotate
-						Editor[client].hasCollisionRotate = false;
-						if(tick - cmdThrottle[client] > 0.1) {
-							if(Editor[client].axis == 0) {
-								int mouseXAbs = IntAbs(mouse[0]); 
-								int mouseYAbs = IntAbs(mouse[1]); 
-								bool XOverY = mouseXAbs > mouseYAbs;
-								if(mouseYAbs > 10 && !XOverY) {
-									Editor[client].IncrementAxis(0, mouse[1]);
-								} else if(mouseXAbs > 10 && XOverY) {
-									Editor[client].IncrementAxis(1, mouse[0]);
-								}
-							}
-							else if(Editor[client].axis == 1) {
-								if(mouse[0] > 10) Editor[client].angles[2] += Editor[client].snapAngle;
-								else if(mouse[0] < -10) Editor[client].angles[2] -= Editor[client].snapAngle;
-							}
-							cmdThrottle[client] = tick;
-						}
+						// // Rotation control:
+						// // Turn off rotate when player wants rotate
+						// Editor[client].hasCollisionRotate = false;
+						// if(tick - cmdThrottle[client] > 0.1) {
+						// 	if(Editor[client].axis == 0) {
+						// 		int mouseXAbs = IntAbs(mouse[0]); 
+						// 		int mouseYAbs = IntAbs(mouse[1]); 
+						// 		bool XOverY = mouseXAbs > mouseYAbs;
+						// 		if(mouseYAbs > 10 && !XOverY) {
+						// 			Editor[client].IncrementAxis(0, mouse[1]);
+						// 		} else if(mouseXAbs > 10 && XOverY) {
+						// 			Editor[client].IncrementAxis(1, mouse[0]);
+						// 		}
+						// 	}
+						// 	else if(Editor[client].axis == 1) {
+						// 		if(mouse[0] > 10) Editor[client].angles[2] += Editor[client].snapAngle;
+						// 		else if(mouse[0] < -10) Editor[client].angles[2] -= Editor[client].snapAngle;
+						// 	}
+						// 	cmdThrottle[client] = tick;
+						// }
 					}
 				} else {
-					if(g_inRotate[client]) {
-						g_inRotate[client] = false;
-					}
-					float moveAmount = 1.0;
-					if(buttons & IN_SPEED) {
-						// If holding shift, move distance expoentionally faster the farther away
-						moveAmount += Pow(2.0, Editor[client].moveDistance / 200.0);
-					}
-					if(buttons & IN_ATTACK) Editor[client].moveDistance += moveAmount;
-					else if(buttons & IN_ATTACK2) Editor[client].moveDistance -= moveAmount;
+					// float moveAmount = 1.0;
+					// if(buttons & IN_SPEED) {
+					// 	// If holding shift, move distance expoentionally faster the farther away
+					// 	moveAmount += Pow(2.0, Editor[client].moveDistance / 200.0);
+					// }
+					// if(buttons & IN_ATTACK) Editor[client].moveDistance += moveAmount;
+					// else if(buttons & IN_ATTACK2) Editor[client].moveDistance -= moveAmount;
 				}
 
 				// Clear IN_FROZEN when no longer rotate
-				if(!isRotate && flags & FL_FROZEN) {
-					flags = flags & ~FL_FROZEN;
-					SetEntityFlags(client, flags);
-				}
+				// if(!isRotate && flags & FL_FROZEN) {
+				// 	flags = flags & ~FL_FROZEN;
+				// 	SetEntityFlags(client, flags);
+				// }
 				// Update the position of entity to cursor
 				if(Editor[client].stackerDirection == Stack_Off) {
 					CalculateEditorPosition(client, Filter_IgnorePlayerAndWall);
