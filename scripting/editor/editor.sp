@@ -311,7 +311,7 @@ enum struct EditorData {
 		// No tick needed, is handled externally
 		if(this.classname[0] != '\0') {
 			PrintToChat(this.client, "\x04[Editor]\x01 Spawn as: \x05%s\x01 (fixed)", this.classname);
-		} else if(this.buildType == Build_Physics) {
+		} else if(this.buildType == Build_NonSolid) {
 			this.buildType = Build_Solid;
 			PrintToChat(this.client, "\x04[Editor]\x01 Spawn as: \x05Solid\x01");
 		} else if(this.buildType == Build_Solid) {

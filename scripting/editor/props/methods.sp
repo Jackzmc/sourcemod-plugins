@@ -416,7 +416,7 @@ int GetSpawnedIndex(int client, int index) {
 	}
 	return -1;
 }
-#define MAX_SEARCH_RESULTS 30
+#define MAX_SEARCH_RESULTS 50
 ArrayList SearchItems(const char[] query) {
 	// We have to put it into SearchData enum struct, then convert it back to ItemResult
 	LoadCategories();
