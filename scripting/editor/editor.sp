@@ -505,7 +505,7 @@ enum struct EditorData {
 		if(this.classname[0] != '\0') {
 			entity = CreateEntityByName(this.classname);
 		} else if(this.buildType == Build_Physics)
-			entity = CreateEntityByName("prop_physics_override");
+			entity = CreateEntityByName("prop_physics");
 		else
 			entity = CreateEntityByName("prop_dynamic_override");
 		if(entity == -1) return false;
