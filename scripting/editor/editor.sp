@@ -65,30 +65,6 @@ char STACK_DIRECTION_NAME[7][] = {
 
 ArrayList createdWalls;
 
-// enum struct EditorMenu {
-// 	int client;
-// 	void Init(int client) {
-// 		this.client = client;
-// 	} 
-// 	void HandleTick(int tick, int oldButtons, int buttons) {
-// 		SetWeaponDelay(client, 0.5);
-// 		switch(Editor[this.client].mode) {
-// 			case MOVE_ORIGIN:
-// 				this._handleMoveOrigin(tick, oldButtons, buttons);
-// 		}
-// 	}
-
-// 	void _isJustPressed(int oldButtons, int buttons, int button) {
-// 		return !(oldButtons & button) && (buttons & button);
-// 	}
-
-// 	void _handleMoveOrigin(int tick, int oldButtons, int buttons) {
-// 		if(this._isJustPressed(oldButtons, buttons, IN_SPEED)) {
-// 			PrintToChat(this.client, "press");
-// 		}
-// 	}
-// }
-
 enum struct EditorMenuData {
 	int oldButtons;
 	int buttons;
@@ -794,6 +770,24 @@ methodmap IEditorMenu {
 		switch(Editor[this.Client].mode) {
 			case MOVE_ORIGIN:
 				this._handleMoveOrigin(playerFlags);
+			case COLOR:
+				this._handleColor()
+			case SCALE:
+				this._handleScale();
+		}
+
+		if(Editor[this.Client].mode != COLOR && this.IsBtnJustPressed(IN_USE)) {
+			if(this.IsBtnPressed(IN_SPEED)) {
+				Editor[this.Client].Cancel();
+			} else if(this.IsBtnPressed(IN_DUCK)) {
+				Editor[this.Client].CycleBuildType();
+			} else {
+				// No modifier
+				int entity;
+				Editor[this.Client].Done(entity);
+			}
+		} else if(this.IsBtnJustPressed(IN_ZOOM)) {
+			Editor[this.Client].CycleMode();
 		}
 
 		// Manually track if reloaded due to a engine bug
@@ -819,6 +813,12 @@ methodmap IEditorMenu {
 			this._handleRotate(playerFlags);
 		} else {
 			this._handleMove();
+		}
+
+		// Update position if stacker not active
+		// TODO: if stacker enabled, calculate position to the stacker's destination?
+		if(Editor[this.Client].stackerDirection == Stack_Off) {
+			CalculateEditorPosition(this.Client, Filter_IgnorePlayerAndWall);
 		}
 	}
 
@@ -876,14 +876,39 @@ methodmap IEditorMenu {
 
 	public void _handleColor() {
 		SetWeaponDelay(this.Client, 0.5);
-		PrintHintText(this.Client, "%d %d %d %d", Editor[this.Client].color[0], Editor[this.Client].color[1], Editor[this.Client].color[2], Editor[this.Client].color[3]);
 
 		if(this.IsBtnPressed(IN_USE)) {
 			Editor[this.Client].CycleColorComponent(this.Tick);
 		} else if(this.IsBtnPressed(IN_ATTACK)) {
-			Editor[this.Client].IncreaseColor(1);
-		} else if(this.IsBtnPressed(IN_ATTACK2)) {
 			Editor[this.Client].IncreaseColor(-1);
+			PrintHintText(this.Client, "%d %d %d %d", Editor[this.Client].color[0], Editor[this.Client].color[1], Editor[this.Client].color[2], Editor[this.Client].color[3]);
+		} else if(this.IsBtnPressed(IN_ATTACK2)) {
+			Editor[this.Client].IncreaseColor(1);
+			PrintHintText(this.Client, "%d %d %d %d", Editor[this.Client].color[0], Editor[this.Client].color[1], Editor[this.Client].color[2], Editor[this.Client].color[3]);
+		}
+	}
+
+	public void _handleScale() {
+		SetWeaponDelay(this.Client, 0.5);
+		if(this.IsBtnPressed(IN_USE)) {
+			Editor[this.Client].CycleSpeed(this.Tick);
+		} else {
+			if(this.IsBtnPressed(IN_MOVELEFT)) {
+				Editor[this.Client].IncrementSize(0, -1.0);
+			} else if(this.IsBtnPressed(IN_MOVERIGHT)) {
+				Editor[this.Client].IncrementSize(0, 1.0);
+				Editor[this.Client].size[0] += Editor[this.Client].moveSpeed; 
+			}
+			if(this.IsBtnPressed(IN_FORWARD)) {
+				Editor[this.Client].IncrementSize(1, 1.0);
+			} else if(this.IsBtnPressed(IN_BACK)) {
+				Editor[this.Client].IncrementSize(1, -1.0);
+			}
+			if(this.IsBtnPressed(IN_JUMP)) {
+				Editor[this.Client].IncrementSize(2, 1.0);
+			} else if(this.IsBtnPressed(IN_DUCK)) {
+				Editor[this.Client].IncrementSize(2, -1.0);
+			}
 		}
 	}
 }
