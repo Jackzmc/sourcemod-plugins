@@ -191,7 +191,7 @@ enum struct PendingBanData {
         // Set ip to NULL if ip = '' (empty)
         g_db.GetConn().Format(buffer, maxlen, 
             "INSERT INTO bans (steamid, ip, reason, expires, executor, flags, timestamp)"
-        ... "VALUES ('%s',NULLIF('%s',''),'%s','%s',NULLIF(%d,0),'%s',0,UNIX_TIMESTAMP()",
+        ... "VALUES ('%s',NULLIF('%s',''),'%s',NULLIF(%d,0),'%s',0,UNIX_TIMESTAMP()",
             this.steamid,
             this.ip,
             this.reason,
