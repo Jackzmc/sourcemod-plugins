@@ -124,7 +124,6 @@ enum struct EditorData {
 			RemoveEntity(this.entity);
 		}
 		// Ensure player always unfrozen
-		SetEntityFlags(this.client, GetEntityFlags(this.client) & ~FL_FROZEN);
 		this.stackerDirection = Stack_Off;
 		this.entity = INVALID_ENT_REFERENCE;
 		this.data[0] = '\0';
@@ -148,7 +147,10 @@ enum struct EditorData {
 			this.hasCollisionRotate = false;
 			this.buildType = Build_Solid;
 		}
+		RequestFrame(Frame_Reset, this.client);
 	}
+
+	
 
 	void CalculateMins() {
 		this.mins[0] = -this.size[0];
@@ -687,6 +689,10 @@ enum struct EditorData {
 		}
 		// CPrintToChat(this.client, "\x04[Editor]\x01 Cancelled.");
 	}
+}
+
+void Frame_Reset(int client) {
+	if(IsClientConnected(client)) SetEntityFlags(client, GetEntityFlags(client) & ~FL_FROZEN);
 }
 
 EditorData Editor[MAXPLAYERS+1];
