@@ -119,7 +119,7 @@ bool GetRandomNearbyPos(float curFlow, float pos[3], float flowBehindMinDelta = 
 		}
 	}
 	delete navs;
-	PrintToServer("sory: warn GetRandomNearbyPos failed (curFlow=%f, range=[%f,%f] min=%f", curFlow, flowBehindMinDelta, flowAheadMaxDelta, flowMinAway);
+	PrintToServer("sorry: warn GetRandomNearbyPos failed (curFlow=%f, range=[%f,%f] min=%f", curFlow, flowBehindMinDelta, flowAheadMaxDelta, flowMinAway);
 	return result;
 }
 

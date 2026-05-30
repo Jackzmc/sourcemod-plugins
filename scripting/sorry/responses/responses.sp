@@ -20,6 +20,7 @@
 #include "reject/Gnome.sp"
 #include "reject/Kidnap.sp"
 #include "reject/Sideways.sp"
+#include "reject/Airstrike.sp"
 
 void RegisterResponses() {
 	// ACCEPT
@@ -42,4 +43,5 @@ void RegisterResponses() {
 	ResponseBuilder(Sorry_RejectSideways, Type_Reject, Sideways_OnActivate);
 	ResponseBuilder(Sorry_RejectProp, Type_Reject, RandomProp_OnActivate)
 		.OnPlayerRunCmd(RandomProp_OnPlayerRunCmd);
+	ResponseBuilder(Sorry_RejectAirstrike, Type_Reject, Airstrike_OnActivate);
 }

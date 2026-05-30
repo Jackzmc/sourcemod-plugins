@@ -60,7 +60,8 @@ enum sorryResponseValues {
 	Sorry_RejectSpook = -37,
 	Sorry_AcceptFreeRevive = 12,
 	Sorry_RejectSideways = -38,
-	Sorry_AcceptHealingZombies = 13
+	Sorry_AcceptHealingZombies = 13,
+	Sorry_RejectAirstrike = -39
 }
 
 #if defined DEBUG_SORRY
@@ -76,6 +77,7 @@ ArrayList g_onPlayerRunCmdForwards;
 ArrayList g_onClientSayCommandForwards;
 
 AnyMap clownLastHonked;
+int g_iLaserIndex;
 
 SorryStore_t SorryStore[MAXPLAYERS+1];
 methodmap SorryStore_t < StringMap {

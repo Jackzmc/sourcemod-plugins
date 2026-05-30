@@ -1,9 +1,12 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define DEBUG_SORRY 1
+#define DEBUG_SORRY 0
 
 #define SORRY_MENU_ITEMS 14
+
+/** If false, all respones become Accept_Assure */
+ConVar allowSelfResponse;
 
 #include <sourcemod>
 #include <sdktools>
@@ -13,6 +16,7 @@
 #include <gamemodes/ents>
 #include <anymap>
 #include <jutils>
+#include <smlib>
 
 #include "sorry/def.sp"
 #include "sorry/util/util.sp"
@@ -44,6 +48,9 @@ public void OnPluginStart() {
 	if(g_Game != Engine_Left4Dead && g_Game != Engine_Left4Dead2) {
 		SetFailState("This plugin is for L4D/L4D2 only.");
 	}
+
+	allowSelfResponse = CreateConVar("sorry_allow_self_response", "0", "Should player be able to accept/reject their own apology? If false, it acts like Accept & Assure always.", FCVAR_NONE, true, 0.0, true, 1.0);
+
 	g_FadeUserMsgId = GetUserMessageId("Fade");
 	clownLastHonked = new AnyMap();
 
@@ -78,11 +85,9 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_sorry", Command_Apologize);
 	RegAdminCmd("sm_sorrymenu", Command_ApologizeMenu, ADMFLAG_GENERIC);
 	#if defined DEBUG_SORRY
-	RegAdminCmd("sm_sorryh", Command_Debug_SorryHandler, ADMFLAG_GENERIC);
+	RegAdminCmd("sm_sorryh", Command_Debug_SorryHandler, ADMFLAG_ROOT);
     RegAdminCmd("sm_sorrys", Command_Debug_Store, ADMFLAG_GENERIC);
     RegAdminCmd("sm_sorryl", Command_Debug_List, ADMFLAG_GENERIC);
-
-	RegConsoleCmd("sm_rgb", Cmd_RGB);
 	#endif
 
 	for(int i = 1; i <= MaxClients; i++) {
@@ -90,26 +95,6 @@ public void OnPluginStart() {
 			OnClientPutInServer(i);
 		}
 	}
-}
-
-Action Cmd_RGB(int client, int args) {
-	float hsv[3];
-	hsv[0] = GetRandomFloat(0.0, 360.0);
-	hsv[1] = 100.0; // 100%
-	hsv[2] = 50.0; 	// 50%
-	PrintToServer("hsv %.1f %.1f %.1f", hsv[0], hsv[1], hsv[2]);
-
-	float rgba[3];
-	HSVToRGB(hsv, rgba);
-	PrintToServer("rgba %f %f %f", rgba[0], rgba[1], rgba[2]);
-
-	int rgb[3];
-	FloatArrayToIntArray(hsv, rgb, 3);
-
-	PrintToServer("rgb %d %d %d", rgb[0], rgb[1], rgb[2]);
-
-	SetEntityRenderColor(client, rgb[0], rgb[1], rgb[2], 255);
-	return Plugin_Handled;
 }
 
 // This loads id -> name, chance
@@ -313,6 +298,10 @@ void SendApology(int client, int target, const char[] hurtType, const char[] eve
 			sorryResponseValues response = view_as<sorryResponseValues>(GetRandomInt(sorryBounds[0], 0));
 			HandleApologyResponse(client, target, eventId, response);
 		}
+	} else if(!allowSelfResponse.BoolValue && target == client) {
+		// Accept & Assure
+		PrintHintText(target, "It's okay to accept yourself.");
+		EmitSoundToAll("ui/survival_playerrec.wav", target);	
 	} else {
 		ShowSorryAcceptMenu(client, target, eventId);
 	}
@@ -917,6 +906,7 @@ Action Timer_KillPlayer(Handle h, int activator) {
 public void OnMapStart() {
 	PrecacheSound("ui/survival_playerrec.wav");
 	PrecacheSound("player/orch_hit_csharp_short.wav");
+	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt");
 }
 
 public void OnClientPutInServer(int client) {
