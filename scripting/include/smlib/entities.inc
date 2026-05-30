@@ -1230,6 +1230,7 @@ stock int Entity_GetHealth(int entity)
  */
 stock int Entity_SetHealth(int entity, int value, bool ignoreMax=false, bool kill=true)
 {
+	#pragma unused kill
 	int health = value;
 
 	if (!ignoreMax) {

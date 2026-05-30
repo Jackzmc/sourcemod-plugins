@@ -692,7 +692,8 @@ enum struct EditorData {
 }
 
 void Frame_Reset(int client) {
-	if(IsClientConnected(client)) SetEntityFlags(client, GetEntityFlags(client) & ~FL_FROZEN);
+	if(IsClientInGame(client)) SetEntityFlags(client, GetEntityFlags(client) & ~FL_FROZEN);
+
 }
 
 EditorData Editor[MAXPLAYERS+1];

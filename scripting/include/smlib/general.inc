@@ -121,6 +121,7 @@ stock bool IsParticleSystemPrecached(const char[] particleSystem)
  */
 stock int FindStringIndexByTableName(const char[] table, const char[] str)
 {
+	#pragma unused table
 	int tableIndex = INVALID_STRING_TABLE;
 	if ((tableIndex = FindStringTable("ParticleEffectNames")) == INVALID_STRING_TABLE) {
 		return INVALID_STRING_INDEX;

@@ -225,7 +225,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		buttons = Editor[client].menuData.buttons;
 		
 		Editor[client].Draw(BUILDER_COLOR, 0.1, 0.1);
-		return Plugin_Handled;
+		return Plugin_Changed;
 	}
 
 	return Plugin_Continue;
