@@ -7,6 +7,9 @@
 #define MODEL_PEANUT "models/props_fairgrounds/Lil'Peanut_cutout001.mdl"
 #define MODEL_GNOME "models/props_junk/gnome.mdl"
 
+/** If false, all respones become Accept_Assure */
+ConVar allowSelfResponse;
+
 UserMsg g_FadeUserMsgId;
 
 enum sorryResponseValues {
@@ -75,9 +78,11 @@ AnyMap g_sorryResponseHandlers;
 // After all responses registered, this contains linear list of runcmd forwards for optimization
 ArrayList g_onPlayerRunCmdForwards;
 ArrayList g_onClientSayCommandForwards;
+ArrayList g_onTakeDamageForwards;
 
 AnyMap clownLastHonked;
 int g_iLaserIndex;
+int g_HaloSprite;
 
 SorryStore_t SorryStore[MAXPLAYERS+1];
 methodmap SorryStore_t < StringMap {
@@ -132,6 +137,20 @@ methodmap SorryStore_t < StringMap {
 		value += increment;
 		this.SetValue(key, value);
 	}
+
+	/**
+	 * Increments the stored value by increment. If not set, defaults to increment. Then after time has passed, value is decremented from
+	 */
+	public int IncrementValueTemp(const char[] key, float ttl, int increment) {
+		this.IncrementValue(key, increment);
+
+		DataPack pack;
+		CreateTimer(ttl, SorryStore_IncrementKeyTimer, pack);
+		pack.WriteCell(this.ClientUserId);
+		pack.WriteCell(strlen(key));
+		pack.WriteString(key);
+		pack.WriteCell(-increment);
+	}
 }
 
 void SorryStore_Setup() {
@@ -149,6 +168,21 @@ Action SorryStore_ClearKey(Handle h, DataPack pack) {
 	pack.ReadString(key, len);
 
 	SorryStore[client].Remove(key);
+	return Plugin_Handled;
+}
+
+Action SorryStore_IncrementKeyTimer(Handle h, DataPack pack) {
+	pack.Reset();
+	int client = GetClientOfUserId(pack.ReadCell());
+	if(client == 0) LogError("SorryStore_IncrementKeyTimer: client invalid");
+
+	int len = pack.ReadCell();
+	char[] key = new char[len];
+	pack.ReadString(key, len);
+
+	int amount = pack.ReadCell();
+
+	SorryStore[client].IncrementValue(key, amount);
 	return Plugin_Handled;
 }
 

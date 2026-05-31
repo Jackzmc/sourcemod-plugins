@@ -5,9 +5,6 @@
 
 #define SORRY_MENU_ITEMS 14
 
-/** If false, all respones become Accept_Assure */
-ConVar allowSelfResponse;
-
 #include <sourcemod>
 #include <sdktools>
 #include <left4dhooks>
@@ -799,12 +796,32 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	return Plugin_Continue;
 }
 
+public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
+	for(int i = 0; i < g_onTakeDamageForwards.Length; i++) {
+		PrivateForward fwd = g_onTakeDamageForwards.Get(i);
+
+		Call_StartForward(fwd);
+		Call_PushCell(victim);
+		Call_PushCellRef(attacker);
+		Call_PushCellRef(inflictor);
+		Call_PushCellRef(damage);
+		Call_PushCellRef(damagetype);
+		// Stop chain if handler wants to
+		Action ret;
+		if(Call_Finish(ret) == SP_ERROR_NONE && ret != Plugin_Continue) {
+			return ret;
+		}
+	}
+	return Plugin_Continue;
+}
+
+
 // TODO: migrate everything under here
 
 typedef SorryResponseHandler = function void (int apologizer, int target, const char[] eventId);
 typedef OnPlayerRunCmd = function Action (int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]);
 typedef OnClientSayCommand = function Action (int client, const char[] command, const char[] sArgs);
-
+typedef OnTakeDamage = function Action (int victim, int& attacker, int& inflictor, float& damage, int& damagetype);
 
 enum SorryResponseType {
 	Type_Reject = -1,
@@ -817,6 +834,7 @@ enum struct SorryHandlerData {
 	PrivateForward OnActivate;
 	PrivateForward OnPlayerRunCmd;
 	PrivateForward OnClientSayCommand;
+	PrivateForward OnTakeDamage;
 }
 
 methodmap ResponseBuilder {
@@ -849,6 +867,16 @@ methodmap ResponseBuilder {
 		g_sorryResponseHandlers.SetArray(this, data, sizeof(data));
 		return this;
 	}
+
+	/** Registers an OnTakeDamage handler for this response */
+	public ResponseBuilder OnTakeDamage(OnTakeDamage func) {
+		SorryHandlerData data;
+		g_sorryResponseHandlers.GetArray(this, data, sizeof(data));
+		if(data.OnTakeDamage == null) data.OnTakeDamage = new PrivateForward(ET_Event, Param_Cell, Param_CellByRef, Param_CellByRef, Param_CellByRef, Param_CellByRef);
+		data.OnTakeDamage.AddFunction(INVALID_HANDLE, func);
+		g_sorryResponseHandlers.SetArray(this, data, sizeof(data));
+		return this;
+	}
 }
 
 bool HandleResponse(sorryResponseValues id, SorryResponseType type, int activator, int target, const char[] eventId) {
@@ -877,6 +905,7 @@ void _registerResponses() {
 void _collectForwards() {
 	g_onPlayerRunCmdForwards = new ArrayList();
 	g_onClientSayCommandForwards = new ArrayList();
+	g_onTakeDamageForwards = new ArrayList();
 
 	AnyMapSnapshot snapshot = g_sorryResponseHandlers.Snapshot();
 	SorryHandlerData data;
@@ -890,6 +919,9 @@ void _collectForwards() {
 		}
 		if(data.OnClientSayCommand != null) {
 			g_onClientSayCommandForwards.Push(data.OnClientSayCommand);
+		}
+		if(data.OnTakeDamage != null) {
+			g_onTakeDamageForwards.Push(data.OnTakeDamage);
 		}
 	}
 	delete snapshot;
@@ -907,15 +939,20 @@ public void OnMapStart() {
 	PrecacheSound("ui/survival_playerrec.wav");
 	PrecacheSound("player/orch_hit_csharp_short.wav");
 	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt");
+	g_HaloSprite = PrecacheModel("materials/sprites/glow01.vmt");
 }
 
 public void OnClientPutInServer(int client) {
 	isInSaferoom[client] = false;
-
+	// Damage handler for responses, should be all players
+	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamage);
+	
 	if(!IsFakeClient(client)) {
+		// Damage detection to mark an auto apology
 		SDKHook(client, SDKHook_OnTakeDamagePost, OnTakeDamagePost);
 	}
 }
+
 
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
    	for(int i = 0; i < g_onClientSayCommandForwards.Length; i++) {

@@ -1,3 +1,12 @@
+#define SOUND_ROCKET_LAUNCH "plats/hall_elev_stop.wav"
+#define ROCKET_TARGETNAME "airstrike_rocket"
+
+int AIRSTRIKE_TARGET_BEACON_COLOR[4] = { 255, 0, 0, 255 };
+
+float INITIAL_DELAY = 5.0;
+
+static char STORE_KEY[] = "AirstrikeRecv"; // Counter for number of received airstrikes
+
 /**
  * @param apologizer is apologizing to target
  * @param target the one that picked this response outcome for the apologizer
@@ -13,37 +22,71 @@ void Airstrike_OnActivate(int apologizer, int target, const char[] eventId) {
         ShowSorryAcceptMenu(apologizer, target, eventId);
         PrintToChat(target, "Airstrike failed, cannot see target. They must be in an open area");
     } else {
-        float longestTime = 0.5*spawnPoints.Length + 0.1;
+        PrintHintTextToAll("Airstrike!");
+        PrecacheSound(SOUND_ROCKET_LAUNCH);
+
+        float longestTime = 0.25*spawnPoints.Length + INITIAL_DELAY;
         TempSetSpeed(apologizer, longestTime, 0.2);
+
+        orgPos[2] += 1.0;
+		TE_SetupBeamRingPoint(orgPos, 40.0, 40.0, g_iLaserIndex, g_HaloSprite, 0, 10, longestTime, 5.0, 0.0, AIRSTRIKE_TARGET_BEACON_COLOR, 10, 0);
+
+        TE_SendToAll();
+
+        SorryStore[apologizer].IncrementValueTemp(STORE_KEY, longestTime, 1);
 
         for(int i = 0; i < spawnPoints.Length; i++) {
             spawnPoints.GetArray(i, pos, 3);
-            // Make sure they see their impending doom
-            if(i == 0) {
-                LookAtPoint(apologizer, pos);
-            }
-            FireRocketDelay(pos, orgPos, 0.25*float(i) + 0.4, 3.5);
+            FireRocketDelay(pos, orgPos, 0.25*float(i) + INITIAL_DELAY, 3.5);
+
+            DataPack soundPack;
+            CreateDataTimer(0.5*float(i) + 1.0, Timer_RocketSound, soundPack);
+            soundPack.WriteFloatArray(orgPos, 3); // can't usually hear if we used origin, so just play it on target
         }
+        // Make player looks up to see their impending doom
+        CreateTimer(INITIAL_DELAY, Timer_LookAtSky, GetClientUserId(apologizer));
     }
     delete spawnPoints;
 }
 
-stock void LookAtPoint(int entity, const float destination[3]){
-	float angles[3], pos[3], result[3];
-	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
-	MakeVectorFromPoints(destination, pos, result);
-	GetVectorAngles(result, angles);
-	if(angles[0] >= 270){
-		angles[0] -= 270;
-		angles[0] = (90-angles[0]);
-	} else {
-		if(angles[0] <= 90){
-			angles[0] *= -1;
-		}
-	}
-	angles[1] -= 180;
-	TeleportEntity(entity, NULL_VECTOR, angles, NULL_VECTOR);
+Action Airstrike_OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
+    if(victim <= MaxClients && attacker == inflictor && damagetype & DMG_BLAST) {
+        char targetname[64];
+        GetEntPropString(attacker, Prop_Data, "m_iName", targetname, sizeof(targetname));
+        if(StrEqual(targetname, ROCKET_TARGETNAME)) {
+            int pendingAirstrikes;
+
+            // We know it's a rocket spawned by world, check if player should be damaged
+            if(!SorryStore[victim].GetValue(STORE_KEY, pendingAirstrikes) || pendingAirstrikes <= 0) {
+                damage = 1.0;
+                return Plugin_Changed;
+            } else {
+                // Intended to keep player just barely alive, but means they incap. Works i guess.
+                int health = GetClientHealth(victim);
+                if(health - damage <= 0) {
+                    damage = float(health) - 1.0;
+                    return Plugin_Changed;
+                }
+            }
+        }
+    } 
+    // if(attacker > MaxClients) {
+    //     static char buffer[32];
+    //     GetEntityClassname(attacker, buffer, sizeof(buffer));
+    //     if(StrEqual(buffer, "infected")) {
+    //         // Disable dmg, instead give victim health, and hurt zombie
+    //         damage = 0.0;
+
+    //         int health = GetClientHealth(victim);
+	//         SetEntProp(victim, Prop_Send, "m_iHealth", health + 1);
+
+    //         SDKHooks_TakeDamage(attacker, victim, victim, 50.0);
+    //         return Plugin_Changed;
+    //     }
+    // }
+	return Plugin_Continue;
 }
+
 
 // Gets random offset that is at least minDist and under maxDist
 void RandomHorizontalOffset(float minDist, float maxDist, float out[2]) {
@@ -77,7 +120,7 @@ ArrayList GetRocketPointsAround(const float origin[3], float distance, int numPo
     if(numPoints > 0 && attempts >= maxAttempts) {
         PrintToServer("sorry: warn: GetRocketPointsAround failed after %d attempts", attempts);
     }
-    PrintToServer("sorry: %d/%d attempts", attempts, maxAttempts);
+    PrintToServer("sorry: %d missed points after %d/%d attempts", numPoints, attempts, maxAttempts);
     return list;
 }
 
@@ -89,6 +132,21 @@ void FireRocketDelay(const float origin[3], const float target[3], float delay =
     pack.WriteFloat(flightTime);
 }
 
+Action Timer_LookAtSky(Handle h, int userid) {
+    int client = GetClientOfUserId(userid);
+    if(client > 0)
+        TeleportEntity(client, NULL_VECTOR, { -90.0, 0.0, 0.0 });
+    return Plugin_Handled;
+}
+
+Action Timer_RocketSound(Handle h, DataPack pack) {
+    pack.Reset();
+    float origin[3];
+    pack.ReadFloatArray(origin, 3);
+    EmitSoundToAll(SOUND_ROCKET_LAUNCH, .origin = origin, .level = SNDLEVEL_GUNFIRE);
+    return Plugin_Handled;
+}
+
 Action Timer_FireRocket(Handle h, DataPack pack) {
     pack.Reset();
     float origin[3], target[3];
@@ -96,6 +154,9 @@ Action Timer_FireRocket(Handle h, DataPack pack) {
     pack.ReadFloatArray(target, 3);
     float flightTime = pack.ReadFloat();
     FireRocket(origin, target, flightTime);
+    target[2] += 5.0;
+    // TE_SetupBeamRingPoint(target, 25.0, 25.0, g_iLaserIndex, g_HaloSprite, 0, 15, INITIAL_DELAY, 2.0, 0.0, AIRSTRIKE_TARGET_BEACON_COLOR, 1, 0);
+    // TE_SendToAll();
     return Plugin_Handled;
 }
 
@@ -104,6 +165,7 @@ int FireRocket(const float origin[3], const float target[3], float flightTime) {
     float speed = CalcProjectileLaunch(origin, target, flightTime, vel, ang);
     if(speed > 0.0) {
         int ent = L4D2_GrenadeLauncherPrj(0, origin, ang, vel, NULL_VECTOR);
+        SetEntPropString(ent, Prop_Data, "m_iName", ROCKET_TARGETNAME);
         // Effect_DrawBeamBoxRotatableToAll(origin, { -10.0, -10.0, -10.0 }, { 10.0, 10.0, 10.0 }, ang, g_iLaserIndex, 0, 0, 30, 30.0, 0.4, 0.4, 0, 0.1, { 0, 255, 0, 235 }, 0);
         // PrintToServer("vel=<%.0f,%.0f,%.0f> ang=<%.0f,%.0f,%.0f> ent=%d speed=%f", vel[0], vel[1], vel[2], ang[0], ang[1], ang[2], ent, speed);
         return ent;
@@ -140,4 +202,21 @@ stock float CalcProjectileLaunch(const float origin[3], const float target[3], f
     GetVectorAngles(velocity, angles);
 
     return SquareRoot(Pow(velocity[0],2.0) + Pow(velocity[1],2.0) + Pow(velocity[2], 2.0));
+}
+
+stock void LookAtPoint(int entity, const float destination[3]){
+	float angles[3], pos[3], result[3];
+	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
+	MakeVectorFromPoints(destination, pos, result);
+	GetVectorAngles(result, angles);
+	if(angles[0] >= 270){
+		angles[0] -= 270;
+		angles[0] = (90-angles[0]);
+	} else {
+		if(angles[0] <= 90){
+			angles[0] *= -1;
+		}
+	}
+	angles[1] -= 180;
+	TeleportEntity(entity, NULL_VECTOR, angles, NULL_VECTOR);
 }
