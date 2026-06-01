@@ -66,7 +66,7 @@ Action HealingZombies_Player_OnTakeDamage(int victim, int& attacker, int& inflic
 
 Action HealingZombies_Zombie_OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype) {
     if(attacker <= MaxClients && GetClientTeam(attacker) == 2) {
-        IncreaseHealth(victim, HEALING_AMOUNT_KILL);
+        IncreaseHealth(attacker, HEALING_AMOUNT_KILL);
     }
 	return Plugin_Continue;
 }
