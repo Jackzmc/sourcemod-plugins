@@ -43,7 +43,7 @@ int lastHatRequestTime[MAXPLAYERS+1];
 HatInstance hatData[MAXPLAYERS+1];
 StringMap g_HatPresets;
 
-#define MAX_FORBIDDEN_CLASSNAMES 15
+#define MAX_FORBIDDEN_CLASSNAMES 16
 char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"prop_door_rotating_checkpoint",
 	"env_physics_blocker",
@@ -60,7 +60,8 @@ char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"func_lod",
 	"func_door",
 	"prop_ragdoll",
-	"move_rope"
+	"move_rope",
+	"cs_ragdoll"
 };
 
 #define MAX_FORBIDDEN_MODELS 2
