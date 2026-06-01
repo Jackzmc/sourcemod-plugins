@@ -150,7 +150,7 @@ int SpawnPropAbovePlayer(int target, const char[] model, float autoKillTime = 0.
 	// float max[3] = { 30.0, 30.0, 50.0 };
 	float pos[3];
 	float ang[3];
-	float vel[3] = { 0.0, 0.0, -100.0 };
+	float vel[3] = { 0.0, 0.0, -60.0 };
 	GetClientEyePosition(target, pos);
 	GetClientEyeAngles(target, ang);
 	pos[2] += 60.0;

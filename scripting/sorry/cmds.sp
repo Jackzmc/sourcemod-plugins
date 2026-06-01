@@ -103,20 +103,20 @@ Action Command_Debug_SorryHandler(int client, int args) {
 	if(args > 0) {
 		int sorryId = GetCmdArgInt(1);
 		char eventId[32];
-		GetCmdArg(2, eventId, sizeof(eventId));
 		int target = client;
-		if(args >= 3) {
+		if(args >= 2) {
 			char buffer[64];
-			GetCmdArg(3, buffer, sizeof(buffer));
+			GetCmdArg(2, buffer, sizeof(buffer));
 			target = GetSinglePlayer(client, buffer);
 		}	
+		GetCmdArg(3, eventId, sizeof(eventId));
 		if(sorryId > sorryBounds[1] || sorryId < sorryBounds[0]) {
 			ReplyToCommand(client, "Out of bounds. Invalid ID");
 			return Plugin_Handled;
 		}
 		HandleApologyResponse(client, target, eventId, view_as<sorryResponseValues>(sorryId));
 	} else {
-		ReplyToCommand(client, "Usage: sm_sorryh <sorry id> [event string] [target = self]");
+		ReplyToCommand(client, "Usage: sm_sorryh <sorry id> [target = self] [event string] ");
 	}
 	return Plugin_Handled;
 }

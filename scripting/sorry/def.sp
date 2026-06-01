@@ -145,11 +145,18 @@ methodmap SorryStore_t < StringMap {
 		this.IncrementValue(key, increment);
 
 		DataPack pack;
-		CreateTimer(ttl, SorryStore_IncrementKeyTimer, pack);
+		CreateDataTimer(ttl, SorryStore_IncrementKeyTimer, pack);
 		pack.WriteCell(this.ClientUserId);
 		pack.WriteCell(strlen(key));
 		pack.WriteString(key);
 		pack.WriteCell(-increment);
+	}
+
+	public void Clear() {
+		// Ensure we keep _index set
+		int id = this.Client;
+		view_as<StringMap>(this).Clear();
+		this.SetValue("_index", id);
 	}
 }
 
