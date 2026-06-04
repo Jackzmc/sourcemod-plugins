@@ -86,7 +86,7 @@
                     {
                         "model": "models/props_foliage/tree_trunk_fallen.mdl",
                         "origin": [
-                            2371.810791015625,
+                            2550.810791015625,
                             -1143.2723388671875,
                             241.47587585449219
                         ],
@@ -99,12 +99,12 @@
                     {
                         "model": "models/props_foliage/fallentree_dry01.mdl",
                         "origin": [
-                            2641.731201171875,
-                            -1162.1463623046875,
-                            156.83050537109375
+                            2525.02,
+                            -1192.9200000000001,
+                            148.19
                         ],
                         "angles": [
-                            -30.0,
+                            -25.390000000000001,
                             30.0,
                             30.0
                         ]
@@ -302,6 +302,19 @@
                             0.0,
                             0.0,
                             0.0
+                        ]
+                    },
+                    {
+                        "type": "func_nav_blocker",
+                        "origin": [
+                            1682.228271484375,
+                            -1168.259765625,
+                            169.04156494140625
+                        ],
+                        "scale": [
+                            400.0,
+                            40.0,
+                            200.0
                         ]
                     }
                 ]
@@ -1987,7 +2000,7 @@
                 "entities": []
             },
             {
-                "weight":3,
+                "weight": 3,
                 "entities": [
                     {
                         "type": "prop_dynamic",
@@ -2272,7 +2285,7 @@
         ]
     },
     "portapotty": {
-        "chance": 0.60000002384185791,
+        "chance": 0.40000000596046448,
         "variants": [
             {
                 "weight": 1,
@@ -2281,12 +2294,12 @@
                         "type": "prop_dynamic",
                         "model": "models/props_urban/outhouse_door001.mdl",
                         "origin": [
-                            1965.4454345703125,
-                            835.14361572265625,
-                            133.13175964355469
+                            2027.337646484375,
+                            813.0706787109375,
+                            129.79060363769531
                         ],
                         "angles": [
-                            0.0,
+                            -15.0,
                             -90.0,
                             0.0
                         ]
@@ -2295,27 +2308,89 @@
                         "type": "prop_dynamic",
                         "model": "models/props_urban/outhouse002.mdl",
                         "origin": [
-                            1981.8233642578125,
-                            863.194091796875,
-                            128.91194152832031
+                            2103.233154296875,
+                            864.68804931640625,
+                            129.15095520019531
                         ],
                         "angles": [
                             0.0,
-                            -90.0,
+                            270.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "cars": {
+        "chance": 0.40000000596046448,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/pickup_truck_78.mdl",
+                        "origin": [
+                            -1084.508056640625,
+                            -2546.73583984375,
+                            9.2111434936523438
+                        ],
+                        "angles": [
+                            -1.3000025749206543,
+                            56.799999237060547,
                             0.0
                         ]
                     },
                     {
                         "type": "prop_dynamic",
-                        "model": "models/props_urban/outhouse002.mdl",
+                        "model": "models/props_vehicles/pickup_truck_78_glass.mdl",
                         "origin": [
-                            2121.197021484375,
-                            -1090.7156982421875,
-                            174.8912353515625
+                            -1084.508056640625,
+                            -2546.73583984375,
+                            9.2111434936523438
+                        ],
+                        "angles": [
+                            -1.3000025749206543,
+                            56.799999237060547,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/hmmwv_supply.mdl",
+                        "origin": [
+                            -1394.800537109375,
+                            -2425.875,
+                            1.6173481941223145
                         ],
                         "angles": [
                             0.0,
-                            -270.60000610351562,
+                            60.0,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "PEANUT": {
+        "chance": 1.0,
+        "variants": [
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fairgrounds/lil'peanut_cutout001.mdl",
+                        "origin": [
+                            1633.4598388671875,
+                            8188.9013671875,
+                            -42.312114715576172
+                        ],
+                        "angles": [
+                            0.0,
+                            -90.0,
                             0.0
                         ]
                     }
