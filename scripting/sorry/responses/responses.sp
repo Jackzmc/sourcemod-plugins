@@ -2,6 +2,7 @@
 #include "accept/UltimateSacrifice.sp"
 #include "accept/SpeedBoost.sp"
 #include "accept/HealingZombies.sp"
+#include "accept/Ammo.sp"
 
 #include "neutral/UnoReverse.sp"
 #include "neutral/ThirdParty.sp"
@@ -21,12 +22,14 @@
 #include "reject/Kidnap.sp"
 #include "reject/Sideways.sp"
 #include "reject/Airstrike.sp"
+#include "reject/Torment.sp"
 
 void RegisterResponses() {
 	// ACCEPT
 	ResponseBuilder(Sorry_AcceptFreeRevive, Type_Accept, FreeRevive_OnActivate);
 	ResponseBuilder(Sorry_AcceptSpeedBoost, Type_Accept, SpeedBoost_OnActivate);
 	ResponseBuilder(Sorry_AcceptHealingZombies, Type_Accept, HealingZombies_OnActivate);
+	ResponseBuilder(Sorry_AcceptAmmo, Type_Accept, Ammo_OnActivate);
 
 	// NEUTRAL
 	ResponseBuilder(Sorry_ThirdParty, Type_Neutral, ThirdParty_OnActivate);
@@ -45,4 +48,5 @@ void RegisterResponses() {
 		.OnPlayerRunCmd(RandomProp_OnPlayerRunCmd);
 	ResponseBuilder(Sorry_RejectAirstrike, Type_Reject, Airstrike_OnActivate)
 		.OnTakeDamage(Airstrike_OnTakeDamage);
+	ResponseBuilder(Sorry_RejectTorment, Type_Reject, Torment_OnActivate);
 }
