@@ -30,7 +30,7 @@ public Plugin myinfo =
 static Database DB;
 static char query[1024];
 static char reason[256];
-static int WaitingForNotePlayer;
+static int waitingForNote[MAXPLAYERS+1];
 static char menuNoteTarget[32];
 static char menuNoteTargetName[32];
 
@@ -229,15 +229,15 @@ public int Menu_Disconnected(Menu menu, MenuAction action, int client, int item)
 		int style;
 		menu.GetItem(item, menuNoteTarget, sizeof(menuNoteTarget), style, menuNoteTargetName, sizeof(menuNoteTargetName));
 		CPrintToChat(client, "Enter a note in the chat for {yellow}%s {olive}(%s){default}: (or 'cancel' to cancel)", menuNoteTargetName, menuNoteTarget);
-		WaitingForNotePlayer = client;
+		waitingForNote[client] = true;
 	} else if (action == MenuAction_End)	
 		delete menu;
 	return 0;
 }
 
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
-	if(client > 0 && WaitingForNotePlayer == client) {
-		WaitingForNotePlayer = 0;
+	if(client > 0 && waitingForNote[client]) {
+		waitingForNote[client] = false;
 		if(StrEqual(sArgs, "cancel", false)) {
 			PrintToChat(client, "Note cancelled.");
 		} else {
@@ -299,7 +299,7 @@ public Action Command_AddNote(int client, int args) {
 		}
 		if(args == 1) {
 			ReplyToCommand(client, "Enter the note for %N in the chat: (type 'cancel' to cancel)", target_list[0]);
-			WaitingForNotePlayer = client;
+			waitingForNote[client] = client;
 			return Plugin_Handled;
 		}
 		char auth[32];
