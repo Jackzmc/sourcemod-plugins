@@ -263,7 +263,8 @@
                     {
                         "hammerid": 447875,
                         "input": "_allow_ladder"
-                    }
+                    },
+                    {"targetname": "anv_mapfixes_clipextend_garage", "input": "kill"}
                 ],
                 "entities": [
                     {
