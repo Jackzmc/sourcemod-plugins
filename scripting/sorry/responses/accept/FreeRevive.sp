@@ -13,13 +13,15 @@ Action Timer_FreeRevive(Handle h, DataPack pack) {
 	pack.Reset();
 	int victim = GetClientOfUserId(pack.ReadCell());
 	if(victim > 0) {
-		L4D_SetPlayerIncapacitatedState(victim, false);
+		L4D_ReviveSurvivor(victim);
+		// L4D_SetPlayerIncapacitatedState(victim, false);
 		int reviveCount = pack.ReadCell();
 		int health = pack.ReadCell();
 		int temp = pack.ReadCell();
 		SetEntityHealth(victim, health);
 		L4D_SetPlayerTempHealth(victim, temp);
 		L4D_SetPlayerReviveCount(victim, reviveCount);
+
 		PrintToChat(victim, "Free revive!");
 	}
 	return Plugin_Handled;

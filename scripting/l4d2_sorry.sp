@@ -391,6 +391,7 @@ int ApologizePlayerHandler(Menu menu, MenuAction action, int client, int param2)
 
 
 void HandleApologyResponse(int activator, int target, const char[] eventId, sorryResponseValues response) {
+	if(target < 0 || activator < 0) return;
 	if(response == Sorry_UnoReverse) {
 		PrintToChatAll("%N played uno reverse sorry on %N", target, activator);
 		ShowSorryAcceptMenu(target, activator, eventId);
@@ -547,7 +548,7 @@ void HandleApologyResponse(int activator, int target, const char[] eventId, sorr
 				}
 			} else if(response == Sorry_RejectBoxDrop) {
 				// bias 1 box heavier
-				int count = GetRandomInt(14, 32);
+				int count = GetRandomInt(20, 40);
 
 				for(int i = 0; i < count; i++) {
 					int crate = SpawnPropAbovePlayer(activator, GetRandomFloat() > 0.70 ? MODEL_CRATE2 : MODEL_CRATE, 0.0);
