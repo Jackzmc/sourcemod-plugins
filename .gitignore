@@ -38,5 +38,6 @@ l4d2_stats_plugin/
 !plugins/.gitignore
 !.forgejo
 tmp
+db
 
 sm-translate/
