@@ -114,7 +114,7 @@ Action Command_Debug_SorryHandler(int client, int args) {
 			ReplyToCommand(client, "Out of bounds. Invalid ID");
 			return Plugin_Handled;
 		}
-		HandleApologyResponse(client, target, eventId, view_as<sorryResponseValues>(sorryId));
+		HandleApologyResponse(target, client, eventId, view_as<sorryResponseValues>(sorryId));
 	} else {
 		ReplyToCommand(client, "Usage: sm_sorryh <sorry id> [target = self] [event string] ");
 	}

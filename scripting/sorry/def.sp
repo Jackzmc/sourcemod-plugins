@@ -154,6 +154,15 @@ methodmap SorryStore_t < StringMap {
 		pack.WriteCell(-increment);
 	}
 
+	public void SetBool(const char[] key, bool value) {
+		this.SetValue(key, value);
+	}
+
+	public bool GetBool(const char[] key) {
+		bool result;
+		return this.GetValue(key, result) && result;
+	}
+
 	public void Clear() {
 		// Ensure we keep _index set
 		int id = this.Client;

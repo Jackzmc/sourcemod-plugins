@@ -342,3 +342,37 @@ ArrayList SpawnZombiesNearbyList(const float center[3], int count) {
     }
 	return list;
 }
+
+stock void LookAtPoint(int entity, const float destination[3]){
+	float angles[3], pos[3], result[3];
+	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
+	MakeVectorFromPoints(destination, pos, result);
+	GetVectorAngles(result, angles);
+	if(angles[0] >= 270){
+		angles[0] -= 270;
+		angles[0] = (90-angles[0]);
+	} else {
+		if(angles[0] <= 90){
+			angles[0] *= -1;
+		}
+	}
+	angles[1] -= 180;
+	TeleportEntity(entity, NULL_VECTOR, angles, NULL_VECTOR);
+}
+
+
+/** Gets random location, ideally by flow, but fallsback to just random horizontal position otherwise.
+ * Boolean true if flow, false if fallback
+ */
+bool GetRandomLocation(int client, float pos[3]) {
+    float curFlow = L4D2Direct_GetFlowDistance(client);
+    bool result = GetRandomNearbyPos(curFlow, pos, -2000.0, 100.0, 100.0)
+        || GetRandomNearbyPos(curFlow, pos, -3000.0, 1000.0, 80.0)
+        || GetRandomNearbyPos(curFlow, pos, -5000.0, 5000.0, 60.0);
+    if(result) return true;
+    // Fallback
+    GetClientAbsOrigin(client, pos);
+    pos[0] = GetRandomFloat(-500.0, 500.0);
+    pos[1] = GetRandomFloat(-500.0, 500.0);
+    return false;
+}

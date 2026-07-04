@@ -203,20 +203,3 @@ stock float CalcProjectileLaunch(const float origin[3], const float target[3], f
 
     return SquareRoot(Pow(velocity[0],2.0) + Pow(velocity[1],2.0) + Pow(velocity[2], 2.0));
 }
-
-stock void LookAtPoint(int entity, const float destination[3]){
-	float angles[3], pos[3], result[3];
-	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", pos);
-	MakeVectorFromPoints(destination, pos, result);
-	GetVectorAngles(result, angles);
-	if(angles[0] >= 270){
-		angles[0] -= 270;
-		angles[0] = (90-angles[0]);
-	} else {
-		if(angles[0] <= 90){
-			angles[0] *= -1;
-		}
-	}
-	angles[1] -= 180;
-	TeleportEntity(entity, NULL_VECTOR, angles, NULL_VECTOR);
-}
