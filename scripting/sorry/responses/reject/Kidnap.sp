@@ -4,8 +4,8 @@
 #define SOUND_KIDNAP_HORN "vehicles/humvee_horn.wav"
 #define SOUND_KIDNAP_IDLE_ENGINE "vehicles/v8/skid_lowfriction.wav" // TODO: change pitcH?
 
-static float VEHICLE_DIST = 700.0;
-static float VEHICLE_DURATION = 3.0;
+static float VEHICLE_DIST = 800.0;
+static float VEHICLE_DURATION = 4.0;
 static float VEHICLE_DELAY = 0.0;
 
 static char STORE_KEY[] = "kidnapMidpoint";

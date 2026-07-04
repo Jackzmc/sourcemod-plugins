@@ -366,8 +366,7 @@ stock void LookAtPoint(int entity, const float destination[3]){
  */
 bool GetRandomLocation(int client, float pos[3]) {
     float curFlow = L4D2Direct_GetFlowDistance(client);
-    bool result = GetRandomNearbyPos(curFlow, pos, -2000.0, 100.0, 100.0)
-        || GetRandomNearbyPos(curFlow, pos, -3000.0, 1000.0, 80.0)
+    bool result = GetRandomNearbyPos(curFlow, pos, -3000.0, 1000.0, 150.0)
         || GetRandomNearbyPos(curFlow, pos, -5000.0, 5000.0, 60.0);
     if(result) return true;
     // Fallback
