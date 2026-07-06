@@ -10,7 +10,23 @@ static float VEHICLE_DELAY = 0.0;
 
 static char STORE_KEY[] = "kidnapMidpoint";
 
+enum KidnapState {
+    KidnapState_Active = 1,
+    KidnapState_Midpoint = 2
+}
+
+/**
+ * TODO:
+ * - on game frame
+ * - offset player slightly in back
+ */
+
 void Kidnap_OnActivate(int apologizer, int target, const char[] eventId) {
+    if(SorryStore[apologizer].ContainsKey(STORE_KEY)) {
+        ShowSorryAcceptMenu(apologizer, target, eventId);
+        PrintToChat(target, "They are already being kidnapped");
+        return;
+    }
     PrecacheModel(MODEL_CEDA_VEHICLE);
     PrecacheSound(SOUND_KIDNAP_HORN);
     PrecacheSound(SOUND_KIDNAP_IDLE_ENGINE);
@@ -25,7 +41,6 @@ void Kidnap_OnActivate(int apologizer, int target, const char[] eventId) {
     int vehicle = CreateProp("prop_dynamic", MODEL_CEDA_VEHICLE, startPos);
     StartKidnapVehicle(apologizer, vehicle, startPos, endPos, true);
 
-    EmitSoundToAll(SOUND_KIDNAP_IDLE_ENGINE, vehicle, .level = SNDLEVEL_CAR, .origin = startPos, .soundtime = VEHICLE_DURATION*2.0);
 }
 
 void StartKidnapVehicle(int victim, int vehicle, float startPos[3], float endPos[3], bool isPickup) {
@@ -42,7 +57,8 @@ void StartKidnapVehicle(int victim, int vehicle, float startPos[3], float endPos
     pack.WriteFloatArray(startPos, 3);
     pack.WriteFloatArray(endPos, 3);
 
-    SorryStore[victim].Remove(STORE_KEY);
+    SorryStore[victim].SetValue(STORE_KEY, KidnapState_Active);
+    EmitSoundToAll(SOUND_KIDNAP_IDLE_ENGINE, vehicle, .level = SNDLEVEL_CAR, .origin = startPos, .soundtime = VEHICLE_DURATION*2.0);
 }
 
 Action Timer_KidnapMoveVehicle(Handle h, DataPack pack) {
@@ -66,7 +82,8 @@ Action Timer_KidnapMoveVehicle(Handle h, DataPack pack) {
     float t = (GetGameTime() - startTime) / (endTime - startTime);
 
     LerpVec(pos, endPos, t);
-    TeleportEntity(ref, pos);
+    SetAbsOrigin(ref, pos);
+    // TeleportEntity(ref, pos);
 
     if(t > 1.0) {
         if(isPickup) {
@@ -84,22 +101,25 @@ Action Timer_KidnapMoveVehicle(Handle h, DataPack pack) {
         } else {
             // Cleaup
             RemoveEntity(ref);
+            SorryStore[client].Remove(STORE_KEY);
         }
         // Stop movement
         return Plugin_Stop;
     } else if(t > 0.5) {
         // Midpoint. Only fire once
-        if(!SorryStore[client].GetBool(STORE_KEY)) {
+        int val;
+        if(!SorryStore[client].GetValue(STORE_KEY, val) || val != view_as<int>(KidnapState_Midpoint)) {
             EmitSoundToAll(SOUND_KIDNAP_HORN, ref, .level = SNDLEVEL_CAR, .origin = pos);
             if(isPickup) {
-                SorryStore[client].SetBool(STORE_KEY, true);
+                SorryStore[client].SetValue(STORE_KEY, KidnapState_Midpoint);
+                TeleportEntity(ref, pos); // reset client side lerp movement
                 TeleportEntity(client, pos);
                 SetParent(client, ref);
                 // SetPlayerBlind(apologizer, 255, 700);
                 PrecacheSound(KIDNAP_SOUND);
                 EmitSoundToClient(client, KIDNAP_SOUND, client, SNDCHAN_AUTO, SNDLEVEL_RUSTLE, SND_CHANGEVOL | SND_CHANGEPITCH, 0.4, 50);
             } else {
-                SorryStore[client].SetBool(STORE_KEY, true);
+                SorryStore[client].SetValue(STORE_KEY, KidnapState_Midpoint);
 
                 ClearParent(client);
                 TeleportEntity(client, pos);
