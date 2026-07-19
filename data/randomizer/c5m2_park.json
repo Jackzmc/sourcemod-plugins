@@ -1269,14 +1269,21 @@
                         "type": "prop_dynamic",
                         "model": "models/props_interiors/medicalcabinet02.mdl",
                         "origin": [
-                            -6459.1171875,
-                            -977.9681396484375,
-                            -235.94914245605469
+                            -6459.1300000000001,
+                            -984.86000000000001,
+                            -235.77000000000001
                         ],
                         "angles": [
                             0.0,
-                            0.0,
+                            -5.4000000000000004,
                             0.0
+                        ],
+                        "properties": [
+                            {
+                                "type": "keyvalue",
+                                "key": "solid",
+                                "integer": "0"
+                            }
                         ]
                     },
                     {
@@ -1388,6 +1395,62 @@
                         "angles": [
                             0.0,
                             -143.80000305175781,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "weapon_pain_pills_spawn",
+                        "model": "models/w_models/weapons/w_eq_painpills.mdl",
+                        "origin": [
+                            -6451.22998046875,
+                            -993.99041748046875,
+                            -194.44625854492188
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "weapon_pain_pills_spawn",
+                        "model": "models/w_models/weapons/w_eq_painpills.mdl",
+                        "origin": [
+                            -6452.82763671875,
+                            -994.06396484375,
+                            -181.91270446777344
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "weapon_pain_pills_spawn",
+                        "model": "models/w_models/weapons/w_eq_painpills.mdl",
+                        "origin": [
+                            -6451.69970703125,
+                            -977.230712890625,
+                            -182.47297668457031
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "weapon_pain_pills_spawn",
+                        "model": "models/w_models/weapons/w_eq_painpills.mdl",
+                        "origin": [
+                            -6449.89453125,
+                            -977.508544921875,
+                            -194.74305725097656
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
                             0.0
                         ]
                     }

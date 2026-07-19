@@ -264,7 +264,10 @@
                         "hammerid": 447875,
                         "input": "_allow_ladder"
                     },
-                    {"targetname": "anv_mapfixes_clipextend_garage", "input": "kill"}
+                    {
+                        "targetname": "anv_mapfixes_clipextend_garage",
+                        "input": "kill"
+                    }
                 ],
                 "entities": [
                     {
@@ -1167,6 +1170,19 @@
                     0.0,
                     0.0
                 ]
+            },
+            {
+                "type": "func_nav_blocker",
+                "origin": [
+                    1358.54833984375,
+                    -1530.0355224609375,
+                    61.344074249267578
+                ],
+                "scale": [
+                    80.0,
+                    300.0,
+                    200.0
+                ]
             }
         ],
         "variants": [
@@ -1352,7 +1368,7 @@
                             0.0,
                             0.0
                         ],
-                         "properties": [
+                        "properties": [
                             {
                                 "type": "keyvalue",
                                 "key": "solid",

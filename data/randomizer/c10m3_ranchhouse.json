@@ -625,7 +625,7 @@
         ]
     },
     "house-alt": {
-        "chance": 0.40000000596046448,
+        "chance": 0.20000000596046447,
         "variants": [
             {
                 "weight": 1,
@@ -736,6 +736,19 @@
                             43.260505676269531
                         ],
                         "model": "decals/checkpointarrow01_orange.vmt"
+                    },
+                    {
+                        "type": "func_nav_blocker",
+                        "origin": [
+                            -7404.10302734375,
+                            -2110.429931640625,
+                            6.4759798049926758
+                        ],
+                        "scale": [
+                            40.0,
+                            100.0,
+                            80.0
+                        ]
                     }
                 ],
                 "inputs": [
@@ -746,6 +759,151 @@
                     {
                         "hammerid": 2531437,
                         "input": "_lock_nobreak"
+                    }
+                ]
+            },
+            {
+                "weight": 1,
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_docks.mdl",
+                        "origin": [
+                            -7401.9716796875,
+                            -1007.9662475585938,
+                            -44.992698669433594
+                        ],
+                        "angles": [
+                            -97.199996948242188,
+                            -84.199996948242188,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            -7298.8935546875,
+                            -1002.835205078125,
+                            -70.895133972167969
+                        ],
+                        "angles": [
+                            -88.500007629394531,
+                            -18.19999885559082,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_barrels_water01_single.mdl",
+                        "origin": [
+                            -7269.7900390625,
+                            -969.9544677734375,
+                            -75.866348266601562
+                        ],
+                        "angles": [
+                            -88.500007629394531,
+                            67.099998474121094,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props/de_prodigy/wood_pallet_01.mdl",
+                        "origin": [
+                            -7179.9453125,
+                            -963.80670166015625,
+                            -79.3123779296875
+                        ],
+                        "angles": [
+                            7.0,
+                            177.40000915527344,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props/de_prodigy/wood_pallet_01.mdl",
+                        "origin": [
+                            -7233.302734375,
+                            -1017.8610229492188,
+                            -56.189037322998047
+                        ],
+                        "angles": [
+                            66.5,
+                            103.30000305175781,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            -7235.01220703125,
+                            -1059.4459228515625,
+                            -67.247261047363281
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props/cs_assault/forklift.mdl",
+                        "origin": [
+                            -7271.24365234375,
+                            -1181.2486572265625,
+                            -65.826385498046875
+                        ],
+                        "angles": [
+                            0.0,
+                            -11.500000953674316,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_highway/billboard_ladder.mdl",
+                        "origin": [
+                            -7447.24365234375,
+                            -1487.707763671875,
+                            -56.107456207275391
+                        ],
+                        "angles": [
+                            77.699996948242188,
+                            55.799999237060547,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_industrial/pallet_stack_docks.mdl",
+                        "origin": [
+                            -7286.13330078125,
+                            -879.3094482421875,
+                            -75.07366943359375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/cara_95sedan_wrecked.mdl",
+                        "origin": [
+                            -7350.6767578125,
+                            -1536.6048583984375,
+                            -29.891563415527344
+                        ],
+                        "angles": [
+                            -2.500002384185791,
+                            24.399997711181641,
+                            0.0
+                        ]
                     }
                 ]
             }
