@@ -55,7 +55,7 @@
 #include <l4d2_weapon_stocks>
 #include <multicolors>
 #undef REQUIRE_PLUGIN
-#include <CreateSurvivorBot>
+#tryinclude <CreateSurvivorBot>
 
 #define AMMOPACK_ENTID 0
 #define AMMOPACK_USERS 1
@@ -64,7 +64,6 @@
 
 // configurable:
 #define PLAYER_DROP_TIMEOUT_SECONDS 120000.0
-
 
 enum struct PlayerItems {
 	char throwable[2];
@@ -683,6 +682,7 @@ Action Command_Trigger(int client, int args) {
 		FindRespawnClosets();
 		ReplyToCommand(client, "See console");
 	} else if(StrEqual(arg, "addbot")) {
+		#if defined _CreateSurvivorBot_included
 		if(GetFeatureStatus(FeatureType_Native, "NextBotCreatePlayerBotSurvivorBot") != FeatureStatus_Available){
 			ReplyToCommand(client, "Unsupported.");
 			return Plugin_Handled;
@@ -691,6 +691,9 @@ Action Command_Trigger(int client, int args) {
 		if(IsValidEdict(bot)) {
 			ReplyToCommand(client, "Created SurvivorBot: %d", bot);
 		}
+		#else
+		ReplyToCommand(client, "Not compiled with support for CreateSurvivorBot.");
+		#endif
 	} else {
 		ReplyToCommand(client, "Unknown trigger");
 	}
