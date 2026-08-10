@@ -357,6 +357,13 @@ ArrayList GetRandomSorryList(int size) {
 			list.PushArray(res, sizeof(res));
 		}
 	}
+
+	// Sort in random order, for when we truncate
+	list.Sort(Sort_Random, Sort_Integer); // Sort_Integer doesnt do anything for Sort_Random
+
+	// Truncuate the list if more than requested
+	if(list.Length > size) list.Resize(size);
+	
 	// Add all 100% chance responses
 	for(int i = 0; i < g_sorryResponses.Length; i++) {
 		g_sorryResponses.GetArray(i, res);
@@ -365,12 +372,7 @@ ArrayList GetRandomSorryList(int size) {
 		}
 	}
 
-	// Sort in random order, for when we truncate
-	list.Sort(Sort_Random, Sort_Integer); // Sort_Integer doesnt do anything for Sort_Random
-
-	// Truncuate the list if more than requested
-	if(size < list.Length) 
-		list.Resize(size);
+	if(list.Length > size) list.Resize(size);
 
 	// Sort one more time to sort the 100% responses
 	list.Sort(Sort_Random, Sort_Integer); // Sort_Integer doesnt do anything for Sort_Random
@@ -387,8 +389,6 @@ int ApologizePlayerHandler(Menu menu, MenuAction action, int client, int param2)
 		delete menu;
 	return 0;
 }
-
-
 
 void HandleApologyResponse(int activator, int target, const char[] eventId, sorryResponseValues response) {
 	if(target < 0 || activator < 0) return;
@@ -548,7 +548,7 @@ void HandleApologyResponse(int activator, int target, const char[] eventId, sorr
 				}
 			} else if(response == Sorry_RejectBoxDrop) {
 				// bias 1 box heavier
-				int count = GetRandomInt(20, 40);
+				int count = GetRandomInt(30, 50);
 
 				for(int i = 0; i < count; i++) {
 					int crate = SpawnPropAbovePlayer(activator, GetRandomFloat() > 0.70 ? MODEL_CRATE2 : MODEL_CRATE, 0.0);

@@ -51,9 +51,9 @@ public Action Cmd_Status2(int client, int args) {
 	}
 	ReplySource src = GetCmdReplySource();
 	if(src == SM_REPLY_TO_CONSOLE)
-		ReplyToCommand(client, "You can ban players by using their userid or steamid with #. \"sm_ban #52 0\" or \"sm_ban #STEAM_1:1:5325325 0\"");
+		ReplyToCommand(client, "You can ban players by using their userid or steamid with #. \"sm_ban #00 0\" or \"sm_ban #STEAM_1:1:0000000 0\"");
 	else
-		ReplyToCommand(client, "You can ban players by using their userid or steamid with #. \"/ban #52 0\" or \"/ban #STEAM_1:1:5325325 0\"");
+		ReplyToCommand(client, "You can ban players by using their userid or steamid with #. \"/ban #500 0\" or \"/ban #STEAM_1:1:0000000 0\"");
 	return Plugin_Handled;
 }
 
