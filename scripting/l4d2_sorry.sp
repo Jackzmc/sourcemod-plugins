@@ -337,8 +337,7 @@ void ShowSorryAcceptMenu(int client, int target, const char[] eventId = "", int 
 			menu.AddItem(id, res.label);
 		}
 	}
-	// delete seq;
-	menu.Display(target, 50);
+	menu.Display(target, 90);
 	delete list;
 }
 
