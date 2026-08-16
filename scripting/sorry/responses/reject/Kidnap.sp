@@ -125,12 +125,18 @@ Action Timer_KidnapMoveVehicle(Handle h, DataPack pack) {
                 TeleportEntity(client, pos);
                 // Clear blindness
                 SetPlayerBlind(client, 0, 2000, Fade_Out | Fade_Purge);
+                RequestFrame(Frame_UnstickPlayer, client);
                 // Just in case stuck
-                L4D_WarpToValidPositionIfStuck(client);
             }
         }
     }
     return Plugin_Continue
+}
+
+void Frame_UnstickPlayer(int client) {
+    if(IsClientInGame(client)) {
+        L4D_WarpToValidPositionIfStuck(client);
+    }
 }
 
 /**
