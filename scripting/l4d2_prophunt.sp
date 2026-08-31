@@ -55,7 +55,7 @@ PropHuntGame Game;
 
 
 #include <gamemodes/base>
-#include <prophunt/phcore>
+#include "prophunt/phcore.sp"
 
 public Plugin myinfo = 
 {

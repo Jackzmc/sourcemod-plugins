@@ -1,0 +1,23 @@
+"prophunt" {
+	"base"	"realism"
+	"maxplayers"	"16"	
+
+	"hasdifficulty"	"0"
+	
+
+	"DisplayTitle"	"Prop Hunt"
+	"Description"	"Prophunt but in l4d2"
+	"Image"	"maps/any"
+	"Author"	"Jackz"
+	
+	convar
+	{
+		sv_disable_glow_survivors 1
+		sv_disable_glow_faritems 1
+		sv_rescue_disabled 1
+		survivor_friendly_fire_factor_normal 20
+		z_wandering_density 0
+		vomitjar_duration_survivor 30
+		survivor_limp_health 0
+	}
+}

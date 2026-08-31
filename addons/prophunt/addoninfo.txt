@@ -1,0 +1,27 @@
+"AddonInfo"
+{
+	AddonTitle          "Prop Hunt"
+	AddonVersion        "1.0"
+	AddonDescription    "It's prop hunt but in l4d2"
+	AddonAuthor         "jackzie"
+	AddonAuthorSteamID  "jackzie"
+	addonURL0 			"https://steamcommunity.com/sharedfiles/filedetails/?id=2850550331"
+
+	AddonSteamAppID  550
+
+	AddonContent_BackgroundMovie 0
+	AddonContent_BossInfected    0
+	AddonContent_Campaign        0
+	AddonContent_CommonInfected  0
+	AddonContent_Map      0
+	AddonContent_Music    0
+	AddonContent_Prefab   0
+	AddonContent_Prop     0 
+	AddonContent_Script   1
+	AddonContent_Skin     0
+	AddonContent_Sound    0
+	AddonContent_Spray    0
+	AddonContent_Survivor 0
+	AddonContent_Weapon      0 
+	AddonContent_WeaponModel 0
+}
