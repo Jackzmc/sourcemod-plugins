@@ -91,3 +91,48 @@ Action Timer_StopRainbow(Handle h, int userid) {
 	}
 	return Plugin_Handled;
 }
+
+#define LILPEANUT_SDNS 6
+char LILPEANUT_SOUNDS[LILPEANUT_SDNS][] = {
+	"npc/lilpeanut/lilpeanut02.wav",
+	"npc/lilpeanut/lilpeanut07.wav",
+	"npc/lilpeanut/lilpeanut05.wav",
+	"npc/lilpeanut/lilpeanut06.wav",
+	"npc/lilpeanut/lilpeanut04.wav",
+	"npc/lilpeanut/lilpeanut01.wav",
+};
+#define LILPEANUT_SDNS_HURT 2
+char LILPEANUT_SOUNDS_HURT[LILPEANUT_SDNS_HURT][] = {
+	"npc/lilpeanut/lilpeanuthurt01.wav",
+	"npc/lilpeanut/lilpeanuthurt02.wav",
+};
+
+
+Action BecomeRandomPeanut_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
+    if(client > 0) {
+		int oldButtons = GetEntProp(client, Prop_Data, "m_nOldButtons");
+		bool keyUse = !(oldButtons & IN_USE) && (buttons & IN_USE);
+		bool keyShove = !(oldButtons & IN_ATTACK2) && (buttons & IN_ATTACK2);
+		if(keyUse || keyShove) {
+			float pos[3];
+			int entity = GetCursorLimited(client, 80.0, pos, Filter_IgnorePlayerOnlyPlayers);
+			if(entity > 0) {
+				char model[64];
+				GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
+				if(StrEqual(model, MODEL_PEANUT)) {
+					if(keyUse) {
+						int index = GetRandomInt(0, LILPEANUT_SDNS - 1);
+						PrecacheSound(LILPEANUT_SOUNDS[index]);
+						EmitSoundToAll(LILPEANUT_SOUNDS[index], -2, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEVOL, 0.55, 100, -1, pos);
+					} else if(keyShove) {
+						int index = GetRandomInt(0, LILPEANUT_SDNS_HURT - 1);
+						PrecacheSound(LILPEANUT_SOUNDS_HURT[index]);
+						EmitSoundToAll(LILPEANUT_SOUNDS_HURT[index], -2, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEVOL, 0.55, 100, -1, pos);
+					}
+					PrecacheSound(SOUND_PIANO);
+				}
+			}
+		}
+	}
+	return Plugin_Continue;
+}

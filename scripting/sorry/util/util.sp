@@ -375,3 +375,7 @@ bool GetRandomLocation(int client, float pos[3]) {
     pos[1] = GetRandomFloat(-500.0, 500.0);
     return false;
 }
+
+bool Filter_IgnorePlayerOnlyPlayers(int entity, int mask, int data) {
+	return entity > 0 && entity != data && entity <= MaxClients;
+}

@@ -41,7 +41,8 @@ void RegisterResponses() {
 		.OnClientSayCommand(Gnome_OnClientSayCommand);
     ResponseBuilder(Sorry_RejectBecomeDisgruntled, Type_Reject, BecomeDisgruntled_OnActivate)
 		.OnClientSayCommand(BecomeDisgruntled_OnClientSayCommand);
-	ResponseBuilder(Sorry_RejectBecomeRandomPeanut, Type_Reject, BecomeRandomPeanut_OnActivate);
+	ResponseBuilder(Sorry_RejectBecomeRandomPeanut, Type_Reject, BecomeRandomPeanut_OnActivate)
+		.OnPlayerRunCmd(BecomeRandomPeanut_OnPlayerRunCmd);
 	ResponseBuilder(Sorry_RejectKidnap, Type_Reject, Kidnap_OnActivate);
 	ResponseBuilder(Sorry_RejectSideways, Type_Reject, Sideways_OnActivate);
 	ResponseBuilder(Sorry_RejectProp, Type_Reject, RandomProp_OnActivate)

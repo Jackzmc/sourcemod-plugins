@@ -25,10 +25,6 @@ void RandomProp_OnActivate(int apologizer, int target, const char[] eventId) {
 	TempSetModel(apologizer, 80.0, RANDOM_PROP[index]);
 }
 
-bool Filter_IgnorePlayerOnlyPlayers(int entity, int mask, int data) {
-	return entity > 0 && entity != data && entity <= MaxClients;
-}
-
 Action RandomProp_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
     if(client > 0) {
 		int oldButtons = GetEntProp(client, Prop_Data, "m_nOldButtons");
