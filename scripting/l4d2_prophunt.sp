@@ -83,6 +83,8 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_prophunt", Command_PropHunt, ADMFLAG_KICK);
 	RegAdminCmd("sm_ph", Command_PropHunt, ADMFLAG_KICK);
 
+	RegAdminCmd("sm_phd", Command_PropHuntDebug, ADMFLAG_ROOT);
+
 	ConVar hGamemode = FindConVar("mp_gamemode"); 
 	hGamemode.AddChangeHook(Event_GamemodeChange);
 	Event_GamemodeChange(hGamemode, gamemode, gamemode);
@@ -139,6 +141,7 @@ public void Event_GamemodeChange(ConVar cvar, const char[] oldValue, const char[
 		HookEvent("round_start", Event_RoundStart);
 		HookEvent("round_end", Event_RoundEnd);
 		HookEvent("player_death", Event_PlayerDeath);
+
 	} else if(!lateLoaded) {
 		UnhookEvent("round_start", Event_RoundStart);
 		UnhookEvent("round_end", Event_RoundEnd);
