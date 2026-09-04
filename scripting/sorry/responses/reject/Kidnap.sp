@@ -29,7 +29,10 @@ void Kidnap_OnActivate(int apologizer, int target, const char[] eventId) {
 void StartKidnapVehicle(int victim, VehCfg cfg, int vehicle, float startPos[3], float endPos[3], bool isPickup) {
     // Face vehicle towards end pos
     LookAtPoint(vehicle, endPos);
-    if(isPickup) LookAtPoint(victim, startPos);
+    if(isPickup) {
+        LookAtPoint(victim, startPos);
+        TempSetSpeed(victim, cfg.Duration, 0.1);
+    }
     // Move vehicle start -> end
     DataPack pack;
     CreateDataTimer(0.1, Timer_KidnapMoveVehicle, pack, TIMER_REPEAT);

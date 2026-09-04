@@ -114,7 +114,6 @@ methodmap VehCfg {
 }
 
 VehCfg SelectVehicle() {
-    return VehCfg(2);
     ArrayList indexes = new ArrayList();
     for(int i = 0; i < NUM_VEHICLES; i++) {
         VehCfg cfg = VehCfg(i); 
