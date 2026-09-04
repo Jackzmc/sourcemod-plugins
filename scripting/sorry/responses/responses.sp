@@ -3,6 +3,8 @@
 #include "accept/SpeedBoost.sp"
 #include "accept/HealingZombies.sp"
 #include "accept/Ammo.sp"
+#include "accept/DepBlessing.sp"
+#include "accept/Gamble.sp"
 
 #include "neutral/UnoReverse.sp"
 #include "neutral/ThirdParty.sp"
@@ -30,6 +32,8 @@ void RegisterResponses() {
 	ResponseBuilder(Sorry_AcceptSpeedBoost, Type_Accept, SpeedBoost_OnActivate);
 	ResponseBuilder(Sorry_AcceptHealingZombies, Type_Accept, HealingZombies_OnActivate);
 	ResponseBuilder(Sorry_AcceptAmmo, Type_Accept, Ammo_OnActivate);
+	ResponseBuilder(Sorry_AcceptDepBlessing, Type_Accept, DepBlessing_OnActivate);
+	ResponseBuilder(Sorry_AcceptGamble, Type_Accept, Gamble_OnActivate);
 
 	// NEUTRAL
 	ResponseBuilder(Sorry_ThirdParty, Type_Neutral, ThirdParty_OnActivate);

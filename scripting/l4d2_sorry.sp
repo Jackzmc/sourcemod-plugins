@@ -5,6 +5,9 @@
 
 #define SORRY_MENU_ITEMS 14
 
+#define SOUND_ACCEPT "ui/survival_playerrec.wav"
+#define SOUND_REJECT "player/orch_hit_csharp_short.wav"
+
 #include <sourcemod>
 #include <sdktools>
 #include <left4dhooks>
@@ -274,7 +277,7 @@ void SendApology(int client, int target, const char[] hurtType, const char[] eve
 	if(IsFakeClient(target)) {
 		if(GetClientTeam(client) == GetClientTeam(target) && GetURandomFloat() > 0.5) {
 			PrintHintText(client, "%N accepted your apology.", target);
-			EmitSoundToAll("ui/survival_playerrec.wav", client);
+			EmitSoundToAll(SOUND_ACCEPT, client);
 			// ClientCommand(client, "play ui/survival_playerrec.wav");
 		} else if(GetURandomFloat() < 0.01) {
 			float vel[3] = { 1000.0, 1000.0, 1000.0 };
@@ -298,7 +301,7 @@ void SendApology(int client, int target, const char[] hurtType, const char[] eve
 	} else if(!allowSelfResponse.BoolValue && target == client) {
 		// Accept & Assure
 		PrintHintText(target, "It's okay to accept yourself.");
-		EmitSoundToAll("ui/survival_playerrec.wav", target);	
+		EmitSoundToAll(SOUND_ACCEPT, target);
 	} else {
 		ShowSorryAcceptMenu(client, target, eventId);
 	}
@@ -404,8 +407,8 @@ void HandleApologyResponse(int activator, int target, const char[] eventId, sorr
 			ShowSorryAcceptMenu(activator, player, eventId, target);
 		}
 	} else if(view_as<int>(response) > 0) {
-		EmitSoundToAll("ui/survival_playerrec.wav", target);
-		EmitSoundToAll("ui/survival_playerrec.wav", activator);
+		EmitSoundToAll(SOUND_REJECT, target);
+		EmitSoundToAll(SOUND_REJECT, activator);
 
 		if((!_debugSorry && target == activator) || response == Sorry_AcceptAssure) {
 			PrintHintText(activator, "It's okay to accept yourself.");
@@ -453,7 +456,7 @@ void HandleApologyResponse(int activator, int target, const char[] eventId, sorr
 	} else {
 		if(!_debugSorry && target == activator) {
 			PrintHintText(activator, "It's okay to accept yourself.");
-			EmitSoundToAll("ui/survival_playerrec.wav", activator);
+			EmitSoundToAll(SOUND_ACCEPT, activator);
 			LogAction(target, activator, "\"%L\" accepted \"%L\"'s apology (response = %d)", target, activator, response);
 		} else {
 			// if(StrEqual(eventId, "car_alarm")) {
@@ -465,8 +468,8 @@ void HandleApologyResponse(int activator, int target, const char[] eventId, sorr
 			// 	}
 			// }
 
-			EmitSoundToAll("player/orch_hit_csharp_short.wav", target);
-			EmitSoundToAll("player/orch_hit_csharp_short.wav", activator);
+			EmitSoundToAll(SOUND_REJECT, target);
+			EmitSoundToAll(SOUND_REJECT, activator);
 			PrintHintText(target, "Rejected %N's apology.", activator);
 			PrintToChatAll("%N refused %N's apology. ", target, activator);
 
@@ -936,8 +939,8 @@ Action Timer_KillPlayer(Handle h, int activator) {
 }
 
 public void OnMapStart() {
-	PrecacheSound("ui/survival_playerrec.wav");
-	PrecacheSound("player/orch_hit_csharp_short.wav");
+	PrecacheSound(SOUND_ACCEPT);
+	PrecacheSound(SOUND_REJECT);
 	g_iLaserIndex = PrecacheModel("materials/sprites/laserbeam.vmt");
 	g_HaloSprite = PrecacheModel("materials/sprites/glow01.vmt");
 }
