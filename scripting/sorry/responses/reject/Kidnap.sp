@@ -1,25 +1,9 @@
 #define KIDNAP_SOUND "player/ammo_pack_use.wav"
 
-#define MODEL_CEDA_VEHICLE "models/props_vehicles/deliveryvan_armored.mdl"
-#define SOUND_KIDNAP_HORN "vehicles/humvee_horn.wav"
-#define SOUND_KIDNAP_IDLE_ENGINE "vehicles/v8/skid_lowfriction.wav" // TODO: change pitcH?
-
-static float VEHICLE_DIST = 800.0;
-static float VEHICLE_DURATION = 4.0;
-static float VEHICLE_DELAY = 0.0;
+#include "kidnap/vehicles.sp"
 
 static char STORE_KEY[] = "kidnapMidpoint";
 
-enum KidnapState {
-    KidnapState_Active = 1,
-    KidnapState_Midpoint = 2
-}
-
-/**
- * TODO:
- * - on game frame
- * - offset player slightly in back
- */
 
 void Kidnap_OnActivate(int apologizer, int target, const char[] eventId) {
     if(SorryStore[apologizer].ContainsKey(STORE_KEY)) {
@@ -27,49 +11,48 @@ void Kidnap_OnActivate(int apologizer, int target, const char[] eventId) {
         PrintToChat(target, "They are already being kidnapped");
         return;
     }
-    PrecacheModel(MODEL_CEDA_VEHICLE);
-    PrecacheSound(SOUND_KIDNAP_HORN);
-    PrecacheSound(SOUND_KIDNAP_IDLE_ENGINE);
 
     float clientPos[3], startPos[3], endPos[3], ang[3];
     GetClientAbsOrigin(apologizer, clientPos);
     GetClientEyeAngles(apologizer, ang);
+
+    VehCfg cfg = SelectVehicle();
+
     // Get initial position from behind and front of player
-    GetHorizontalPositionFromOrigin(clientPos, ang, -VEHICLE_DIST, startPos);
-    GetHorizontalPositionFromOrigin(clientPos, ang, VEHICLE_DIST, endPos);
+    GetHorizontalPositionFromOrigin(clientPos, ang, -cfg.Distance, startPos);
+    GetHorizontalPositionFromOrigin(clientPos, ang, cfg.Distance, endPos);
 
-    int vehicle = CreateProp("prop_dynamic", MODEL_CEDA_VEHICLE, startPos);
-    StartKidnapVehicle(apologizer, vehicle, startPos, endPos, true);
-
+    int vehicleEnt = SpawnVehicle(cfg, startPos);
+    StartKidnapVehicle(apologizer, cfg, vehicleEnt, startPos, endPos, true);
 }
 
-void StartKidnapVehicle(int victim, int vehicle, float startPos[3], float endPos[3], bool isPickup) {
+void StartKidnapVehicle(int victim, VehCfg cfg, int vehicle, float startPos[3], float endPos[3], bool isPickup) {
     // Face vehicle towards end pos
     LookAtPoint(vehicle, endPos);
     if(isPickup) LookAtPoint(victim, startPos);
     // Move vehicle start -> end
     DataPack pack;
     CreateDataTimer(0.1, Timer_KidnapMoveVehicle, pack, TIMER_REPEAT);
+    pack.WriteCell(cfg);
     pack.WriteCell(EntIndexToEntRef(vehicle));
     pack.WriteCell(GetClientUserId(victim));
     pack.WriteCell(isPickup); 
-    pack.WriteFloat(GetGameTime() + VEHICLE_DELAY);
+    pack.WriteFloat(GetGameTime() + cfg.Delay);
     pack.WriteFloatArray(startPos, 3);
     pack.WriteFloatArray(endPos, 3);
 
     SorryStore[victim].SetValue(STORE_KEY, KidnapState_Active);
-    EmitSoundToAll(SOUND_KIDNAP_IDLE_ENGINE, vehicle, .level = SNDLEVEL_CAR, .origin = startPos, .soundtime = VEHICLE_DURATION*2.0);
 }
 
 Action Timer_KidnapMoveVehicle(Handle h, DataPack pack) {
     pack.Reset();
+    VehCfg cfg = pack.ReadCell();
     int ref = pack.ReadCell();
     if(!IsValidEntity(ref)) return Plugin_Handled;
     int client = GetClientOfUserId(pack.ReadCell());
     if(client == 0) {
-        // Cleanup if the vehicle disappared
-        RemoveEntity(ref);
-        EmitSoundToAll(SOUND_KIDNAP_HORN, ref, .level = SNDLEVEL_CAR);
+        // Cleanup if client leaves
+        cfg.Cleanup(ref);
         return Plugin_Handled;
     }
     bool isPickup = pack.ReadCell();
@@ -78,7 +61,7 @@ Action Timer_KidnapMoveVehicle(Handle h, DataPack pack) {
     pack.ReadFloatArray(pos, 3);
     pack.ReadFloatArray(endPos, 3);
 
-    float endTime = startTime + VEHICLE_DURATION;
+    float endTime = startTime + cfg.Duration;
     float t = (GetGameTime() - startTime) / (endTime - startTime);
 
     LerpVec(pos, endPos, t);
@@ -93,14 +76,14 @@ Action Timer_KidnapMoveVehicle(Handle h, DataPack pack) {
             for(int i = 0; i < 3; i++)
                 ang[i] = GetRandomFloat(0.0, 360.0);
 
-            GetHorizontalPositionFromOrigin(pos, ang, -VEHICLE_DIST, startPos);
-            GetHorizontalPositionFromOrigin(pos, ang, VEHICLE_DIST, endPos);
+            GetHorizontalPositionFromOrigin(pos, ang, -cfg.Distance, startPos);
+            GetHorizontalPositionFromOrigin(pos, ang, cfg.Distance, endPos);
 
             TeleportEntity(ref, startPos);
-            StartKidnapVehicle(client, EntRefToEntIndex(ref), startPos, endPos, false);
+            StartKidnapVehicle(client, cfg, EntRefToEntIndex(ref), startPos, endPos, false);
         } else {
-            // Cleaup
-            RemoveEntity(ref);
+            // Cleanup (removes child ents too)
+            cfg.Cleanup(ref);
             SorryStore[client].Remove(STORE_KEY);
         }
         // Stop movement
@@ -109,15 +92,18 @@ Action Timer_KidnapMoveVehicle(Handle h, DataPack pack) {
         // Midpoint. Only fire once
         int val;
         if(!SorryStore[client].GetValue(STORE_KEY, val) || val != view_as<int>(KidnapState_Midpoint)) {
-            EmitSoundToAll(SOUND_KIDNAP_HORN, ref, .level = SNDLEVEL_CAR, .origin = pos);
+            // EmitSoundToAll(SOUND_KIDNAP_HORN, .level = SNDLEVEL_CAR, .origin = pos);
             if(isPickup) {
                 SorryStore[client].SetValue(STORE_KEY, KidnapState_Midpoint);
                 TeleportEntity(ref, pos); // reset client side lerp movement
+                float offset[3];
+                cfg.GetOffset(offset);
+                GetHorizontalPositionFromEntity(ref, offset[0], pos);
+                pos[2] += offset[2];
                 TeleportEntity(client, pos);
                 SetParent(client, ref);
                 // SetPlayerBlind(apologizer, 255, 700);
-                PrecacheSound(KIDNAP_SOUND);
-                EmitSoundToClient(client, KIDNAP_SOUND, client, SNDCHAN_AUTO, SNDLEVEL_RUSTLE, SND_CHANGEVOL | SND_CHANGEPITCH, 0.4, 50);
+                cfg.PlayHornSound(ref);
             } else {
                 SorryStore[client].SetValue(STORE_KEY, KidnapState_Midpoint);
 
@@ -126,6 +112,7 @@ Action Timer_KidnapMoveVehicle(Handle h, DataPack pack) {
                 // Clear blindness
                 SetPlayerBlind(client, 0, 2000, Fade_Out | Fade_Purge);
                 RequestFrame(Frame_UnstickPlayer, client);
+                cfg.PlayHornSound(ref);
                 // Just in case stuck
             }
         }

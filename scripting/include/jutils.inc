@@ -38,6 +38,16 @@ stock void GetHorizontalPositionFromClient(int client, float units, float finalP
 	pos[1] += units * Sine(theta); 
 	finalPosition = pos;
 }
+stock void GetHorizontalPositionFromEntity(int ent, float units, float finalPosition[3]) {
+	float pos[3], ang[3];
+	GetEntPropVector(ent, Prop_Data, "m_angRotation", ang);
+	GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
+
+	float theta = DegToRad(ang[1]);
+	pos[0] += units * Cosine(theta); 
+	pos[1] += units * Sine(theta); 
+	finalPosition = pos;
+}
 stock void GetEntityDimensions(int entity, float size[3]) {
 	float maxs[3], mins[3];
 	GetEntPropVector(entity, Prop_Data, "m_vecMins" , mins);
