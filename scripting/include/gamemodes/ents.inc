@@ -172,9 +172,10 @@ stock int StartPropCreate(const char[] entClass, const char[] model, const float
 	return entity;
 }
 
-stock int CreateProp(const char[] entClass, const char[] model, const float pos[3], const float ang[3] = NULL_VECTOR, const float vel[3] = NULL_VECTOR) {
+stock int CreateProp(const char[] entClass, const char[] model, const float pos[3], const float ang[3] = NULL_VECTOR, const float vel[3] = NULL_VECTOR, int spawnFlags = 0) {
 	int entity = StartPropCreate(entClass, model, pos, ang, vel);
 	if(entity == -1) return -1;
+	if(spawnFlags > 0) DispatchKeyValueInt(entity, "spawnflags", spawnFlags);
 	if(DispatchSpawn(entity)) {
 		#if defined DEBUG_LOG_MAPSTART
 		PrintToServer("spawn prop %.1f %.1f %.1f model %s", pos[0], pos[1], pos[2], model[7]);
