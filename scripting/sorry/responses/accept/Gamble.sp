@@ -1,6 +1,12 @@
 #define SDN_GAMBLE "music/wam_music.mp3"
+#define MODEL_CASH "models/props_collectables/money_wad.mdl"
 
 void Gamble_OnActivate(int apologizer, int target, const char[] eventId) {
+    if(!IsPlayerAlive(apologizer)) {
+        ShowSorryAcceptMenu(apologizer, target, eventId);
+        PrintToChat(target, "Can't gamble a corpse...");
+        return;
+    }
     bool isHealth = true; //GetRandomFloat() > 0.5;
 
     PrecacheSound(SDN_GAMBLE);
@@ -10,7 +16,6 @@ void Gamble_OnActivate(int apologizer, int target, const char[] eventId) {
         PrintHintText(apologizer, "%N is double or nothing your health", target);
     else
         PrintHintText(apologizer, "%N is double or nothing your ammo", target);
-    PrintToChat(apologizer, "...");
 
     DataPack pack;
     CreateDataTimer(5.0, Timer_GambleResult, pack);
@@ -37,6 +42,7 @@ Action Timer_GambleResult(Handle h, DataPack pack) {
             }
         }
         EmitSoundToAll(SOUND_ACCEPT, apologizer, .pitch = 120, .flags = SND_CHANGEPITCH);
+        SpawnMoney(apologizer, 20);
     } else {
         if(isHealth) {
             SDKHooks_TakeDamage(apologizer, apologizer, apologizer, 1000.0, DMG_BLAST, -1);
@@ -49,4 +55,22 @@ Action Timer_GambleResult(Handle h, DataPack pack) {
     StopSound(apologizer, SNDCHAN_STATIC, SDN_GAMBLE);
 
     return Plugin_Handled;
+}
+
+void SpawnMoney(int client, int count) {
+    PrecacheModel(MODEL_CASH);
+    float pos[3];
+
+    for(int i = 0; i < count; i++) {
+        GetClientEyePosition(client, pos);
+        pos[0] += GetRandomFloat(-6.0, 6.0);
+        pos[1] += GetRandomFloat(-6.0, 6.0);
+        pos[2] += GetRandomFloat(15.0, 22.0);
+        int model = CreateProp("prop_dynamic", MODEL_CASH, pos);
+        // This spams the console using this model, but we need *a* model or it crashes
+        int physbox = CreateProp("func_physbox", MODEL_CASH, pos, NULL_VECTOR, NULL_VECTOR, 2);
+        SetParent(model, physbox);
+
+        CreateTimer(20.0, Timer_KillEntity, _, physbox);
+    }
 }

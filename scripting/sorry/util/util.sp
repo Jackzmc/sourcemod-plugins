@@ -371,9 +371,21 @@ bool GetRandomLocation(int client, float pos[3]) {
     if(result) return true;
     // Fallback
     GetClientAbsOrigin(client, pos);
-    pos[0] = GetRandomFloat(-500.0, 500.0);
-    pos[1] = GetRandomFloat(-500.0, 500.0);
+    pos[0] = GetBiasedFloat(-600.0, 600.0);
+    pos[1] = GetBiasedFloat(-600.0, 600.0);
     return false;
+}
+
+stock float GetBiasedFloat(float min, float max, float bias = 2.0) {
+    float range = max - min;
+    float mag = GetURandomFloat();
+	mag = Pow(mag, bias);
+
+    float value = mag * (range / 2.0);
+    if (GetRandomInt(0, 1) == 0)
+        value = -value;
+
+    return value + ((max + min) / 2.0);
 }
 
 bool Filter_IgnorePlayerOnlyPlayers(int entity, int mask, int data) {
