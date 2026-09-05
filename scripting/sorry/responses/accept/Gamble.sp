@@ -71,6 +71,6 @@ void SpawnMoney(int client, int count) {
         int physbox = CreateProp("func_physbox", MODEL_CASH, pos, NULL_VECTOR, NULL_VECTOR, 2);
         SetParent(model, physbox);
 
-        CreateTimer(20.0, Timer_KillEntity, _, physbox);
+        CreateTimer(20.0, Timer_KillEntity, EntIndexToEntRef(physbox));
     }
 }
