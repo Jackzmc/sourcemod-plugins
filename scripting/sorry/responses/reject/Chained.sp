@@ -1,41 +1,13 @@
-float targetPos[MAXPLAYERS+1][3];
-int targetEnt[MAXPLAYERS+1];
+float targetPos[MAXPLAYERS+1][3]; // TODO: replace w/ SorryStore?
 
-static char STORE_KEY[] = "CHAINED";
+static char TARGET_CLIENT_KEY[] = "CHAINED_TARGET";
 
 float DURATION_SEC = 180.0; //3 min 
 
-float UPDATE_TARGET_INTERVAL = 15.0;
-
 void Chained_OnActivate(int apologizer, int target, const char[] eventId) {
-    int expires = GetTime() + RoundToCeil(DURATION_SEC);
-
-    Handle h = CreateTimer(UPDATE_TARGET_INTERVAL, Timer_Levitate, GetClientUserId(apologizer), TIMER_REPEAT);
-    TriggerTimer(h);
-    SorryStore[apologizer].SetValue(STORE_KEY, expires);
+    SorryStore[apologizer].SetValueTemp(TARGET_CLIENT_KEY, target, DURATION_SEC);
 }
 
-Action Timer_Levitate(Handle h, int userid) {
-    int client = GetClientOfUserId(userid);
-    if(client > 0) {
-        // Expired
-        int val;
-        if(SorryStore[client].GetValue(STORE_KEY, val) && val >= GetTime()) {
-            SorryStore[client].Remove(STORE_KEY);
-            return Plugin_Stop;
-        }
-        SelectTarget(client);
-    }
-    return Plugin_Stop;
-}
-
-void SelectTarget(int client) {
-    int entity = FindNearestEntityInRange(client, "player", 8_000.0);
-    if(entity > 0) {
-        targetEnt[client] = entity;
-        GetEntPropVector(entity, Prop_Data, "m_vecOrigin", targetPos[client]);
-    }
-}
 
 static float MAX_DIST = 30_000.0;
 static float LASER_HEIGHT = 40.0;
@@ -43,21 +15,19 @@ static float LASER_HEIGHT = 40.0;
 float SPEED = 200.0;
 
 Action Chained_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
-    int expires;
-    if(client > 0 && targetEnt[client] > 0 && SorryStore[client].GetValue(STORE_KEY, expires)) {
-        if(expires >= GetTime()) {
-            SorryStore[client].Remove(STORE_KEY);
-            return Plugin_Continue;
-        } else if(!IsClientInGame(targetEnt[client])) {
+    int targetEnt;
+    if(client > 0 && SorryStore[client].GetValue(TARGET_CLIENT_KEY, targetEnt)) {
+        if(!IsClientInGame(targetEnt)) {
             // Select new target, and wait until next cmd
-            SelectTarget(client);
+            PrintToChat(client, "You have been freed");
+            SorryStore[client].Remove(TARGET_CLIENT_KEY);
             return Plugin_Continue;
         }
         // PrintCenterText(client, "%N", targetEnt[client]);
         // Make client "look at" the target for the calculation
         float result[3], pos[3];
         GetClientAbsOrigin(client, pos);
-        GetClientAbsOrigin(targetEnt[client], targetPos[client]);
+        GetClientAbsOrigin(targetEnt, targetPos[client]);
         MakeVectorFromPoints(targetPos[client], pos, result);
         GetVectorAngles(result, angles);
         if(angles[0] >= 270){
@@ -87,7 +57,7 @@ Action Chained_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[
         TE_SetupBeamPoints(pos, targetPos[client], g_iLaserIndex, 0, 0, 1, 0.1, width / 2, width, 0, 0.0, color, 0);
         TE_SendToClient(client, 0.0);
         TE_SetupBeamPoints(targetPos[client], pos, g_iLaserIndex, 0, 0, 1, 0.1, width / 2, width, 0, 0.0, color, 0);
-        TE_SendToClient(targetEnt[client], 0.0);
+        TE_SendToClient(targetEnt, 0.0);
 
         if(GetEntityMoveType(client) == MOVETYPE_NOCLIP) return Plugin_Changed;
 
@@ -111,7 +81,7 @@ Action Chained_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[
             float vDist = pos[2] - targetPos[client][2]; // < 0: below, > 0: above
             vel[2] -= (vDist/2);
             AddVelocityDir(client, vel, angles[1], SPEED*delta);
-            PrintCenterText(client, "v:(%.1f %.1f %.1f)", vel[0], vel[1], vel[2]);
+            // PrintCenterText(client, "v:(%.1f %.1f %.1f)", vel[0], vel[1], vel[2]);
         }
         return Plugin_Changed;
 	}
