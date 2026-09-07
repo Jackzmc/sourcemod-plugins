@@ -13,8 +13,8 @@ static char TRAIN_CARTS[NUM_TRAIN_CARTS][] = {
 
 float VEH_CFG[][] = {
     // #weigh(int), dist, dura, dly, v.offset, fwd.offset
-    { 50.0,   800.0,  5.0, 0.0, 0.0, 0.0   }, // Delivery van
-    { 1.0,    1800.0,  7.0, 5.0, 50.0, 0.0   }, // Train,
+    { 20.0,   800.0,  5.0, 0.0, 0.0, 0.0   }, // Delivery van
+    { 5.0,    1800.0,  7.0, 5.0, 50.0, 0.0   }, // Train,
     { 1.0,    800.0,  5.0, 2.0, 50.0, -280.0  }, // Lil' Peanut Float
 };
 

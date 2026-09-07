@@ -12,10 +12,13 @@ void Gamble_OnActivate(int apologizer, int target, const char[] eventId) {
     PrecacheSound(SDN_GAMBLE);
     EmitSoundToClient(apologizer, SDN_GAMBLE, .channel=SNDCHAN_STATIC, .volume=1.0, .flags=SND_CHANGEVOL);
 
-    if(isHealth)
+    if(isHealth) {
         PrintHintText(apologizer, "%N is double or nothing your health", target);
-    else
+        PrintHintText(target, "Gambling %N's health, double or nothing", apologizer);
+    } else {
         PrintHintText(apologizer, "%N is double or nothing your ammo", target);
+        PrintHintText(target, "Gambling %N's ammo, double or nothing", apologizer);
+    }
 
     DataPack pack;
     CreateDataTimer(5.0, Timer_GambleResult, pack);

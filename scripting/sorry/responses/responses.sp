@@ -1,3 +1,4 @@
+// enum def in def.sp
 #include "accept/FreeRevive.sp"
 #include "accept/UltimateSacrifice.sp"
 #include "accept/SpeedBoost.sp"
@@ -25,6 +26,8 @@
 #include "reject/Sideways.sp"
 #include "reject/Airstrike.sp"
 #include "reject/Torment.sp"
+#include "reject/Chained.sp"
+
 
 void RegisterResponses() {
 	// ACCEPT
@@ -54,4 +57,6 @@ void RegisterResponses() {
 	ResponseBuilder(Sorry_RejectAirstrike, Type_Reject, Airstrike_OnActivate)
 		.OnTakeDamage(Airstrike_OnTakeDamage);
 	ResponseBuilder(Sorry_RejectTorment, Type_Reject, Torment_OnActivate);
+	ResponseBuilder(Sorry_RejectChained, Type_Reject, Chained_OnActivate)
+		.OnPlayerRunCmd(Chained_OnPlayerRunCmd);
 }

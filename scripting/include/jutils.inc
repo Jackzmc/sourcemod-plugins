@@ -626,6 +626,13 @@ stock float GetNearestEntityDistance(int originEntity, char[] classname) {
 	return closest > 0 ? nearestDistance : -1.0;
 } 
 
+/**
+ * Finds nearest entity (excluding originEntity) of given classname within range
+ * @param originEntity the entity to center around. 
+ * @param classname to search for, wildcard (*) is supported
+ * @param range to check
+ * @returns entity index or -1 
+ */
 stock int FindNearestEntityInRange(int originEntity, char[] classname, float range) {
 	float compareVec[3], entityVecOrigin[3];
 	GetEntPropVector(originEntity, Prop_Send, "m_vecOrigin", compareVec);
@@ -635,6 +642,7 @@ stock int FindNearestEntityInRange(int originEntity, char[] classname, float ran
 	
 	int entity = -1, closest = -1;
 	while ((entity = FindEntityByClassname(entity, classname)) != -1) {
+		if(originEntity == entity) continue;
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", entityVecOrigin);
 		distance = GetVectorDistance(compareVec, entityVecOrigin);
 		
