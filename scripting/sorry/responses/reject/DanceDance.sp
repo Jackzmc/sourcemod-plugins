@@ -1,6 +1,7 @@
 static char REQUIRED_BTN_KEY[] = "DanceDance_btn";
 static char LAST_BTN_TIME_KEY[] = "DanceDance_btn_time";
 static char POINTS_KEY[] = "DanceDance_points";
+static char SONG_KEY[] = "DanceDance_song";
 
 static float DURATION = 30.0;
 static float PRESS_TIME = 4.0; 
@@ -26,6 +27,15 @@ char GRADE_LETTER[NUM_GRADES][] = {
     "F"
 };
 
+#define NUM_SONGS 5
+char DANCE_SONGS[NUM_SONGS][] = {
+    "music/flu/jukebox/all_i_want_for_xmas.wav",
+    "music/flu/jukebox/badman.wav",
+    "music/flu/jukebox/midnightride.wav",
+    "music/flu/jukebox/re_your_brains.wav",
+    "music/flu/jukebox/thesaintswillnevercome.wav",
+};
+
 /**
  * @param apologizer is apologizing to target
  * @param target the one that picked this response outcome for the apologizer
@@ -38,8 +48,12 @@ void DanceDance_OnActivate(int apologizer, int target, const char[] eventId) {
         ShowSorryAcceptMenu(apologizer, target, eventId);
         return;
     }
+
+    int index = GetRandomInt(0, NUM_SONGS - 1);
+    SorryStore[apologizer].SetString(SONG_KEY, DANCE_SONGS[index]);
+    EmitSoundToClient(apologizer, DANCE_SONGS[index], apologizer, SNDCHAN_STATIC, .volume = 0.5, .flags = SND_CHANGEVOL);
     ChooseDirection(apologizer);
-    PrintToChat(apologizer, "Time to dance for the next %.0f seconds", DURATION);
+    PrintToChat(apologizer, "Move in the direction of the arrows for %.0f seconds", DURATION);
     CreateTimer(DURATION, Timer_EndDanceDance, GetClientUserId(apologizer));
 }
 
@@ -63,6 +77,10 @@ void EndDance(int client) {
         }
     }
 
+    char song[64];
+    SorryStore[client].GetString(SONG_KEY, song, sizeof(song));
+    StopSound(client, SNDCHAN_STATIC, song);
+
     PrintToChat(client, "===========");
     PrintToChat(client, "GAME OVER");
     PrintToChat(client, "");
@@ -77,6 +95,7 @@ void EndDance(int client) {
     SorryStore[client].Remove(REQUIRED_BTN_KEY);
     SorryStore[client].Remove(LAST_BTN_TIME_KEY);
     SorryStore[client].Remove(POINTS_KEY);
+    SorryStore[client].Remove(SONG_KEY);
 }
 
 Action DanceDance_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
