@@ -27,7 +27,7 @@
 #include "reject/Airstrike.sp"
 #include "reject/Torment.sp"
 #include "reject/Chained.sp"
-
+#include "reject/DanceDance.sp"
 
 void RegisterResponses() {
 	// ACCEPT
@@ -59,4 +59,6 @@ void RegisterResponses() {
 	ResponseBuilder(Sorry_RejectTorment, Type_Reject, Torment_OnActivate);
 	ResponseBuilder(Sorry_RejectChained, Type_Reject, Chained_OnActivate)
 		.OnPlayerRunCmd(Chained_OnPlayerRunCmd);
+	ResponseBuilder(Sorry_RejectDanceDance, Type_Reject, DanceDance_OnActivate)
+		.OnPlayerRunCmd(DanceDance_OnPlayerRunCmd);
 }
