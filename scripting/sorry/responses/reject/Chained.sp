@@ -1,10 +1,20 @@
-float targetPos[MAXPLAYERS+1][3]; // TODO: replace w/ SorryStore?
+float targetPos[MAXPLAYERS+1][3]; 
 
 static char TARGET_CLIENT_KEY[] = "CHAINED_TARGET";
 
-float DURATION_SEC = 180.0; //3 min 
+float DURATION_SEC = 60.0; //3 min 
 
 void Chained_OnActivate(int apologizer, int target, const char[] eventId) {
+    // For debug or self apologies force it to be another player
+    if(target == apologizer) {
+        int newTarget = GetRandomClient(2, 1, -1);
+        if(newTarget > 0) target = newTarget;
+    }
+    if(target == apologizer) {
+        PrintToChat(apologizer, "Can't chain to yourself");
+        ShowSorryAcceptMenu(apologizer, target, eventId);
+        return;
+    }
     SorryStore[apologizer].SetValueTemp(TARGET_CLIENT_KEY, target, DURATION_SEC);
 }
 

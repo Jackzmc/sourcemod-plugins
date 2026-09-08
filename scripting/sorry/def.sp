@@ -142,13 +142,14 @@ methodmap SorryStore_t < StringMap {
 		this.GetValue(key, value);
 		value += increment;
 		this.SetValue(key, value);
+		return value;
 	}
 
 	/**
 	 * Increments the stored value by increment. If not set, defaults to increment. Then after time has passed, value is decremented from
 	 */
 	public int IncrementValueTemp(const char[] key, float ttl, int increment) {
-		this.IncrementValue(key, increment);
+		int val = this.IncrementValue(key, increment);
 
 		DataPack pack;
 		CreateDataTimer(ttl, SorryStore_IncrementKeyTimer, pack);
@@ -156,6 +157,8 @@ methodmap SorryStore_t < StringMap {
 		pack.WriteCell(strlen(key));
 		pack.WriteString(key);
 		pack.WriteCell(-increment);
+
+		return val;
 	}
 
 	public void SetBool(const char[] key, bool value) {

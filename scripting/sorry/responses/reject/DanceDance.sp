@@ -2,6 +2,7 @@ static char REQUIRED_BTN_KEY[] = "DanceDance_btn";
 static char LAST_BTN_TIME_KEY[] = "DanceDance_btn_time";
 static char POINTS_KEY[] = "DanceDance_points";
 static char SONG_KEY[] = "DanceDance_song";
+static char LAST_BTN_COUNT_KEY[] = "DanceDance_btn_count";
 
 static float DURATION = 30.0;
 static float PRESS_TIME = 4.0; 
@@ -27,12 +28,11 @@ char GRADE_LETTER[NUM_GRADES][] = {
     "F"
 };
 
-#define NUM_SONGS 5
+#define NUM_SONGS 4
 char DANCE_SONGS[NUM_SONGS][] = {
     "music/flu/jukebox/all_i_want_for_xmas.wav",
     "music/flu/jukebox/badman.wav",
     "music/flu/jukebox/midnightride.wav",
-    "music/flu/jukebox/re_your_brains.wav",
     "music/flu/jukebox/thesaintswillnevercome.wav",
 };
 
@@ -51,7 +51,8 @@ void DanceDance_OnActivate(int apologizer, int target, const char[] eventId) {
 
     int index = GetRandomInt(0, NUM_SONGS - 1);
     SorryStore[apologizer].SetString(SONG_KEY, DANCE_SONGS[index]);
-    EmitSoundToClient(apologizer, DANCE_SONGS[index], apologizer, SNDCHAN_STATIC, .volume = 0.5, .flags = SND_CHANGEVOL);
+    PrecacheSound(DANCE_SONGS[index]);
+    EmitSoundToClient(apologizer, DANCE_SONGS[index], apologizer, SNDCHAN_STATIC, .volume = 0.5, .flags = SND_CHANGEVOL, .soundtime = 5.0);
     ChooseDirection(apologizer);
     PrintToChat(apologizer, "Move in the direction of the arrows for %.0f seconds", DURATION);
     CreateTimer(DURATION, Timer_EndDanceDance, GetClientUserId(apologizer));
@@ -96,6 +97,7 @@ void EndDance(int client) {
     SorryStore[client].Remove(LAST_BTN_TIME_KEY);
     SorryStore[client].Remove(POINTS_KEY);
     SorryStore[client].Remove(SONG_KEY);
+    SorryStore[client].Remove(LAST_BTN_COUNT_KEY);
 }
 
 Action DanceDance_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
@@ -104,9 +106,12 @@ Action DanceDance_OnPlayerRunCmd(int client, int& buttons, int& impulse, float v
             EndDance(client);
             return Plugin_Continue;
         }
+
+        // Prevent last button pressed being counted as this button pressed.
+        // *PROBABLY* should just switch to oldButtons check but this works fine.
         float lastBtnPressedTime;
         SorryStore[client].GetValue(LAST_BTN_TIME_KEY, lastBtnPressedTime);
-        if(GetGameTime() - lastBtnPressedTime < NEXT_KEY_GRACE) return Plugin_Handled;
+        if(GetGameTime() - lastBtnPressedTime < NEXT_KEY_GRACE) return Plugin_Continue;
 
         int result = CheckDirection(client, buttons);
         bool expired = GetGameTime() - lastBtnPressedTime > PRESS_TIME;
@@ -152,10 +157,18 @@ char DIR_LABEL[NUM_DIRS][] = {
 
 
 void ChooseDirection(int client) {
+    int lastVal;
     int val = GetRandomInt(0, NUM_DIRS - 1);
+    SorryStore[client].GetValue(REQUIRED_BTN_KEY, lastVal);
     SorryStore[client].SetValue(REQUIRED_BTN_KEY, val);
     SorryStore[client].SetValue(LAST_BTN_TIME_KEY, GetGameTime());
-    PrintHintText(client, "%s", DIR_LABEL[val]);
+    if(lastVal == val) {
+        int count = SorryStore[client].IncrementValue(LAST_BTN_COUNT_KEY, 1);
+        PrintHintText(client, "%s (%dx)", DIR_LABEL[val], count);
+    } else {
+        SorryStore[client].Remove(LAST_BTN_COUNT_KEY);
+        PrintHintText(client, "%s", DIR_LABEL[val]);
+    }
 }
 
 // Check if they pressd *any* of the valid keys. 1: valid, -1: wrong, 0: no valid btn pressed
