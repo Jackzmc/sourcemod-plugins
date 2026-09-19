@@ -1282,5 +1282,172 @@
                 ]
             }
         ]
+    },
+    "mid-upper-skip": {
+        "chance": 0.20000000298023224,
+        "variants": [
+            {
+                "weight": 1,
+                "inputs": [
+                    {"targetname": "anv_mapfixes_cliprework_beanbinninga", "input": "kill"}
+                ],
+                "entities": [
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/semi_trailer.mdl",
+                        "origin": [
+                            -1231.439453125,
+                            -1513.0235595703125,
+                            -126.69249725341797
+                        ],
+                        "angles": [
+                            0.0,
+                            90.699996948242188,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_trainstation/bench_indoor001a.mdl",
+                        "origin": [
+                            -976.3428955078125,
+                            -1501.554931640625,
+                            68.819198608398438
+                        ],
+                        "angles": [
+                            15.0,
+                            270.0,
+                            30.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_junk/wood_pallet001a.mdl",
+                        "origin": [
+                            -924.19635009765625,
+                            -1495.1900634765625,
+                            62.359226226806641
+                        ],
+                        "angles": [
+                            15.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_crates/static_crate_40.mdl",
+                        "origin": [
+                            -913.64874267578125,
+                            -1510.3082275390625,
+                            69.239151000976562
+                        ],
+                        "angles": [
+                            -15.0,
+                            -90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic_override",
+                        "model": "models/props_junk/wood_pallet001a.mdl",
+                        "origin": [
+                            -922.70782470703125,
+                            -1499.142578125,
+                            53.329601287841797
+                        ],
+                        "angles": [
+                            15.0,
+                            90.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_vehicles/truck002a_cab.mdl",
+                        "origin": [
+                            -1509.5447998046875,
+                            -1580.47607421875,
+                            -47.581291198730469
+                        ],
+                        "angles": [
+                            0.0,
+                            -150.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_equipment/scaffolding.mdl",
+                        "origin": [
+                            -980.9573974609375,
+                            -2564.286865234375,
+                            -123.09307098388672
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -823.2340087890625,
+                            -2518.7060546875,
+                            126.14625549316406
+                        ],
+                        "angles": [
+                            0.0,
+                            92.100006103515625,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_128_reference.mdl",
+                        "origin": [
+                            -704.5361328125,
+                            -2528.073974609375,
+                            128.28125
+                        ],
+                        "angles": [
+                            0.0,
+                            93.600006103515625,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/police_barrier001_128_reference.mdl",
+                        "origin": [
+                            -608.49786376953125,
+                            -2503.082763671875,
+                            128.28125
+                        ],
+                        "angles": [
+                            -1.5,
+                            92.299995422363281,
+                            0.0
+                        ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_fortifications/barricade001_64_reference.mdl",
+                        "origin": [
+                            -540.0809326171875,
+                            -2515.923583984375,
+                            128.28125
+                        ],
+                        "angles": [
+                            0.0,
+                            84.5,
+                            0.0
+                        ]
+                    }
+                ]
+            }
+        ]
     }
 }
