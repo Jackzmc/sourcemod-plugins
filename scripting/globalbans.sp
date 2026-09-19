@@ -4,7 +4,7 @@
 #define DB_NAME "globalbans"
 /// How long in ms until we kick user for auth timeout to prevent spoofed banned players. 
 /// May be unnecessary as server will eventually kick the user on their own with "No steam logon" but can take long time
-#define AUTH_TIMEOUT 22.0  
+#define AUTH_TIMEOUT 24.0  
 #define LOG_FILE "addons/sourcemod/logs/globalbans.log"
 
 #define BANFLAG_NONE 0
@@ -317,7 +317,8 @@ void DB_OnConnectCheck(Database db, DBResultSet results, const char[] error, int
         // Ban is valid from here on:
 
         LogAction(-1, client, "\"%L\" (%s), is banned from server: \"%s\"", client, steamid, reason);
-        Log(Log_Info, Target_AdminChat, "Joining player \"%L\" is banned for %s", client, reason);
+        // Their steamid isnt validated yet so we just print the "%L" format manually
+        Log(Log_Info, Target_AdminChat, "Joining player \"%N<><%s><>\" was banned for %s", client, steamid, reason);
 
         // Fetch public message
         results.FetchString(3, publicMessage, sizeof(publicMessage), colResult);
