@@ -84,6 +84,7 @@ public Action Command_RemoveFar(int client, int args) {
 			}
 		}
 	}
+	return Plugin_Handled;
 }
 
 public Action Command_SpawnMinigunBot(int client, int args) {
@@ -109,7 +110,7 @@ public Action Command_SpawnMinigunBot(int client, int args) {
 
 		int survivor = SpawnSurvivor(vPos, vAng, model, true);
 		if(survivor > 0) {
-			GiveClientWeaponLasers(survivor, "rifle_ak47");
+			GiveClientWeaponLasers(survivor, "weapon_rifle_ak47");
 		}else{
 			ReplyToCommand(client, "Failed to spawn survivor.");
 		}
@@ -147,8 +148,11 @@ public Action Command_SpawnHoldoutBot(int client, int args) {
 		char wpn[64];
 		if(args > 1) {
 			GetCmdArg(2, wpn, sizeof(wpn));
+			if(!StrContains(wpn, "weapon_", true)) {
+				Format(wpn, sizeof(wpn), "weapon_%s", wpn);
+			}
 		}else {
-			wpn = "rifle_ak47";
+			wpn = "weapon_rifle_ak47";
 		}
 
 		int survivor = SpawnSurvivor(vPos, vAng, model, false);
@@ -293,6 +297,7 @@ Action Timer_Move(Handle timer, any client) {
 		SetEntProp(client, Prop_Send, "m_fFlags", GetEntProp(client, Prop_Send, "m_fFlags") & ~FL_FROZEN);
 		TeleportEntity(client, NULL_VECTOR, NULL_VECTOR, view_as<float>({ 0.0, 0.0, 0.0 }));
 	}
+	return Plugin_Handled;
 }
 
 Action Timer_MoveMinigun(Handle timer, any client) {
@@ -303,5 +308,6 @@ Action Timer_MoveMinigun(Handle timer, any client) {
 		// SetEntProp(client, Prop_Send, "m_fFlags", GetEntProp(client, Prop_Send, "m_fFlags") & ~FL_FROZEN);
 		TeleportEntity(client, NULL_VECTOR, NULL_VECTOR, view_as<float>({ 0.0, 0.0, 0.0 }));
 	}
+	return Plugin_Handled;
 }
 
