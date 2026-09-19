@@ -123,11 +123,11 @@ Action BecomeRandomPeanut_OnPlayerRunCmd(int client, int& buttons, int& impulse,
 					if(keyUse) {
 						int index = GetRandomInt(0, LILPEANUT_SDNS - 1);
 						PrecacheSound(LILPEANUT_SOUNDS[index]);
-						EmitSoundToAll(LILPEANUT_SOUNDS[index], -2, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEVOL, 0.55, 100, -1, pos);
+						EmitSoundToAll(LILPEANUT_SOUNDS[index], -2, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEVOL, 0.55, 100, -1);
 					} else if(keyShove) {
 						int index = GetRandomInt(0, LILPEANUT_SDNS_HURT - 1);
 						PrecacheSound(LILPEANUT_SOUNDS_HURT[index]);
-						EmitSoundToAll(LILPEANUT_SOUNDS_HURT[index], -2, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEVOL, 0.55, 100, -1, pos);
+						EmitSoundToAll(LILPEANUT_SOUNDS_HURT[index], -2, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEVOL, 0.55, 100, -1);
 					}
 					PrecacheSound(SOUND_PIANO);
 				}

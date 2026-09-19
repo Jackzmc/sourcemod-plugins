@@ -188,7 +188,7 @@ Action SorryStore_ClearKey(Handle h, DataPack pack) {
 	int client = GetClientOfUserId(pack.ReadCell());
 	if(client == 0) LogError("SorryStore_ClearKey: client invalid");
 
-	int len = pack.ReadCell();
+	int len = pack.ReadCell() + 1;
 	char[] key = new char[len];
 	pack.ReadString(key, len);
 

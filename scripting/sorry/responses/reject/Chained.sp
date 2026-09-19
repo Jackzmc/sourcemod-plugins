@@ -65,9 +65,8 @@ Action Chained_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[
 
         // TODO: increase color green -> red on distance?
         TE_SetupBeamPoints(pos, targetPos[client], g_iLaserIndex, 0, 0, 1, 0.1, width / 2, width, 0, 0.0, color, 0);
-        TE_SendToClient(client, 0.0);
-        TE_SetupBeamPoints(targetPos[client], pos, g_iLaserIndex, 0, 0, 1, 0.1, width / 2, width, 0, 0.0, color, 0);
-        TE_SendToClient(targetEnt, 0.0);
+        // TE_SetupBeamPoints(targetPos[client], pos, g_iLaserIndex, 0, 0, 1, 0.1, width / 2, width, 0, 0.0, color, 0);
+        TE_SendToAll();
 
         if(GetEntityMoveType(client) == MOVETYPE_NOCLIP) return Plugin_Changed;
 

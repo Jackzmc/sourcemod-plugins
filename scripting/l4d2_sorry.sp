@@ -588,7 +588,7 @@ void HandleApologyResponse(int activator, int target, const char[] eventId, sorr
 				if(wpn > 0) {
 					SpawnWeaponThief(activator, wpn);
 				}
-				CheatCommand(activator, "give", "pitchfork", "");
+				GiveClientWeapon(activator, "weapon_pitchfork");
 			} else if(response == Sorry_RejectDropAll) {
 				float pos[3];
 				GetHorizontalPositionFromClient(activator, 60.0, pos);
@@ -664,13 +664,13 @@ void HandleApologyResponse(int activator, int target, const char[] eventId, sorr
 				CreateTimer(12.0, Timer_RevertGod);
 			} else if(response == Sorry_RejectInconvenientHealth) {
 				char activeWpnId[32];
-				if(!GetClientWeaponName(activator, 3, activeWpnId, sizeof(activeWpnId)) && !StrEqual(activeWpnId, "weapon_first_aid_kit")) {
+				if(!GetClientWeaponName(activator, 3, activeWpnId, sizeof(activeWpnId)) || !StrEqual(activeWpnId, "weapon_first_aid_kit")) {
 					// check kit slot for kit, if not - give a kit
-					CheatCommand(activator, "give", "first_aid_kit", "");
+					GivePlayerItem(activator, "weapon_first_aid_kit");
 					ClientCommand(activator, "slot3");
 				} else if(!GetClientWeaponName(activator, 4, activeWpnId, sizeof(activeWpnId))) {
 					// check adr/pills slot for items / pills, if not - give
-					CheatCommand(activator, "give", GetRandomFloat() > 0.5 ? "adrenaline" : "pain_pills", "");
+					GivePlayerItem(activator, GetRandomFloat() > 0.5 ? "weapon_adrenaline" : "weapon_pain_pills");
 					ClientCommand(activator, "slot4");
 				} else {
 					// Otherwise, they have both a kit and adr/pills, switch slot:
@@ -720,7 +720,6 @@ void HandleApologyResponse(int activator, int target, const char[] eventId, sorr
 		}
 	}
 }
-
 
 Action Timer_RandomApology(Handle h, DataPack pack) {
 	pack.Reset();

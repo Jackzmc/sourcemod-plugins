@@ -4,7 +4,7 @@ static char POINTS_KEY[] = "DanceDance_points";
 static char SONG_KEY[] = "DanceDance_song";
 static char LAST_BTN_COUNT_KEY[] = "DanceDance_btn_count";
 
-static float DURATION = 30.0;
+static float DURATION = 35.0;
 static float PRESS_TIME = 4.0; 
 static float NEXT_KEY_GRACE = 0.2; // prevent last key being entered for next key
 
@@ -14,8 +14,8 @@ static float NEXT_KEY_GRACE = 0.2; // prevent last key being entered for next ke
 int GRADE_MIN_POINTS[NUM_GRADES-1] = {
     47,
     40,
-    30,
-    20,
+    28,
+    12,
     10,
 }
 
@@ -49,17 +49,55 @@ void DanceDance_OnActivate(int apologizer, int target, const char[] eventId) {
         return;
     }
 
+    // TODO: add countdown? + pling snd
+
     int index = GetRandomInt(0, NUM_SONGS - 1);
     SorryStore[apologizer].SetString(SONG_KEY, DANCE_SONGS[index]);
     PrecacheSound(DANCE_SONGS[index]);
     EmitSoundToClient(apologizer, DANCE_SONGS[index], apologizer, SNDCHAN_STATIC, .volume = 0.5, .flags = SND_CHANGEVOL, .soundtime = 5.0);
-    ChooseDirection(apologizer);
     PrintToChat(apologizer, "Move in the direction of the arrows for %.0f seconds", DURATION);
+
+    StartCountdown(apologizer, 3);
     CreateTimer(DURATION, Timer_EndDanceDance, GetClientUserId(apologizer));
 }
 
-Action Timer_EndDanceDance(Handle h, int data) {
-    int client = GetClientOfUserId(data);
+Action Timer_DanceDanceCountdown(Handle h, DataPack pack) {
+    pack.Reset();
+    int userid = pack.ReadCell();
+    int client = GetClientOfUserId(userid);
+    if(client > 0) {
+        int secLeft = pack.ReadCell();
+        PrintToChat(client, "%d", secLeft);
+        PrintHintText(client, "%d", secLeft);
+
+        if(secLeft > 1) {
+            StartCountdown(client, secLeft - 1);
+        } else {
+            // start at 0
+            CreateTimer(1.0, Timer_StartDanceDance, userid);
+        }
+        
+    }
+    return Plugin_Handled;
+}
+
+void StartCountdown(int client, int seconds) {
+    DataPack pack;
+    CreateDataTimer(1.0, Timer_DanceDanceCountdown, pack);
+    pack.WriteCell(GetClientUserId(client));
+    pack.WriteCell(seconds);
+}
+
+Action Timer_StartDanceDance(Handle h, int userid) {
+    int client = GetClientOfUserId(userid);
+    if(client > 0) {
+        ChooseDirection(client);
+    }
+    return Plugin_Handled;
+}
+
+Action Timer_EndDanceDance(Handle h, int userid) {
+    int client = GetClientOfUserId(userid);
     if(client > 0) {
         EndDance(client);
     }

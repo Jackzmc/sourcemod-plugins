@@ -1,6 +1,6 @@
 #define SOUND_PIANO "plats/piano.wav"
 
-#define NUM_RANDOM_PROPS 15
+#define NUM_RANDOM_PROPS 17
 char RANDOM_PROP[NUM_RANDOM_PROPS][] = {
 	"models/props_urban/plastic_flamingo001.mdl",
 	"models/props_fairgrounds/swan_boat.mdl",
@@ -16,7 +16,9 @@ char RANDOM_PROP[NUM_RANDOM_PROPS][] = {
 	"models/props_interiors/toilet.mdl",
 	"models/props_foliage/urban_pot_bigplant01.mdl",
 	"models/props_foliage/urban_pot_clay01.mdl",
-	"models/props/cs_assault/handtruck.mdl"
+	"models/props/cs_assault/handtruck.mdl",
+	"models/props_fairgrounds/alligator.mdl",
+	"models/props_cemetery/grave_01.mdl"
 };
 
 void RandomProp_OnActivate(int apologizer, int target, const char[] eventId) {

@@ -13,6 +13,10 @@ Action Timer_FreeRevive(Handle h, DataPack pack) {
 	pack.Reset();
 	int victim = GetClientOfUserId(pack.ReadCell());
 	if(victim > 0) {
+		int attacker = L4D2_GetSpecialInfectedDominatingMe(victim);
+		if(attacker > 0) {
+			L4D_StaggerPlayer(attacker, victim, NULL_VECTOR);
+		}
 		L4D_ReviveSurvivor(victim);
 		// L4D_SetPlayerIncapacitatedState(victim, false);
 		int reviveCount = pack.ReadCell();
