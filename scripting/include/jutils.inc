@@ -294,12 +294,9 @@ stock int GiveClientWeaponLasers(int client, const char[] wpnName) {
 }
 
 stock int GiveClientWeapon(int client, const char[] wpnName) {
-	static char sTemp[64];
 	float pos[3];
 	GetClientAbsOrigin(client, pos);
-	Format(sTemp, sizeof(sTemp), "weapon_%s", wpnName);
-
-	int entity = CreateEntityByName(sTemp);
+	int entity = CreateEntityByName(wpnName);
 	if( entity != -1 ) {
 		DispatchSpawn(entity);
 		TeleportEntity(entity, pos, NULL_VECTOR, NULL_VECTOR);
@@ -310,30 +307,6 @@ stock int GiveClientWeapon(int client, const char[] wpnName) {
 		return -1;
 	}
 }
-stock int GetNearestEntity(int client, char[] classname) {
-	#pragma unused client
-	int nearestEntity = -1;
-	float clientVecOrigin[3], entityVecOrigin[3];
-	
-	//Get the distance between the first entity and client
-	float distance, nearestDistance = -1.0;
-	
-	//Find all the entity and compare the distances
-	int entity = -1;
-	while ((entity = FindEntityByClassname(entity, classname)) != -1)
-	{
-		GetEntPropVector(entity, Prop_Data, "m_vecOrigin", entityVecOrigin);
-		distance = GetVectorDistance(clientVecOrigin, entityVecOrigin, true);
-		
-		if (distance < nearestDistance || nearestDistance == -1.0)
-		{
-			nearestEntity = entity;
-			nearestDistance = distance;
-		}
-	}
-	return nearestEntity;
-}  
-
 stock bool IsValidPlayer(int i) {
 	return IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i);
 }
@@ -649,6 +622,32 @@ stock int FindNearestEntityInRange(int originEntity, char[] classname, float ran
 		if (distance <= range && (distance < nearestDistance || nearestDistance == -1.0)) {
 			// PrintDebug(DEBUG_SPAWNLOGIC, "Comparing %s (id %d) (%.2f,%.2f,%.2f) distance to entity %d (%.2f,%.2f,%.2f) is %.4f", classname, entity, entityVecOrigin[0], entityVecOrigin[1], entityVecOrigin[2], originEntity, compareVec[0], compareVec[1], compareVec[2], distance);
 			nearestDistance = distance;
+			closest = entity;
+		}
+	}
+	return closest;
+}
+
+/**
+ * Finds nearest entity of given classname within distance
+ * @param center center point to start from
+ * @param classname to search for, wildcard (*) is supported
+ * @param range to check
+ * @returns entity index or -1 
+ */
+stock int FindNearestEntity(const float center[3], char[] classname, float maxDistance) {
+	float entPos[3];
+	
+	//Get the distance between the first entity and client
+	int entity = -1, closest = -1;
+
+	maxDistance = Pow(maxDistance, 2.0);
+
+	while ((entity = FindEntityByClassname(entity, classname)) != -1) {
+		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", entPos);
+		float distance = GetVectorDistance(center, entPos, true);
+		
+		if (distance <= maxDistance || closest == -1) {
 			closest = entity;
 		}
 	}
