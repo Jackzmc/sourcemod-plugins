@@ -165,6 +165,20 @@
                             58.0,
                             0.0
                         ]
+                    },
+                    {
+                        "type": "prop_dynamic",
+                        "model": "models/props_unique/airport/luggage_pile1.mdl",
+                        "origin": [
+                            4215.3203125,
+                            7876.40478515625,
+                            -674.20062255859375
+                        ],
+                        "angles": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
                     }
                 ]
             }
@@ -503,6 +517,64 @@
     },
     "rocks": {
         "chance": 0.20000000000000001,
+        "entities": [
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_highway/plywood_03.mdl",
+                "origin": [
+                    -1114.595703125,
+                    808.02508544921875,
+                    -1745.80078125
+                ],
+                "angles": [
+                    145.0,
+                    -5.0,
+                    10.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_foliage/tree_city01.mdl",
+                "origin": [
+                    -1207.188232421875,
+                    520.11395263671875,
+                    -1652.3343505859375
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_foliage/tree_city01.mdl",
+                "origin": [
+                    -1531.690673828125,
+                    454.220703125,
+                    -1615.191650390625
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            {
+                "type": "prop_dynamic",
+                "model": "models/props_foliage/tree_city01.mdl",
+                "origin": [
+                    -1567.3509521484375,
+                    414.90011596679688,
+                    -1564.896484375
+                ],
+                "angles": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        ],
         "variants": [
             {
                 "entities": [
@@ -1768,7 +1840,10 @@
             {
                 "weight": 1,
                 "inputs": [
-                    {"hammerid": 511959, "input": "_lock"}
+                    {
+                        "hammerid": 511959,
+                        "input": "_lock"
+                    }
                 ],
                 "entities": [
                     {

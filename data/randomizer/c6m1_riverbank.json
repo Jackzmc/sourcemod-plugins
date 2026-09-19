@@ -87,6 +87,12 @@
                             200
                         ]
                     }
+                ],
+                "inputs": [
+                    {
+                        "targetname": "anv_mapfixes_commonhop_windows",
+                        "input": "kill"
+                    }
                 ]
             },
             {
