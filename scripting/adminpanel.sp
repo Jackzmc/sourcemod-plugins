@@ -18,6 +18,7 @@
 #include <jutils>
 #include <socket>
 #include <geoip>
+#include <log>
 #undef REQUIRE_PLUGIN
 #tryinclude <SteamWorks>
 
@@ -120,6 +121,7 @@ public void OnPluginStart() {
 		ConnectDB();
 	}
 	LoadTranslations("common.phrases");
+	Log_Init("AdminPanel", Log_Debug, ADMFLAG_GENERIC, "sm_names", Target_ServerConsole);
 
 	g_voiceState = new StringMap();
 
@@ -326,6 +328,9 @@ void DBCT_CheckUserName(Database db, DBResultSet results, const char[] error, in
 			results.FetchString(0, prevName, sizeof(prevName));
 			if(StrEqual(prevName, nameCache[client])) {
 				insertNewName = false;
+			} else {
+				// Name changed, tell admins
+				PrintChatToAdmins("[AdminPanel] %N was previously known as \"%s\"", client, prevName);
 			}
 		}
 
@@ -343,11 +348,6 @@ stock void Debug(const char[] format, any ...) {
 	char buffer[254];
 	VFormat(buffer, sizeof(buffer), format, 2);
 	PrintToServer("[AdminPanel] debug: %s", buffer);
-}
-stock void Log(const char[] format, any ...) {
-	char buffer[254];
-	VFormat(buffer, sizeof(buffer), format, 2);
-	PrintToServer("[AdminPanel] %s", buffer);
 }
 
 Action Timer_FullSync(Handle h) {
@@ -709,11 +709,6 @@ public void L4D_OnServerHibernationUpdate(bool hibernating) {
 	} else {
 		ConnectSocket();
 	}
-}
-
-Action Timer_Wake(Handle h) {
-	PrintToServer("[AdminPanel] Waking server from hibernation");
-	return Plugin_Continue;
 }
 
 public void SteamWorks_SteamServersConnected() {
