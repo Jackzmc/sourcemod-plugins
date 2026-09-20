@@ -365,10 +365,11 @@ static char FORBIDDEN_CLASSNAMES[MAX_FORBIDDEN_CLASSNAMES][] = {
 	"move_rope"
 };
 
-#define MAX_FORBIDDEN_MODELS 2
+#define MAX_FORBIDDEN_MODELS 3
 char FORBIDDEN_MODELS[MAX_FORBIDDEN_MODELS][] = {
 	"models/props_vehicles/c130.mdl",
-	"models/props_vehicles/helicopter_rescue.mdl"
+	"models/props_vehicles/helicopter_rescue.mdl",
+	"models/props_mall/mall_escalator.mdl"
 };
 
 bool CheckBlacklist(int entity) {
