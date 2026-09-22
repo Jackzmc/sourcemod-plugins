@@ -238,7 +238,9 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
 }
 
 public Action OnBanClient(int client, int time, int flags, const char[] reason, const char[] kick_message, const char[] command, any source) {
-    if(GetUserAdmin(client) != INVALID_ADMIN_ID) {
+    // Ignore bans if the target is a player
+    // Player is still likely to be kicked by game, but we just don't record it
+    if(CheckCommandAccess(client, "sm_ban", ADMFLAG_BAN)) {
         Log(Log_Warn, Target_All, "Ignoring ban for an admin (%N %d)", client, client);
         if(source > 0 && source <= MaxClients && IsClientInGame(source)) {
             PrintToChat(source, "[GlobalBans] Could not ban %N as they are an admin", client);
