@@ -240,6 +240,9 @@ public Action OnBanIdentity(const char[] identity, int time, int flags, const ch
 public Action OnBanClient(int client, int time, int flags, const char[] reason, const char[] kick_message, const char[] command, any source) {
     if(GetUserAdmin(client) != INVALID_ADMIN_ID) {
         Log(Log_Warn, Target_All, "Ignoring ban for an admin (%N %d)", client, client);
+        if(source > 0 && source <= MaxClients && IsClientInGame(source)) {
+            PrintToChat(source, "[GlobalBans] Could not ban %N as they are an admin", client);
+        }
         return Plugin_Stop;
     } 
 
