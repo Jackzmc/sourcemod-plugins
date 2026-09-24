@@ -1,14 +1,14 @@
 #pragma semicolon 1
 
-#define DEBUG
-
 // Every attempt waits exponentionally longer, up to this value.
 #define MAX_ATTEMPT_TIMEOUT 120.0
 #define DEFAULT_SERVER_PORT 7888
 #define SOCKET_TIMEOUT_DURATION 90.0
 #define FULL_SYNC_INTERVAL_S 60.0
 
-#define DATABASE_NAME "adminpanel"
+// Name of sourcemod database
+#define SM_DATABASE_NAME "adminpanel"
+// TODO: rename adminpanel, Admin panel -> SrcPanel
 
 #include <sourcemod>
 #include <sdktools>
@@ -26,11 +26,11 @@
 
 public Plugin myinfo = 
 {
-	name = "Admin Panel",
-	author = "Jackz",
-	description = "Plugin to integrate with admin panel",
+	name = "SrcPanel",
+	author = "jackzmc",
+	description = "Plugin to integrate with SrcPanel",
 	version = "1.0.0",
-	url = "https://github.com/jackzmc/l4d2-admin-dash"
+	url = "https://codeberg.org/jackzmc/SrcPanel"
 };
 
 int LIVESTATUS_VERSION = 0;
@@ -115,8 +115,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 }
 
 public void OnPluginStart() {
-	if(!SQL_CheckConfig(DATABASE_NAME)) {
-		SetFailState("No database entry for '%s'; no database to connect to.", DATABASE_NAME);
+	if(!SQL_CheckConfig(SM_DATABASE_NAME)) {
+		SetFailState("No database entry for '%s'; no database to connect to.", SM_DATABASE_NAME);
 	} else {
 		ConnectDB();
 	}
@@ -198,13 +198,13 @@ public void OnPluginStart() {
 }
 bool ConnectDB() {
 	char error[255];
-	g_db = SQL_Connect(DATABASE_NAME, true, error, sizeof(error));
+	g_db = SQL_Connect(SM_DATABASE_NAME, true, error, sizeof(error));
 	if (g_db == null) {
 		LogError("Database error %s", error);
 		delete g_db;
 		return false;
 	} else {
-		PrintToServer("Connected to database %s", DATABASE_NAME);
+		PrintToServer("Connected to database %s", SM_DATABASE_NAME);
 		SQL_LockDatabase(g_db);
 		SQL_FastQuery(g_db, "SET NAMES \"UTF8mb4\"");  
 		SQL_UnlockDatabase(g_db);
