@@ -2,7 +2,7 @@ float targetPos[MAXPLAYERS+1][3];
 
 static char TARGET_CLIENT_KEY[] = "CHAINED_TARGET";
 
-float DURATION_SEC = 60.0; //3 min 
+float DURATION_SEC = 90.0; //3 min 
 
 void Chained_OnActivate(int apologizer, int target, const char[] eventId) {
     // For debug or self apologies force it to be another player
