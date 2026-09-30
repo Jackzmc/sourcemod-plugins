@@ -330,7 +330,7 @@ void DBCT_CheckUserName(Database db, DBResultSet results, const char[] error, in
 				insertNewName = false;
 			} else {
 				// Name changed, tell admins
-				PrintChatToAdmins("[AdminPanel] %N was previously known as \"%s\"", client, prevName);
+				PrintChatToAdmins("[AdminPanel] \x04\"%N\"\x01 was previously known as \x05\"%s\"\x01", client, prevName);
 			}
 		}
 
