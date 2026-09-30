@@ -313,32 +313,97 @@ stock bool IsValidPlayer(int i) {
 stock bool IsValidTeamPlayer(int i, int team) {
 	return IsValidPlayer(i) && GetClientTeam(i) == team;
 }
-stock int GetPrimaryAmmo(int client) {
-	int weapon = GetPlayerWeaponSlot(client, 0);
-	if(weapon > -1) 
-		return GetEntProp(weapon, Prop_Send, "m_iClip1");
-	else
-		return -1;
+/**
+ * Returns the owner entity of entity (player holding gun, etc) 
+ * or -1 if no owner
+ */
+stock int GetOwnerEntity(int entity) {
+	return GetEntPropEnt(entity, Prop_Data, "m_hOwner");
 }
-stock int GetSecondaryAmmo(int client, int weapon) {
-	int activeWpn = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
-	if(activeWpn == weapon) {
-		int offset = GetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType");
-		return GetEntProp(client, Prop_Send, "m_iAmmo", _, offset); 
-	} else {
-		return GetEntProp(activeWpn, Prop_Send, "m_iExtraPrimaryAmmo");
-	}
+stock int GetPrimaryAmmo(int weapon) {
+	if(weapon > 0) 
+		return GetEntProp(weapon, Prop_Send, "m_iClip1");
+	return -1;
+}
+stock void SetPrimaryAmmo(int weapon, int amount) {
+	if(weapon > 0) 
+		SetEntProp(weapon, Prop_Send, "m_iClip1", amount);
 } 
 
-stock void SetSecondaryAmmo(int client, int weapon, int ammo) {
-	int activeWpn = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
-	if(activeWpn == weapon) {
-		int offset = GetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType");
-		SetEntProp(client, Prop_Send, "m_iAmmo", ammo, _, offset); 
-	} else {
-		SetEntProp(activeWpn, Prop_Send, "m_iExtraPrimaryAmmo", ammo);
-	}
+/**
+ * Get the secondary ammo of a weapon the player is holding (not necessarily active)
+ * NOTE: SDKHook_DropWeapon does not transfer m_iAmmo to the m_iPrimaryAmmoType of weapon,
+ * so on death/respawn, the secondary ammo count would be wiped
+ */
+stock int GetSecondaryAmmoOwned(int owner, int weapon) {
+	int offset = GetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType");
+	return GetEntProp(owner, Prop_Send, "m_iAmmo", _, offset); 
 }
+
+/**
+ * Sets the secondary ammo of weapon that the player has
+ */
+stock void SetSecondaryAmmoOwned(int owner, int weapon, int amount) {
+	int offset = GetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType");
+	SetEntProp(owner, Prop_Send, "m_iAmmo", amount, _, offset); 
+}
+
+/**
+ * Get the secondary ammo of a weapon that is not held by any player
+ * NOTE: SDKHook_DropWeapon does not transfer m_iAmmo to the m_iPrimaryAmmoType of weapon,
+ * so on death/respawn, the secondary ammo count would be wiped
+ */
+stock int GetSecondaryAmmoUnowned(int weapon) {
+	return GetEntProp(weapon, Prop_Send, "m_iExtraPrimaryAmmo");
+}
+
+/**
+ * Sets the secondary ammo of a weapon that is not held by any player
+ */
+stock void SetSecondaryAmmoUnowned(int weapon, int amount) {
+	SetEntProp(weapon, Prop_Send, "m_iExtraPrimaryAmmo", amount);
+}
+
+/**
+ * Drops the weapon, optionally thrown towards target position.
+ * This properly transfers reserve ammo to the weapon
+ * 
+ * SDKHook_DropWeapon and EquipPlayerWeapon don't call game code that
+ * transfers ammo from m_iAmmo -> m_iPrimaryAmmo and vise-versa for equip
+ * 
+ * Then on death/respawn, m_iAmmo gets wiped, and the weapon no longer has secondary ammo
+ * 
+ */
+stock void DropWeapon(int client, int weapon, float vecTarget[3] = NULL_VECTOR) {
+    int ammotype = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
+    int ammo = GetEntProp(client, Prop_Send, "m_iAmmo", _, ammotype);
+
+    SDKHooks_DropWeapon(client, weapon, vecTarget);
+
+    // manually move reserve onto the dropped weapon
+    SetEntProp(client, Prop_Send, "m_iAmmo", 0, _, ammotype);
+    SetEntProp(weapon, Prop_Send, "m_iExtraPrimaryAmmo", ammo);
+	PrintToServer("%d wpn:%d set extra primary to %d", client, weapon, ammo);
+}
+
+/**
+ * Equips the weapon for a player
+ * This properly transfers reserve ammo from the weapon to the player
+ * 
+ * SDKHook_DropWeapon and EquipPlayerWeapon don't call game code that
+ * transfers ammo from m_iAmmo -> m_iPrimaryAmmo and vise-versa for equip
+ * 
+ * Then on death/respawn, m_iAmmo gets wiped, and the weapon no longer has secondary ammo
+ * 
+ */
+stock void EquipWeapon(int client, int weapon) {
+	int ammo = GetEntProp(weapon, Prop_Send, "m_iExtraPrimaryAmmo");
+	EquipPlayerWeapon(client, weapon);
+
+    int ammotype = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
+    SetEntProp(client, Prop_Send, "m_iAmmo", ammo, _, ammotype);
+}
+
 stock void CheatCommand(int client, const char[] command, const char[] argument1, const char[] argument2) {
 	int userFlags = GetUserFlagBits(client);
 	SetUserFlagBits(client, ADMFLAG_ROOT);

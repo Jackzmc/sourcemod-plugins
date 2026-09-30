@@ -20,7 +20,6 @@
 #include "reject/Burn.sp"
 #include "reject/StealItem.sp"
 #include "reject/Spook.sp"
-#include "reject/Kill.sp"
 #include "reject/Gnome.sp"
 #include "reject/Kidnap.sp"
 #include "reject/Sideways.sp"

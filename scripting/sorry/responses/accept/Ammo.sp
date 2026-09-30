@@ -5,13 +5,13 @@ void Ammo_OnActivate(int apologizer, int target, const char[] eventId) {
         ShowSorryAcceptMenu(apologizer, target, eventId);
         return;
     }
-    SetSecondaryAmmo(apologizer, wpn, 666);
+    SetSecondaryAmmoOwned(apologizer, wpn, 666);
 
     // Now take some from target
     int targetWpn = GetClientWeaponEntIndex(target, 0);
-    int targetAmmoCount = GetSecondaryAmmo(target, targetWpn);
+    int targetAmmoCount = GetSecondaryAmmoOwned(target, targetWpn);
     if(targetAmmoCount > 0 && GetRandomFloat() < 0.2) {
-        SetSecondaryAmmo(target, targetWpn, targetAmmoCount / 20); // floors
+        SetSecondaryAmmoOwned(target, targetWpn, targetAmmoCount / 20); // floors
         PrintToChat(target, "There's a 20% tax...");
     }
 }

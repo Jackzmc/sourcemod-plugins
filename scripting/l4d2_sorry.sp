@@ -17,6 +17,8 @@
 #include <anymap>
 #include <jutils>
 #include <smlib>
+#include <util/fakekill>
+
 
 #include "sorry/def.sp"
 #include "sorry/util/util.sp"
@@ -538,11 +540,11 @@ void HandleApologyResponse(int activator, int target, const char[] eventId, sorr
 					PrintToChat(target, "You don't have a gun....");
 					ShowSorryAcceptMenu(activator, target, eventId);
 				} else {
-					int targetAmmo = GetSecondaryAmmo(activator, targetWpn);
-					int ourAmmo = GetSecondaryAmmo(target, ourWpn);
+					int targetAmmo = GetSecondaryAmmoOwned(activator, targetWpn);
+					int ourAmmo = GetSecondaryAmmoOwned(target, ourWpn);
 					int ammoToSteal = GetRandomInt(20, targetAmmo);
-					SetSecondaryAmmo(activator, targetWpn, targetAmmo - ammoToSteal);
-					SetSecondaryAmmo(target, ourWpn, ourAmmo + ammoToSteal);
+					SetSecondaryAmmoOwned(activator, targetWpn, targetAmmo - ammoToSteal);
+					SetSecondaryAmmoOwned(target, ourWpn, ourAmmo + ammoToSteal);
 					if(GetEntProp(ourWpn, Prop_Send, "m_iClip1") < 20) {
 						SetEntProp(ourWpn, Prop_Send, "m_iClip1", 20);
 					}
