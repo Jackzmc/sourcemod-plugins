@@ -375,15 +375,21 @@ stock void SetSecondaryAmmoUnowned(int weapon, int amount) {
  * 
  */
 stock void DropWeapon(int client, int weapon, float vecTarget[3] = NULL_VECTOR) {
-    int ammotype = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
-    int ammo = GetEntProp(client, Prop_Send, "m_iAmmo", _, ammotype);
+	bool hasAmmo = HasEntProp(weapon, Prop_Send, "m_iAmmo");
+	int ammotype, ammo;
+	if(hasAmmo) {
+		ammotype = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
+		ammo = GetEntProp(client, Prop_Send, "m_iAmmo", _, ammotype);
+	}
 
     SDKHooks_DropWeapon(client, weapon, vecTarget);
 
     // manually move reserve onto the dropped weapon
-    SetEntProp(client, Prop_Send, "m_iAmmo", 0, _, ammotype);
-    SetEntProp(weapon, Prop_Send, "m_iExtraPrimaryAmmo", ammo);
-	PrintToServer("%d wpn:%d set extra primary to %d", client, weapon, ammo);
+    if(hasAmmo) {
+		SetEntProp(client, Prop_Send, "m_iAmmo", 0, _, ammotype);
+    	SetEntProp(weapon, Prop_Send, "m_iExtraPrimaryAmmo", ammo);
+		PrintToServer("%d wpn:%d set extra primary to %d", client, weapon, ammo);
+	}
 }
 
 /**
@@ -760,6 +766,10 @@ stock int FindIdleBot(int client) {
 		}
 	}
 	return -1;
+}
+
+stock int GetParent(int entity) {
+	return GetEntPropEnt(entity, Prop_Data, "m_pParent");
 }
 
 stock void SetParent(int child, int parent) {
