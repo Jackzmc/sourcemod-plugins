@@ -104,6 +104,9 @@ Action Timer_KidnapMoveVehicle(Handle h, DataPack pack) {
                 GetHorizontalPositionFromEntity(ref, offset[0], pos);
                 pos[2] += offset[2];
                 TeleportEntity(client, pos);
+                // Ensure player isn't parenting the vehicle
+                int parent = GetParent(ref);
+                if(parent == client) ClearParent(ref);
                 SetParent(client, ref);
                 // SetPlayerBlind(apologizer, 255, 700);
                 cfg.PlayHornSound(ref);
