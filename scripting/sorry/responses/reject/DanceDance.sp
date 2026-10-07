@@ -177,7 +177,7 @@ Action DanceDance_OnPlayerRunCmd(int client, int& buttons, int& impulse, float v
 
 // TODO: difficulty? (easy: first 4, med: first 5, hard: all)
 
-#define NUM_DIRS 7
+#define NUM_DIRS 6
 
 int BUTTON_MAP[NUM_DIRS] = {
     IN_FORWARD,
@@ -185,7 +185,7 @@ int BUTTON_MAP[NUM_DIRS] = {
     IN_MOVELEFT,
     IN_MOVERIGHT,
     IN_JUMP,
-    IN_DUCK,
+    // IN_DUCK,
     IN_ATTACK2
 };
 
@@ -195,7 +195,7 @@ char DIR_LABEL[NUM_DIRS][] = {
     "←",
     "→",
     "JUMP!",
-    "CROUCH!",
+    // "CROUCH!",
     "SHOVE!"
 };
 
