@@ -7,7 +7,7 @@ Action Command_DebugPlugin(int client, int args) {
 			SpecialSpawnRequest req;
 			for(int i = 0; i < g_spSpawnQueue.Length; i++) {
 				g_spSpawnQueue.GetArray(i, req, sizeof(req));
-				ReplyToCommand(client, "#%d - %s(%d) tuid=#%d", i, SPECIAL_NAMES[req.type-1], req.flags, req.targetUserId)
+				ReplyToCommand(client, "#%d - %s(%d) tuid=#%d", i, SPECIAL_NAMES[view_as<int>(req.type)-1], req.flags, req.targetUserId)
 			}
 		} else {
 			ReplyToCommand(client, "Unknown subcommand");
