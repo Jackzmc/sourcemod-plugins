@@ -375,6 +375,7 @@ stock void SetSecondaryAmmoUnowned(int weapon, int amount) {
  * 
  */
 stock void DropWeapon(int client, int weapon, float vecTarget[3] = NULL_VECTOR) {
+	if(client == 0 || weapon == 0) return;
 	bool hasAmmo = HasEntProp(weapon, Prop_Send, "m_iAmmo");
 	int ammotype, ammo;
 	if(hasAmmo) {
@@ -403,6 +404,7 @@ stock void DropWeapon(int client, int weapon, float vecTarget[3] = NULL_VECTOR) 
  * 
  */
 stock void EquipWeapon(int client, int weapon) {
+	if(client == 0 || weapon == 0) return;
 	int ammo = GetEntProp(weapon, Prop_Send, "m_iExtraPrimaryAmmo");
 	EquipPlayerWeapon(client, weapon);
 
