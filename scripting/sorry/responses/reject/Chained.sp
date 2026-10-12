@@ -19,10 +19,10 @@ void Chained_OnActivate(int apologizer, int target, const char[] eventId) {
 }
 
 
-static float MAX_DIST = 30_000.0;
+static float MAX_DIST = 35_000.0;
 static float LASER_HEIGHT = 40.0;
 
-float SPEED = 200.0;
+float SPEED = 220.0;
 
 Action Chained_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
     int targetEnt;
