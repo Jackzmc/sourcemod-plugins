@@ -364,6 +364,7 @@ stock void SetSecondaryAmmoUnowned(int weapon, int amount) {
 	SetEntProp(weapon, Prop_Send, "m_iExtraPrimaryAmmo", amount);
 }
 
+#if defined _sdkhooks_included
 /**
  * Drops the weapon, optionally thrown towards target position.
  * This properly transfers reserve ammo to the weapon
@@ -392,7 +393,10 @@ stock void DropWeapon(int client, int weapon, float vecTarget[3] = NULL_VECTOR) 
 		PrintToServer("%d wpn:%d set extra primary to %d", client, weapon, ammo);
 	}
 }
+#endif
 
+
+#if defined _sdkhooks_included
 /**
  * Equips the weapon for a player
  * This properly transfers reserve ammo from the weapon to the player
@@ -409,8 +413,10 @@ stock void EquipWeapon(int client, int weapon) {
 	EquipPlayerWeapon(client, weapon);
 
     int ammotype = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
-    SetEntProp(client, Prop_Send, "m_iAmmo", ammo, _, ammotype);
+	if(ammotype != -1)
+    	SetEntProp(client, Prop_Send, "m_iAmmo", ammo, _, ammotype);
 }
+#endif
 
 stock void CheatCommand(int client, const char[] command, const char[] argument1, const char[] argument2) {
 	int userFlags = GetUserFlagBits(client);
