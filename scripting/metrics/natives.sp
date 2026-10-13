@@ -3,6 +3,7 @@ int Native_CreateMetric(Handle plugin, int numParams) {
 
     GetNativeString(1, metricName, sizeof(metricName));
 
+
     MetricData regData;
     regData.obj = new JSONObject();
     regData.owner = plugin;
@@ -21,10 +22,24 @@ int Native_CreateMetric(Handle plugin, int numParams) {
     regData.obj.Set("timestamps", timestamps);
     delete timestamps;
 
-    int id = g_metricDefs.PushArray(regData, sizeof(regData));
+    // Reuse an empty index or push new
+    int id = FindExistingIndex();
+    if(id != -1) g_metricDefs.SetArray(id, regData, sizeof(regData));
+    else id = g_metricDefs.PushArray(regData, sizeof(regData));
+
     LogInfo("Registered metric \"%s\" (id:%d)", metricName, id);
 
     return id;
+}
+
+/** find an index that is unused */
+int FindExistingIndex() {
+    MetricData regData;
+    for(int i = 0; i < g_metricDefs.Length; i++) {
+        g_metricDefs.GetArray(i, regData, sizeof(regData));
+        if(regData.IsEmpty()) return i;
+    }
+    return -1;
 }
 
 void Native_CloseMetrics(Handle plugin, int numParams) {
@@ -45,7 +60,7 @@ void Native_CloseMetrics(Handle plugin, int numParams) {
 JSONObject GetMetricRootObject(int index) {
     MetricData regData;
     g_metricDefs.GetArray(index, regData, sizeof(regData));
-    if(regData.obj == null) ThrowError("Metric #%d has closed", index);
+    if(regData.IsEmpty()) ThrowError("Metric #%d has closed", index);
     return regData.obj;
 }
 

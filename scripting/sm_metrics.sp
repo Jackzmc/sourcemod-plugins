@@ -37,6 +37,8 @@ enum struct MetricData {
     float floatValue;
 
     bool isFloat; // false: intValue, true: floatValue
+
+    bool IsEmpty() { return this.obj == null; }
 }
 
 #include "metrics/natives.sp"
