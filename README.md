@@ -49,6 +49,7 @@ Otherwise the plugins folder in this repo exists which were manually compiled by
   * [sm_player_notes](#sm_player_notes) - Add notes to players
   * [l4d2_randomizer](#l4d2_randomizer) - Randomizes official campaigns, changing flows, adding new paths, decorations, etc.
   * [sm_translate](https://github.com/jackzmc/sm-translate) - automatic message translations
+  * [sm_metrics](#sm_metrics_metrics_client) - API to send metrics to Victoria Metrics
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
@@ -500,3 +501,22 @@ More technical information if you want to make your own randomized campaigns is 
   * `sm_rbuild menu` - Menu version of tool
 * **Convars:**
   * `sm_randomizer_enabled <0/1>` - If enabled, next map load will activate randomizer. Manually activating does not check this.
+
+### sm_metrics / sm_metrics_client
+
+Plugin system to automatically record metrics to be sent towards [https://docs.victoriametrics.com/victoriametrics/](https://docs.victoriametrics.com/victoriametrics/). Metrics are sent on a fixed interval (set by `sm_metrics_record_interval`). 
+
+API is designed to register an entry that contains the metric name and the predefined set of labels and to re-use that to increment / set values for.
+
+The metrics client (sm_metrics_client) plugin is an example / functional plugin that records basic metrics and shows how the system works.
+
+Note: The metric registration system is designed for static entries, it is not designed to create one-off entries, as every registered entry appends to a global array and that array is never reduced in size.
+
+There is currently only one set of global labels:
+* **id** - (optional) a custom unique id set by cvar to identify a specific server
+
+* **Convars:**
+  * `sm_metrics_id <string>` - Can be blank. An unique id that can be set to identify a specific server
+  * `sm_metrics_record_interval <seconds>` - How often to send metrics to VM in seconds
+  * `sm_metrics_record_timeout <seconds>` - How long until the POST request of metrics times out. Recommended to use as short as possible.
+  * `sm_metrics_url <seconds>` - The full URL to a victoria metrics server, with the path for the JSON lines import API. Example: `http://my-vm/api/v1/import`

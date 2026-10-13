@@ -96,6 +96,7 @@ public void OnPluginStart() {
 
     RegisterMetrics();
 
+    // For debug use
     RegAdminCmd("sm_mt_flush", Command_Flush, ADMFLAG_GENERIC);
 
 	AutoExecConfig(true, "sm_metrics");
