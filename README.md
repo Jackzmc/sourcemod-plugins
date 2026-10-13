@@ -49,7 +49,7 @@ Otherwise the plugins folder in this repo exists which were manually compiled by
   * [sm_player_notes](#sm_player_notes) - Add notes to players
   * [l4d2_randomizer](#l4d2_randomizer) - Randomizes official campaigns, changing flows, adding new paths, decorations, etc.
   * [sm_translate](https://github.com/jackzmc/sm-translate) - automatic message translations
-  * [sm_metrics](#sm_metrics-sm_metrics_client) - API to send metrics to Victoria Metrics
+  * [sm_metrics](#sm_metrics-sm_metrics_client) - API to send metrics to [Victoria Metrics](https://docs.victoriametrics.com/victoriametrics/)
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
@@ -504,7 +504,7 @@ More technical information if you want to make your own randomized campaigns is 
 
 ### sm_metrics / sm_metrics_client
 
-Plugin system to automatically record metrics to be sent towards [https://docs.victoriametrics.com/victoriametrics/](https://docs.victoriametrics.com/victoriametrics/). Metrics are sent on a fixed interval (set by `sm_metrics_record_interval`). 
+Plugin system to automatically record metrics to be sent towards [Victoria Metrics](https://docs.victoriametrics.com/victoriametrics/). Metrics are sent on a fixed interval (set by `sm_metrics_record_interval`). 
 
 API is designed to register an entry that contains the metric name and the predefined set of labels and to re-use that to increment / set values for.
 
