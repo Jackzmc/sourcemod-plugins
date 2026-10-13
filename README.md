@@ -49,7 +49,7 @@ Otherwise the plugins folder in this repo exists which were manually compiled by
   * [sm_player_notes](#sm_player_notes) - Add notes to players
   * [l4d2_randomizer](#l4d2_randomizer) - Randomizes official campaigns, changing flows, adding new paths, decorations, etc.
   * [sm_translate](https://github.com/jackzmc/sm-translate) - automatic message translations
-  * [sm_metrics](#sm_metrics_metrics_client) - API to send metrics to Victoria Metrics
+  * [sm_metrics](#sm_metrics-sm_metrics_client) - API to send metrics to Victoria Metrics
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
