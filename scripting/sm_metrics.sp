@@ -73,8 +73,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 }
 
 public void OnPluginStart() {
-    Log_Init("metrics", Log_Debug);
-
+    Log_Init("metrics", Log_Info);
+    
     cvarMetricsUrl = CreateConVar("sm_metrics_url", "http://localhost:8428/api/v1/import", "URL of victoria metrics JSON line import API");
     cvarMetricsUrl.GetString(metricsUrl, sizeof(metricsUrl));
     cvarMetricsUrl.AddChangeHook(CVAR_OnMetricsUrlChange);
