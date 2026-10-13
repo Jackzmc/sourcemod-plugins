@@ -510,8 +510,6 @@ API is designed to register an entry that contains the metric name and the prede
 
 The metrics client (sm_metrics_client) plugin is an example / functional plugin that records basic metrics and shows how the system works.
 
-Note: The metric registration system is designed for static entries, it is not designed to create one-off entries, as every registered entry appends to a global array and that array is never reduced in size.
-
 There is currently only one set of global labels:
 * **id** - (optional) a custom unique id set by cvar to identify a specific server
 
