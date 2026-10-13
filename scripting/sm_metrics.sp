@@ -76,6 +76,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart() {
     Log_Init("metrics", Log_Info);
+    Log_CreateCvar("sm_metrics_log_level", Log_Info);
     
     cvarMetricsUrl = CreateConVar("sm_metrics_url", "http://localhost:8428/api/v1/import", "URL of victoria metrics JSON line import API");
     cvarMetricsUrl.GetString(metricsUrl, sizeof(metricsUrl));
@@ -218,7 +219,8 @@ void _SendRequst(const char[] buffer) {
         LogWarn("Cannot send an empty buffer. Ignoring");
         return;
     }
-    LogDebug("sending metrics to %s", metricsUrl);
+    int bytes = strlen(buffer);
+    LogDebug("sending metrics (%d bytes) to %s", bytes, metricsUrl);
     System2HTTPRequest req = new System2HTTPRequest(Request_CB, metricsUrl);
     req.SetUserAgent("sm_metrics/%s (Sourcemod Plugin)", VERSION);
     req.SetData("%s", buffer);
@@ -232,5 +234,5 @@ void Request_CB(bool success, const char[] error, System2HTTPRequest request, Sy
     } else if(response != null && response.StatusCode != 204 && response.StatusCode != 200) {
         LogError("Got bad response from server (status code %d)", response.StatusCode);
     }
-    LogTrace("metrics sent successfully");
+    LogTrace("metrics received successfully");
 }
