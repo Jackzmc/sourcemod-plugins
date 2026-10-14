@@ -6,7 +6,6 @@ static char LAST_BTN_COUNT_KEY[] = "DanceDance_btn_count";
 
 static float DURATION = 35.0;
 static float PRESS_TIME = 4.0; 
-static float NEXT_KEY_GRACE = 0.2; // prevent last key being entered for next key
 
 #define NUM_GRADES 6
 
@@ -145,11 +144,8 @@ Action DanceDance_OnPlayerRunCmd(int client, int& buttons, int& impulse, float v
             return Plugin_Continue;
         }
 
-        // Prevent last button pressed being counted as this button pressed.
-        // *PROBABLY* should just switch to oldButtons check but this works fine.
         float lastBtnPressedTime;
         SorryStore[client].GetValue(LAST_BTN_TIME_KEY, lastBtnPressedTime);
-        if(GetGameTime() - lastBtnPressedTime < NEXT_KEY_GRACE) return Plugin_Continue;
 
         int result = CheckDirection(client, buttons);
         bool expired = GetGameTime() - lastBtnPressedTime > PRESS_TIME;
@@ -220,8 +216,10 @@ int CheckDirection(int client, int buttons) {
     int required;
     if(!SorryStore[client].GetValue(REQUIRED_BTN_KEY, required)) return 0;
 
+    int oldButtons = GetEntProp(client, Prop_Data, "m_nOldButtons");
+
     for(int i = 0; i < NUM_DIRS; i++) {
-        if(buttons & BUTTON_MAP[i]) {
+        if(buttons & BUTTON_MAP[i] && !(oldButtons & BUTTON_MAP[i])) {
             // They pressed a button on the list of valid buttons
             // Check if it's correct or not
             if(BUTTON_MAP[required] == BUTTON_MAP[i]) return 1;
