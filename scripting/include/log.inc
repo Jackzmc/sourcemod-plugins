@@ -131,6 +131,7 @@ public void LOG_OnCvarChange(ConVar convar, const char[] oldValue, const char[] 
     #pragma unused oldValue
     #pragma unused newValue
 	LOG_LEVEL = convar.IntValue;
+    LogMessage("Log level changed to %s", LOG_LEVEL_PREFIX[LOG_LEVEL]);
 }
 
 public ConVar Log_CreateCvar(const char[] cvar, LogLevel defaultLevel) {
