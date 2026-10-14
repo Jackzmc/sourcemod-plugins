@@ -44,7 +44,6 @@ public void OnPluginStart() {
 
     g_db = DatabaseManager.Init(DB_NAME);
 
-
     pendingInsertQueries = new AnyMap();
 
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
@@ -405,7 +404,7 @@ void DB_OnBanQuery(Database db, DBResultSet results, const char[] error, int que
                 PrintToChat(executor, "Unable to ban %s as there is an existing ban that is still active.", data.steamid);
             }
         } else {
-            Log(Log_Error, Target_Console, "[Q#%d] Ban for %s failed: %s", data.steamid, error);
+            Log(Log_Error, Target_Console, "[Q#%d] Ban for %s failed: %s", queueId, data.steamid, error);
             int executor = GetClientOfUserId(data.executorUserId);
             if(executor > 0) {
                 PrintToChat(executor, "Failed to ban %s due to error, see console for details.", data.steamid);
