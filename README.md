@@ -50,6 +50,7 @@ Otherwise the plugins folder in this repo exists which were manually compiled by
   * [l4d2_randomizer](#l4d2_randomizer) - Randomizes official campaigns, changing flows, adding new paths, decorations, etc.
   * [sm_translate](https://github.com/jackzmc/sm-translate) - automatic message translations
   * [sm_metrics](#sm_metrics-sm_metrics_client) - API to send metrics to [Victoria Metrics](https://docs.victoriametrics.com/victoriametrics/)
+  * [l4d2_sorry](#l4d2_sorry) - apologize for shooting each other with funny accept/reject responses
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
@@ -518,3 +519,11 @@ There is currently only one set of global labels:
   * `sm_metrics_record_interval <seconds>` - How often to send metrics to VM in seconds
   * `sm_metrics_record_timeout <seconds>` - How long until the POST request of metrics times out. Recommended to use as short as possible.
   * `sm_metrics_url <seconds>` - The full URL to a victoria metrics server, with the path for the JSON lines import API. Example: `http://my-vm/api/v1/import`
+
+### L4D2 Sorry
+
+Funny plugin that lets you apologize for shooting each other, and respond with either accepting or rejecting with a large range of responses. Over 41 custom rejections and 17 accepts.
+
+* **Commands:**
+  * `sm_sorry` - No args automatically apologizes to the last 4 friendly fire incidents
+  * `sm_sorry <player> <message>` - Manually apologize to player with a message in format "<You>: Sorry I <message> <Player>"
