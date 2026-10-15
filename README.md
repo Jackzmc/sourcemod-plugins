@@ -50,7 +50,7 @@ Otherwise the plugins folder in this repo exists which were manually compiled by
   * [l4d2_randomizer](#l4d2_randomizer) - Randomizes official campaigns, changing flows, adding new paths, decorations, etc.
   * [sm_translate](https://github.com/jackzmc/sm-translate) - automatic message translations
   * [sm_metrics](#sm_metrics-sm_metrics_client) - API to send metrics to [Victoria Metrics](https://docs.victoriametrics.com/victoriametrics/)
-  * [l4d2_sorry](#l4d2_sorry) - apologize for shooting each other with funny accept/reject responses
+  * [l4d2_sorry](#l4d2-sorry) - apologize for shooting each other with funny accept/reject responses
 
 ### Modified Others
 * [200IQBots_FlyYouFools](#200iqbots_flyyoufools) - Improved code to make it support multiple tanks and work better
