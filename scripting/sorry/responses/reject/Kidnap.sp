@@ -131,18 +131,3 @@ void Frame_UnstickPlayer(int client) {
         L4D_WarpToValidPositionIfStuck(client);
     }
 }
-
-/**
- * Lerp value a towards b given time
- */
-stock float LerpFloat(float a, float b, float t) {
-    return a + (b - a) * t;
-}
-/**
- * Lerp vector a towards b given time, outputs into a
- */
-stock void LerpVec(float a[3], float b[3], float t) {
-    for(int i = 0; i < 3; i++) {
-        a[i] = LerpFloat(a[i], b[i], t);
-    }
-}

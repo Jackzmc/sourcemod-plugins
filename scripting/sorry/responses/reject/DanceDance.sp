@@ -4,7 +4,7 @@ static char POINTS_KEY[] = "DanceDance_points";
 static char SONG_KEY[] = "DanceDance_song";
 static char LAST_BTN_COUNT_KEY[] = "DanceDance_btn_count";
 
-static float DURATION = 35.0;
+static float DURATION = 30.0;
 static float PRESS_TIME = 4.0; 
 
 #define NUM_GRADES 6
@@ -143,6 +143,7 @@ Action DanceDance_OnPlayerRunCmd(int client, int& buttons, int& impulse, float v
             EndDance(client);
             return Plugin_Continue;
         }
+
 
         float lastBtnPressedTime;
         SorryStore[client].GetValue(LAST_BTN_TIME_KEY, lastBtnPressedTime);

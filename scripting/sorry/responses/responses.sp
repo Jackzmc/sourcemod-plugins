@@ -27,6 +27,7 @@
 #include "reject/Torment.sp"
 #include "reject/Chained.sp"
 #include "reject/DanceDance.sp"
+#include "reject/Delivery.sp"
 
 void RegisterResponses() {
 	// ACCEPT
@@ -36,6 +37,7 @@ void RegisterResponses() {
 	ResponseBuilder(Sorry_AcceptAmmo, Type_Accept, Ammo_OnActivate);
 	ResponseBuilder(Sorry_AcceptDepBlessing, Type_Accept, DepBlessing_OnActivate);
 	ResponseBuilder(Sorry_AcceptGamble, Type_Accept, Gamble_OnActivate);
+	ResponseBuilder(Sorry_AcceptDelivery, Type_Accept, Delivery_OnActivate);
 
 	// NEUTRAL
 	ResponseBuilder(Sorry_ThirdParty, Type_Neutral, ThirdParty_OnActivate);

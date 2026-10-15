@@ -391,3 +391,19 @@ stock float GetBiasedFloat(float min, float max, float bias = 2.0) {
 bool Filter_IgnorePlayerOnlyPlayers(int entity, int mask, int data) {
 	return entity > 0 && entity != data && entity <= MaxClients;
 }
+
+
+/**
+ * Lerp value a towards b given time
+ */
+stock float LerpFloat(float a, float b, float t) {
+    return a + (b - a) * t;
+}
+/**
+ * Lerp vector a towards b given time, outputs into a
+ */
+stock void LerpVec(float a[3], float b[3], float t) {
+    for(int i = 0; i < 3; i++) {
+        a[i] = LerpFloat(a[i], b[i], t);
+    }
+}
