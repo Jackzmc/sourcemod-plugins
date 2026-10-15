@@ -2,7 +2,19 @@
   #endinput
 #endif
 #define _metrics_included_
+
 #include <ripext/json>
+
+public SharedPlugin __pl_metrics_ = 
+{
+	name = "metrics",
+	file = "sm_metrics.smx",
+#if defined REQUIRE_PLUGIN
+	required = 1,
+#else
+	required = 0,
+#endif
+};
 
 /**
  * Creates a new metrics 'handle' for a metric. A Metric is an unique set of metric name + labels.
@@ -77,3 +89,24 @@ methodmap Metric {
     /** Serialize the metric to a JSON string */
     public native bool ToString(char[] buffer, int maxlen);
 }
+
+#if !defined REQUIRE_PLUGIN
+public void __pl_metrics_SetNTVOptional() {
+    MarkNativeAsOptional("CreateMetric");
+    MarkNativeAsOptional("Metric.GetName");
+    MarkNativeAsOptional("Metric.SetLabel");
+    MarkNativeAsOptional("Metric.SendFloat");
+    MarkNativeAsOptional("Metric.SendInt");
+    MarkNativeAsOptional("Metric.Record");
+    MarkNativeAsOptional("Metric.SetInt");
+    MarkNativeAsOptional("Metric.SetFloat");
+    MarkNativeAsOptional("Metric.IncrementInt");
+    MarkNativeAsOptional("Metric.IncrementFloat");
+    MarkNativeAsOptional("Metric.Reset");
+    MarkNativeAsOptional("Metric.ClearRecords");
+    MarkNativeAsOptional("Metric.HasMetrics");
+    MarkNativeAsOptional("Metric.ToString");
+    MarkNativeAsOptional("Metric.SubscribeCvarLabel");
+    MarkNativeAsOptional("ClearMetrics");
+}
+#endif

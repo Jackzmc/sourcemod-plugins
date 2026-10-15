@@ -10,7 +10,7 @@
 
 #include <metrics>
 
-#define VERSION "1.0"
+#define VERSION "1.0.0"
 #define BUFFER_SIZE 16384
 
 char REQ_BODY_BUFFER[BUFFER_SIZE];
@@ -46,7 +46,7 @@ enum struct MetricData {
 public Plugin myinfo = {
 	name =  "SM Metrics API", 
 	author = "jackzmc", 
-	description = "", 
+	description = "API to send metrics to Victoria Metrics", 
 	version = VERSION, 
 	url = "https://github.com/Jackzmc/sourcemod-plugins"
 };
