@@ -105,6 +105,7 @@ int SpawnKit(int client) {
     if(entity <= 0) return -1;
     PickSpot(client, entity);
     DispatchKeyValueInt(entity, "spawnflags", 4 | 2097152);
+    SetEntityCollisionGroup(entity, COLLISION_GROUP_DEBRIS);
     if(DispatchSpawn(entity)) {
         return entity;
     }

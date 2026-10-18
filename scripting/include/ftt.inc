@@ -95,7 +95,7 @@ enum SpecialInternalFlags {
 }
 
 int healTargetPlayer;
-float healTargetPos[3];
+static float healTargetPos[3];
 Handle stopHealingTimer;
 
 float entLastHeight[2048];

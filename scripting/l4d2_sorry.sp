@@ -606,6 +606,7 @@ void HandleApologyResponse(int activator, int target, const char[] eventId, sorr
 				GetClientAbsOrigin(activator, pos);
 
 				bool spawnClowns = currentMap[0] == 'c' && currentMap[1] == '2';
+				// TODO: butt zombie
 				if(spawnClowns) {
 					PrecacheModel("models/infected/common_male_clown.mdl");
 					SpawnZombiesNearby(pos, 40, victimId, "models/infected/common_male_clown.mdl");

@@ -8,7 +8,7 @@
 
 #define MODEL_DELIVERY_VAN "models/props/de_nuke/truck_nuke.mdl"
 
-#define NUM_CARGO_MODELS 10
+#define NUM_CARGO_MODELS 11
 char CARGO_MODELS[NUM_CARGO_MODELS][] = {
 	// a little hacky but we want to weigh these higher:
 	MODEL_CRATE,
@@ -20,14 +20,8 @@ char CARGO_MODELS[NUM_CARGO_MODELS][] = {
 	MODEL_GNOME,
 	"models/props_furniture/bathtub1.mdl",
 	"models/props_interiors/tv.mdl",
-	"models/props_fortifications/orange_cone001_reference.mdl"
-};
-
-#define NUM_CARGO_ITEMS 3
-char CARGO_ITEMS[NUM_CARGO_ITEMS][] = {
-	"weapon_molotov",
-	"weapon_pain_pills",
-	"weapon_first_aid_kit",
+	"models/props_fortifications/orange_cone001_reference.mdl",
+	"models/props_urban/tire001.mdl"
 };
 
 void Delivery_OnActivate(int apologizer, int target, const char[] eventId) {
@@ -55,7 +49,6 @@ void Delivery_OnActivate(int apologizer, int target, const char[] eventId) {
 	ang[1] -= 90.0; // then unadjust
     StartDeliveryVehicle(vehicleEnt, ang[1], TRAVEL_DUR, speed);
 }
-
 
 void StartDeliveryVehicle(int vehicle, const float moveHeading, const float travelTime, const float speed) {
     // Move vehicle start -> end
@@ -123,11 +116,19 @@ void SpawnItem(int ref, const float pos[3]) {
     GetEntPropVector(ref, Prop_Send, "m_angRotation", entAng);
 	GetSpawnPos(pos, entAng, dir, spawnPos);
 
-	int itemIndex = GetRandomInt(0, NUM_CARGO_ITEMS - 1);
+	// FIXME: items cant be picked up. use weapon_item_spawn ?
 
-	int entity = CreateEntityByName(CARGO_ITEMS[itemIndex]);
-	DispatchKeyValue(entity, "count", "1");
-	DispatchKeyValue(entity, "spawnflags", "10");
+	int entity = CreateEntityByName("weapon_item_spawn");
+	DispatchKeyValue(entity, "item3", "1"); // molotov
+	DispatchKeyValue(entity, "item4", "1"); // pipe_bomb
+	DispatchKeyValue(entity, "item8", "1"); // gas_can
+	DispatchKeyValue(entity, "item11", "1"); // adrenaline
+	DispatchKeyValue(entity, "item6", "1"); // oxygen tank
+	DispatchKeyValue(entity, "item2", "1"); // first_aid_kit
+	DispatchKeyValue(entity, "item12", "1"); // defib
+	DispatchKeyValue(entity, "melee_weapon", "any"); 
+	DispatchKeyValueInt(entity, "spawnflags", 1 | 2); // enable physics + spawned item must exist
+	
 	TeleportEntity(entity,  spawnPos, entAng);
 	DispatchSpawn(entity);
 
@@ -143,6 +144,7 @@ void SpawnCargo(int ref, const float pos[3]) {
 
 	int cargoIndex = GetRandomInt(0, NUM_CARGO_MODELS - 1);
     int prop = CreateProp("prop_physics", CARGO_MODELS[cargoIndex], spawnPos, entAng, NULL_VECTOR, 8192);
+	DispatchKeyValue(prop, "targetname", "sorry_delivery");
 	
 	SetExitVelocity(prop, dir);
 }
