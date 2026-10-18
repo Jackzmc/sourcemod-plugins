@@ -5,24 +5,29 @@
 #define MODEL_TRAIN_LOCOMOTIVE "models/props_vehicles/train_enginecar.mdl"
 #define MODEL_TRACTOR "models/props_vehicles/tractor.mdl"
 #define MODEL_FLOAT "models/props_downtown/parade_float.mdl"
+#define MODEL_WHEELCHAIR "models/props_unique/wheelchair01.mdl"
 #define NUM_TRAIN_CARTS 2
 static char TRAIN_CARTS[NUM_TRAIN_CARTS][] = {
     "models/props_vehicles/train_box_open.mdl",
     "models/props_vehicles/train_flatcar.mdl"
 };
 
+// #define KIDNAP_FORCE_ID 3
+
 float VEH_CFG[][] = {
     // #weigh(int), dist, dura, dly, v.offset, fwd.offset
     { 15.0,   800.0,  5.0, 0.0, 0.0, 0.0   }, // Delivery van
     { 5.0,    2000.0,  8.0, 5.0, 50.0, 0.0   }, // Train,
     { 1.0,    800.0,  5.0, 2.0, 50.0, -280.0  }, // Lil' Peanut Float
+    { 1.0,    400.0,  5.0, 0.0, 0.0, 2.0 } // wheelchair
 };
 
 char VEH_SDN_CFG[][][] = {
     // idle, horn (either optional, set to "")
     { "vehicles/diesel_loop2.wav", "vehicles/humvee_horn.wav" },  // Delivry van
     { "ambient/alarms/train_crossing_bell_loop1.wav", "", },       // Train
-    { "vehicles/tractor/tractor_start_loop.wav", "npc/lilpeanut/lilpeanut04.wav" },
+    { "vehicles/tractor/tractor_start_loop.wav", "npc/lilpeanut/lilpeanut04.wav" }, // Lil' peanut
+    { "", "" } // wheelchair (none)
 }
 enum KidnapState {
     KidnapState_Active = 1,
@@ -114,6 +119,9 @@ methodmap VehCfg {
 }
 
 VehCfg SelectVehicle() {
+    #if defined KIDNAP_FORCE_ID
+        return VehCfg(KIDNAP_FORCE_ID);
+    #endif
     ArrayList indexes = new ArrayList();
     for(int i = 0; i < NUM_VEHICLES; i++) {
         VehCfg cfg = VehCfg(i); 
@@ -131,13 +139,26 @@ VehCfg SelectVehicle() {
 int SpawnVehicle(VehCfg cfg, const float startPos[3]) {
     cfg.PrecacheSounds();
     int ent = -1;
+    switch(cfg.Type) {
+        case 1: {
+            ent = SpawnTrain(startPos, GetRandomInt(2, 5));
+        }
+        case 2: {
+            ent = SpawnTractorFloat(startPos);  
+        }
+        case 3: {
+            PrecacheModel(MODEL_WHEELCHAIR);
+            ent = CreateProp("prop_dynamic", MODEL_WHEELCHAIR, startPos);
+        }
+        default: {
+            PrecacheModel(MODEL_CEDA_VEHICLE);
+            ent = CreateProp("prop_dynamic", MODEL_CEDA_VEHICLE, startPos);
+        }
+    }
     if(cfg.Type == 1) {
-        ent = SpawnTrain(startPos, GetRandomInt(2, 5));
     } else if(cfg.Type == 2) {
-        ent = SpawnTractorFloat(startPos);  
     } else {
-        PrecacheModel(MODEL_CEDA_VEHICLE);
-        ent = CreateProp("prop_dynamic", MODEL_CEDA_VEHICLE, startPos);
+        
     }
     cfg.PlayIdleSound(ent);
     return ent;
