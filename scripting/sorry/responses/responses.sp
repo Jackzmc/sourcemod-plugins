@@ -6,6 +6,7 @@
 #include "accept/Ammo.sp"
 #include "accept/DepBlessing.sp"
 #include "accept/Gamble.sp"
+#include "accept/Delivery.sp"
 
 #include "neutral/UnoReverse.sp"
 #include "neutral/ThirdParty.sp"
@@ -27,7 +28,7 @@
 #include "reject/Torment.sp"
 #include "reject/Chained.sp"
 #include "reject/DanceDance.sp"
-#include "reject/Delivery.sp"
+#include "reject/Jail.sp"
 
 void RegisterResponses() {
 	// ACCEPT
@@ -62,4 +63,6 @@ void RegisterResponses() {
 		.OnPlayerRunCmd(Chained_OnPlayerRunCmd);
 	ResponseBuilder(Sorry_RejectDanceDance, Type_Reject, DanceDance_OnActivate)
 		.OnPlayerRunCmd(DanceDance_OnPlayerRunCmd);
+	ResponseBuilder(Sorry_RejectCage, Type_Reject, Jail_OnActivate)
+		.OnPlayerRunCmd(Jail_OnPlayerRunCmd);
 }

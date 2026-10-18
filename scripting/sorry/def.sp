@@ -71,7 +71,8 @@ enum sorryResponseValues {
 	Sorry_AcceptGamble = 16,
 	Sorry_RejectChained = -41,
 	Sorry_RejectDanceDance = -42,
-	Sorry_AcceptDelivery = 17
+	Sorry_AcceptDelivery = 17,
+	Sorry_RejectCage = -43
 }
 
 #if defined DEBUG_SORRY
