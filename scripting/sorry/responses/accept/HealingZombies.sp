@@ -11,21 +11,20 @@ static int HEALING_AMOUNT_KILL = 5;
 
 void HealingZombies_OnActivate(int apologizer, int target, const char[] eventId) {
     SDKHook(apologizer, SDKHook_OnTakeDamageAlive, HealingZombies_Player_OnTakeDamage);
-    int userid = GetClientUserId(apologizer);
-
     float pos[3];
     GetClientAbsOrigin(apologizer, pos);
     ArrayList list = SpawnZombiesNearbyList(pos, 10);
     for(int i = 0; i < list.Length; i++) {
         int common = list.Get(i);
         // Target player
-        L4D2_CommandABot(common, userid, BOT_CMD_ATTACK);
+        L4D2_CommandABot(common, apologizer, BOT_CMD_ATTACK);
         SetEntPropEnt(common, Prop_Send, "m_clientLookatTarget", apologizer);
         // Spawn kit above zombie
         GetEntPropVector(common, Prop_Send, "m_vecOrigin", pos);
         pos[2] += 72.0;
         int kit = CreateEntityByName(HEALING_ITEMS[GetRandomInt(0,2)]); // pick 1-3 items
         DispatchKeyValue(kit, "solid", "0");
+        SetEntityCollisionGroup(kit, COLLISION_GROUP_DEBRIS);
         TeleportEntity(kit, pos);
         SetParent(kit, common);
         SetParentAttachment(kit, "ValveBiped.Bip01_Head1", true);
@@ -36,6 +35,7 @@ void HealingZombies_OnActivate(int apologizer, int target, const char[] eventId)
     delete list;
     // CommandABot doesn't guarentee :(
     L4D2_CTerrorPlayer_OnHitByVomitJar(apologizer, apologizer);
+    // L4D_OnITExpired(apologizer);
     CreateTimer(30.0, Timer_HealingZombiesStop, GetClientOfUserId(apologizer));
 }
 

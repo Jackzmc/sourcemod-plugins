@@ -103,9 +103,12 @@ Action Timer_DeliverySpawnPackage(Handle h, DataPack pack) {
 
 	GetEntPropVector(ref, Prop_Send, "m_vecOrigin", pos);
 
-	SpawnCargo(ref, pos);
-	if(GetRandomFloat() < 0.3) {
-		SpawnItem(ref, pos);
+	if(!TR_PointOutsideWorld(pos)) {
+
+		SpawnCargo(ref, pos);
+		if(GetRandomFloat() < 0.3) {
+			SpawnItem(ref, pos);
+		}
 	}
 
     return GetGameTime() >= endTime ? Plugin_Stop : Plugin_Continue

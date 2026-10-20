@@ -350,6 +350,7 @@ public Action Timer_UpdateHealTargetPos(Handle h) {
 		PrintToServer("[FTT] Dep Bots: Lost heal target, stopping");
 		return Plugin_Stop;
 	}
+	float healTargetPos[3];
 	GetAbsOrigin(healTarget, healTargetPos);
 	int bots = 0;
 	for(int i = 1; i <= MaxClients; i++) {

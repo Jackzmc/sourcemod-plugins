@@ -14,7 +14,7 @@
 #include <jutils>
 #undef REQUIRE_PLUGIN
 #tryinclude <sceneprocessor>
-#undef REQUIRE_PLUGIN
+#undef REQUIRE_EXTENSIONS
 #tryinclude <actions>
 #include <basecomm>
 #include <ftt>

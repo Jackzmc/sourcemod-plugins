@@ -410,6 +410,7 @@ bool IsPlayerInHistory(const char[] id) {
 public void DB_FindNotes(Database db, DBResultSet results, const char[] error, any data) {
 	if(db == null || results == null) {
 		LogError("DB_FindNotes returned error: %s", error);
+		ConnectDB();
 		return;
 	}
 	//initialize variables
@@ -564,6 +565,7 @@ Action Timer_SlapPlayer(Handle h, int userid) {
 public void DB_ListNotesForPlayer(Database db, DBResultSet results, const char[] error, DataPack pack) {
 	if(db == null || results == null) {
 		LogError("DB_ListNotesForPlayer returned error: %s", error);
+		ConnectDB();
 		return;
 	}
 	//initialize variables

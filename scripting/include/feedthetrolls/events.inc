@@ -691,6 +691,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		static float pos[3];
 		GetClientAbsOrigin(client, pos);
 		LookAtClient(client, healTarget);
+		float healTargetPos[3];
 		if(GetVectorDistance(pos, healTargetPos, true) < 10000.0) {
 			if(GetClientAimTarget(client, true) == healTarget) {
 				buttons |= IN_ATTACK2;

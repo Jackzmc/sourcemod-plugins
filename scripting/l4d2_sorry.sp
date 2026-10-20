@@ -18,6 +18,7 @@
 #include <jutils>
 #include <smlib>
 #include <util/fakekill>
+#tryinclude <actions>
 
 
 #include "sorry/def.sp"
