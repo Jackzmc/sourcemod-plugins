@@ -694,27 +694,18 @@ void HandleApologyResponse(int activator, int target, const char[] eventId, sorr
 				pack.WriteCell(GetRandomInt(30, 45)); // random duration (# ticks)
 			} else if(response == Sorry_RejectDraw4) {
 				PrintToChat(activator, "Draw 4.");
-				ArrayList players = new ArrayList();
-				for(int i = 1; i <= MaxClients; i++) {
-					if(IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && !IsFakeClient(i)) {
-						// PrintToConsoleAll("draw4: add %d %N", i, i);
-						players.Push(i); // happens in a tick don't worry about index
-						// weigh all other survivors higher than themselves
-						if(i != activator) {
-							players.Push(i);
-						}
-					}
-				}
-				if(players.Length == 0) {
+				ArrayList players = DrawRandomSurvivors(4, activator);
+				if(players == null) {
 					PrintToChat(activator, "There was no one to apologize to, failed. :(");
 				} else {
-					for(int i = 0; i < 4; i++) {
-						int index = GetRandomInt(0, players.Length - 1);
-						int player = players.Get(index);
-						SendApology(activator, player, "drew 4");
+					for(int i = 0; i < players.Length; i++) {
+						int player = GetClientOfUserId(players.Get(i));
+						if(player > 0) {
+							SendApology(activator, player, "drew 4");
+						}
 					}
+					delete players;
 				}
-				delete players;
 			} else if(response == Sorry_RejectSpook) {
 				SpookPlayer(activator, GetRandomInt(0, 1));
 			} else if(!HandleResponse(response, Type_Reject, activator, target, eventId)) {
@@ -742,6 +733,38 @@ Action Timer_RandomApology(Handle h, DataPack pack) {
 		HandleApologyResponse(activator, target, "", response);
 	}
 	return Plugin_Handled;
+}
+
+stock ArrayList DrawRandomSurvivors(int count, int ignorePlayer = 0) {
+	ArrayList players = new ArrayList();
+	FillPlayerList(players, 2, ignorePlayer);
+	if(players.Length == 0) {
+		delete players;
+		return null;
+	}
+	ArrayList choices = new ArrayList();
+	for(int i = 0; i < count; i++) {
+		int index = GetURandomInt() % (players.Length - 1);
+		// Grab player from pile, and remove from chance
+		int playerUid = players.Get(index);
+		players.Erase(index);
+		choices.Push(playerUid);
+
+		if(players.Length == 0) {
+			FillPlayerList(players, 2, ignorePlayer);
+			if(players.Length == 0) break; // Just in case
+		}
+	}
+	delete players;
+	return choices;
+}
+
+void FillPlayerList(ArrayList list, int team = 2, int ignorePlayer = 0) {
+	for(int i = 1; i <= MaxClients; i++) {
+		if(i != ignorePlayer && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == team && !IsFakeClient(i)) {
+			list.Push(GetClientUserId(i));
+		}
+	}
 }
 
 int ApologizeHandler(Menu menu, MenuAction action, int target, int param2) {
