@@ -50,7 +50,7 @@ void Jail_OnActivate(int apologizer, int target, const char[] eventId) {
     PrecacheModel(CAGE_WALL_MODEL);
     PrecacheModel(CAGE_FLOOR_MODEL);
 
-    float targetPos[3], pos[3];
+    float targetPos[3];
     GetClientAbsOrigin(apologizer, targetPos);
 
     int jail = SpawnJail(targetPos, false);
@@ -63,6 +63,8 @@ void Jail_OnActivate(int apologizer, int target, const char[] eventId) {
     SorryStore[apologizer].SetValue(STORE_PARENT_KEY, EntIndexToEntRef(jail));
     SorryStore[apologizer].SetValue(STORE_AMOUNT_LEFT_KEY, JAIL_CLICKS_NEEDED);
     PrintHintText(apologizer, "%d", JAIL_CLICKS_NEEDED);
+
+    SetAbsVelocity(apologizer, { 0.0, 0.0, 0.0 });
 }
 
 
@@ -112,10 +114,12 @@ Action Jail_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3],
             SorryStore[client].IncrementValue(STORE_AMOUNT_LEFT_KEY, -1);
             value--;
         } else {
+            if((buttons & IN_ATTACK) && !(oldButtons & IN_ATTACK)) {
+                PrintToChat(client, "You are in jail. Spam E to escape.");
+            }
             return Plugin_Continue;
         }
 
-        PrintHintText(client, "JAILED!\n%d clicks left", value);
 
         if(value <= 0) {
             int entity;
@@ -125,8 +129,10 @@ Action Jail_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3],
             SpawnJail(cagePosition[client], true);
             SorryStore[client].Remove(STORE_PARENT_KEY);
             SorryStore[client].Remove(STORE_AMOUNT_LEFT_KEY);
+            PrintHintText(client, "ESCAPED!", value);
         } else {
             SorryStore[client].SetValue(STORE_AMOUNT_LEFT_KEY, value);
+            PrintHintText(client, "JAILED!\n%d clicks left", value);
         }
     }
     return Plugin_Continue;

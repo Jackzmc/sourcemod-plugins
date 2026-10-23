@@ -3,10 +3,13 @@ float targetPos[MAXPLAYERS+1][3];
 static char TARGET_CLIENT_KEY[] = "CHAINED_TARGET";
 
 float DURATION_SEC = 90.0; //3 min 
-static float MAX_DIST = 36_000.0;
+// Max distance until pulled
+static float MAX_DIST_PULL = 36_000.0;
 static float LASER_HEIGHT = 40.0;
+// Max distance until it snaps / tp
+static float MAX_DIST_BREAK = 150_000.0;
 
-float SPEED = 220.0;
+float SPEED = 245.0;
 
 void Chained_OnActivate(int apologizer, int target, const char[] eventId) {
     // For debug or self apologies force it to be another player
@@ -21,9 +24,6 @@ void Chained_OnActivate(int apologizer, int target, const char[] eventId) {
     }
     SorryStore[apologizer].SetValueTemp(TARGET_CLIENT_KEY, target, DURATION_SEC);
 }
-
-
-
 
 Action Chained_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2]) {
     int targetEnt;
@@ -53,7 +53,11 @@ Action Chained_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[
 
         float dist = GetVectorDistance(pos, targetPos[client], true);
 
-        float delta = dist / MAX_DIST; // >= 1
+        if(dist >= MAX_DIST_BREAK) {
+            TeleportEntity(client, targetPos[client]);
+        }
+
+        float delta = dist / MAX_DIST_PULL; // >= 1
         float width = delta / 4.0;
         if(width < 0.2) width = 0.2;
 
@@ -85,7 +89,7 @@ Action Chained_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[
         } else if(buttons & IN_MOVERIGHT) {
             SetVelocityDir(client, vel, angles[1] - 90.0, SPEED);
         }
-        if(dist >= MAX_DIST) {
+        if(dist >= MAX_DIST_PULL) {
             // Pull player if too far, increasing vertical bump the further they are
             // TODO: swap linear with more?
             float vDist = pos[2] - targetPos[client][2]; // < 0: below, > 0: above
