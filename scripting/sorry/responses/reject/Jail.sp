@@ -53,6 +53,13 @@ void Jail_OnActivate(int apologizer, int target, const char[] eventId) {
     float targetPos[3];
     GetClientAbsOrigin(apologizer, targetPos);
 
+    // If player already in jail, switch it to physics
+    int existingJail;
+    if(SorryStore[apologizer].GetValue(STORE_PARENT_KEY, existingJail)) {
+        RemoveEntity(existingJail);
+        SpawnJail(cagePosition[apologizer], true);
+    }
+
     int jail = SpawnJail(targetPos, false);
 
     for(int i = 0 ; i < 3; i++)

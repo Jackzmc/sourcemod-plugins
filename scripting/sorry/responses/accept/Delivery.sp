@@ -38,6 +38,11 @@ void Delivery_OnActivate(int apologizer, int target, const char[] eventId) {
 
 	float speed = GetRandomFloat(20.0, 40.0);
 
+	/* TODO: instead of setting to player's angle, 
+		we could do a 360 raytrace and find whatever direction is the most open / furthest till collision
+		and pick that direction
+	*/
+
 	ang[0] = 0.0;
 	ang[1] += 90.0; // model is 90deg sideways, adjust
 	ang[2] = 0.0;
