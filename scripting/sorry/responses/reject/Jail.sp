@@ -79,6 +79,7 @@ int SpawnJail(const float origin[3], bool physics) {
     int parentEnt;
     float pos[3];
 
+    // Spawn cage walls
     for(int i = 0; i < CAGE_WALL_COUNT; i++) {
         for(int v = 0; v < 3; v++)
             pos[v] = origin[v] + CAGE_WALL_OFFSETS[i][0][v] - CAGE_PLAYER_OFFSET[v];
@@ -88,13 +89,16 @@ int SpawnJail(const float origin[3], bool physics) {
             pos, 
             CAGE_WALL_OFFSETS[i][1]
         );
-        // For easy cleanup just parent:
-        if(!physics) {
+        // For easy cleanup just parent and force a health so it can be broken
+        if(physics) {
+            DispatchKeyValueInt(ent, "health", 15);
+        } else {
             if(i == 0) parentEnt = ent;
             else SetParent(ent, parentEnt);
         }
     }
 
+    // Spawn ceiling & floor
     if(!physics) {
         for(int i = 0; i < CAGE_FLOOR_COUNT; i++) {
             for(int v = 0; v < 3; v++)
