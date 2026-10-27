@@ -241,7 +241,6 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		if(StrEqual(sArgs, "cancel", false)) {
 			PrintToChat(client, "Note cancelled.");
 		} else {
-			int size = 2 * strlen(sArgs) + 1;
 			char buffer[32];
 			GetClientAuthId(client, AuthId_Steam2, buffer, sizeof(buffer));
 			// TODO: escape content
@@ -621,9 +620,6 @@ void AddNoteIdentity(const char noteCreator[32], const char noteTarget[32], cons
 		LogError("Invalid steamid for note");
 		return;
 	}
-	int size = 2 * strlen(message) + 1;
-	char[] content = new char[size];
-	DB.Escape(message, content, size);
-	DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", noteTarget, noteCreator, content);
+	DB.Format(query, sizeof(query), "INSERT INTO `notes` (steamid, markedBy, content) VALUES ('%s', '%s', '%s')", noteTarget, noteCreator, message);
 	DB.Query(DB_AddNote, query);
 }
