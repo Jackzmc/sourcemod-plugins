@@ -1,4 +1,8 @@
 #define SOUND_PIANO "plats/piano.wav"
+#define SOUND_FLUSH "ambient/water/water_splash2.wav"
+
+#define MODEL_PIANO "models/props_furniture/piano.mdl"
+#define MODEL_TOILET "models/props_interiors/toilet.mdl"
 
 #define NUM_RANDOM_PROPS 17
 char RANDOM_PROP[NUM_RANDOM_PROPS][] = {
@@ -10,10 +14,10 @@ char RANDOM_PROP[NUM_RANDOM_PROPS][] = {
 	"models/props_junk/wood_crate002a.mdl",
 	"models/props_mall/mall_bench.mdl",
 	"models/props_interiors/bed.mdl",
-	"models/props_furniture/piano.mdl",
+	MODEL_PIANO,
 	"models/props_junk/wheebarrow01a.mdl",
 	"models/props_interiors/toiletpaperroll.mdl",
-	"models/props_interiors/toilet.mdl",
+	MODEL_TOILET,
 	"models/props_foliage/urban_pot_bigplant01.mdl",
 	"models/props_foliage/urban_pot_clay01.mdl",
 	"models/props/cs_assault/handtruck.mdl",
@@ -38,9 +42,12 @@ Action RandomProp_OnPlayerRunCmd(int client, int& buttons, int& impulse, float v
 			if(entity > 0) {
 				char model[64];
 				GetEntPropString(entity, Prop_Data, "m_ModelName", model, sizeof(model));
-				if(StrEqual(model, "models/props_furniture/piano.mdl")) {
+				if(StrEqual(model, MODEL_PIANO)) {
 					PrecacheSound(SOUND_PIANO);
 					EmitSoundToAll(SOUND_PIANO, -2, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEVOL, 0.55, 100, -1, pos);
+				} else if(StrEqual(model, MODEL_TOILET)) {
+					PrecacheSound(SOUND_FLUSH);
+					EmitSoundToAll(SOUND_FLUSH, -2, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_CHANGEVOL, 0.55, 100, -1, pos);
 				}
 			}
 		}

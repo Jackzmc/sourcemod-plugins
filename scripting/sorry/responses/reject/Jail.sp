@@ -67,11 +67,22 @@ void Jail_OnActivate(int apologizer, int target, const char[] eventId) {
 
     PrintHintText(apologizer, "You have been jailed. Spam your USE key until the number hits 0 to escape.");
 
+    if(!IsPlayerAlive(apologizer)) {
+        PrintToChat(target, "You unfortunately caught a ghost...");
+    }
+
     SorryStore[apologizer].SetValue(STORE_PARENT_KEY, EntIndexToEntRef(jail));
     SorryStore[apologizer].SetValue(STORE_AMOUNT_LEFT_KEY, JAIL_CLICKS_NEEDED);
     PrintHintText(apologizer, "%d", JAIL_CLICKS_NEEDED);
 
     SetAbsVelocity(apologizer, { 0.0, 0.0, 0.0 });
+}
+
+Action Timer_SetNoCollision(Handle h, int ref) {
+    if(IsValidEntity(ref)) {
+        SetEntityCollisionGroup(ref, COLLISION_GROUP_DEBRIS);
+    }
+    return Plugin_Handled;
 }
 
 
@@ -84,15 +95,17 @@ int SpawnJail(const float origin[3], bool physics) {
         for(int v = 0; v < 3; v++)
             pos[v] = origin[v] + CAGE_WALL_OFFSETS[i][0][v] - CAGE_PLAYER_OFFSET[v];
         int ent = CreateProp(
-            physics ? "prop_physics_override" : "prop_dynamic", 
-            CAGE_WALL_MODEL, 
-            pos, 
+            physics ? "prop_physics" : "prop_dynamic",
+            CAGE_FLOOR_MODEL,
+            pos,
             CAGE_WALL_OFFSETS[i][1]
         );
-        // For easy cleanup just parent and force a health so it can be broken
+        
         if(physics) {
-            DispatchKeyValueInt(ent, "health", 15);
+            // Remove collision after its fallen over
+            CreateTimer(5.0, Timer_SetNoCollision, EntIndexToEntRef(ent));
         } else {
+            // Parent entity so we can just kill the parent
             if(i == 0) parentEnt = ent;
             else SetParent(ent, parentEnt);
         }
@@ -132,7 +145,7 @@ Action Jail_OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3],
         }
 
 
-        if(value <= 0) {
+        if(value <= 0 || !IsPlayerAlive(client)) {
             int entity;
             if(SorryStore[client].GetValue(STORE_PARENT_KEY, entity) && IsValidEntity(entity))
                 RemoveEntity(entity);
