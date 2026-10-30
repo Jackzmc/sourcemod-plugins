@@ -96,7 +96,7 @@ int SpawnJail(const float origin[3], bool physics) {
             pos[v] = origin[v] + CAGE_WALL_OFFSETS[i][0][v] - CAGE_PLAYER_OFFSET[v];
         int ent = CreateProp(
             physics ? "prop_physics" : "prop_dynamic",
-            CAGE_FLOOR_MODEL,
+            CAGE_WALL_MODEL,
             pos,
             CAGE_WALL_OFFSETS[i][1]
         );
