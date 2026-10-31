@@ -95,7 +95,7 @@ int SpawnJail(const float origin[3], bool physics) {
         for(int v = 0; v < 3; v++)
             pos[v] = origin[v] + CAGE_WALL_OFFSETS[i][0][v] - CAGE_PLAYER_OFFSET[v];
         int ent = CreateProp(
-            physics ? "prop_physics" : "prop_dynamic",
+            physics ? "prop_physics_override" : "prop_dynamic",
             CAGE_WALL_MODEL,
             pos,
             CAGE_WALL_OFFSETS[i][1]
@@ -103,7 +103,7 @@ int SpawnJail(const float origin[3], bool physics) {
         
         if(physics) {
             // Remove collision after its fallen over
-            CreateTimer(5.0, Timer_SetNoCollision, EntIndexToEntRef(ent));
+            CreateTimer(20.0, Timer_SetNoCollision, EntIndexToEntRef(ent));
         } else {
             // Parent entity so we can just kill the parent
             if(i == 0) parentEnt = ent;

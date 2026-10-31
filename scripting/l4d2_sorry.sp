@@ -744,7 +744,7 @@ stock ArrayList DrawRandomSurvivors(int count, int ignorePlayer = 0) {
 	}
 	ArrayList choices = new ArrayList();
 	for(int i = 0; i < count; i++) {
-		int index = GetURandomInt() % (players.Length - 1);
+		int index = GetURandomInt() % players.Length;
 		// Grab player from pile, and remove from chance
 		int playerUid = players.Get(index);
 		players.Erase(index);
