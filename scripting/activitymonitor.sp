@@ -209,7 +209,7 @@ public void Event_Connection(Event event, const char[] name, bool dontBroadcast)
 		} else {
 			static char reason[64];
 			event.GetString("reason", reason, sizeof(reason));
-			Format(reason, sizeof(reason), " left: \"%s\"", reason);
+			Format(reason, sizeof(reason), "left: \"%s\"", reason);
 
 			AddLog("QUIT", steamidCache[client], "", reason);
 
@@ -230,26 +230,26 @@ public Action OnLogAction(Handle source, Identity identity, int client, int targ
 	// Ignore cvar changed msgs (from server.cfg)
 	if(client == 0 && !hLogCvarChanges.BoolValue && strcmp(message[31], "changed cvar") >= 0) return Plugin_Continue;
 
-	static char clientName[32], targetName[32];
-	if(client == 0) clientName = "Server";
+	static char clientId[32], targetId[32];
+	if(client == 0) clientId = "Server";
 	else if(client > 0) {
-		strcopy(clientName, sizeof(clientName), steamidCache[client]);
+		strcopy(clientId, sizeof(clientId), steamidCache[client]);
 		// if(!GetClientAuthId(client, AuthId_Steam2, clientName, sizeof(clientName), false)) {
 		// 	PrintToServer("[ActivityMonitor] WARN: Failed to get auth ID for client %s")
 		// 	return Plugin_Continue;
 		// }
 	}
-	else clientName[0] = '\0';
+	else clientId[0] = '\0';
 
 	if(target > 0 && !IsFakeClient(target)) {
-		strcopy(targetName, sizeof(targetName), steamidCache[target]);
-		// if(!GetClientAuthId(target, AuthId_Steam2, targetName, sizeof(targetName))) {
+		strcopy(targetId, sizeof(targetId), steamidCache[target]);
+		// if(!GetClientAuthId(target, AuthId_Steam2, targetId, sizeof(targetId))) {
 		// 	return Plugin_Continue;
 		// }
 	}
-	else targetName[0] = '\0';
+	else targetId[0] = '\0';
 
-	AddLog("ACTION", clientName, targetName, message);
+	AddLog("ACTION", clientId, targetId, message);
 	return Plugin_Continue;
 }
 
@@ -315,31 +315,31 @@ public void Event_L4D2_Incapped(Event event, const char[] name, bool dontBroadca
 	}
 }
 
-void AddLog(const char[] type, const char[] clientName, const char[] targetName, const char[] message) {
-	if(StrEqual(clientName, "Bot")) return;
+void AddLog(const char[] type, const char[] clientId, const char[] targetId, const char[] message) {
+	if(StrEqual(clientId, "Bot")) return;
 	Log log;
 	strcopy(log.name, sizeof(log.name), type);
-	strcopy(log.clientSteamID, sizeof(log.clientSteamID), clientName);
-	strcopy(log.targetSteamID, sizeof(log.targetSteamID), targetName);
+	strcopy(log.clientSteamID, sizeof(log.clientSteamID), clientId);
+	strcopy(log.targetSteamID, sizeof(log.targetSteamID), targetId);
 	strcopy(log.message, sizeof(log.message), message);
 	log.timestamp = GetTime();
 	logs.PushArray(log);
 }
 
-void AddLogCustom(const char[] type, const char[] clientName, const char[] targetName, const char[] format, any ...) {
+void AddLogCustom(const char[] type, const char[] clientId, const char[] targetId, const char[] format, any ...) {
 	static char message[254];
-	if(StrEqual(clientName, "Bot")) return;
+	if(StrEqual(clientId, "Bot")) return;
 
 	VFormat(message, sizeof(message), format, 5);
-	AddLog(type, clientName, targetName, message);
+	AddLog(type, clientId, targetId, message);
 }
 
 public any Native_AddLog(Handle plugin, int numParams) {
-	char type[32], clientName[32], targetName[32], message[256];
+	char type[32], clientId[32], targetId[32], message[256];
 	if(GetNativeString(1, type, sizeof(type)) != SP_ERROR_NONE) return false;
-	if(GetNativeString(2, clientName, sizeof(clientName)) != SP_ERROR_NONE) return false;
-	if(GetNativeString(3, targetName, sizeof(targetName)) != SP_ERROR_NONE) return false;
+	if(GetNativeString(2, clientId, sizeof(clientId)) != SP_ERROR_NONE) return false;
+	if(GetNativeString(3, targetId, sizeof(targetId)) != SP_ERROR_NONE) return false;
 	if(GetNativeString(4, message, sizeof(message)) != SP_ERROR_NONE) return false;
-	AddLog(type, clientName, targetName, message);
+	AddLog(type, clientId, targetId, message);
 	return true;
 }

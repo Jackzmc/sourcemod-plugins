@@ -4,8 +4,6 @@
 #define _log_included
 #define LOG_BUFFER_SIZE 1024
 
-int LOG_LEVEL = Log_Info;
-
 enum LogLevel {
     Log_Error = 1,
     Log_Warn = 2,
@@ -23,6 +21,7 @@ char LOG_LEVEL_PREFIX[Log__MaxLevels][] = {
     "TRACE"
 };
 
+int LOG_LEVEL = Log_Info;
 static int adminFlag;
 static char logPrefix[64] = "LOG_CALL_Log_Init_FIRST";
 static char adminCmd[64];
